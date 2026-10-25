@@ -13,9 +13,10 @@
 <body>
 <main>
 <header><div>فراهوش · دبیرستان سردار شهید حاجی‌زاده ۲</div><h1>پیش‌نمایش پنل‌های سامانه</h1><p>این صفحه فقط برای بررسی ظاهر و امکانات پیشنهادی پنل‌هاست؛ ورود واقعی، ذخیره‌سازی و اتصال به پایگاه داده در این پیش‌نمایش فعال نیست.</p></header>
-<div class="notice">نمایش آزمایشی — هیچ اطلاعاتی ثبت یا تغییر داده نمی‌شود. صفحه اصلی و شش آیکون آن دست‌نخورده باقی مانده‌اند.</div>
+<div class="notice">نمایش آزمایشی — مسیر موردنظر: انتخاب نقش، وارد کردن نام کاربری و رمز عبور، سپس مشاهده پنل. این صفحه فعلاً رمز را با سرور بررسی نمی‌کند و هیچ اطلاعاتی ذخیره نمی‌شود.</div>
 <section class="roles" id="roles" aria-label="انتخاب پنل"></section>
-<section class="panel" aria-live="polite">
+<section class="panel" id="loginPanel" hidden><h2 id="loginTitle">ورود به سامانه</h2><p id="loginDescription">برای ادامه، نام کاربری و رمز عبور خود را وارد کنید.</p><form id="demoLogin"><label for="demoUsername">نام کاربری</label><input id="demoUsername" name="username" autocomplete="username" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid var(--line);background:#081326;color:var(--text);font:inherit"><label for="demoPassword">رمز عبور</label><input id="demoPassword" name="password" type="password" autocomplete="current-password" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid var(--line);background:#081326;color:var(--text);font:inherit"><button class="back" type="submit">ورود و مشاهده پنل</button><button class="back" type="button" id="changeRole">بازگشت به انتخاب نقش</button><p id="loginNotice" class="muted">توجه: ورود این صفحه نمایشی است و اطلاعات واردشده با حساب واقعی تطبیق داده نمی‌شود.</p></form></section>
+<section class="panel" id="modulePanel" aria-live="polite" hidden>
 <div class="panel-head"><div><div class="muted">پنل انتخاب‌شده</div><h2 id="panelTitle">مدیریت</h2></div><button class="back" id="home">بازگشت به صفحه ورود</button></div>
 <p id="panelDescription"></p><div class="modules" id="modules"></div>
 </section>
@@ -31,9 +32,14 @@ const roles=[
 {id:'counselor',title:'مشاوره',icon:'🧠',desc:'ابزارهای مشاوره‌ای برای پرونده، نوبت‌دهی، پیگیری و ارجاع.',items:[['🗂️','پرونده مشاوره','مشاهده و پیگیری پرونده‌های مجاز'],['📅','نوبت‌دهی','تنظیم و مرور جلسات'],['🧭','پیگیری مشاوره‌ای','پیگیری اقدامات و نتیجه‌ها'],['📊','گزارش‌های مشاوره','مرور گزارش‌های مجاز'],['↗️','ارجاع به مدیر','ارجاع موضوع نیازمند بررسی'],['💬','ارتباط داخلی','هماهنگی با واحدهای مدرسه']]}
 ];
 const rolesRoot=document.getElementById('roles'),modules=document.getElementById('modules');
-function render(id){const r=roles.find(x=>x.id===id)||roles[0];document.getElementById('panelTitle').textContent='پنل '+r.title;document.getElementById('panelDescription').textContent=r.desc;for(const b of rolesRoot.children)b.setAttribute('aria-pressed',String(b.dataset.role===r.id));modules.replaceChildren();for(const item of r.items){const card=document.createElement('article');card.className='tile';const icon=document.createElement('span');icon.textContent=item[0];const title=document.createElement('strong');title.textContent=item[1];const detail=document.createElement('small');detail.textContent=item[2];card.append(icon,title,detail);modules.append(card)}}
+let selectedRole=roles[0];
+function render(id){const r=roles.find(x=>x.id===id)||roles[0];selectedRole=r;document.getElementById("loginPanel").hidden=false;document.getElementById("modulePanel").hidden=true;document.getElementById("loginTitle").textContent="ورود به پنل "+r.title;document.getElementById("loginDescription").textContent="برای مشاهده پیش‌نمایش پنل "+r.title+"، نام کاربری و رمز عبور را وارد کنید.";document.getElementById("loginNotice").textContent="نمایش آزمایشی: این فرم هنوز به سامانه احراز هویت واقعی متصل نیست؛ برای امنیت، رمز واقعی خود را در این پیش‌نمایش وارد نکنید.";document.getElementById("panelTitle").textContent="پنل "+r.title;document.getElementById('panelDescription').textContent=r.desc;for(const b of rolesRoot.children)b.setAttribute('aria-pressed',String(b.dataset.role===r.id));modules.replaceChildren();for(const item of r.items){const card=document.createElement('article');card.className='tile';const icon=document.createElement('span');icon.textContent=item[0];const title=document.createElement('strong');title.textContent=item[1];const detail=document.createElement('small');detail.textContent=item[2];card.append(icon,title,detail);modules.append(card)}}
 for(const r of roles){const b=document.createElement('button');b.className='role';b.type='button';b.dataset.role=r.id;b.setAttribute('aria-pressed','false');const icon=document.createElement('span');icon.textContent=r.icon;const title=document.createElement('strong');title.textContent=r.title;b.append(icon,title);b.onclick=()=>render(r.id);rolesRoot.append(b)}
-document.getElementById('home').onclick=()=>location.href='/portal.html';
-render(new URLSearchParams(location.search).get('role')||'manager');
+document.getElementById("demoLogin").addEventListener("submit",ev=>{ev.preventDefault();if(!document.getElementById("demoUsername").value.trim()||!document.getElementById("demoPassword").value) return;document.getElementById("loginPanel").hidden=true;document.getElementById("modulePanel").hidden=false;document.getElementById("panelTitle").textContent="پیش‌نمایش پنل "+selectedRole.title;document.getElementById("loginNotice").textContent="";});
+document.getElementById("changeRole").onclick=()=>{document.getElementById("loginPanel").hidden=true;document.getElementById("modulePanel").hidden=true;document.getElementById("demoLogin").reset()};
+document.getElementById("home").onclick=()=>location.href="/portal.html";
+const initialRole=new URLSearchParams(location.search).get("role")||"manager";
+const initial=roles.find(x=>x.id===initialRole);if(initial)render(initial.id);else {document.getElementById("loginPanel").hidden=true;document.getElementById("modulePanel").hidden=true;}
+
 </script>
 </body></html>
