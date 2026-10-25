@@ -124,7 +124,7 @@ async function auth(req, res, next) {
 const allow = (...roles) => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ error: 'اجازه انجام این کار را ندارید.' });
 const text = (value, max = 120) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-app.get('/', (_req, res) => res.redirect('/portal.html'));
+app.get('/', (_req, res) => res.sendFile(path.resolve(__dirname, '../../index.html')));
 app.get('/portal.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../public/portal.html')));
 app.get('/classroom.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../../classroom.html')));
 
