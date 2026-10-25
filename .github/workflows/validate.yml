@@ -1,0 +1,47 @@
+name: Validate classroom prototype
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: frahoosh_test
+          POSTGRES_PASSWORD: test-password
+          POSTGRES_DB: frahoosh_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U frahoosh_test -d frahoosh_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm install --package-lock=false
+      - name: Validate page structure and JavaScript syntax
+        run: node --check server/src/server.js && node tests/validate.mjs
+      - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
+        env:
+          DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
+          PGSSL: disable
+          E2E_PORT: 8091
+        run: node tests/integration.mjs
