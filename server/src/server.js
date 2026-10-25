@@ -126,6 +126,7 @@ const text = (value, max = 120) => typeof value === 'string' ? value.trim().slic
 
 app.get('/', (_req, res) => res.sendFile(path.resolve(__dirname, '../../index.html')));
 app.get('/portal.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../public/portal.html')));
+app.get('/module.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../public/module.html')));
 app.get('/classroom.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../../classroom.html')));
 
 // Authenticated WebRTC configuration. Put TURN credentials in server environment, never in the repository.
