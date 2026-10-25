@@ -141,14 +141,13 @@ $('attendance-confirm').onclick=async()=>{
 };
 
 $('create').hidden=true;$('join').hidden=true;$('student-permissions').hidden=true;
-// Integrated Frahoosh entry: role is passed from the already-authenticated six-icon portal.
+// Integrated Frahoosh entry: role is passed from the six-icon portal.
 // No second login, password prompt, or role-selection screen is shown here.
 $('create').hidden=true;$('join').hidden=true;$('student-permissions').hidden=false;
-const bootParams=new URLSearchParams(location.search);
-const bootRole=bootParams.get('role')||'student',bootRoom=bootParams.get('room')||'',bootName=bootParams.get('name')||'',bootClassId='';
+const effectiveRole=bootRole||'student';
 if(bootName)$('display-name').value=bootName;
 if(bootRoom)$('room-code').value=bootRoom;
-if(bootRole==='teacher'||bootRole==='manager'||bootRole==='deputy'){
+if(effectiveRole==='teacher'||effectiveRole==='manager'||effectiveRole==='deputy'){
  $('create').hidden=false;$('join').hidden=true;$('student-permissions').hidden=false;
  $('back-home').href='./panel-preview.html?step=panel';
  say('ورود از پنل فراهوش انجام شده است. برای شروع، «شروع کلاس» را بزنید.');
