@@ -62,8 +62,16 @@ document.getElementById("recoverPassword").onclick=()=>{document.getElementById(
 document.getElementById("changeRole").onclick=()=>go("home");
 document.getElementById("home").onclick=()=>go("home");
 const initial=roles.find(x=>x.id===roleId);
-if(step==='home'||!initial){showStep('home')}
-else {render(initial.id);showStep(step==='panel'?'panel':'login');if(step==='panel'){document.getElementById("panelTitle").textContent="پیش‌نمایش پنل "+selectedRole.title;document.getElementById("home").textContent="بازگشت به صفحه اصلی شش‌آیکونه";}}
+if(step==='home'||!initial){
+ showStep('home');
+}else{
+ // لینک‌های شش‌آیکونه دست‌نخورده می‌مانند؛ ورود به پنل فقط پس از احراز هویت انجام می‌شود.
+ // ورود به کلاس آنلاین و برنامه هفتگی از نشست تأییدشده همین صفحه، با SSO انجام می‌شود.
+ render(initial.id);
+ showStep('login');
+ document.getElementById('loginTitle').textContent='ورود به پنل '+selectedRole.title+' فراهوش';
+ document.getElementById('loginDescription').textContent='پس از ورود موفق، از بخش کلاس آنلاین یا برنامه هفتگی استفاده کنید؛ برای ورود به کلاس دوباره نام کاربری و رمز نمی‌خواهید.';
+}
 
 
 </script>
