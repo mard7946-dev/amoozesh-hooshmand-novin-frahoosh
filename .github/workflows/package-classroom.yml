@@ -1,0 +1,57 @@
+name: Package standalone classroom
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm install --package-lock=false
+
+      - name: Check backend syntax and classroom validation
+        run: |
+          node --check server/src/server.js
+          node tests/validate.mjs
+
+      - name: Assemble deployment bundle
+        run: |
+          mkdir -p dist/frahoosh-live-classroom
+          cp -r server dist/frahoosh-live-classroom/
+          rm -rf dist/frahoosh-live-classroom/server/node_modules
+          cp index.html classroom.html README.md docker-compose.yml render.yaml dist/frahoosh-live-classroom/
+          cp server/.env.example dist/frahoosh-live-classroom/server/.env.example
+          cat > dist/frahoosh-live-classroom/BUILD-INFO.txt <<'EOF'
+          Frahoosh standalone online classroom deployment bundle
+          Runtime: Node.js 20+
+          Database: independent PostgreSQL (not Supabase)
+          Backend: server/src/server.js
+          Web classroom: classroom.html
+          Docker: Dockerfile and docker-compose.yml
+          Note: this bundle is not an APK and does not itself create public HTTPS hosting.
+          EOF
+          cd dist
+          zip -r frahoosh-live-classroom-deploy.zip frahoosh-live-classroom
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: frahoosh-live-classroom-deploy
+          path: dist/frahoosh-live-classroom-deploy.zip
+          if-no-files-found: error
+          retention-days: 14
