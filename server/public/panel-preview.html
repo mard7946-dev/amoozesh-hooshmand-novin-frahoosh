@@ -12,7 +12,7 @@
 </head>
 <body>
 <main>
-<header><div>فراهوش · دبیرستان سردار شهید حاجی‌زاده ۲</div><h1>پیش‌نمایش پنل‌های سامانه</h1><p>این صفحه فقط برای بررسی ظاهر و امکانات پیشنهادی پنل‌هاست؛ ورود واقعی، ذخیره‌سازی و اتصال به پایگاه داده در این پیش‌نمایش فعال نیست.</p></header>
+<header id="schoolHeader"><div style="font-size:18px;font-weight:bold;color:var(--mint)">فراهوش</div><h1>دبیرستان سردار شهید حاجی‌زاده ۲</h1><p style="font-size:17px;color:var(--text)">سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق</p><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0"><span class="back" style="cursor:default">مدیر سامانه: حسن مردانه جهان‌تیغ</span><span class="back" style="cursor:default">سال تحصیلی ۱۴۰۶–۱۴۰۵</span></div><p>به سامانه فراهوش خوش آمدید. برای ورود، فقط یکی از شش پنل زیر را انتخاب کنید.</p></header>
 <div class="notice" id="demoNotice">پیش‌نمایش ظاهری است؛ ورود واقعی هنوز به سرویس احراز هویت وصل نیست. رمز واقعی وارد نکنید.</div>
 <section class="roles" id="roles" aria-label="انتخاب پنل"></section>
 <section class="panel" id="loginPanel" hidden><h2 id="loginTitle">ورود به سامانه</h2><p id="loginDescription">برای ادامه، نام کاربری و رمز عبور خود را وارد کنید.</p><form id="demoLogin"><table style="width:100%;border-collapse:separate;border-spacing:0 10px"><tbody><tr><th style="text-align:right;width:28%;padding:8px">نام کاربری</th><td><input id="demoUsername" name="username" autocomplete="username" required style="display:block;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#081326;color:var(--text);font:inherit"></td></tr><tr><th style="text-align:right;padding:8px">رمز عبور</th><td><input id="demoPassword" name="password" type="password" autocomplete="current-password" required style="display:block;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#081326;color:var(--text);font:inherit"></td></tr></tbody></table><label style="display:flex;align-items:center;gap:8px;margin:4px 0 14px"><input id="rememberPassword" type="checkbox" style="width:18px;height:18px"> ذخیره نام کاربری روی همین دستگاه</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="back" type="submit">ورود</button><button class="back" type="button" id="recoverPassword">بازیابی رمز</button><button class="back" type="button" id="changeRole">بازگشت به انتخاب پنل</button></div><p id="loginNotice" class="muted">ورود این صفحه نمایشی است و با حساب واقعی تطبیق داده نمی‌شود؛ رمز واقعی وارد نکنید.</p></form></section>
@@ -38,15 +38,17 @@ const step=params.get('step')||'home';
 const roleId=params.get('role');
 function go(next, id){const u=new URL(location.href);u.searchParams.set('step',next);if(id)u.searchParams.set('role',id);else u.searchParams.delete('role');location.href=u.toString()}
 function showStep(next){
- const header=document.querySelector('header');
+ const header=document.getElementById('schoolHeader');
  const notice=document.getElementById('demoNotice');
  const roleGrid=document.getElementById('roles');
- header.hidden=true;
- notice.hidden=true;
+ // صفحه اول: مشخصات مدرسه + دقیقاً شش آیکون اصلی
+ header.hidden=next!=='home';
  roleGrid.hidden=next!=='home';
+ // صفحه ورود: فقط فرم نقش انتخاب‌شده، بدون هیچ‌یک از شش آیکون
+ notice.hidden=next!=='login';
  document.getElementById('loginPanel').hidden=next!=='login';
  document.getElementById('modulePanel').hidden=next!=='panel';
- document.querySelector('.footer').hidden=next==='home';
+ document.querySelector('.footer').hidden=next!=='home';
 }
 function render(id){const r=roles.find(x=>x.id===id)||roles[0];selectedRole=r;document.getElementById("loginPanel").hidden=false;document.getElementById("modulePanel").hidden=true;document.getElementById("loginTitle").textContent="ورود به پنل "+r.title;document.getElementById("loginDescription").textContent="برای مشاهده پیش‌نمایش پنل "+r.title+"، نام کاربری و رمز عبور را وارد کنید.";document.getElementById("loginNotice").textContent="پنل انتخاب‌شده: "+r.title+". ورود و بازیابی رمز در این پیش‌نمایش آزمایشی هستند؛ رمز واقعی وارد نکنید.";document.getElementById("panelTitle").textContent="پنل "+r.title;document.getElementById('panelDescription').textContent=r.desc;for(const b of rolesRoot.children)b.setAttribute('aria-pressed',String(b.dataset.role===r.id));modules.replaceChildren();for(const item of r.items){const card=document.createElement('article');card.className='tile';const icon=document.createElement('span');icon.textContent=item[0];const title=document.createElement('strong');title.textContent=item[1];const detail=document.createElement('small');detail.textContent=item[2];card.append(icon,title,detail);modules.append(card)}}
 for(const r of roles){const b=document.createElement('button');b.className='role';b.type='button';b.dataset.role=r.id;b.setAttribute('aria-pressed','false');const icon=document.createElement('span');icon.textContent=r.icon;const title=document.createElement('strong');title.textContent=r.title;b.append(icon,title);b.onclick=()=>go("login",r.id);rolesRoot.append(b)}
