@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#09152a">
+<title>بخش فراهوش</title>
+<style>
+:root{color-scheme:dark;--bg:#09152a;--panel:#12213a;--line:#2c405f;--text:#f3f6ff;--muted:#a8b8d2;--gold:#e5c16d;--mint:#63e0c0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:14px;padding:18px;border-bottom:1px solid var(--line);background:#09152ad9;position:sticky;top:0}
+button,a{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#1a2d4a;color:var(--text)}button.primary{background:var(--gold);color:#142238;border-color:var(--gold);font-weight:bold}
+.brand{font-size:12px;color:var(--muted)}h1{font-size:20px;margin:4px 0 0}.wrap{max-width:980px;margin:24px auto;padding:0 16px}.hero,.panel{background:linear-gradient(145deg,#122744,#0b1b32);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hero{display:flex;align-items:center;gap:16px}.icon{font-size:40px;width:68px;height:68px;display:grid;place-items:center;border-radius:16px;background:#203754;border:1px solid #385476}
+h2{font-size:16px;margin:0 0 12px}p{line-height:1.9;color:var(--muted);margin:8px 0}.status{display:inline-block;border:1px solid #8d753e;color:var(--gold);border-radius:999px;padding:5px 10px;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.mini{border:1px solid var(--line);border-radius:12px;padding:14px;background:#0a192d}.mini strong{display:block;margin-bottom:7px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+</style></head>
+<body>
+<header><button id="back" type="button">← بازگشت به پنل</button><div><div class="brand">فراهوش · سامانه مدیریت هوشمند مدارس</div><h1 id="headTitle">بخش سامانه</h1></div></header>
+<main class="wrap">
+<section class="hero"><div class="icon" id="moduleIcon">📚</div><div><h1 id="title">بخش سامانه</h1><p id="roleText">پنل کاربری</p><span class="status">ساختار اولیه آماده است</span></div></section>
+<section class="panel"><h2>نمای کلی بخش</h2><p id="description">ساختار این بخش ایجاد شده است. برای فعال شدن عملیات واقعی، باید فرم‌ها و سرویس‌های مرتبط به آن متصل شوند.</p><div class="actions"><button id="back2" class="primary" type="button">بازگشت به امکانات</button></div></section>
+<section class="panel"><h2>اجزای در نظر گرفته‌شده</h2><div class="grid">
+<div class="mini"><strong>📋 فهرست و جست‌وجو</strong><p>جایگاه فهرست اطلاعات و فیلترهای مربوط به این بخش.</p></div>
+<div class="mini"><strong>➕ ثبت اطلاعات</strong><p>جایگاه فرم ثبت مورد جدید، متناسب با دسترسی نقش کاربر.</p></div>
+<div class="mini"><strong>📊 گزارش و خروجی</strong><p>جایگاه گزارش‌گیری و در صورت نیاز خروجی اکسل یا PDF.</p></div>
+</div></section>
+<footer>دبیرستان سردار شهید حاجی‌زاده ۲ · فراهوش</footer>
+</main>
+<script>
+const params=new URLSearchParams(location.search);
+const role=params.get('role')||'user';
+const title=params.get('title')||'بخش سامانه';
+const icon=params.get('icon')||'📚';
+const labels={manager:'مدیریت',educational_deputy:'معاونت آموزشی',executive_deputy:'معاونت اجرایی',pastoral_deputy:'معاونت پرورشی',teacher:'دبیران',student:'دانش‌آموزان',parent:'اولیا',counselor:'مشاوره'};
+document.title=title+' | فراهوش';
+document.getElementById('headTitle').textContent=title;
+document.getElementById('title').textContent=title;
+document.getElementById('moduleIcon').textContent=icon;
+document.getElementById('roleText').textContent='پنل '+(labels[role]||'کاربر');
+const classDescriptions={
+'وضعیت دانش‌آموزان':'در نسخه تکمیلی، فهرست دانش‌آموزان، وضعیت حضور و اطلاعات موردنیاز مدیریت در این بخش نمایش داده می‌شود.',
+'دفتر کلاسی':'جایگاه ثبت و مشاهده حضور و غیاب و فعالیت‌های کلاسی دبیر.',
+'ثبت نمرات کلاسی':'جایگاه ثبت، ویرایش و مشاهده نمرات کلاسی.',
+'ثبت تکالیف':'جایگاه ثبت تکلیف و مشاهده تکالیف ارسال‌شده.',
+'مشاهده نمرات درسی':'جایگاه مشاهده نمرات درسی دانش‌آموز.',
+'مشاهده پرونده دانش‌آموز':'جایگاه مشاهده اطلاعات پرونده دانش‌آموز مرتبط با ولی.',
+'امور مالی':'جایگاه ثبت و پیگیری امور مالی مدرسه.',
+'مشاوره':'جایگاه ارتباط و پیگیری امور مشاوره‌ای.',
+'گزارش‌ها':'جایگاه مشاهده گزارش‌های مرتبط با مسئولیت معاونت.'
+};
+document.getElementById('description').textContent=classDescriptions[title]||'صفحه و ساختار اولیه این بخش ایجاد شده است؛ فرم‌ها، مجوزها و ذخیره‌سازی اطلاعات باید در مرحله بعد به سرویس مربوط متصل و آزمایش شوند.';
+function goBack(){location.href='/portal.html'}
+document.getElementById('back').addEventListener('click',goBack);
+document.getElementById('back2').addEventListener('click',goBack);
+</script></body></html>
