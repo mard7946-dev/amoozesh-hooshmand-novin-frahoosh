@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1730">
+<title>پیش‌نمایش پنل‌های فراهوش</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--blue:#83b3ff}
+*{box-sizing:border-box}body{margin:0;padding:16px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:1050px;margin:auto}header{text-align:center;padding:16px}h1{margin:8px 0;font-size:clamp(22px,4vw,32px)}p{color:var(--muted);line-height:1.9}.notice{border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;padding:12px 15px;margin:12px 0}.roles,.modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.role,.tile,.back{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:14px;background:#0e1b32;color:var(--text);padding:14px;text-align:center}.role[aria-pressed=true]{border-color:var(--mint);background:#15364a;box-shadow:0 0 0 1px var(--mint) inset}.role span,.tile span{display:block;font-size:25px;margin-bottom:8px}.role strong,.tile strong{display:block}.tile{min-height:112px;text-align:right;background:linear-gradient(145deg,#11213a,#0c192d)}.tile small{display:block;color:var(--muted);margin-top:8px;line-height:1.7}.panel{margin-top:18px;background:#0e1b32dd;border:1px solid #263958;border-radius:18px;padding:18px}.panel-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.back{padding:9px 12px;background:#203451}.muted{color:var(--muted);font-size:13px}.footer{padding:20px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<header><div>فراهوش · دبیرستان سردار شهید حاجی‌زاده ۲</div><h1>پیش‌نمایش پنل‌های سامانه</h1><p>این صفحه فقط برای بررسی ظاهر و امکانات پیشنهادی پنل‌هاست؛ ورود واقعی، ذخیره‌سازی و اتصال به پایگاه داده در این پیش‌نمایش فعال نیست.</p></header>
+<div class="notice">نمایش آزمایشی — هیچ اطلاعاتی ثبت یا تغییر داده نمی‌شود. صفحه اصلی و شش آیکون آن دست‌نخورده باقی مانده‌اند.</div>
+<section class="roles" id="roles" aria-label="انتخاب پنل"></section>
+<section class="panel" aria-live="polite">
+<div class="panel-head"><div><div class="muted">پنل انتخاب‌شده</div><h2 id="panelTitle">مدیریت</h2></div><button class="back" id="home">بازگشت به صفحه ورود</button></div>
+<p id="panelDescription"></p><div class="modules" id="modules"></div>
+</section>
+<div class="footer">نسخه نمایشی برای تأیید چیدمان پنل‌ها پیش از طراحی و بررسی جدول‌های پایگاه داده · سال تحصیلی ۱۴۰۶–۱۴۰۵</div>
+</main>
+<script>
+const roles=[
+{id:'manager',title:'مدیریت',icon:'🛡️',desc:'نمای کلی مدرسه، مدیریت دسترسی‌ها و پیگیری امور اجرایی و آموزشی.',items:[['👥','کاربران و نقش‌ها','مدیریت حساب‌ها و سطح دسترسی؛ در این پیش‌نمایش غیرفعال'],['🏫','کلاس‌ها و برنامه هفتگی','مرور کلاس‌ها، زنگ‌ها و برنامه آموزشی'],['📊','گزارش‌های مدرسه','گزارش‌های آموزشی، حضور و غیاب و عملکرد'],['🧑‍🏫','دبیران و کارکنان','فهرست و وضعیت همکاران'],['🎓','دانش‌آموزان','پرونده‌ها و اطلاعات کلاسی'],['💳','امور مالی','نمای کلی امور مالی'],['💬','ارتباط با اولیا','پیام‌ها و پیگیری درخواست‌ها'],['🧠','مشاوره و انضباط','ارجاع‌ها و موارد نیازمند پیگیری'],['📢','تابلوی اطلاع‌رسانی','اطلاعیه‌های مدرسه'],['⚙️','تنظیمات سامانه','تنظیمات عمومی و دسترسی‌ها']]},
+{id:'deputy',title:'معاونت',icon:'📋',desc:'امکانات معاونت با تفکیک مسئولیت اجرایی، آموزشی و پرورشی.',items:[['📅','برنامه هفتگی','بررسی برنامه کلاس‌ها و زنگ‌ها'],['🎥','کلاس آنلاین','مشاهده وضعیت کلاس‌های برنامه‌ریزی‌شده'],['🕒','حضور و غیاب','پیگیری وضعیت حضور دانش‌آموزان'],['📊','گزارش‌ها','گزارش‌های آموزشی و اجرایی'],['📝','موارد انضباطی','ثبت و پیگیری موارد'],['📢','اطلاع‌رسانی','اطلاعیه‌های مرتبط با مدرسه'],['🔎','ارجاعات','پیگیری درخواست‌های ارجاع‌شده']]},
+{id:'teacher',title:'دبیران',icon:'👩‍🏫',desc:'ابزارهای روزمره دبیر برای کلاس، تکلیف، ارزیابی و پیگیری دانش‌آموزان.',items:[['🎥','کلاس آنلاین','ورود به کلاس‌های مجاز'],['📒','دفتر کلاسی','مدیریت فعالیت‌های کلاس'],['📝','حضور و غیاب','ثبت وضعیت حضور دانش‌آموزان'],['📚','تکالیف','تعریف و پیگیری تکالیف'],['🧮','ارزشیابی و نمرات','ثبت و مشاهده ارزیابی‌ها'],['💬','پیام‌های مدرسه','پیگیری پیام‌ها و ارجاعات'],['📊','گزارش عملکرد کلاس','مرور فعالیت‌های آموزشی']]},
+{id:'parent',title:'اولیا',icon:'👨‍👩‍👧',desc:'دسترسی مشاهده‌ای خانواده به وضعیت تحصیلی و ارتباط با مدرسه.',items:[['🎓','پرونده دانش‌آموز','مشاهده اطلاعات مرتبط با فرزند'],['📅','برنامه هفتگی','مشاهده برنامه کلاس‌ها'],['🕒','حضور و غیاب','مشاهده وضعیت حضور'],['📚','تکالیف','مشاهده تکالیف و پیگیری آن‌ها'],['📊','وضعیت تحصیلی','مشاهده گزارش‌های مجاز'],['🤝','ملاقات و جلسات','درخواست یا پیگیری جلسه با مدرسه'],['💬','پیام به مدرسه','ارتباط با مسئول مربوطه'],['📢','اطلاعیه‌ها','مشاهده اطلاعیه‌های مدرسه']]},
+{id:'student',title:'دانش‌آموزان',icon:'🎒',desc:'دسترسی دانش‌آموز به برنامه، کلاس، تکالیف و فعالیت‌های مدرسه.',items:[['🎥','کلاس آنلاین','ورود در زمان فعال بودن کلاس'],['📅','برنامه هفتگی','مشاهده برنامه کلاس‌ها'],['📚','تکالیف','مشاهده و ارسال تکلیف'],['📈','وضعیت تحصیلی','مشاهده اطلاعات مجاز'],['📝','فعالیت‌های مدرسه','شورا، بسیج، مسابقات و جشنواره‌ها'],['🤝','همیار و شهردار مدرسه','فعالیت‌های مشارکتی'],['💬','پیام‌ها','مشاهده پیام‌های مدرسه'],['📢','اطلاعیه‌ها','اطلاعیه‌های جدید']]},
+{id:'counselor',title:'مشاوره',icon:'🧠',desc:'ابزارهای مشاوره‌ای برای پرونده، نوبت‌دهی، پیگیری و ارجاع.',items:[['🗂️','پرونده مشاوره','مشاهده و پیگیری پرونده‌های مجاز'],['📅','نوبت‌دهی','تنظیم و مرور جلسات'],['🧭','پیگیری مشاوره‌ای','پیگیری اقدامات و نتیجه‌ها'],['📊','گزارش‌های مشاوره','مرور گزارش‌های مجاز'],['↗️','ارجاع به مدیر','ارجاع موضوع نیازمند بررسی'],['💬','ارتباط داخلی','هماهنگی با واحدهای مدرسه']]}
+];
+const rolesRoot=document.getElementById('roles'),modules=document.getElementById('modules');
+function render(id){const r=roles.find(x=>x.id===id)||roles[0];document.getElementById('panelTitle').textContent='پنل '+r.title;document.getElementById('panelDescription').textContent=r.desc;for(const b of rolesRoot.children)b.setAttribute('aria-pressed',String(b.dataset.role===r.id));modules.replaceChildren();for(const item of r.items){const card=document.createElement('article');card.className='tile';const icon=document.createElement('span');icon.textContent=item[0];const title=document.createElement('strong');title.textContent=item[1];const detail=document.createElement('small');detail.textContent=item[2];card.append(icon,title,detail);modules.append(card)}}
+for(const r of roles){const b=document.createElement('button');b.className='role';b.type='button';b.dataset.role=r.id;b.setAttribute('aria-pressed','false');const icon=document.createElement('span');icon.textContent=r.icon;const title=document.createElement('strong');title.textContent=r.title;b.append(icon,title);b.onclick=()=>render(r.id);rolesRoot.append(b)}
+document.getElementById('home').onclick=()=>location.href='/portal.html';
+render(new URLSearchParams(location.search).get('role')||'manager');
+</script>
+</body></html>
