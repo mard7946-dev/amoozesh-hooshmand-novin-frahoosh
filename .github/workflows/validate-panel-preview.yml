@@ -1,0 +1,40 @@
+name: Validate Frahoosh panel preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/public/panel-preview.html"
+      - ".github/workflows/validate-panel-preview.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/public/panel-preview.html"
+      - ".github/workflows/validate-panel-preview.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check panel preview and embedded JavaScript
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          path = Path("server/public/panel-preview.html")
+          source = path.read_text(encoding="utf-8")
+          assert 'id="roles"' in source and 'id="modulePanel"' in source
+          assert "api/auth/sso-ticket" in source
+          scripts = re.findall(r"<script[^>]*>(.*?)</script>", source, flags=re.I | re.S)
+          assert scripts, "No embedded JavaScript found"
+          Path("/tmp/panel-preview.js").write_text("\n".join(scripts), encoding="utf-8")
+          print("Panel preview HTML checks passed")
+          PY
+          node --check /tmp/panel-preview.js
