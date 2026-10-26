@@ -91,6 +91,8 @@ async function bootstrap(env, setStage = () => {}) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY AUTOINCREMENT, school_name TEXT NOT NULL, school_code TEXT NOT NULL UNIQUE, school_level TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '', manager_name TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
   await env.DB.prepare("INSERT OR IGNORE INTO schools(id,school_name,school_code,school_level,city,manager_name) VALUES(1,'مدرسه پیش‌فرض فراهوش','FRAH001','','','مدیریت مدرسه')").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS classroom_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_by INTEGER, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS classroom_sso_tickets (ticket_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, role TEXT NOT NULL, entry TEXT NOT NULL CHECK(entry IN ('class','schedule')), expires_at TEXT NOT NULL, used_at TEXT)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS classroom_sso_tickets_expiry_idx ON classroom_sso_tickets(expires_at)").run();
   await ensureColumn(env, "classroom_users", "school_id", "INTEGER NOT NULL DEFAULT 1");
   await ensureColumn(env, "classrooms", "school_id", "INTEGER NOT NULL DEFAULT 1");
   const sessionColumns = await env.DB.prepare("PRAGMA table_info(classroom_sessions)").all();
@@ -143,7 +145,7 @@ function roomCode() {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const allowed = (env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
+    const allowed = [...new Set([...(env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean), "https://frahoosh-six-icon-portal.mard7946.workers.dev"])];
     const origin = request.headers.get("origin");
     const corsHeaders = {};
     if (origin && allowed.includes(origin)) {
@@ -349,6 +351,26 @@ export default {
           .bind(await digest(token), user.id, new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()).run();
         return json({ token, expiresIn: 43200, user: { ...userShape(user), displayName: [user.display_name, user.family_name].filter(Boolean).join(" ") } }, 200, corsHeaders);
       }
+      if (request.method === "POST" && path === "/api/auth/sso-exchange") {
+        const data = await body(request);
+        const ticket = String(data.ticket || "").trim();
+        if (!ticket) return fail("پیوند ورود یکپارچه ناقص است؛ از پنل مدرسه دوباره وارد شوید.", 400, corsHeaders);
+        const ticketHash = await digest(ticket);
+        const now = new Date().toISOString();
+        const record = await env.DB.prepare("SELECT t.ticket_hash,t.user_id,t.role,t.entry,t.expires_at,t.used_at,u.id,u.role AS account_role,u.display_name,u.username,u.grade_class,u.school_id,sc.school_name,sc.school_code FROM classroom_sso_tickets t JOIN classroom_users u ON u.id=t.user_id LEFT JOIN schools sc ON sc.id=u.school_id WHERE t.ticket_hash=?").bind(ticketHash).first();
+        if (!record || record.used_at || record.expires_at <= now) return fail("پیوند ورود یکپارچه منقضی یا قبلاً استفاده شده است؛ از پنل مدرسه دوباره وارد شوید.", 401, corsHeaders);
+        const roleAllowed = record.role === record.account_role ||
+          (record.account_role === "manager" && record.role === "teacher") ||
+          (["educational_deputy","executive_deputy","pastoral_deputy"].includes(record.account_role) && record.role === "deputy");
+        if (!roleAllowed || !["class","schedule"].includes(record.entry)) return fail("نقش یا مقصد ورود یکپارچه معتبر نیست.", 403, corsHeaders);
+        const consumed = await env.DB.prepare("UPDATE classroom_sso_tickets SET used_at=? WHERE ticket_hash=? AND used_at IS NULL AND expires_at>?").bind(now,ticketHash,now).run();
+        if (!consumed.meta || consumed.meta.changes !== 1) return fail("پیوند ورود یکپارچه قبلاً استفاده شده یا منقضی است؛ دوباره از پنل مدرسه وارد شوید.", 401, corsHeaders);
+        const token = randomToken();
+        await env.DB.prepare("INSERT INTO classroom_sessions(token_hash,user_id,expires_at,role_override) VALUES(?,?,?,?)")
+          .bind(await digest(token),record.user_id,new Date(Date.now()+12*60*60*1000).toISOString(),record.role===record.account_role?null:record.role).run();
+        const sessionUser = {...record,role:record.role};
+        return json({token,expiresIn:43200,user:userShape(sessionUser),entry:record.entry},200,corsHeaders);
+      }
       const user = await authenticate(request, env);
       if (path === "/api/auth/me" && request.method === "GET") return user ? json({ user: userShape(user) }, 200, corsHeaders) : fail("برای ادامه وارد حساب شوید.", 401, corsHeaders);
       if (path === "/api/auth/logout" && request.method === "POST") {
@@ -358,6 +380,20 @@ export default {
         return json({ ok: true }, 200, corsHeaders);
       }
       if (!user) return fail("برای ادامه وارد حساب شوید.", 401, corsHeaders);
+      if (request.method === "POST" && path === "/api/auth/sso-ticket") {
+        const data = await body(request);
+        const entry = data.entry === "schedule" ? "schedule" : data.entry === "class" ? "class" : "";
+        const requestedRole = String(data.role || user.role);
+        const roleAllowed = requestedRole === user.role ||
+          (user.role === "manager" && requestedRole === "teacher") ||
+          (["educational_deputy","executive_deputy","pastoral_deputy"].includes(user.role) && requestedRole === "deputy");
+        if (!entry || !roleAllowed) return fail("نقش یا مقصد ورود یکپارچه مجاز نیست.", 403, corsHeaders);
+        const ticket = randomToken();
+        const expiresAt = new Date(Date.now()+60*1000).toISOString();
+        await env.DB.prepare("INSERT INTO classroom_sso_tickets(ticket_hash,user_id,role,entry,expires_at) VALUES(?,?,?,?,?)")
+          .bind(await digest(ticket),user.id,requestedRole,entry,expiresAt).run();
+        return json({ticket,expiresIn:60,entry},200,corsHeaders);
+      }
       if (path === "/api/me" && request.method === "GET") return json({ user: userShape(user) }, 200, corsHeaders);
       if (path === "/api/school" && request.method === "GET") {
         if (user.role !== "manager") return fail("فقط مدیر مدرسه می‌تواند اطلاعات مدرسه را مشاهده کند.",403,corsHeaders);
