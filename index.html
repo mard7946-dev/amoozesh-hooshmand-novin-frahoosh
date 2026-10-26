@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07152d">
-<title>سامانه آموزشی هوشمند | فراهوش</title>
+<title>سامانه آموزشی نوین فراهوش</title>
 <style>
 :root{color-scheme:dark;--bg:#061329;--panel:#0b1e3b;--panel2:#10294b;--line:#294568;--text:#f4f7ff;--muted:#b4c3da;--gold:#e5c16d;--blue:#7eb6ff}
 *{box-sizing:border-box}
@@ -15,7 +15,7 @@ body{margin:0;min-height:100vh;padding:26px 16px 34px;background:radial-gradient
 .brand-head{padding-top:12px}
 .brain{display:grid;place-items:center;width:94px;height:94px;margin:0 auto 12px;color:var(--gold);filter:drop-shadow(0 0 16px #e5c16d35)}
 .brain svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:#f7f8ff}
+h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:var(--gold)}
 .school{margin:0;color:#e7edf8;font-size:clamp(17px,3.4vw,23px);font-weight:700;line-height:1.9}
 .manager,.slogan,.year{margin:2px 0;color:var(--muted);line-height:1.9}
 .manager{color:#dce6f5}
@@ -26,34 +26,30 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:#f7f8ff
 .clock-time{font-size:18px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;direction:rtl}
 .live{display:inline-flex;align-items:center;gap:6px;color:#9ce8c5;font-size:12px}
 .live-dot{width:8px;height:8px;border-radius:50%;background:#4de0a2;box-shadow:0 0 10px #4de0a2}
-.roles{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,.65fr) minmax(0,1fr);grid-template-rows:auto auto auto;gap:14px;align-items:stretch;margin:24px auto;max-width:850px}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch;margin:24px auto;max-width:850px}
 .role{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:135px;padding:16px 10px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#102849,#0a1a32);color:var(--text);text-decoration:none;box-shadow:0 12px 28px #0003;transition:transform .15s,border-color .15s}
 .role:hover{transform:translateY(-3px);border-color:var(--gold)}
 .role .ico{display:grid;place-items:center;width:62px;height:62px;border:1px solid #42618a;border-radius:18px;background:linear-gradient(145deg,#17385f,#0c2341);color:#9bc5ff;box-shadow:inset 0 1px 0 #ffffff12,0 8px 18px #0003}
 .role .ico svg{width:38px;height:38px;fill:currentColor;stroke:none;filter:drop-shadow(0 3px 5px #0004)}
 .role strong{font-size:17px}
 .role small{color:var(--muted);font-size:12px}
-.role.management{grid-column:2;grid-row:1;min-height:156px;border:2px solid var(--gold);background:linear-gradient(145deg,#263d60,#102440);box-shadow:0 10px 30px #e5c16d13}
+.role.management{min-height:156px;border:2px solid var(--gold);background:linear-gradient(145deg,#263d60,#102440);box-shadow:0 10px 30px #e5c16d13}
 .role.management .ico,.role.counseling .ico{width:78px;height:78px;color:var(--gold);border-color:#b99b50;background:linear-gradient(145deg,#35496a,#172b48)}
 .role.management .ico svg,.role.counseling .ico svg{width:49px;height:49px}
-.role.deputy{grid-column:1;grid-row:2}
-.role.teachers{grid-column:3;grid-row:2}
-.role.parents{grid-column:1;grid-row:3}
-.role.students{grid-column:3;grid-row:3}
-.brand-center{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:center;min-width:0;color:var(--gold);font-size:clamp(19px,3vw,28px);font-weight:900;letter-spacing:.3px;text-shadow:0 0 22px #e5c16d24}
-.role.counseling{grid-column:2;grid-row:3;min-height:156px;border:2px solid #5879a5;background:linear-gradient(145deg,#17365c,#0b1c36)}
+.role.deputy,.role.teachers,.role.parents,.role.students{min-height:140px}
+.brand-center{display:none}
+.role.counseling{min-height:140px;border:2px solid #5879a5;background:linear-gradient(145deg,#17365c,#0b1c36)}
 .note{font-size:12px;color:#91a7c5;line-height:1.9;margin-top:22px}
 @media(max-width:600px){
  body{padding:16px 12px 26px}.flag{width:57px;height:36px}.brain{width:78px;height:78px;margin-top:28px}
  .clock-panel{gap:8px 12px;padding:10px 12px}.clock-date{font-size:12px}.clock-time{font-size:16px}
- .roles{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:10px;margin-top:20px}
+ .roles{grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
  .role{min-height:120px;padding:12px 6px;gap:8px}.role .ico{width:52px;height:52px;border-radius:15px}.role .ico svg{width:31px;height:31px}
  .role strong{font-size:14px}.role small{font-size:10px}
- .role.management{grid-column:1/3;grid-row:auto;min-height:138px}
+ .role.management{min-height:138px}
  .role.management .ico,.role.counseling .ico{width:66px;height:66px}.role.management .ico svg,.role.counseling .ico svg{width:42px;height:42px}
- .role.deputy,.role.teachers,.role.parents,.role.students,.brand-center,.role.counseling{grid-column:auto;grid-row:auto}
- .brand-center{grid-column:1/3;grid-row:auto;min-height:54px;border-block:1px solid #6f5d34}
- .role.counseling{grid-column:1/3;min-height:138px}
+ .role.deputy,.role.teachers,.role.parents,.role.students,.role.counseling{grid-column:auto;grid-row:auto}
+ .role.counseling{min-height:138px}
 }
 </style>
 </head>
@@ -75,10 +71,10 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:#f7f8ff
 <path d="M45 8c2-4 8-4 10 0m-5-5v5" stroke-width="2"/>
 </svg>
 </div>
-<h1>سامانه آموزشی هوشمند</h1>
-<p class="school">دبیرستان سردار شهید حاجی زاده ۲</p>
+<h1>سامانه آموزشی نوین فراهوش</h1>
+<p class="school">دبیرستان سردار شهید حاجی‌زاده ۲</p>
 <p class="manager">مدیریت: حسن مردانه جهان تیغ</p>
-<p class="slogan">آموزش هوشمند، مدرسه یکپارچه، دانش آموز خلاق</p>
+<p class="slogan">آموزش هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق</p>
 <p class="year">سال تحصیلی ۱۴۰۶ - ۱۴۰۵</p>
 </header>
 <div class="clock-panel" aria-label="تاریخ و ساعت زنده">
@@ -90,7 +86,7 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:#f7f8ff
 <a class="role management" href="portal.html?section=management"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 3 54 12v16c0 15-8.8 25.6-22 33C18.8 53.6 10 43 10 28V12L32 3Z"/><path d="m21 31 7 7 15-17" fill="none" stroke="#d9b85f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>مدیریت</strong><small>مدیریت یکپارچه مدرسه</small></a>
 <a class="role deputy" href="portal.html?section=deputy"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="24" cy="20" r="11"/><circle cx="45" cy="24" r="8"/><path d="M4 54V48C4 36 13 29 24 29s20 7 20 19v6Z"/><path d="M43 34c10 0 17 6 17 16v4H49v-6c0-5-2-10-6-14Z"/></svg></span><strong>معاونت</strong><small>امور اجرایی و آموزشی</small></a>
 <a class="role teachers" href="portal.html?section=teachers"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M6 12c10-4 19-1 26 5 7-6 16-9 26-5v39c-10-3-19-1-26 5-7-6-16-8-26-5Z"/><path d="M32 17v39" fill="none" stroke="#7eb6ff" stroke-width="3"/><path d="M12 20c6-1 11 0 15 3v24c-4-3-9-4-15-3Zm40 0c-6-1-11 0-15 3v24c4-3 9-4 15-3Z" fill="#dceaff"/></svg></span><strong>دبیران</strong><small>کلاس و امور آموزشی</small></a>
-<div class="brand-center" aria-label="فراهوش">فراهوش</div>
+
 <a class="role parents" href="portal.html?section=parents"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="22" cy="18" r="10"/><circle cx="44" cy="21" r="8"/><path d="M3 54V47c0-10 8-17 19-17s19 7 19 17v7Z"/><path d="M42 33c11 0 18 7 18 16v5H45v-7c0-5-1-10-3-14Z"/></svg></span><strong>اولیا</strong><small>پیگیری وضعیت فرزند</small></a>
 <a class="role students" href="portal.html?section=students"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m3 20 29-15 29 15-29 15Z"/><path d="M13 27v16c12 10 26 10 38 0V27L32 37Z"/><path d="M58 22v20" fill="none" stroke="#d9b85f" stroke-width="4" stroke-linecap="round"/><circle cx="58" cy="46" r="4"/></svg></span><strong>دانش‌آموز</strong><small>برنامه و تکالیف</small></a>
 <a class="role counseling" href="portal.html?section=counseling"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5a22 22 0 0 0-13 39v8h26v-8A22 22 0 0 0 32 5Z"/><path d="M25 25a7 7 0 1 1 12 5c-3 3-5 4-5 8" fill="none" stroke="#e5c16d" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="45" r="2.5" fill="#e5c16d"/></svg></span><strong>مشاوره</strong><small>خدمات مشاوره‌ای</small></a>
