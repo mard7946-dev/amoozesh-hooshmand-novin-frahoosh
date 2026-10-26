@@ -351,9 +351,30 @@ $('exportAttendanceReport').onclick=()=>{
 $('saveClassPermission').onclick=async()=>{try{const d=await api('/class-creation-permission',{method:'POST',body:JSON.stringify({enabled:$('allowDeputyCreateClass').checked})});$('classPermissionResult').textContent=d.enabled?'مجوز ساخت کلاس برای معاون آموزشی فعال شد.':'مجوز ساخت کلاس برای معاون آموزشی لغو شد.'}catch(e){$('classPermissionResult').textContent=e.message;await loadClassPermission()}};
 $('classForm').onsubmit=async ev=>{ev.preventDefault();try{const d=await api('/classes',{method:'POST',body:JSON.stringify({title:$('classTitle').value,gradeClass:$('classGrade').value,teacherId:Number($('teacherSelect').value),day:$('classDay').value,period:Number($('classPeriod').value)})});$('managerResult').textContent=(d.reused?'کلاس از قبل ساخته شده بود: ':'کلاس ساخته شد: ')+d.classroom.title+' · کد کلاس: '+d.classroom.room_code+'\nکلاس به همان روز و زنگ برنامه وصل شد.';await loadSchedule()}catch(e){$('managerResult').textContent=e.message}};
 
-const requestedRole=new URLSearchParams(location.search).get('role');
+const params=new URLSearchParams(location.search);
+const requestedRole=params.get('role');
 if(['manager','deputy','teacher','student'].includes(requestedRole)){
  const roleButton=document.querySelector('[data-role="'+requestedRole+'"]');
  if(roleButton) roleButton.click();
+}
+const ssoTicket=params.get('sso_ticket');
+if(ssoTicket){
+ const entry=params.get('entry')==='schedule'?'schedule':'class';
+ document.querySelectorAll('[data-role]').forEach(button=>button.disabled=true);
+ $('dashboardNotice').textContent='در حال تأیید ورود امن از پنل مدرسه…';
+ (async()=>{
+   try{
+     const response=await fetch('/api/auth/sso-exchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:ssoTicket})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||'تأیید ورود یکپارچه انجام نشد.');
+     params.delete('sso_ticket');history.replaceState({},'',location.pathname+(params.toString()?'?'+params.toString():''));
+     await finishLogin(data);
+     if(entry==='schedule'){showDashboardView('weekly');$('dashboardNotice').textContent='ورود امن انجام شد؛ برنامه هفتگی نمایش داده می‌شود.';}
+     else {$('dashboardNotice').textContent='ورود امن انجام شد؛ کلاس بعدی بررسی می‌شود.';await enterNextClass();}
+   }catch(error){
+     $('landingHeader').classList.add('hidden');$('loginCard').classList.add('hidden');$('dashboard').classList.remove('hidden');
+     $('dashboardNotice').textContent=(error.message||'ورود امن ناموفق بود.')+' از پنل مدرسه دوباره وارد شوید.';
+   }finally{document.querySelectorAll('[data-role]').forEach(button=>button.disabled=false);}
+ })();
 }
 </script></body></html>
