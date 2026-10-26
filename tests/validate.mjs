@@ -6,7 +6,7 @@ const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "u
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
 
-assert.ok(landing.includes('href="/portal.html"'), "Landing must route all roles through the authenticated portal");
+assert.ok(/href="\/portal\.html\?step=panel&amp;role=manager"/.test(landing) && ["deputy","teacher","parent","student","counselor"].every(role => landing.includes('href="/portal.html?step=panel&amp;role=' + role + '"")), "Landing must route all six roles through the authenticated portal");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
 assert.ok(!landing.includes("supabase"), "Landing must not depend on Supabase");
 assert.ok(!classroom.toLowerCase().includes("supabase"), "Classroom must not depend on Supabase");
