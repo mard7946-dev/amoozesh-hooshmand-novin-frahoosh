@@ -5,6 +5,7 @@ const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
+const classroomTools = readFileSync(new URL("../server/public/portal-classroom-tools.js", import.meta.url), "utf8");
 
 assert.ok(["management","deputy","teachers","parents","students","counseling"].every(section => landing.includes(`/portal.html?section=${section}`)), "Landing must route all six roles through supported portal sections");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
@@ -21,6 +22,9 @@ assert.ok(classroom.includes("!studentPermissions.board"), "Students without per
 assert.ok(classroom.includes("studentPermissions[kind==='audio'?'audio':'video']"), "Student audio/video must be permission-gated");
 assert.ok(classroom.includes("data.type==='permissions'"), "Teacher permission updates should reach connected students");
 assert.ok(portal.includes("import/excel"), "Portal should support Excel import");
+assert.ok(server.includes("app.post('/api/classes/:id/attendance'") && server.includes("app.post('/api/classes/:id/grades'"), "Backend should persist classroom attendance and grades");
+assert.ok(server.includes("classroom_collaborators") && server.includes("app.get('/api/student/records'"), "Backend should support classroom collaborators and student read-only records");
+assert.ok(portal.includes("portal-classroom-tools.js") && portal.includes("frahoosh:ready"), "Portal should load authenticated classroom tools");
 assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule");
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
 assert.ok(server.includes("app.get('/api/auth/me', auth"), "Backend should provide authenticated session identity");
@@ -42,6 +46,7 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
+assert.doesNotThrow(() => new Function(classroomTools), "Classroom tools JavaScript syntax");
 for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");

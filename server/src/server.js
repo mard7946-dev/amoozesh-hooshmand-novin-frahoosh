@@ -98,6 +98,13 @@ async function ensureSchema() {
     event_type TEXT NOT NULL, payload JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(classroom_id,created_at)');
+
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_collaborators (classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, assigned_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(classroom_id,teacher_user_id))");
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_attendance (id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, lesson_date DATE NOT NULL DEFAULT CURRENT_DATE, status TEXT NOT NULL CHECK(status IN ('present','absent')), recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(classroom_id,student_user_id,lesson_date))");
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_grades (id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, subject TEXT NOT NULL DEFAULT '', assessment_title TEXT NOT NULL, score NUMERIC(5,2) NOT NULL CHECK(score >= 0 AND score <= 100), notes TEXT NOT NULL DEFAULT '', recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(classroom_id,student_user_id,assessment_title))");
+  await pool.query('CREATE INDEX IF NOT EXISTS classroom_attendance_date_idx ON classroom_attendance(classroom_id,lesson_date)');
+  await pool.query('CREATE INDEX IF NOT EXISTS classroom_grades_student_idx ON classroom_grades(student_user_id,created_at)');
+
   if (process.env.MANAGER_USERNAME && process.env.MANAGER_PASSWORD) {
     const existing = await pool.query('SELECT id FROM classroom_users WHERE username=$1', [process.env.MANAGER_USERNAME]);
     if (!existing.rowCount) {
@@ -468,7 +475,7 @@ app.get('/api/classes', auth, async (req, res, next) => {
     if (['manager','educational_deputy','executive_deputy'].includes(req.user.role)) {
       result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id ORDER BY c.created_at DESC');
     } else if (['teacher','pastoral_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.teacher_user_id=$1 ORDER BY c.created_at DESC', [req.user.id]);
+      result = await pool.query('SELECT DISTINCT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id LEFT JOIN classroom_collaborators cc ON cc.classroom_id=c.id WHERE (c.teacher_user_id=$1 OR cc.teacher_user_id=$1) ORDER BY c.created_at DESC', [req.user.id]);
     } else {
       result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.grade_class=$1 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.grade_class || '']);
     }
@@ -484,7 +491,7 @@ app.get('/api/classes/:id/access', auth, async (req, res, next) => {
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس پیدا نشد.' });
     const room = result.rows[0];
     const manager = ['manager','educational_deputy'].includes(req.user.role);
-    const assignedTeacher = ['teacher','pastoral_deputy'].includes(req.user.role) && String(room.teacher_user_id) === String(req.user.id);
+    const assignedTeacher = ['teacher','pastoral_deputy'].includes(req.user.role) && (String(room.teacher_user_id) === String(req.user.id) || (await pool.query('SELECT 1 FROM classroom_collaborators WHERE classroom_id=$1 AND teacher_user_id=$2',[req.params.id,req.user.id])).rowCount > 0);
     const enrolledStudent = req.user.role === 'student' && room.grade_class === req.user.grade_class && room.status === 'active' && room.ends_at && new Date(room.ends_at) > new Date();
     if (!manager && !assignedTeacher && !enrolledStudent) return res.status(403).json({ error: 'این حساب اجازه ورود به این کلاس را ندارد.' });
     if (room.status !== 'active' || !room.ends_at || new Date(room.ends_at) <= new Date()) return res.status(403).json({ error: 'کلاس هنوز شروع نشده یا پایان یافته است.' });
@@ -530,6 +537,86 @@ app.get('/api/classes/active', auth, allow('student'), async (req, res, next) =>
       [req.user.grade_class]);
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
+});
+
+
+async function canManageClassRecord(classroomId, user) {
+  const result = await pool.query("SELECT c.id,c.grade_class,c.teacher_user_id FROM classrooms c WHERE c.id=$1",[classroomId]);
+  if (!result.rowCount) return { ok:false,status:404,error:'کلاس پیدا نشد.' };
+  const room=result.rows[0];
+  if (['manager','educational_deputy','executive_deputy'].includes(user.role)) return { ok:true,room };
+  if (['teacher','pastoral_deputy'].includes(user.role)) {
+    const assigned=String(room.teacher_user_id)===String(user.id) ||
+      (await pool.query('SELECT 1 FROM classroom_collaborators WHERE classroom_id=$1 AND teacher_user_id=$2',[classroomId,user.id])).rowCount>0;
+    if(assigned)return {ok:true,room};
+  }
+  return {ok:false,status:403,error:'این کلاس به حساب شما اختصاص داده نشده است.'};
+}
+app.get('/api/classes/:id/students',auth,allow('manager','educational_deputy','executive_deputy','teacher','pastoral_deputy'),async(req,res,next)=>{
+  try{const access=await canManageClassRecord(req.params.id,req.user);if(!access.ok)return res.status(access.status).json({error:access.error});
+    const result=await pool.query("SELECT id,display_name,family_name,grade_class FROM classroom_users WHERE role='student' AND grade_class=$1 ORDER BY display_name,family_name",[access.room.grade_class]);
+    res.json({classroom:{id:access.room.id,gradeClass:access.room.grade_class},students:result.rows});
+  }catch(e){next(e)}
+});
+app.get('/api/classes/:id/attendance',auth,allow('manager','educational_deputy','executive_deputy','teacher','pastoral_deputy'),async(req,res,next)=>{
+  try{const access=await canManageClassRecord(req.params.id,req.user);if(!access.ok)return res.status(access.status).json({error:access.error});
+    const date=text(req.query.date,10)||new Date().toISOString().slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return res.status(400).json({error:'تاریخ معتبر نیست.'});
+    const result=await pool.query('SELECT a.student_user_id AS student_id,a.status,a.lesson_date FROM classroom_attendance a WHERE a.classroom_id=$1 AND a.lesson_date=$2',[req.params.id,date]);
+    res.json({date,attendance:result.rows});
+  }catch(e){next(e)}
+});
+app.post('/api/classes/:id/attendance',auth,allow('manager','educational_deputy','executive_deputy','teacher','pastoral_deputy'),async(req,res,next)=>{
+  const client=await pool.connect();
+  try{const access=await canManageClassRecord(req.params.id,req.user);if(!access.ok)return res.status(access.status).json({error:access.error});
+    const date=text(req.body?.date,10),entries=Array.isArray(req.body?.attendance)?req.body.attendance:[];
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!entries.length||entries.length>500)return res.status(400).json({error:'تاریخ و فهرست حضور و غیاب معتبر الزامی است.'});
+    await client.query('BEGIN');let saved=0;
+    for(const entry of entries){const studentId=Number(entry?.studentId),status=text(entry?.status,10);if(!Number.isSafeInteger(studentId)||!['present','absent'].includes(status))continue;
+      const student=await client.query("SELECT id FROM classroom_users WHERE id=$1 AND role='student' AND grade_class=$2",[studentId,access.room.grade_class]);if(!student.rowCount)continue;
+      await client.query('INSERT INTO classroom_attendance(classroom_id,student_user_id,lesson_date,status,recorded_by,updated_at) VALUES($1,$2,$3,$4,$5,now()) ON CONFLICT(classroom_id,student_user_id,lesson_date) DO UPDATE SET status=EXCLUDED.status,recorded_by=EXCLUDED.recorded_by,updated_at=now()',[req.params.id,studentId,date,status,req.user.id]);saved++}
+    await client.query('COMMIT');res.json({ok:true,saved,date,message:'حضور و غیاب ذخیره شد.'});
+  }catch(e){try{await client.query('ROLLBACK')}catch(_){}next(e)}finally{client.release()}
+});
+app.get('/api/classes/:id/grades',auth,allow('manager','educational_deputy','executive_deputy','teacher','pastoral_deputy'),async(req,res,next)=>{
+  try{const access=await canManageClassRecord(req.params.id,req.user);if(!access.ok)return res.status(access.status).json({error:access.error});
+    const result=await pool.query('SELECT g.id,g.student_user_id AS student_id,g.subject,g.assessment_title,g.score,g.notes,g.updated_at FROM classroom_grades g WHERE g.classroom_id=$1 ORDER BY g.created_at DESC',[req.params.id]);res.json({grades:result.rows});
+  }catch(e){next(e)}
+});
+app.post('/api/classes/:id/grades',auth,allow('manager','educational_deputy','executive_deputy','teacher','pastoral_deputy'),async(req,res,next)=>{
+  const client=await pool.connect();
+  try{const access=await canManageClassRecord(req.params.id,req.user);if(!access.ok)return res.status(access.status).json({error:access.error});
+    const subject=text(req.body?.subject,120),assessmentTitle=text(req.body?.assessmentTitle,120),entries=Array.isArray(req.body?.grades)?req.body.grades:[];
+    if(!subject||!assessmentTitle||!entries.length||entries.length>500)return res.status(400).json({error:'عنوان درس، ارزشیابی و فهرست نمرات الزامی است.'});
+    await client.query('BEGIN');let saved=0;
+    for(const entry of entries){const studentId=Number(entry?.studentId),score=Number(normalizeDigits(entry?.score)),notes=text(entry?.notes,500);if(!Number.isSafeInteger(studentId)||entry?.score===''||!Number.isFinite(score)||score<0||score>100)continue;
+      const student=await client.query("SELECT id FROM classroom_users WHERE id=$1 AND role='student' AND grade_class=$2",[studentId,access.room.grade_class]);if(!student.rowCount)continue;
+      await client.query('INSERT INTO classroom_grades(classroom_id,student_user_id,subject,assessment_title,score,notes,recorded_by,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,now()) ON CONFLICT(classroom_id,student_user_id,assessment_title) DO UPDATE SET subject=EXCLUDED.subject,score=EXCLUDED.score,notes=EXCLUDED.notes,recorded_by=EXCLUDED.recorded_by,updated_at=now()',[req.params.id,studentId,subject,assessmentTitle,score,notes,req.user.id]);saved++}
+    await client.query('COMMIT');res.json({ok:true,saved,message:'نمرات ذخیره شد.'});
+  }catch(e){try{await client.query('ROLLBACK')}catch(_){}next(e)}finally{client.release()}
+});
+app.get('/api/classes/:id/collaborators',auth,allow('manager','educational_deputy'),async(req,res,next)=>{
+  try{const result=await pool.query('SELECT cc.teacher_user_id AS id,u.display_name,u.username,u.role FROM classroom_collaborators cc JOIN classroom_users u ON u.id=cc.teacher_user_id WHERE cc.classroom_id=$1 ORDER BY u.display_name',[req.params.id]);res.json({collaborators:result.rows})}catch(e){next(e)}
+});
+app.post('/api/classes/:id/collaborators',auth,allow('manager'),async(req,res,next)=>{
+  try{const teacherId=Number(req.body?.teacherId);if(!Number.isSafeInteger(teacherId)||teacherId<1)return res.status(400).json({error:'همکار معتبر انتخاب کنید.'});
+    const room=await pool.query('SELECT id FROM classrooms WHERE id=$1',[req.params.id]);if(!room.rowCount)return res.status(404).json({error:'کلاس پیدا نشد.'});
+    const teacher=await pool.query("SELECT id,display_name,role FROM classroom_users WHERE id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')",[teacherId]);if(!teacher.rowCount)return res.status(400).json({error:'حساب همکار معتبر نیست.'});
+    await pool.query('INSERT INTO classroom_collaborators(classroom_id,teacher_user_id,assigned_by) VALUES($1,$2,$3) ON CONFLICT(classroom_id,teacher_user_id) DO NOTHING',[req.params.id,teacherId,req.user.id]);res.json({ok:true,collaborator:teacher.rows[0],message:'همکار به کلاس اضافه شد.'});
+  }catch(e){next(e)}
+});
+app.delete('/api/classes/:id/collaborators/:teacherId',auth,allow('manager'),async(req,res,next)=>{
+  try{const result=await pool.query('DELETE FROM classroom_collaborators WHERE classroom_id=$1 AND teacher_user_id=$2',[req.params.id,Number(req.params.teacherId)]);if(!result.rowCount)return res.status(404).json({error:'همکار این کلاس پیدا نشد.'});res.json({ok:true})}catch(e){next(e)}
+});
+
+
+app.get('/api/student/records',auth,allow('student'),async(req,res,next)=>{
+  try{
+    const [grades,attendance]=await Promise.all([
+      pool.query('SELECT g.subject,g.assessment_title,g.score,g.notes,g.updated_at,c.title AS class_title FROM classroom_grades g JOIN classrooms c ON c.id=g.classroom_id WHERE g.student_user_id=$1 ORDER BY g.updated_at DESC LIMIT 100',[req.user.id]),
+      pool.query('SELECT a.lesson_date,a.status,c.title AS class_title FROM classroom_attendance a JOIN classrooms c ON c.id=a.classroom_id WHERE a.student_user_id=$1 ORDER BY a.lesson_date DESC LIMIT 100',[req.user.id])
+    ]);
+    res.json({grades:grades.rows,attendance:attendance.rows});
+  }catch(e){next(e)}
 });
 
 app.use((err, _req, res, _next) => {
