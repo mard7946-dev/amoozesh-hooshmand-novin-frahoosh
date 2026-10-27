@@ -111,8 +111,8 @@ Deno.serve(async(req:Request)=>{
    for(const row of inputStudents){
     const first=field(row,"نام","first_name","firstName"),last=field(row,"نام خانوادگی","نام‌خانوادگی","last_name","lastName");
     const className=field(row,"کلاس","پایه و کلاس","class_name","className","class"),grade=field(row,"پایه","grade")||className.split("/")[0];
-    const nationalCode=digits(field(row,"کد ملی","کدملی","national_code","nationalCode")).padStart(10,"0");
-    if(!first||!last||!className||!/^\d{10}$/.test(nationalCode)){skippedStudents++;continue;}
+    const rawNationalCode=digits(field(row,"کد ملی","کدملی","national_code","nationalCode"));const nationalCode=rawNationalCode.padStart(10,"0");
+    if(!first||!last||!className||!rawNationalCode||!/^\d{10}$/.test(nationalCode)){skippedStudents++;continue;}
     const payload={first_name:first,last_name:last,class_name:className,grade,national_code:nationalCode,student_code:field(row,"کد دانش آموز","کد دانش‌آموز","student_code","studentCode"),tenant_school_id:ctx.tenant};
     const {data:old,error:findError}=await ctx.admin.from("students").select("id").eq("tenant_school_id",ctx.tenant).eq("national_code",nationalCode).limit(1).maybeSingle();if(findError)throw findError;
     let saved:any;
