@@ -1,0 +1,25 @@
+name: Validate Novin Portal Auth
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'portal.html'
+      - 'index.html'
+      - 'tests/validate-novin-portal.mjs'
+      - '.github/workflows/validate-novin-portal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-portal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate portal auth and JavaScript
+        run: node tests/validate-novin-portal.mjs
