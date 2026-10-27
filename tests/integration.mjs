@@ -92,9 +92,52 @@ try {
   assert.equal(teacherAccess.classroom.roomCode, roomCode);
   await request("/api/classes/" + encodeURIComponent(classId) + "/access", { expected: 401 });
 
+
+  const student = await request("/api/students", {
+    token: managerToken, method: "POST", expected: 201,
+    body: { firstName: "دانش", familyName: "آزمایشی", username: "e2e-student", gradeClass: "7/1", nationalId: "1234567890" }
+  });
+  const roster = await request("/api/classes/" + encodeURIComponent(classId) + "/students", { token: teacherToken });
+  assert.ok(roster.students.some(row => row.id === student.student.id), "Teacher roster must include students assigned to the class");
+  const date = new Date().toISOString().slice(0,10);
+  const attendanceSaved = await request("/api/classes/" + encodeURIComponent(classId) + "/attendance", {
+    token: teacherToken, method: "POST", expected: 200,
+    body: { date, attendance: [{ studentId: student.student.id, status: "present" }] }
+  });
+  assert.equal(attendanceSaved.saved, 1);
+  const gradesSaved = await request("/api/classes/" + encodeURIComponent(classId) + "/grades", {
+    token: teacherToken, method: "POST", expected: 200,
+    body: { subject: "ریاضی", assessmentTitle: "آزمون یک", grades: [{ studentId: student.student.id, score: "18.5" }] }
+  });
+  assert.equal(gradesSaved.saved, 1);
+  const studentLogin = await request("/auth/student-login", {
+    method: "POST", expected: 200,
+    body: { firstName: "دانش", familyName: "آزمایشی", gradeClass: "7/1", nationalId: "1234567890" }
+  });
+  const studentRecords = await request("/api/student/records", { token: studentLogin.token });
+  assert.equal(studentRecords.grades.length, 1);
+  assert.equal(Number(studentRecords.grades[0].score), 18.5);
+  assert.equal(studentRecords.attendance.length, 1);
+  assert.equal(studentRecords.attendance[0].status, "present");
+
+  const colleague = await request("/api/staff", {
+    token: managerToken, method: "POST", expected: 201,
+    body: { displayName: "همکار آزمایشی", username: "e2e-colleague", role: "teacher", password: "Colleague-E2E-Password-1" }
+  });
+  await request("/api/classes/" + encodeURIComponent(classId) + "/collaborators", {
+    token: managerToken, method: "POST", expected: 200, body: { teacherId: colleague.staff.id }
+  });
+  const colleagueLogin = await request("/api/auth/login", {
+    method: "POST", expected: 200,
+    body: { username: "e2e-colleague", password: "Colleague-E2E-Password-1" }
+  });
+  const colleagueClasses = await request("/api/classes", { token: colleagueLogin.token });
+  assert.ok(colleagueClasses.classrooms.some(row => row.id === classId), "Assigned collaborator must see the class");
+  await request("/api/classes/" + encodeURIComponent(classId) + "/students", { token: colleagueLogin.token, expected: 200 });
+
   await request("/api/auth/logout", { token: managerToken, method: "POST", expected: 200 });
   await request("/api/auth/me", { token: managerToken, expected: 401 });
-  console.log("Database integration passed: manager/teacher login, role authorization, schedule, class lifecycle, room access, and session revocation.");
+  console.log("Database integration passed: authentication, schedules, class access, attendance, grades, student records, collaborators, and session revocation.");
 } catch (error) {
   console.error(error);
   console.error(serverOutput);
