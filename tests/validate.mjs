@@ -26,6 +26,11 @@ assert.ok(server.includes("api/auth/student-login"), "Backend should support stu
 assert.ok(server.includes("app.get('/api/auth/me', auth"), "Backend should provide authenticated session identity");
 assert.ok(server.includes("app.get('/api/classes/:id/access', auth"), "Backend should validate access to a specific classroom");
 assert.ok(classroom.includes("authorizeClassroomEntry()") && classroom.includes("/api/classes/'+encodeURIComponent(bootClassId)+'/access"), "Classroom must validate session and room access before connecting");
+assert.ok(portal.includes("function openRoom(role,room,name,classroomId)") && portal.includes("location.href='/classroom.html?role='"), "Portal must open the integrated Frahoosh Novin classroom route");
+assert.ok(portal.includes("api('/classes/'+encodeURIComponent(row.classroom_id)+'/start'") && portal.includes("api('/schedule/today?day='"), "Portal must use the main backend for class start and schedule");
+assert.ok(portal.includes("sessionStorage.setItem('frahoosh_token',token)"), "Portal must pass the authenticated main-app session to the integrated classroom");
+assert.ok(!portal.includes("frahoosh-live-classroom-edge") && !portal.includes("sso-ticket"), "Main portal must not redirect to the standalone classroom service");
+
 assert.ok(server.includes("app.get('/api/rtc-config', auth"), "RTC config must require an authenticated session");
 assert.ok(server.includes("RTC_ICE_SERVERS_JSON"), "Server must accept ICE/TURN configuration from environment, not source code");
 assert.ok(classroom.includes("fetch('/api/rtc-config'") && classroom.includes("config:{iceServers"), "PeerJS must load server-provided ICE servers");
