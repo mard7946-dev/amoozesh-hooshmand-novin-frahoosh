@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'portal.html'
+      - 'portal-classroom-tools-v2.js'
       - 'classroom.html'
       - 'classroom/index.html'
       - '.github/workflows/publish-six-icon-portal.yml'
@@ -36,7 +37,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html _site/
+          cp index.html portal.html portal-classroom-tools-v2.js _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom.html _site/classroom.html

@@ -5,6 +5,15 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'portal-classroom-tools-v2.js'
+      - 'supabase/functions/classroom-manage-v2/index.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'portal.html'
+      - 'portal-classroom-tools-v2.js'
+      - 'supabase/functions/classroom-manage-v2/index.ts'
+      - 'tests/validate-novin-portal.mjs'
       - 'index.html'
       - 'tests/validate-novin-portal.mjs'
       - '.github/workflows/validate-novin-portal.yml'
