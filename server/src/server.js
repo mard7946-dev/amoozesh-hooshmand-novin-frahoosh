@@ -99,29 +99,9 @@ async function ensureSchema() {
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(classroom_id,created_at)');
 
-  await pool.query(\`CREATE TABLE IF NOT EXISTS classroom_collaborators (
-    classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
-    teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
-    assigned_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY(classroom_id,teacher_user_id)
-  )\`);
-  await pool.query(\`CREATE TABLE IF NOT EXISTS classroom_attendance (
-    id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
-    student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
-    lesson_date DATE NOT NULL DEFAULT CURRENT_DATE, status TEXT NOT NULL CHECK(status IN ('present','absent')),
-    recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(classroom_id,student_user_id,lesson_date)
-  )\`);
-  await pool.query(\`CREATE TABLE IF NOT EXISTS classroom_grades (
-    id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
-    student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
-    subject TEXT NOT NULL DEFAULT '', assessment_title TEXT NOT NULL,
-    score NUMERIC(5,2) NOT NULL CHECK(score >= 0 AND score <= 100), notes TEXT NOT NULL DEFAULT '',
-    recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(classroom_id,student_user_id,assessment_title)
-  )\`);
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_collaborators (classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, assigned_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(classroom_id,teacher_user_id))");
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_attendance (id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, lesson_date DATE NOT NULL DEFAULT CURRENT_DATE, status TEXT NOT NULL CHECK(status IN ('present','absent')), recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(classroom_id,student_user_id,lesson_date))");
+  await pool.query("CREATE TABLE IF NOT EXISTS classroom_grades (id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE, student_user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE, subject TEXT NOT NULL DEFAULT '', assessment_title TEXT NOT NULL, score NUMERIC(5,2) NOT NULL CHECK(score >= 0 AND score <= 100), notes TEXT NOT NULL DEFAULT '', recorded_by BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(classroom_id,student_user_id,assessment_title))");
   await pool.query('CREATE INDEX IF NOT EXISTS classroom_attendance_date_idx ON classroom_attendance(classroom_id,lesson_date)');
   await pool.query('CREATE INDEX IF NOT EXISTS classroom_grades_student_idx ON classroom_grades(student_user_id,created_at)');
 
