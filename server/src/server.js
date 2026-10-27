@@ -628,6 +628,17 @@ app.delete('/api/classes/:id/collaborators/:teacherId',auth,allow('manager'),asy
   try{const result=await pool.query('DELETE FROM classroom_collaborators WHERE classroom_id=$1 AND teacher_user_id=$2',[req.params.id,Number(req.params.teacherId)]);if(!result.rowCount)return res.status(404).json({error:'همکار این کلاس پیدا نشد.'});res.json({ok:true})}catch(e){next(e)}
 });
 
+
+app.get('/api/student/records',auth,allow('student'),async(req,res,next)=>{
+  try{
+    const [grades,attendance]=await Promise.all([
+      pool.query('SELECT g.subject,g.assessment_title,g.score,g.notes,g.updated_at,c.title AS class_title FROM classroom_grades g JOIN classrooms c ON c.id=g.classroom_id WHERE g.student_user_id=$1 ORDER BY g.updated_at DESC LIMIT 100',[req.user.id]),
+      pool.query('SELECT a.lesson_date,a.status,c.title AS class_title FROM classroom_attendance a JOIN classrooms c ON c.id=a.classroom_id WHERE a.student_user_id=$1 ORDER BY a.lesson_date DESC LIMIT 100',[req.user.id])
+    ]);
+    res.json({grades:grades.rows,attendance:attendance.rows});
+  }catch(e){next(e)}
+});
+
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: 'خطای داخلی سرور رخ داد.' });
