@@ -16,18 +16,63 @@
 <aside class="chat"><div class="section-title" style="padding:14px 14px 0">گفت‌وگوی کلاس <span class="count">پیام‌ها</span></div><div class="chatlog" id="chatlog" aria-live="polite"><div class="msg"><strong>سامانه</strong><br>به کلاس خوش آمدید. پیام‌ها در این نسخه فقط در همین مرورگر نمایش داده می‌شوند تا اتصال سرویس گفت‌وگوی زنده تنظیم شود.</div></div><form class="chatform" id="chatForm"><input id="chatInput" maxlength="500" placeholder="پیام خود را بنویسید…" aria-label="پیام" required><button type="submit">ارسال</button></form></aside>
 </main>
 <script>
+const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
+const SUPABASE_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
 const q=new URLSearchParams(location.search);
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const roleLabels={manager:'مدیر',deputy:'معاون',teacher:'دبیر',student:'دانش‌آموز'};
-const role=q.get('role')||'student';const name=q.get('name')||'شما';const room=q.get('room')||'کلاس مجازی مدرسه';
-document.getElementById('roomName').textContent=room;document.getElementById('myName').textContent=name;document.getElementById('myRole').textContent=roleLabels[role]||'شرکت‌کننده';document.title=room+' | فراهوش';
+let profile=null, selectedRoom=null;
+const boardContent=document.getElementById('boardContent');
 function message(text){const n=document.createElement('div');n.className='msg';n.textContent=text;document.getElementById('chatlog').append(n);n.scrollIntoView({block:'end'});}
-document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();const input=document.getElementById('chatInput');const value=input.value.trim();if(!value)return;const n=document.createElement('div');n.className='msg';const who=document.createElement('strong');who.textContent=name;const body=document.createElement('div');body.textContent=value;n.append(who,body);document.getElementById('chatlog').append(n);input.value='';n.scrollIntoView({block:'end'});});
-for(const id of ['mic','camera'])document.getElementById(id).addEventListener('click',async e=>{const button=e.currentTarget;const kind=id==='mic'?'audio':'video';try{const stream=await navigator.mediaDevices.getUserMedia(kind==='audio'?{audio:true}:{video:true});stream.getTracks().forEach(t=>t.stop());button.setAttribute('aria-pressed','true');button.textContent=kind==='audio'?'🎙️ اجازهٔ میکروفن داده شد':'📷 اجازهٔ دوربین داده شد';message('اجازهٔ '+(kind==='audio'?'میکروفن':'دوربین')+' دریافت شد؛ برای پخش زنده باید سرویس رسانه متصل شود.');}catch(err){message('دسترسی '+(kind==='audio'?'میکروفن':'دوربین')+' داده نشد یا دستگاه در دسترس نیست.');}});
-document.getElementById('share').addEventListener('click',()=>message('اشتراک صفحه پس از اتصال سرویس رسانه و پشتیبانی مرورگر فعال می‌شود.'));
-document.getElementById('hand').addEventListener('click',e=>{const b=e.currentTarget;const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));b.textContent=on?'✋ درخواست ثبت شد':'✋ درخواست صحبت';message(on?'درخواست صحبت شما در این صفحه ثبت شد.':'درخواست صحبت لغو شد.');});
+function showGate(title, detail){boardContent.replaceChildren();const h=document.createElement('h2');h.textContent=title;const p=document.createElement('p');p.textContent=detail;boardContent.append(h,p);}
+async function authorize(roomId){
+ const response=await fetch(SUPABASE_URL+'/functions/v1/classroom-authorize',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token},body:JSON.stringify(roomId?{room_id:roomId}:{})});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||!data.ok)throw new Error(data.message||'مجوز ورود به کلاس تأیید نشد.');
+ return data;
+}
+function enterRoom(room){
+ selectedRoom=room;
+ document.getElementById('roomName').textContent=room.title||room.subject||'کلاس آنلاین';
+ document.getElementById('roomInfo').textContent=[room.subject,room.class_name,room.teacher].filter(Boolean).join(' · ')+' · مجوز ورود تأیید شد';
+ document.getElementById('myName').textContent=profile.display_name||profile.username||'کاربر';
+ document.getElementById('myRole').textContent=roleLabels[profile.role]||profile.role||'شرکت‌کننده';
+ document.title=(room.title||'کلاس آنلاین')+' | فراهوش نوین';
+ document.getElementById('boardState').textContent='اتاق '+room.id+' · ورود مجاز';
+ boardContent.replaceChildren();
+ const h=document.createElement('h2');h.textContent=room.title||room.subject||'کلاس آنلاین';
+ const p=document.createElement('p');p.textContent='درس: '+(room.subject||'ثبت نشده')+' · کلاس: '+(room.class_name||'ثبت نشده')+' · دبیر: '+(room.teacher||'ثبت نشده');
+ const note=document.createElement('p');note.textContent='نشست Supabase و مجوز اتاق از سرور بررسی شد. صدا، تصویر زنده و گفت‌وگوی چندکاربره هنوز به سرویس رسانه متصل نیستند.';
+ boardContent.append(h,p,note);
+}
+async function boot(){
+ if(!token){showGate('ورود لازم است','نشست ورود پیدا نشد. به صفحهٔ فراهوش برگردید و دوباره وارد شوید.');document.getElementById('roomInfo').textContent='نشست معتبر پیدا نشد';return;}
+ showGate('در حال بررسی نشست…','در حال بررسی حساب، عضویت فعال مدرسه و اتاق‌های مجاز در Supabase.');
+ try{
+  const data=await authorize();profile=data.profile;
+  const requestedRoom=Number(q.get('room_id')||0);
+  if(requestedRoom){const verified=await authorize(requestedRoom);if(!verified.room)throw new Error('سرور اتاق انتخاب‌شده را تأیید نکرد.');enterRoom(verified.room);return;}
+  boardContent.replaceChildren();
+  const h=document.createElement('h2');h.textContent='انتخاب کلاس فعال';
+  const p=document.createElement('p');p.textContent='فقط اتاق‌های فعال و مجاز برای حساب شما نمایش داده می‌شوند.';
+  boardContent.append(h,p);
+  if(!data.rooms||!data.rooms.length){const empty=document.createElement('p');empty.textContent='فعلاً کلاس فعالی برای این حساب پیدا نشد. برای دبیر، نام دبیر در برنامهٔ کلاس باید با نام حساب منطبق باشد؛ دانش‌آموز فقط کلاس ثبت‌شدهٔ خودش را می‌بیند.';boardContent.append(empty);return;}
+  for(const room of data.rooms){
+   const b=document.createElement('button');b.className='tool';b.style.display='block';b.style.margin='8px auto';b.style.width='min(100%,440px)';b.textContent=[room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(' · ');
+   b.addEventListener('click',async()=>{b.disabled=true;b.textContent='در حال تأیید مجوز اتاق…';try{const verified=await authorize(room.id);if(!verified.room)throw new Error('مجوز اتاق تأیید نشد.');enterRoom(verified.room);}catch(err){b.disabled=false;b.textContent=[room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(' · ');message(err.message||'ورود به اتاق ناموفق بود.');}});
+   boardContent.append(b);
+  }
+  document.getElementById('roomInfo').textContent='نشست معتبر · '+data.rooms.length+' کلاس مجاز';
+ }catch(err){showGate('ورود به کلاس انجام نشد',err.message||'نشست یا مجوز اتاق تأیید نشد.');document.getElementById('roomInfo').textContent='مجوز ورود تأیید نشد';message(err.message||'مجوز ورود تأیید نشد.');}
+}
+document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}const input=document.getElementById('chatInput');const value=input.value.trim();if(!value)return;const n=document.createElement('div');n.className='msg';const who=document.createElement('strong');who.textContent=profile.display_name||profile.username||'کاربر';const body=document.createElement('div');body.textContent=value;n.append(who,body);document.getElementById('chatlog').append(n);input.value='';n.scrollIntoView({block:'end'});});
+for(const id of ['mic','camera'])document.getElementById(id).addEventListener('click',async e=>{if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}const button=e.currentTarget,kind=id==='mic'?'audio':'video';try{const stream=await navigator.mediaDevices.getUserMedia(kind==='audio'?{audio:true}:{video:true});stream.getTracks().forEach(t=>t.stop());button.setAttribute('aria-pressed','true');button.textContent=kind==='audio'?'🎙️ اجازهٔ میکروفن داده شد':'📷 اجازهٔ دوربین داده شد';message('اجازهٔ دستگاه دریافت شد؛ پخش زنده هنوز به سرویس رسانه نیاز دارد.');}catch(err){message('دسترسی '+(kind==='audio'?'میکروفن':'دوربین')+' داده نشد یا دستگاه در دسترس نیست.');}});
+document.getElementById('share').addEventListener('click',()=>message(selectedRoom?'اشتراک صفحه تا اتصال سرویس رسانه فعال نیست.':'ابتدا یک اتاق مجاز انتخاب کنید.'));
+document.getElementById('hand').addEventListener('click',e=>{if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}const b=e.currentTarget;const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));b.textContent=on?'✋ درخواست ثبت شد':'✋ درخواست صحبت';message(on?'درخواست صحبت در همین صفحه ثبت شد؛ هنوز به سایر شرکت‌کنندگان ارسال نمی‌شود.':'درخواست صحبت لغو شد.');});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.getElementById('boardState').textContent='ابزار انتخاب‌شده: '+b.textContent;}));
-document.getElementById('clearBoard').addEventListener('click',()=>{document.getElementById('boardContent').replaceChildren();document.getElementById('boardState').textContent='تخته پاک شد (محلی)';});
-function leave(){if(confirm('از کلاس خارج می‌شوید؟'))location.href='index.html';}
+document.getElementById('clearBoard').addEventListener('click',()=>{if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}boardContent.replaceChildren();document.getElementById('boardState').textContent='محتوای محلی تخته پاک شد';});
+function leave(){if(confirm('از کلاس خارج می‌شوید؟')){sessionStorage.removeItem('frahoosh_novin_access_token');sessionStorage.removeItem('frahoosh_novin_role');location.href='index.html';}}
 document.getElementById('leave').addEventListener('click',leave);document.getElementById('leaveTop').addEventListener('click',leave);
+boot();
 </script>
 </body></html>
