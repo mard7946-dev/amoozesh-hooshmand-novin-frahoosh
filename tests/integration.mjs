@@ -110,7 +110,7 @@ try {
     body: { subject: "ریاضی", assessmentTitle: "آزمون یک", grades: [{ studentId: student.student.id, score: "18.5" }] }
   });
   assert.equal(gradesSaved.saved, 1);
-  const studentLogin = await request("/auth/student-login", {
+  const studentLogin = await request("/api/auth/student-login", {
     method: "POST", expected: 200,
     body: { firstName: "دانش", familyName: "آزمایشی", gradeClass: "7/1", nationalId: "1234567890" }
   });
