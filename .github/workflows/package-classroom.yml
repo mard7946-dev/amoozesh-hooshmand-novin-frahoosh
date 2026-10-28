@@ -34,7 +34,21 @@ jobs:
           mkdir -p dist/frahoosh-live-classroom
           cp -r server dist/frahoosh-live-classroom/
           rm -rf dist/frahoosh-live-classroom/server/node_modules
-          cp index.html classroom.html README.md docker-compose.yml render.yaml dist/frahoosh-live-classroom/
+          cp index.html classroom.html docker-compose.yml render.yaml dist/frahoosh-live-classroom/
+          cat > dist/frahoosh-live-classroom/README.md <<'README'
+          # Frahoosh standalone classroom deployment bundle
+
+          This archive packages the legacy Node.js/PostgreSQL classroom service and its web entry pages.
+
+          ## Contents
+          - `index.html` and `classroom.html`: web UI
+          - `server/`: Node.js API and `server/Dockerfile`
+          - `docker-compose.yml`: local API + PostgreSQL stack
+          - `render.yaml`: legacy Render blueprint
+
+          ## Important
+          This archive is not an APK and packaging does not deploy a public website. Configure environment secrets and test authentication, class access, and real-time media before using with students. The current classroom page does not yet provide connected multi-user audio/video.
+          README
           cp server/.env.example dist/frahoosh-live-classroom/server/.env.example
           cat > dist/frahoosh-live-classroom/BUILD-INFO.txt <<'EOF'
           Frahoosh standalone online classroom deployment bundle
@@ -42,7 +56,7 @@ jobs:
           Database: independent PostgreSQL (not Supabase)
           Backend: server/src/server.js
           Web classroom: classroom.html
-          Docker: Dockerfile and docker-compose.yml
+          Docker: server/Dockerfile and docker-compose.yml
           Note: this bundle is not an APK and does not itself create public HTTPS hosting.
           EOF
           cd dist
