@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1730">
+<title>پنل دانش‌آموز · فراهوش</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0}
+*{box-sizing:border-box}body{margin:0;padding:18px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:850px;margin:auto}.panel{margin-top:20px;background:#0e1b32dd;border:1px solid #263958;border-radius:18px;padding:22px}.muted{color:var(--muted);line-height:1.9}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--mint)}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:#203451;color:var(--text);padding:11px 15px}h1{font-size:clamp(22px,4vw,30px)}.empty{margin-top:18px;padding:16px;border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;line-height:1.9}
+</style>
+</head>
+<body><main>
+<div class="tag">فراهوش · پنل دانش‌آموز</div>
+<section class="panel">
+<div class="muted">بخش انتخاب‌شده</div>
+<h1 id="moduleTitle">در حال بارگذاری…</h1>
+<p id="moduleDescription" class="muted"></p>
+<div class="empty" id="status">این صفحه فقط بخش انتخاب‌شده را نمایش می‌دهد. اتصال امن به اطلاعات شخصی دانش‌آموز در مرحلهٔ بعدی انجام می‌شود؛ تا آن زمان هیچ دادهٔ آزمایشی یا ساختگی نمایش داده نمی‌شود.</div>
+<p><button id="back" type="button">بازگشت به منوی دانش‌آموز</button></p>
+</section>
+</main>
+<script>
+const modules={
+'غیبت':'نمایش وضعیت حضور و غیبت خود دانش‌آموز؛ این صفحه برای ثبت یا تغییر غیبت نیست.',
+'نمره':'نمایش نمره‌های ثبت‌شده برای حساب دانش‌آموز، بدون امکان تغییر نمره.',
+'انضباط':'نمایش موارد انضباطی مرتبط با خود دانش‌آموز، بدون نمایش اطلاعات دیگران.',
+'تکلیف':'نمایش تکالیف اختصاص‌یافته به کلاس دانش‌آموز و وضعیت انجام آن‌ها.'
+};
+const params=new URLSearchParams(location.search);
+const selected=params.get('module')||'';
+document.getElementById('moduleTitle').textContent=modules[selected]?selected:'بخش نامعتبر';
+document.getElementById('moduleDescription').textContent=modules[selected]||'بخش انتخاب‌شده معتبر نیست؛ به منوی پنل برگردید.';
+document.getElementById('back').onclick=()=>location.href='portal.html?step=panel&role=student';
+if(!modules[selected])document.getElementById('status').textContent='بخش انتخاب‌شده معتبر نیست.';
+</script>
+</body></html>
