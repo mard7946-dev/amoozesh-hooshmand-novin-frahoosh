@@ -33,6 +33,9 @@ assert.ok(server.includes("NATIONAL_ID_HMAC_SECRET"), "Backend should hash natio
 assert.ok(server.includes("allow('manager','educational_deputy','teacher','pastoral_deputy')"), "Management and teaching staff should be authorized to start classes");
 assert.ok(server.includes("if (['teacher','pastoral_deputy'].includes(req.user.role))"), "Teaching staff should remain restricted to their scheduled lesson period");
 assert.ok(server.includes("app.post('/api/staff', auth, allow('manager')"), "Only managers may create staff accounts");
+assert.ok(server.includes("app.post('/api/classes', auth, allow('manager')"), "Only managers may create classrooms");
+assert.ok(portal.includes("const canManageClasses=user.role==='manager'"), "Only managers should see classroom creation controls");
+assert.ok(portal.includes("chosen==='manager'&&user.role!=='manager'"), "Deputies, teachers, and students must not impersonate manager role in portal");
 assert.ok(server.includes("app.post('/api/account/credentials', auth, allow('manager')"), "Only the manager may change manager credentials");
 assert.ok(portal.includes("credentialsForm") && portal.includes("api('/account/credentials'"), "Portal should allow manager credential rotation");
 assert.ok(portal.includes("password:$('password').value"), "Login must preserve mixed-character passwords");
