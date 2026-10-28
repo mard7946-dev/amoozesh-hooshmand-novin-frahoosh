@@ -41,6 +41,9 @@ Deno.serve(async (req: Request) => {
   if (!managerRoles.includes(clean(caller.role).toLowerCase())) return reply({ message: "فقط مدیر سامانه اجازه مدیریت کاربران این مدرسه را دارد." }, 403);
   const schoolId = clean(caller.tenant_school_id);
   if (!schoolId) return reply({ message: "شناسه مدرسه برای حساب مدیر ثبت نشده است." }, 409);
+  const { data: managerMembership, error: managerMembershipError } = await admin.from("school_memberships")
+    .select("id").eq("auth_user_id", auth.user.id).eq("school_id", schoolId).eq("role", "manager").eq("is_active", true).maybeSingle();
+  if (managerMembershipError || !managerMembership) return reply({ message: "عضویت فعال مدیر برای این مدرسه تأیید نشد." }, 403);
 
   const body = await req.json().catch(() => ({}));
   const action = clean(body.action || "list");
