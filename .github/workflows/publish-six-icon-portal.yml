@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'portal.html'
+      - 'users.html'
       - 'classroom.html'
       - 'classroom/index.html'
       - 'classroom/management.html'
@@ -37,7 +38,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html _site/
+          cp index.html portal.html users.html _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom/management.html _site/classroom/management.html
