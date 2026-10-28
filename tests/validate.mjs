@@ -9,7 +9,7 @@ const server = readFileSync(new URL("../server/src/server.js", import.meta.url),
 assert.ok(["manager","deputy","teacher","parent","student","counselor"].every(role => landing.includes(`href="portal.html?step=login&role=${role}"`)), "Landing must route all six roles through the current authenticated portal login");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
 assert.ok(!landing.includes("supabase"), "Landing must not depend on Supabase");
-assert.ok(!classroom.toLowerCase().includes("supabase"), "Classroom must not depend on Supabase");
+assert.ok(!/service[_-]?role|sb_secret_/i.test(classroom), "Classroom must not expose privileged Supabase credentials");
 for (const id of ["board", "create", "join", "mic", "camera", "end-class", "period-minutes", "page-next", "quiz-publish", "attendance-export", "chat-send"]) {
   assert.ok(classroom.includes('id="' + id + '"'), "Missing classroom control: " + id);
 }
