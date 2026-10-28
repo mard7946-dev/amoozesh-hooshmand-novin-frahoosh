@@ -9,6 +9,31 @@
 :root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--blue:#83b3ff}
 *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;padding:16px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:1050px;margin:auto}header{text-align:center;padding:16px}h1{margin:8px 0;font-size:clamp(22px,4vw,32px)}p{color:var(--muted);line-height:1.9}.notice{border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;padding:12px 15px;margin:12px 0}.roles[hidden],.modules[hidden],.panel[hidden],.notice[hidden],header[hidden],.footer[hidden]{display:none!important}.roles,.modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.role,.tile,.back{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:14px;background:#0e1b32;color:var(--text);padding:14px;text-align:center}.role[aria-pressed=true]{border-color:var(--mint);background:#15364a;box-shadow:0 0 0 1px var(--mint) inset}.role span,.tile span{display:block;font-size:25px;margin-bottom:8px}.role strong,.tile strong{display:block}.tile{min-height:112px;text-align:right;background:linear-gradient(145deg,#11213a,#0c192d)}.tile small{display:block;color:var(--muted);margin-top:8px;line-height:1.7}.panel{margin-top:18px;background:#0e1b32dd;border:1px solid #263958;border-radius:18px;padding:18px}.panel-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.back{padding:9px 12px;background:#203451}.muted{color:var(--muted);font-size:13px}.footer{padding:20px;text-align:center;color:var(--muted);font-size:12px}
 </style>
+<script>
+/* Fallback display for role login: ensure the form is visible even if another UI script fails. */
+(function(){
+  var q=new URLSearchParams(location.search), step=q.get('step'), role=q.get('role');
+  var names={manager:'مدیریت',deputy:'معاونت',teacher:'دبیران',parent:'اولیا',student:'دانش‌آموزان',counselor:'مشاوره'};
+  if(step!=='login'||!names[role]) return;
+  function revealLogin(){
+    var header=document.getElementById('schoolHeader'), roles=document.getElementById('roles');
+    var notice=document.getElementById('demoNotice'), login=document.getElementById('loginPanel');
+    var modules=document.getElementById('modulePanel'), footer=document.querySelector('.footer');
+    if(header) header.hidden=true;
+    if(roles) roles.hidden=true;
+    if(notice) notice.hidden=true;
+    if(modules) modules.hidden=true;
+    if(footer) footer.hidden=true;
+    if(login) login.hidden=false;
+    var title=document.getElementById('loginTitle');
+    var desc=document.getElementById('loginDescription');
+    if(title) title.textContent='ورود به پنل '+names[role]+' فراهوش';
+    if(desc) desc.textContent='برای ورود به پنل '+names[role]+'، نام کاربری و رمز عبور خود را وارد کنید.';
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',revealLogin);
+  else revealLogin();
+})();
+</script>
 </head>
 <body>
 <main>
