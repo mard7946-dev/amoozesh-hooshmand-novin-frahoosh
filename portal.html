@@ -95,8 +95,19 @@ document.getElementById("recoverPassword").onclick=()=>{document.getElementById(
 document.getElementById("changeRole").onclick=()=>go("home");
 document.getElementById("home").onclick=()=>go("home");
 const initial=roles.find(x=>x.id===roleId);
+const storedToken=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const storedRole=sessionStorage.getItem('frahoosh_novin_role')||'';
+const roleAliases={manager:['manager'],deputy:['deputy','educational','executive','cultural'],teacher:['teacher'],parent:['parent'],student:['student'],counselor:['counselor','advisor']};
 if(step==='home'||!initial){
  showStep('home');
+}else if(step==='panel'&&storedToken&&(roleAliases[initial.id]||[]).includes(storedRole)){
+ // بازگشت به منوی همان نقش با نشست قبلاً تأییدشده؛ مسیر ورود تغییر نمی‌کند.
+ portalAuthToken=storedToken;portalAuthUserRole=storedRole;
+ render(initial.id);showStep('panel');
+ document.getElementById('panelTitle').textContent='پنل '+selectedRole.title;
+ document.getElementById('home').textContent='خروج از پنل';
+ document.getElementById('home').onclick=()=>{sessionStorage.removeItem('frahoosh_novin_access_token');sessionStorage.removeItem('frahoosh_novin_role');portalAuthToken='';portalAuthUserRole='';go('home');};
+ document.getElementById('panelDescription').textContent='نشست ذخیره‌شده بازیابی شد؛ هر عملیات حساس همچنان باید توسط سرویس مربوطه تأیید شود.';
 }else{
  // لینک‌های شش‌آیکونه دست‌نخورده می‌مانند؛ ورود به پنل فقط پس از احراز هویت انجام می‌شود.
  // ورود به کلاس آنلاین و برنامه هفتگی از نشست تأییدشده همین صفحه، با SSO انجام می‌شود.
