@@ -443,7 +443,7 @@ app.get('/api/teachers', auth, allow('manager','educational_deputy'), async (_re
   catch (e) { next(e); }
 });
 
-app.post('/api/classes', auth, allow('manager','educational_deputy'), async (req, res, next) => {
+app.post('/api/classes', auth, allow('manager'), async (req, res, next) => {
   try {
     const title = text(req.body?.title), gradeClass = text(req.body?.gradeClass, 40), teacherId = Number(req.body?.teacherId);
     const day = dayAliases(req.body?.day), period = Number(req.body?.period);
