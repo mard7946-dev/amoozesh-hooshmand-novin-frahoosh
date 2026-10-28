@@ -26,30 +26,30 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:var(--g
 .clock-time{font-size:18px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;direction:rtl}
 .live{display:inline-flex;align-items:center;gap:6px;color:#9ce8c5;font-size:12px}
 .live-dot{width:8px;height:8px;border-radius:50%;background:#4de0a2;box-shadow:0 0 10px #4de0a2}
-.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch;margin:24px auto;max-width:850px}
+.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;gap:14px;align-items:stretch;margin:24px auto;max-width:850px}
 .role{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:135px;padding:16px 10px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#102849,#0a1a32);color:var(--text);text-decoration:none;box-shadow:0 12px 28px #0003;transition:transform .15s,border-color .15s}
 .role:hover{transform:translateY(-3px);border-color:var(--gold)}
 .role .ico{display:grid;place-items:center;width:62px;height:62px;border:1px solid #42618a;border-radius:18px;background:linear-gradient(145deg,#17385f,#0c2341);color:#9bc5ff;box-shadow:inset 0 1px 0 #ffffff12,0 8px 18px #0003}
 .role .ico svg{width:38px;height:38px;fill:currentColor;stroke:none;filter:drop-shadow(0 3px 5px #0004)}
 .role strong{font-size:17px}
 .role small{color:var(--muted);font-size:12px}
-.role.management{min-height:156px;border:2px solid var(--gold);background:linear-gradient(145deg,#263d60,#102440);box-shadow:0 10px 30px #e5c16d13}
-.role.management .ico,.role.counseling .ico{width:78px;height:78px;color:var(--gold);border-color:#b99b50;background:linear-gradient(145deg,#35496a,#172b48)}
-.role.management .ico svg,.role.counseling .ico svg{width:49px;height:49px}
-.role.deputy,.role.teachers,.role.parents,.role.students{min-height:140px}
+.role.management{grid-column:2;grid-row:1;min-height:220px;border:2px solid var(--gold);background:linear-gradient(145deg,#263d60,#102440);box-shadow:0 10px 30px #e5c16d13}
+.role.management .ico,.role.counseling .ico{width:124px;height:124px;color:var(--gold);border-color:#b99b50;background:linear-gradient(145deg,#35496a,#172b48)}
+.role.management .ico svg,.role.counseling .ico svg{width:78px;height:78px}
+.role.deputy,.role.teachers,.role.parents,.role.students{min-height:140px}.role.teachers,.role.students{grid-column:1;}.role.deputy,.role.parents{grid-column:3;}.role.deputy,.role.teachers{grid-row:2}.role.parents,.role.students{grid-row:3}
 .brand-center{display:none}
-.role.counseling{min-height:140px;border:2px solid #5879a5;background:linear-gradient(145deg,#17365c,#0b1c36)}
+.role.counseling{grid-column:2;grid-row:4;min-height:220px;border:2px solid #5879a5;background:linear-gradient(145deg,#17365c,#0b1c36)}
 .note{font-size:12px;color:#91a7c5;line-height:1.9;margin-top:22px}
 @media(max-width:600px){
  body{padding:16px 12px 26px}.flag{width:57px;height:36px}.brain{width:78px;height:78px;margin-top:28px}
  .clock-panel{gap:8px 12px;padding:10px 12px}.clock-date{font-size:12px}.clock-time{font-size:16px}
- .roles{grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+ .roles{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:20px}
  .role{min-height:120px;padding:12px 6px;gap:8px}.role .ico{width:52px;height:52px;border-radius:15px}.role .ico svg{width:31px;height:31px}
  .role strong{font-size:14px}.role small{font-size:10px}
- .role.management{min-height:138px}
- .role.management .ico,.role.counseling .ico{width:66px;height:66px}.role.management .ico svg,.role.counseling .ico svg{width:42px;height:42px}
- .role.deputy,.role.teachers,.role.parents,.role.students,.role.counseling{grid-column:auto;grid-row:auto}
- .role.counseling{min-height:138px}
+ .role.management{min-height:168px;grid-column:2;grid-row:1}
+ .role.management .ico,.role.counseling .ico{width:76px;height:76px}.role.management .ico svg,.role.counseling .ico svg{width:48px;height:48px}
+ .role.deputy,.role.teachers,.role.parents,.role.students{min-height:120px}.role.teachers,.role.students{grid-column:1}.role.deputy,.role.parents{grid-column:3}.role.deputy,.role.teachers{grid-row:2}.role.parents,.role.students{grid-row:3}
+ .role.counseling{grid-column:2;grid-row:4;min-height:168px}
 }
 </style>
 </head>
