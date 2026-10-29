@@ -122,7 +122,7 @@ document.getElementById("home").onclick=()=>go("home");
 const initial=roles.find(x=>x.id===roleId);
 const storedToken=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const storedRole=sessionStorage.getItem('frahoosh_novin_role')||'';
-const roleAliases={manager:['manager'],deputy:['deputy','educational','executive','cultural'],teacher:['teacher'],parent:['parent'],student:['student'],counselor:['cultural','counselor','advisor']};
+const roleAliases={manager:['manager'],deputy:['deputy','educational','executive','cultural'],teacher:['teacher'],parent:['parent'],student:['student'],counselor:['counselor','advisor']};
 if(step==='home'||!initial){
  showStep('home');
 }else if(step==='panel'&&storedToken&&(roleAliases[initial.id]||[]).includes(storedRole)){
