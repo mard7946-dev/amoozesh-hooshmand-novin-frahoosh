@@ -27,7 +27,7 @@ const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const role=sessionStorage.getItem('frahoosh_novin_role')||'';
 const allowed=['manager','counselor','advisor','educational','executive','cultural'];
 const $=id=>document.getElementById(id);
-let tab='records',rows=[],students=[],editing=null;
+const requestedTab=new URLSearchParams(location.search).get('tab');\nlet tab=['records','followups','guidance','referrals','classes','board'].includes(requestedTab)?requestedTab:'records',rows=[],students=[],editing=null;
 const config={
 records:{table:'counseling_records',title:'پرونده مشاوره',plural:'پرونده‌های مشاوره',fields:[
 ['student_id','دانش‌آموز','student',true],['student_name','نام دانش‌آموز','text',true],['visit_reason','علت مراجعه','textarea',true],['session_date','تاریخ جلسه شمسی','text',true],['actions_taken','اقدامات انجام‌شده','textarea',false],['next_visit','تاریخ جلسه بعدی شمسی','text',false],['progress','روند پیشرفت','textarea',false],['result','نتیجه / جمع‌بندی','textarea',false],['status','وضعیت','select',false,['جدید','در حال پیگیری','نیازمند ارجاع','بسته‌شده']]],
@@ -131,7 +131,7 @@ $('exportCsv').onclick=()=>{
  if(!token){showNotice('نشست ورود پیدا نشد. از صفحه اصلی فراهوش دوباره وارد پنل شوید.','error');$('who').textContent='بدون نشست';$('entryForm').querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);return;}
  if(!allowed.includes(role)){showNotice('این نقش مجاز به بازکردن مرکز مشاوره نیست.','error');$('entryForm').querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);return;}
  $('who').textContent='نقش نشست: '+role+' · داده‌ها از Supabase';
- await loadStudents();drawForm();await loadRows();
+ await loadStudents();for(const b of document.querySelectorAll('[data-tab]'))b.setAttribute('aria-selected',String(b.dataset.tab===tab));drawForm();await loadRows();
 })();
 </script>
 </body></html>
