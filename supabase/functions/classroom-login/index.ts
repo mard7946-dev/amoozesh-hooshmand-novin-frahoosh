@@ -13,9 +13,19 @@ const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳�
 
 function roleAllowed(actual: string, expected: string) {
   const a = norm(actual), e = norm(expected);
-  if (e === "manager") return a === "manager";
-  if (e === "deputy") return ["executive", "educational", "cultural", "advisor", "counselor", "deputy"].includes(a);
-  return a === e && ["teacher", "student"].includes(e);
+  const manager = ["manager", "مدیر", "مدیر مدرسه"];
+  const teacher = ["teacher", "دبیر", "معلم"];
+  const student = ["student", "دانش آموز"];
+  const parent = ["parent", "guardian", "ولی", "والد", "والدین", "سرپرست"];
+  const counselor = ["counselor", "advisor", "cultural", "مشاور", "مشاوره", "پرورشی"];
+  const deputyAliases = ["executive", "educational", "cultural", "advisor", "counselor", "deputy"];
+  if (e === "manager") return manager.includes(a);
+  if (e === "deputy") return deputyAliases.includes(a);
+  if (e === "teacher") return teacher.includes(a);
+  if (e === "student") return student.includes(a);
+  if (e === "parent") return parent.includes(a);
+  if (e === "counselor") return counselor.includes(a);
+  return false;
 }
 
 Deno.serve(async (req: Request) => {
@@ -23,7 +33,7 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return reply({ message: "درخواست نامعتبر است." }, 405);
   const body = await req.json().catch(() => ({}));
   const username = clean(body?.username), password = String(body?.password ?? ""), expectedRole = clean(body?.role);
-  if (!username || !password || !["manager", "deputy", "teacher", "student"].includes(expectedRole)) {
+  if (!username || !password || !["manager", "deputy", "teacher", "student", "parent", "counselor"].includes(expectedRole)) {
     return reply({ message: "نام کاربری، رمز عبور و نقش را کامل وارد کنید." }, 400);
   }
   const url = (Deno.env.get("SUPABASE_URL") ?? "").trim();
@@ -65,7 +75,7 @@ Deno.serve(async (req: Request) => {
     }
 
     let className = "";
-    if (norm(profile.role) === "student") {
+    if (expectedRole === "student") {
       const { data: student, error: studentError } = await admin.from("students")
         .select("class_name").eq("national_code", profile.national_code).maybeSingle();
       if (studentError || !student?.class_name) {
