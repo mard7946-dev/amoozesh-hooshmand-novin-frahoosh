@@ -1,24 +1,41 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1730">
-<title>مرکز مشاوره | فراهوش</title>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1730"><title>پنل مشاور | فراهوش</title>
 <style>
 :root{color-scheme:dark;--bg:#081326;--panel:#10213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#f5ce7a;--red:#ff9d9d}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;color:var(--text)}button:disabled{opacity:.45;cursor:wait}.primary{background:#135c50;border-color:var(--mint)}.danger{border-color:#8a414b;color:#ffc1c1}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#09162bdc;position:sticky;top:0;z-index:5}.top h1{font-size:18px;margin:0 0 5px}.muted{color:var(--muted);font-size:12px;line-height:1.8}.wrap{max-width:1250px;margin:18px auto;padding:0 14px}.notice{border:1px solid #725b2d;background:#302717;color:#ffe4a5;border-radius:12px;padding:11px 13px;margin-bottom:12px;line-height:1.9;font-size:12px}.notice.error{border-color:#78404b;background:#3c2028;color:#ffb6b6}.notice.ok{border-color:#276b57;background:#12382f;color:#b8ffe8}.tabs,.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tabs{padding:10px;background:#0e1b30;border:1px solid var(--line);border-radius:14px;margin-bottom:12px}.tabs button[aria-selected=true]{border-color:var(--mint);color:var(--mint);background:#15364a}.panel{background:#0e1b30e8;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}.panel h2{font-size:17px;margin:0 0 12px}.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px}.field.full{grid-column:1/-1}input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:#081326;color:var(--text)}textarea{min-height:78px;resize:vertical}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:850px}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:right;vertical-align:top;line-height:1.8}th{color:var(--mint);background:#132742;font-size:12px}td{font-size:12px}.rowactions{display:flex;gap:5px;flex-wrap:wrap}.rowactions button{padding:6px 8px;font-size:11px}.hidden{display:none!important}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:12px}.metric{border:1px solid var(--line);border-radius:12px;padding:12px;background:#10213a}.metric strong{display:block;font-size:22px;color:var(--mint);margin-top:6px}@media(max-width:760px){.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.top{align-items:flex-start;flex-wrap:wrap}.wrap{padding:0 8px}.panel{padding:11px}}
-@media print{body{background:#fff;color:#111}.top,.tabs,.formpanel,.no-print,.notice{display:none!important}.panel{background:#fff;color:#111;border:0}th{color:#111;background:#eee}th,td{border-color:#aaa}table{min-width:0}}
-</style>
-</head>
-<body>
-<header class="top"><div><h1>فراهوش · مرکز مشاوره</h1><div class="muted" id="who">در حال بررسی نشست معتبر…</div></div><div class="actions"><button id="refresh">↻ تازه‌سازی</button><button id="exportCsv">خروجی Excel (CSV)</button><button onclick="window.print()">چاپ / PDF</button><button id="back">بازگشت به پنل</button></div></header>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;color:var(--text)}button:disabled{opacity:.5;cursor:wait}.primary{background:#135c50;border-color:var(--mint)}.danger{border-color:#8a414b;color:#ffc1c1}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#09162bdc;position:sticky;top:0;z-index:5}.top h1{font-size:18px;margin:0 0 5px}.muted{color:var(--muted);font-size:12px;line-height:1.9}.wrap{max-width:1250px;margin:18px auto;padding:0 14px}.notice{border:1px solid #725b2d;background:#302717;color:#ffe4a5;border-radius:12px;padding:11px 13px;margin-bottom:12px;line-height:1.9;font-size:12px}.notice.error{border-color:#78404b;background:#3c2028;color:#ffb6b6}.notice.ok{border-color:#276b57;background:#12382f;color:#b8ffe8}.panel{background:#0e1b30e8;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}.panel h2{font-size:17px;margin:0 0 12px}.searchrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.searchrow input{flex:1;min-width:200px}.students{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:9px;max-height:410px;overflow:auto}.student{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:right;background:#0b192e;border:1px solid var(--line);padding:12px}.student.selected{border-color:var(--mint);box-shadow:inset 0 0 0 1px var(--mint);background:#123046}.student strong{font-size:14px}.student small{color:var(--muted);font-size:11px}.selectedbox{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.selectedbox h2{margin:0}.icons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}.module{padding:20px 12px;text-align:center;background:linear-gradient(145deg,#132945,#0c192d);min-height:125px;border:1px solid var(--line);border-radius:15px}.module .emoji{display:block;font-size:30px;margin-bottom:9px}.module strong{display:block}.module small{display:block;color:var(--muted);margin-top:7px;line-height:1.7}.module.active{border-color:var(--mint);background:#15364a}.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px}.field.full{grid-column:1/-1}input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:#081326;color:var(--text)}textarea{min-height:78px;resize:vertical}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.hidden{display:none!important}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:650px}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:right;vertical-align:top;line-height:1.8}th{color:var(--mint);background:#132742;font-size:12px}td{font-size:12px}.alert{border:1px solid #9b7029;background:#382b15;color:#ffe5a6;padding:11px;border-radius:10px;margin:10px 0}.scoregrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.scoregrid .field{background:#0b192e;padding:9px;border-radius:9px;border:1px solid var(--line)}.recommendations{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}.track{border:1px solid var(--line);border-radius:11px;padding:12px;background:#0b192e}.track strong{display:block}.track .score{font-size:23px;color:var(--mint);margin:8px 0}.pill{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:3px 8px;font-size:11px;color:var(--gold)}@media(max-width:760px){.icons{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.scoregrid{grid-template-columns:repeat(2,minmax(0,1fr))}.top{align-items:flex-start;flex-wrap:wrap}.panel{padding:11px}.wrap{padding:0 8px}}
+@media print{body{background:white;color:#111}.top,.no-print,.studentlist,.icons button,.actions{display:none!important}.panel{background:white;color:#111;border:0}th{background:#eee;color:#111}td,th{border-color:#aaa}}
+</style></head><body>
+<header class="top"><div><h1>فراهوش · پنل مشاور</h1><div class="muted" id="who">در حال بررسی نشست…</div></div><div class="actions no-print"><button id="refresh">↻ تازه‌سازی</button><button id="print">چاپ / PDF</button><button id="back">بازگشت به پنل</button></div></header>
 <main class="wrap">
-<div id="notice" class="notice" role="status">در حال بررسی نشست و دریافت اطلاعات از پایگاه داده…</div>
-<div class="metrics"><div class="metric">پرونده‌های مشاوره<strong id="countRecords">—</strong></div><div class="metric">پیگیری‌های باز<strong id="countFollowups">—</strong></div><div class="metric">ارجاع‌های در انتظار<strong id="countReferrals">—</strong></div></div>
-<nav class="tabs" aria-label="بخش‌های مشاوره">
-<button data-tab="records" aria-selected="true">پرونده مشاوره</button><button data-tab="followups" aria-selected="false">پیگیری جلسات</button><button data-tab="guidance" aria-selected="false">هدایت تحصیلی</button><button data-tab="referrals" aria-selected="false">ارجاع دانش‌آموز</button><button data-tab="classes" aria-selected="false">کلاس‌های مشاوره</button><button data-tab="board" aria-selected="false">تابلوی مشاور</button>
-</nav>
-<section class="panel formpanel" id="formPanel"><h2 id="formTitle">ثبت پرونده مشاوره</h2><form id="entryForm"><div class="formgrid" id="fields"></div><div class="actions" style="margin-top:12px"><button class="primary" id="save" type="submit">ثبت اطلاعات</button><button type="button" id="cancelEdit">پاک‌کردن فرم</button></div></form></section>
-<section class="panel"><div class="actions" style="justify-content:space-between"><div><h2 id="tableTitle">پرونده‌های ثبت‌شده</h2><div class="muted" id="tableSubtitle">اطلاعات از جدول اختصاصی Supabase خوانده می‌شود.</div></div><input id="search" type="search" placeholder="جستجو در فهرست…" style="max-width:300px"></div><div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"><tr><td>در حال دریافت اطلاعات…</td></tr></tbody></table></div></section>
+<div id="notice" class="notice" role="status">در حال دریافت فهرست دانش‌آموزان…</div>
+<section class="panel studentlist"><h2>۱) انتخاب دانش‌آموز</h2><div class="muted">تمام دانش‌آموزان ثبت‌شده نمایش داده می‌شوند. با نام، نام خانوادگی، کد دانش‌آموزی یا کلاس جست‌وجو کن.</div><div class="searchrow"><input id="studentSearch" type="search" placeholder="جست‌وجوی دانش‌آموز…"><span class="pill" id="studentCount">۰ دانش‌آموز</span></div><div id="students" class="students"><div class="muted">در حال بارگذاری…</div></div></section>
+<section id="workspace" class="hidden">
+<div class="panel selectedbox"><div><div class="muted">دانش‌آموز انتخاب‌شده</div><h2 id="selectedName"></h2><div class="muted" id="selectedMeta"></div></div><button id="changeStudent" class="no-print">تغییر دانش‌آموز</button></div>
+<div class="icons no-print">
+<button class="module" data-module="case"><span class="emoji">🗂️</span><strong>تشکیل پرونده مشاوره‌ای</strong><small>تاریخ مراجعه، علت مراجعه و راهکارهای پیشنهادی</small></button>
+<button class="module" data-module="follow"><span class="emoji">⏰</span><strong>پیگیری مشاوره‌ای</strong><small>تاریخ جلسه بعدی و یادآوری موعد پیگیری</small></button>
+<button class="module" data-module="guidance"><span class="emoji">🧭</span><strong>هدایت تحصیلی</strong><small>ثبت نمرات پایه‌های هفتم، هشتم و نهم و پیشنهاد رشته</small></button>
+</div>
+<section id="casePanel" class="panel hidden"><h2>تشکیل پرونده مشاوره‌ای</h2><form id="caseForm"><div class="formgrid">
+<label class="field">تاریخ اولین مراجعه (شمسی)<input name="first_visit_date" required placeholder="۱۴۰۵/۰۷/۰۸"></label>
+<label class="field">تاریخ مراجعه بعدی (شمسی)<input name="next_visit" placeholder="۱۴۰۵/۰۷/۱۰"></label>
+<label class="field">وضعیت پرونده<select name="status"><option>در حال پیگیری</option><option>جدید</option><option>نیازمند ارجاع</option><option>بسته‌شده</option></select></label>
+<label class="field full">علت مراجعه<textarea name="visit_reason" required></textarea></label>
+<label class="field full">راهکارهای پیشنهادی<textarea name="recommendations" required></textarea></label>
+<label class="field full">یادداشت‌های محرمانه مشاور<textarea name="description"></textarea></label>
+</div><div class="actions"><button class="primary" type="submit" id="saveCase">ثبت پرونده</button><button type="button" id="clearCase">پاک‌کردن فرم</button></div></form><div class="tablewrap"><table><thead><tr><th>اولین مراجعه</th><th>مراجعه بعدی</th><th>علت مراجعه</th><th>راهکار پیشنهادی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="caseRows"></tbody></table></div></section>
+<section id="followPanel" class="panel hidden"><h2>پیگیری مشاوره‌ای و یادآوری</h2><div class="muted">یادآوری‌ها هنگام باز بودن پنل و ورود مشاور بررسی می‌شوند. برای اعلان مرورگر، اجازه اعلان را فعال کن.</div><div id="reminders"></div><form id="followForm"><div class="formgrid"><label class="field">تاریخ جلسه بعدی (شمسی)<input name="followup_date" required placeholder="۱۴۰۵/۰۷/۱۰"></label><label class="field">وضعیت پیگیری<select name="status"><option>باز</option><option>در حال انجام</option><option>انجام شد</option><option>ارجاع شد</option></select></label><label class="field">موضوع پیگیری<input name="subject" required placeholder="مثلاً پیگیری راهکارهای جلسه"></label><label class="field full">شرح و اقدام بعدی<textarea name="description" required></textarea></label></div><div class="actions"><button class="primary" type="submit">ثبت پیگیری</button><button type="button" id="enableNotifications">فعال‌سازی اعلان مرورگر</button></div></form><div class="tablewrap"><table><thead><tr><th>تاریخ پیگیری</th><th>موضوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="followRows"></tbody></table></div></section>
+<section id="guidancePanel" class="panel hidden"><h2>هدایت تحصیلی پایه نهم</h2><div class="notice">مبنای راهنمایی در این بخش: عملکرد تحصیلی ۳۵ امتیاز، آزمون‌های رغبت و توانایی ۳۰، نظر مشاور ۱۰، نظر دبیران ۱۰، علاقه و اولویت دانش‌آموز ۱۰ و نظر والدین ۵ امتیاز. خروجی سامانه پیشنهاد مشاوره‌ای است، نه فرم رسمی وزارتخانه؛ حدنصاب‌های دروس، ظرفیت منطقه و ضوابط سال تحصیلی باید جداگانه تأیید شوند.</div>
+<form id="guidanceForm"><h3>ثبت نمرات هر پایه (از ۲۰)</h3><div class="muted">نمرات دروس را برای هر پایه وارد کن. برای محاسبه، وزن پایه هفتم ۱، هشتم ۱ و نهم ۳ در نظر گرفته می‌شود؛ نمرات خالی وارد محاسبه نمی‌شوند.</div>
+<div id="gradeInputs"></div><h3>امتیازهای مشاوره‌ای</h3><div class="scoregrid">
+<label class="field">آزمون توانایی (از ۱۵)<input name="aptitude_points" type="number" min="0" max="15" step=".5" value="0" required></label>
+<label class="field">آزمون رغبت (از ۱۵)<input name="interest_points" type="number" min="0" max="15" step=".5" value="0" required></label>
+<label class="field">نظر مشاور (از ۱۰)<input name="counselor_points" type="number" min="0" max="10" step=".5" value="0" required></label>
+<label class="field">نظر دبیران (از ۱۰)<input name="teacher_points" type="number" min="0" max="10" step=".5" value="0" required></label>
+<label class="field">نظر دانش‌آموز (از ۱۰)<input name="student_points" type="number" min="0" max="10" step=".5" value="0" required></label>
+<label class="field">نظر والدین (از ۵)<input name="parent_points" type="number" min="0" max="5" step=".5" value="0" required></label>
+</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary">ذخیره هدایت تحصیلی</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted">امتیاز عملکرد تحصیلی (تا ۳۵) بر اساس میانگین وزنی نمرات مرتبط با هر مسیر محاسبه شده و سپس با امتیازهای مشاوره‌ای جمع می‌شود. این رتبه‌بندی جایگزین سامانه رسمی هدایت تحصیلی نیست.</div><div id="recommendations" class="recommendations"></div></div></section>
+</section>
 </main>
 <script>
 const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
@@ -27,114 +44,150 @@ const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const role=sessionStorage.getItem('frahoosh_novin_role')||'';
 const allowed=['manager','counselor','advisor','educational','executive','cultural'];
 const $=id=>document.getElementById(id);
-const requestedTab=new URLSearchParams(location.search).get('tab');\nlet tab=['records','followups','guidance','referrals','classes','board'].includes(requestedTab)?requestedTab:'records',rows=[],students=[],editing=null;
-const config={
-records:{table:'counseling_records',title:'پرونده مشاوره',plural:'پرونده‌های مشاوره',fields:[
-['student_id','دانش‌آموز','student',true],['student_name','نام دانش‌آموز','text',true],['visit_reason','علت مراجعه','textarea',true],['session_date','تاریخ جلسه شمسی','text',true],['actions_taken','اقدامات انجام‌شده','textarea',false],['next_visit','تاریخ جلسه بعدی شمسی','text',false],['progress','روند پیشرفت','textarea',false],['result','نتیجه / جمع‌بندی','textarea',false],['status','وضعیت','select',false,['جدید','در حال پیگیری','نیازمند ارجاع','بسته‌شده']]],
-cols:[['student_name','نام دانش‌آموز'],['visit_reason','علت مراجعه'],['session_date','تاریخ جلسه'],['actions_taken','اقدامات'],['next_visit','جلسه بعدی'],['progress','پیشرفت'],['result','نتیجه'],['status','وضعیت']]},
-followups:{table:'counseling_followups',title:'پیگیری جلسه',plural:'پیگیری‌های مشاوره',fields:[
-['student_id','دانش‌آموز','student',true],['subject','موضوع پیگیری','text',true],['description','شرح پیگیری','textarea',true],['followup_date','تاریخ پیگیری شمسی','text',true],['followup_items','اقدامات بعدی','textarea',false],['decision','تصمیم / نتیجه','textarea',false],['status','وضعیت','select',true,['باز','در حال انجام','انجام شد','ارجاع شد']]],
-cols:[['student_id','شناسه دانش‌آموز'],['subject','موضوع'],['description','شرح'],['followup_date','تاریخ پیگیری'],['followup_items','اقدامات بعدی'],['decision','نتیجه'],['status','وضعیت']]},
-guidance:{table:'counseling_guidance',title:'هدایت تحصیلی',plural:'پرونده‌های هدایت تحصیلی',fields:[
-['student_id','دانش‌آموز','student',true],['grade','پایه تحصیلی','text',true],['interest','علایق دانش‌آموز','textarea',false],['aptitude','توانمندی‌ها و استعدادها','textarea',false],['recommendation','توصیه و مسیر پیشنهادی','textarea',true]],
-cols:[['student_id','شناسه دانش‌آموز'],['grade','پایه'],['interest','علایق'],['aptitude','توانمندی‌ها'],['recommendation','توصیه مشاور']]},
-referrals:{table:'student_referrals',title:'ارجاع دانش‌آموز',plural:'ارجاع‌های دانش‌آموز',fields:[
-['student_id','دانش‌آموز','student',true],['referral_to','ارجاع به','select',true,['مشاور','مدیر','معاون آموزشی','معاون اجرایی','معاون پرورشی']],['reason','علت ارجاع','textarea',true],['referral_date','تاریخ ارجاع شمسی','text',true],['status','وضعیت','select',true,['در انتظار بررسی','در حال پیگیری','رسیدگی شد','بسته‌شده']]],
-cols:[['student_id','شناسه دانش‌آموز'],['referral_to','ارجاع به'],['reason','علت ارجاع'],['referral_date','تاریخ ارجاع'],['status','وضعیت']]},
-classes:{table:'counseling_classes',title:'کلاس مشاوره',plural:'کلاس‌های مشاوره',fields:[
-['title','عنوان کلاس','text',true],['grade','پایه','text',false],['subject','موضوع','text',false],['active','وضعیت فعال','select',true,['فعال','غیرفعال']]],
-cols:[['title','عنوان'],['grade','پایه'],['subject','موضوع'],['active','وضعیت']]},
-board:{table:'counselor_board',title:'اطلاعیه تابلوی مشاور',plural:'اطلاعیه‌های مشاور',fields:[
-['title','عنوان اطلاعیه','text',true],['body','متن اطلاعیه','textarea',true],['active','نمایش برای کاربران مجاز','select',true,['فعال','غیرفعال']]],
-cols:[['title','عنوان'],['body','متن اطلاعیه'],['active','وضعیت'],['created_at','تاریخ ثبت']]}
-};
-function showNotice(msg,type=''){ $('notice').textContent=msg;$('notice').className='notice'+(type?' '+type:''); }
+let students=[],selected=null,cases=[],followups=[],guidance=null,activeModule=null;
+const subjects=[['math','ریاضی'],['science','علوم تجربی'],['persian','فارسی'],['arabic','عربی'],['social','مطالعات اجتماعی'],['english','زبان انگلیسی'],['technical','کار و فناوری'],['arts','هنر']];
+function notice(t,type=''){$('notice').textContent=t;$('notice').className='notice'+(type?' '+type:'');}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function fmt(k,v){if(k==='active')return v?'فعال':'غیرفعال';return v??'';}
-async function api(table,method='GET',body=null,id=null){
- const url=new URL(SUPABASE_URL+'/rest/v1/'+table);
- url.searchParams.set('select','*');
- if(id!==null)url.searchParams.set('id','eq.'+id);
- if(method==='GET')url.searchParams.set('order','id.desc');
- const res=await fetch(url.toString(),{method,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json',Prefer:method==='GET'?'return=representation':'return=representation'},...(body?{body:JSON.stringify(body)}:{})});
- const text=await res.text();let data;try{data=text?JSON.parse(text):null}catch{data=text}
- if(!res.ok)throw new Error((data&& (data.message||data.error||data.details))||('خطای پایگاه داده: '+res.status));
+function norm(v){return String(v??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();}
+async function api(table,method='GET',body=null,filters={}){
+ const url=new URL(SUPABASE_URL+'/rest/v1/'+table);url.searchParams.set('select','*');
+ Object.entries(filters).forEach(([k,v])=>url.searchParams.set(k,v));
+ if(method==='GET'&&!filters.order)url.searchParams.set('order','id.desc');
+ const res=await fetch(url.toString(),{method,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json',Prefer:'return=representation'},...(body?{body:JSON.stringify(body)}:{})});
+ const txt=await res.text();let data;try{data=txt?JSON.parse(txt):null}catch{data=txt}
+ if(!res.ok)throw new Error((data&&(data.message||data.details||data.hint))||('HTTP '+res.status));
  return data;
 }
-function fieldMarkup(f){
- const [key,label,type,required,opts]=f;let input='';
- if(type==='student'){
-  input='<select name="'+key+'" id="f_'+key+'" '+(required?'required':'')+'><option value="">انتخاب دانش‌آموز…</option>'+students.map(s=>'<option value="'+s.id+'">'+esc((s.first_name||'')+' '+(s.last_name||'')+' · '+(s.class_name||s.grade||'')+' · کد '+s.id)+'</option>').join('')+'</select>';
- }else if(type==='textarea')input='<textarea name="'+key+'" id="f_'+key+'" '+(required?'required':'')+' maxlength="6000"></textarea>';
- else if(type==='select')input='<select name="'+key+'" id="f_'+key+'" '+(required?'required':'')+'>'+opts.map((o,i)=>'<option value="'+(key==='active'?(i===0?'true':'false'):esc(o))+'">'+esc(o)+'</option>').join('')+'</select>';
- else input='<input name="'+key+'" id="f_'+key+'" '+(required?'required':'')+' maxlength="500" '+(key.includes('date')||key.includes('visit')?'placeholder="۱۴۰۶/۰۷/۰۸"':'')+'>';
- return '<label class="field '+(type==='textarea'?'full':'')+'">'+esc(label)+input+'</label>';
+function fullName(s){return [s.first_name,s.last_name].filter(Boolean).join(' ')||s.full_name||('دانش‌آموز '+s.id);}
+function drawStudents(){
+ const q=norm($('studentSearch').value).toLocaleLowerCase('fa');
+ const filtered=students.filter(s=>[fullName(s),s.student_code,s.national_code,s.class_name,s.grade].some(v=>norm(v).toLocaleLowerCase('fa').includes(q)));
+ $('studentCount').textContent=filtered.length+' دانش‌آموز';
+ $('students').innerHTML=filtered.length?filtered.map(s=>'<button class="student '+(selected&&String(selected.id)===String(s.id)?'selected':'')+'" data-student="'+esc(s.id)+'"><strong>'+esc(fullName(s))+'</strong><small>کد: '+esc(s.student_code||s.id)+' · پایه: '+esc(s.grade||'—')+'</small><small>کلاس: '+esc(s.class_name||'—')+'</small></button>').join(''):'<div class="muted">دانش‌آموزی با این عبارت پیدا نشد.</div>';
+ $('students').querySelectorAll('[data-student]').forEach(b=>b.onclick=()=>chooseStudent(b.dataset.student));
 }
-function drawForm(){
- const c=config[tab];$('formTitle').textContent=(editing?'ویرایش ':'ثبت ')+c.title;$('save').textContent=editing?'ذخیره ویرایش':'ثبت اطلاعات';
- $('fields').innerHTML=c.fields.map(fieldMarkup).join('');
- if(editing){for(const f of c.fields){const el=$('f_'+f[0]);if(!el)continue;let v=editing[f[0]];if(f[0]==='active')v=String(!!v);if(v!==null&&v!==undefined)el.value=String(v);}}
+async function chooseStudent(id){
+ selected=students.find(s=>String(s.id)===String(id));if(!selected)return;
+ $('workspace').classList.remove('hidden');$('selectedName').textContent=fullName(selected);$('selectedMeta').textContent='کد دانش‌آموزی: '+(selected.student_code||selected.id)+' · پایه '+(selected.grade||'نامشخص')+' · کلاس '+(selected.class_name||'نامشخص');
+ document.querySelectorAll('[data-module]').forEach(b=>b.classList.remove('active'));
+ ['casePanel','followPanel','guidancePanel'].forEach(id=>$ (id).classList.add('hidden'));activeModule=null;
+ drawStudents();
+ await loadStudentData();
+ $('workspace').scrollIntoView({behavior:'smooth',block:'start'});
 }
-function drawTable(){
- const c=config[tab];$('tableTitle').textContent=c.plural;$('tableSubtitle').textContent='منبع داده: public.'+c.table+' · دسترسی بر اساس نشست و سیاست‌های Supabase';
- $('thead').innerHTML='<tr>'+c.cols.map(x=>'<th>'+esc(x[1])+'</th>').join('')+'<th>عملیات</th></tr>';
- const q=$('search').value.trim().toLocaleLowerCase('fa');
- const filtered=rows.filter(r=>!q||c.cols.some(([k])=>String(fmt(k,r[k])).toLocaleLowerCase('fa').includes(q)));
- if(!filtered.length){$('tbody').innerHTML='<tr><td colspan="'+(c.cols.length+1)+'">موردی برای نمایش وجود ندارد.</td></tr>';return;}
- $('tbody').innerHTML=filtered.map(r=>'<tr>'+c.cols.map(([k])=>'<td>'+esc(fmt(k,r[k]))+'</td>').join('')+'<td><div class="rowactions"><button data-edit="'+esc(r.id)+'">ویرایش</button><button class="danger" data-delete="'+esc(r.id)+'">حذف</button></div></td></tr>').join('');
- $('tbody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{editing=rows.find(r=>String(r.id)===b.dataset.edit);drawForm();$('formPanel').scrollIntoView({behavior:'smooth',block:'start'});});
- $('tbody').querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{const item=rows.find(r=>String(r.id)===b.dataset.delete);if(!item||!confirm('این مورد حذف شود؟ این عملیات قابل بازگشت نیست.'))return;try{await api(c.table,'DELETE',null,item.id);showNotice('رکورد حذف شد.','ok');await loadRows();}catch(e){showNotice('حذف انجام نشد: '+e.message,'error');}});
+function openModule(m){
+ if(!selected){notice('ابتدا یک دانش‌آموز انتخاب کن.','error');return;}
+ activeModule=m;document.querySelectorAll('[data-module]').forEach(b=>b.classList.toggle('active',b.dataset.module===m));
+ ['casePanel','followPanel','guidancePanel'].forEach(id=>$(id).classList.add('hidden'));
+ $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel'})[m]).classList.remove('hidden');
+ if(m==='case')drawCases();if(m==='follow'){drawFollowups();checkReminders();}if(m==='guidance'){drawGradeInputs();loadGuidanceForm();}
+ $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel'})[m]).scrollIntoView({behavior:'smooth',block:'start'});
 }
-async function loadRows(){
- const c=config[tab];$('tbody').innerHTML='<tr><td>در حال دریافت اطلاعات…</td></tr>';
- try{rows=await api(c.table);if(!Array.isArray(rows))rows=[];drawTable();updateMetrics();showNotice('اطلاعات «'+c.plural+'» از Supabase دریافت شد.','ok');}
- catch(e){rows=[];drawTable();showNotice('دریافت '+c.plural+' ناموفق بود. ممکن است نقش حساب یا سیاست دسترسی جدول اجازه ندهد. جزئیات: '+e.message,'error');}
+function formObj(form){return Object.fromEntries(new FormData(form).entries());}
+function shamsiToday(){return new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/,/g,'').split('/').map(x=>x.trim());}
+function jalaliOrdinal(v){
+ const m=norm(v).match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);if(!m)return null;
+ const y=+m[1],mo=+m[2],d=+m[3];if(mo<1||mo>12||d<1||d>(mo<=6?31:mo<=11?30:30))return null;
+ const yearDays= y*365+Math.floor((y-1)/4)-Math.floor((y-1)/100)+Math.floor((y-1)/400);
+ return yearDays+(mo<=7?(mo-1)*31:186+(mo-7)*30)+d;
 }
-async function updateMetrics(){
- try{
-  const [records,followups,referrals]=await Promise.all([api('counseling_records'),api('counseling_followups'),api('student_referrals')]);
-  $('countRecords').textContent=records.length;
-  $('countFollowups').textContent=followups.filter(r=>!['انجام شد','بسته‌شده'].includes(r.status)).length;
-  $('countReferrals').textContent=referrals.filter(r=>['در انتظار بررسی','در حال پیگیری'].includes(r.status)).length;
- }catch(e){$('countRecords').textContent='—';$('countFollowups').textContent='—';$('countReferrals').textContent='—';}
-}
-async function loadStudents(){
- try{students=await api('students');students.sort((a,b)=>String(a.last_name||'').localeCompare(String(b.last_name||''),'fa'));}
- catch(e){students=[];showNotice('فهرست دانش‌آموزان قابل دریافت نیست؛ دسترسی نقش یا سیاست جدول students را بررسی کنید. '+e.message,'error');}
-}
-async function switchTab(next){
- tab=next;editing=null;for(const b of document.querySelectorAll('[data-tab]'))b.setAttribute('aria-selected',String(b.dataset.tab===tab));
- $('search').value='';drawForm();await loadRows();
-}
-$('entryForm').addEventListener('submit',async e=>{
- e.preventDefault();const c=config[tab];const payload={};
- for(const f of c.fields){const key=f[0],el=$('f_'+key);if(!el)continue;let v=el.value.trim();if(key==='active')v=v==='true';else if(v==='')v=null;payload[key]=v;}
- if(['records','followups','guidance','referrals'].includes(tab)){
-  const student=students.find(s=>String(s.id)===String(payload.student_id));
-  if(student&&tab==='records')payload.student_name=[student.first_name,student.last_name].filter(Boolean).join(' ');
-  if(tab==='records'&&!payload.student_name){showNotice('نام دانش‌آموز باید مشخص باشد.','error');return;}
+function dayDistance(v){const now=shamsiToday();return jalaliOrdinal(v)-jalaliOrdinal(now[0]+'/'+now[1]+'/'+now[2]);}
+function checkReminders(){
+ const upcoming=followups.filter(f=>!['انجام شد','بسته‌شده'].includes(f.status)).map(f=>({...f,days:dayDistance(f.followup_date)})).filter(f=>Number.isFinite(f.days)&&f.days>=0&&f.days<=2);
+ const old=cases.filter(c=>c.next_visit&&!['بسته‌شده'].includes(c.status)).map(c=>({...c,days:dayDistance(c.next_visit),subject:'مراجعه مشاوره‌ای'})).filter(c=>Number.isFinite(c.days)&&c.days>=0&&c.days<=2);
+ const all=[...upcoming,...old];
+ $('reminders').innerHTML=all.length?all.map(x=>'<div class="alert">⏰ '+(x.days===0?'امروز موعد مشاوره است!':'فقط '+x.days+' روز تا موعد مشاوره باقی مانده است.')+' <strong>'+esc(x.followup_date||x.next_visit)+'</strong> · '+esc(x.subject||'مراجعه بعدی')+'</div>').join(''):'<div class="muted">در دو روز آینده موعدی ثبت نشده است.</div>';
+ if(all.length&&'Notification'in window&&Notification.permission==='granted'){
+  const key='frahoosh-counseling-reminder-'+selected.id+'-'+new Date().toISOString().slice(0,10);
+  if(!sessionStorage.getItem(key)){new Notification('یادآوری مشاوره فراهوش',{body:fullName(selected)+' · '+(all[0].days===0?'امروز موعد مراجعه است':'موعد مراجعه در '+all[0].days+' روز آینده است')});sessionStorage.setItem(key,'1');}
  }
- $('save').disabled=true;
- try{if(editing)await api(c.table,'PATCH',payload,editing.id);else await api(c.table,'POST',payload);
- editing=null;drawForm();showNotice('اطلاعات با موفقیت در جدول '+c.table+' ذخیره شد.','ok');await loadRows();}
- catch(err){showNotice('ذخیره انجام نشد: '+err.message,'error');}
- finally{$('save').disabled=false;}
+}
+async function loadStudentData(){
+ try{
+  const [c,f,g]=await Promise.all([
+   api('counseling_records','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
+   api('counseling_followups','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
+   api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'})
+  ]);
+  cases=Array.isArray(c)?c:[];followups=Array.isArray(f)?f:[];guidance=Array.isArray(g)&&g.length?g[0]:null;
+  drawCases();drawFollowups();checkReminders();notice('پرونده‌های '+fullName(selected)+' بارگذاری شد.','ok');
+ }catch(e){notice('اطلاعات این دانش‌آموز کامل بارگذاری نشد: '+e.message,'error');}
+}
+function drawCases(){
+ $('caseRows').innerHTML=cases.length?cases.map(c=>'<tr><td>'+esc(c.first_visit_date||c.session_date)+'</td><td>'+esc(c.next_visit)+'</td><td>'+esc(c.visit_reason)+'</td><td>'+esc(c.recommendations||c.actions_taken)+'</td><td>'+esc(c.status)+'</td><td><button data-edit-case="'+c.id+'">ویرایش</button> <button class="danger" data-delete-case="'+c.id+'">حذف</button></td></tr>').join(''):'<tr><td colspan="6">برای این دانش‌آموز هنوز پرونده‌ای ثبت نشده است.</td></tr>';
+ $('caseRows').querySelectorAll('[data-edit-case]').forEach(b=>b.onclick=()=>{const c=cases.find(x=>String(x.id)===b.dataset.editCase);if(!c)return;const f=$('caseForm');for(const k of ['first_visit_date','next_visit','visit_reason','recommendations','status','description'])f.elements[k].value=c[k]||'';f.dataset.editId=c.id;$('saveCase').textContent='ذخیره ویرایش';});
+ $('caseRows').querySelectorAll('[data-delete-case]').forEach(b=>b.onclick=async()=>{if(!confirm('این پرونده حذف شود؟'))return;try{await api('counseling_records','DELETE',null,{id:'eq.'+b.dataset.deleteCase});await loadStudentData();notice('پرونده حذف شد.','ok');}catch(e){notice('حذف انجام نشد: '+e.message,'error');}});
+}
+$('caseForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!selected)return;const f=e.currentTarget;const o=formObj(f);const payload={student_id:selected.id,student_name:fullName(selected),first_visit_date:o.first_visit_date,session_date:o.first_visit_date,next_visit:o.next_visit||'',visit_reason:o.visit_reason,recommendations:o.recommendations,description:o.description||'',status:o.status||'در حال پیگیری'};
+ try{if(f.dataset.editId){await api('counseling_records','PATCH',payload,{id:'eq.'+f.dataset.editId});delete f.dataset.editId;}else await api('counseling_records','POST',payload);f.reset();$('saveCase').textContent='ثبت پرونده';await loadStudentData();notice('پرونده مشاوره‌ای ذخیره شد.','ok');}catch(err){notice('ثبت پرونده ناموفق بود: '+err.message,'error');}
 });
-$('cancelEdit').onclick=()=>{editing=null;drawForm();};
-document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
-$('search').addEventListener('input',drawTable);
-$('refresh').onclick=()=>loadRows();
-$('back').onclick=()=>{location.href='portal.html?step=panel&role='+(role==='manager'?'manager':'counselor')};
-$('exportCsv').onclick=()=>{
- const c=config[tab],header=c.cols.map(x=>x[1]),data=rows.map(r=>c.cols.map(([k])=>String(fmt(k,r[k])??'').replace(/"/g,'""')));
- const csv='\uFEFF'+[header,...data].map(r=>r.map(v=>'"'+v+'"').join(',')).join('\r\n');
- const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=c.table+'-frahoosh.csv';a.click();URL.revokeObjectURL(a.href);
-};
+$('clearCase').onclick=()=>{$('caseForm').reset();delete $('caseForm').dataset.editId;$('saveCase').textContent='ثبت پرونده';};
+function drawFollowups(){
+ $('followRows').innerHTML=followups.length?followups.map(f=>'<tr><td>'+esc(f.followup_date)+'</td><td>'+esc(f.subject)+'</td><td>'+esc(f.description)+'</td><td>'+esc(f.status)+'</td><td><button data-done="'+f.id+'">انجام شد</button> <button class="danger" data-delete-follow="'+f.id+'">حذف</button></td></tr>').join(''):'<tr><td colspan="5">پیگیری ثبت نشده است.</td></tr>';
+ $('followRows').querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{const f=followups.find(x=>String(x.id)===b.dataset.done);try{await api('counseling_followups','PATCH',{status:'انجام شد'},{id:'eq.'+f.id});await loadStudentData();}catch(e){notice('به‌روزرسانی ناموفق بود: '+e.message,'error');}});
+ $('followRows').querySelectorAll('[data-delete-follow]').forEach(b=>b.onclick=async()=>{if(!confirm('این پیگیری حذف شود؟'))return;try{await api('counseling_followups','DELETE',null,{id:'eq.'+b.dataset.deleteFollow});await loadStudentData();}catch(e){notice('حذف ناموفق بود: '+e.message,'error');}});
+}
+$('followForm').addEventListener('submit',async e=>{e.preventDefault();if(!selected)return;const o=formObj(e.currentTarget);try{await api('counseling_followups','POST',{student_id:selected.id,subject:o.subject,description:o.description,followup_date:o.followup_date,status:o.status,followup_items:o.description});e.currentTarget.reset();await loadStudentData();notice('پیگیری و موعد آن ذخیره شد.','ok');}catch(err){notice('ثبت پیگیری ناموفق بود: '+err.message,'error');}});
+$('enableNotifications').onclick=async()=>{if(!('Notification'in window)){notice('این مرورگر از اعلان پشتیبانی نمی‌کند.','error');return;}const p=await Notification.requestPermission();notice(p==='granted'?'اعلان مرورگر فعال شد.':'اجازه اعلان داده نشد.',p==='granted'?'ok':'error');checkReminders();};
+function drawGradeInputs(){
+ const grades=[['grade7_scores','پایه هفتم'],['grade8_scores','پایه هشتم'],['grade9_scores','پایه نهم']];
+ $('gradeInputs').innerHTML=grades.map(([key,title])=>'<h4>'+title+'</h4><div class="scoregrid">'+subjects.map(([s,label])=>'<label class="field">'+label+' (از ۲۰)<input type="number" min="0" max="20" step=".25" name="'+key+'.'+s+'" data-grade="'+key+'" data-subject="'+s+'"></label>').join('')+'</div>').join('');
+ if(guidance){for(const el of $('gradeInputs').querySelectorAll('input')){const obj=guidance[el.dataset.grade]||{};if(obj[el.dataset.subject]!==undefined)el.value=obj[el.dataset.subject];}}
+}
+function loadGuidanceForm(){
+ if(!guidance)return;const f=$('guidanceForm');
+ for(const k of ['aptitude_points','interest_points','counselor_points','teacher_points','student_points','parent_points','notes'])if(f.elements[k])f.elements[k].value=guidance[k]??(k==='notes'?'':0);
+ calculateGuidance(false);
+}
+function gradeScoresFromForm(){
+ const out={grade7_scores:{},grade8_scores:{},grade9_scores:{}};
+ $('gradeInputs').querySelectorAll('input').forEach(el=>{const v=el.value.trim();if(v!=='')out[el.dataset.grade][el.dataset.subject]=Math.max(0,Math.min(20,Number(v)));});
+ return out;
+}
+const tracks=[
+ {key:'math',name:'ریاضی و فیزیک',subjects:['math','science'],note:'نیازمند بررسی حدنصاب ریاضی و علوم'},
+ {key:'experimental',name:'علوم تجربی',subjects:['science','math'],note:'نیازمند بررسی حدنصاب علوم و ریاضی'},
+ {key:'humanities',name:'علوم انسانی',subjects:['persian','arabic','social'],note:'نیازمند بررسی حدنصاب فارسی، عربی و مطالعات'},
+ {key:'technical',name:'فنی‌وحرفه‌ای · صنعت',subjects:['math','science','technical'],note:'علاقه عملی و توانایی فنی نیز بررسی شود'},
+ {key:'services',name:'فنی‌وحرفه‌ای · خدمات',subjects:['persian','english','social','math'],note:'توانایی‌های ارتباطی و علایق شغلی بررسی شود'},
+ {key:'arts',name:'هنر',subjects:['arts','persian'],note:'نمونه‌کار و رغبت هنری نیز بررسی شود'},
+ {key:'skills',name:'کاردانش',subjects:['technical','arts','math'],note:'رشته/زمینه دقیق با ظرفیت و ضوابط منطقه تطبیق داده شود'}
+];
+function computeScores(){
+ const f=$('guidanceForm'),marks=gradeScoresFromForm();
+ const point=k=>Math.max(0,Number(f.elements[k].value)||0);
+ const other=point('aptitude_points')+point('interest_points')+point('counselor_points')+point('teacher_points')+point('student_points')+point('parent_points');
+ return tracks.map(t=>{
+  let total=0,weight=0;
+  [['grade7_scores',1],['grade8_scores',1],['grade9_scores',3]].forEach(([g,w])=>t.subjects.forEach(s=>{const v=marks[g][s];if(Number.isFinite(v)){total+=v*w;weight+=w;}}));
+  const avg=weight?total/weight:0;const academic=weight?avg/20*35:0;const score=academic+other;
+  return {...t,average:avg,academic,score,complete:weight>0};
+ }).sort((a,b)=>b.score-a.score);
+}
+function calculateGuidance(show=true){
+ const arr=computeScores();$('guidanceResult').classList.remove('hidden');
+ $('recommendations').innerHTML=arr.map((t,i)=>'<div class="track"><span class="pill">اولویت پیشنهادی '+(i+1)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+t.score.toFixed(1)+' / 100</div><div class="muted">عملکرد تحصیلی: '+t.academic.toFixed(1)+' از ۳۵<br>میانگین دروس مرتبط: '+(t.complete?t.average.toFixed(2):'نمره وارد نشده')+' از ۲۰<br>'+esc(t.note)+'</div></div>').join('');
+ if(show)notice('پیشنهادهای هدایت تحصیلی محاسبه شد؛ نتیجه نهایی باید با ضوابط رسمی و حدنصاب‌های منطقه تطبیق داده شود.','ok');
+ return {arr,marks};
+}
+$('calcGuidance').onclick=()=>calculateGuidance(true);
+$('guidanceForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!selected)return;const {arr,marks}=calculateGuidance(false),f=e.currentTarget;
+ const payload={student_id:selected.id,grade:selected.grade||'نهم',interest:'امتیاز رغبت: '+f.elements.interest_points.value,aptitude:'امتیاز توانایی: '+f.elements.aptitude_points.value,recommendation:arr.slice(0,3).map((x,i)=>(i+1)+'. '+x.name+' ('+x.score.toFixed(1)+' از ۱۰۰)').join('\n'),grade7_scores:marks.grade7_scores,grade8_scores:marks.grade8_scores,grade9_scores:marks.grade9_scores,aptitude_points:Number(f.elements.aptitude_points.value)||0,interest_points:Number(f.elements.interest_points.value)||0,counselor_points:Number(f.elements.counselor_points.value)||0,teacher_points:Number(f.elements.teacher_points.value)||0,student_points:Number(f.elements.student_points.value)||0,parent_points:Number(f.elements.parent_points.value)||0,recommendation_scores:Object.fromEntries(arr.map(x=>[x.key,{score:Number(x.score.toFixed(2)),academic:Number(x.academic.toFixed(2)),average:Number(x.average.toFixed(2))}])),notes:f.elements.notes.value||''};
+ try{if(guidance)await api('counseling_guidance','PATCH',payload,{id:'eq.'+guidance.id});else await api('counseling_guidance','POST',payload);const g=await api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'});guidance=Array.isArray(g)&&g.length?g[0]:null;notice('اطلاعات هدایت تحصیلی و پیشنهادها ذخیره شد.','ok');}catch(err){notice('ذخیره هدایت تحصیلی ناموفق بود: '+err.message,'error');}
+});
+document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>openModule(b.dataset.module));
+$('studentSearch').addEventListener('input',drawStudents);
+$('changeStudent').onclick=()=>{$('workspace').classList.add('hidden');selected=null;$('studentSearch').focus();window.scrollTo({top:0,behavior:'smooth'});};
+$('refresh').onclick=async()=>{try{students=await api('students');drawStudents();if(selected)await chooseStudent(selected.id);else notice('فهرست دانش‌آموزان تازه شد.','ok');}catch(e){notice('تازه‌سازی ناموفق بود: '+e.message,'error');}};
+$('print').onclick=()=>window.print();
+$('back').onclick=()=>location.href='portal.html';
 (async()=>{
- if(!token){showNotice('نشست ورود پیدا نشد. از صفحه اصلی فراهوش دوباره وارد پنل شوید.','error');$('who').textContent='بدون نشست';$('entryForm').querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);return;}
- if(!allowed.includes(role)){showNotice('این نقش مجاز به بازکردن مرکز مشاوره نیست.','error');$('entryForm').querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);return;}
- $('who').textContent='نقش نشست: '+role+' · داده‌ها از Supabase';
- await loadStudents();for(const b of document.querySelectorAll('[data-tab]'))b.setAttribute('aria-selected',String(b.dataset.tab===tab));drawForm();await loadRows();
+ if(!token){notice('نشست ورود پیدا نشد. از صفحه اصلی وارد پنل شو.','error');return;}
+ if(!allowed.includes(role)){notice('این نقش اجازه دسترسی به پنل مشاور را ندارد.','error');return;}
+ $('who').textContent='نقش نشست: '+role+' · اطلاعات از Supabase';
+ try{students=await api('students');students.sort((a,b)=>fullName(a).localeCompare(fullName(b),'fa'));drawStudents();notice('فهرست دانش‌آموزان بارگذاری شد. یک دانش‌آموز را انتخاب کن.','ok');}
+ catch(e){notice('فهرست دانش‌آموزان بارگذاری نشد: '+e.message,'error');$('students').innerHTML='<div class="muted">برای نمایش دانش‌آموزان، دسترسی نقش مشاور به جدول students را بررسی کن.</div>';}
 })();
-</script>
-</body></html>
+</script></body></html>
