@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
     return reply({ profiles: [
       ...(studentsResult.data ?? []).map((x: any) => profile(x, "student")),
       ...(teachersResult.data ?? []).map((x: any) => profile(x, "teacher")),
-      ...(staffResult.data ?? []).filter((x: any) => ["executive","educational","cultural","advisor","deputy","معاون","معاون اجرایی","معاون آموزشی","معاون پرورشی"].includes(clean(x.role).toLowerCase())).map((x: any) => profile(x, "deputy")),
+      ...(staffResult.data ?? []).map((x: any) => profile(x, ["executive","educational","cultural","advisor","deputy","معاون","معاون اجرایی","معاون آموزشی","معاون پرورشی"].includes(clean(x.role).toLowerCase()) ? "deputy" : "staff")),
     ], schedules: schedulesResult.data ?? [] });
   }
 
