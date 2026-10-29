@@ -57,7 +57,7 @@ function render(id){const r=roles.find(x=>x.id===id)||roles[0];selectedRole=r;up
   sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);
   sessionStorage.setItem('frahoosh_novin_role',portalAuthUserRole);
   const counselingTabs={'پرونده مشاوره':'records','نوبت‌دهی':'followups','پیگیری مشاوره‌ای':'followups','گزارش‌های مشاوره':'records','ارجاع به مدیر':'referrals'};
-  location.href='counseling.html?tab='+encodeURIComponent(counselingTabs[name]||'records');
+  location.href='counseling.html?tab='+encodeURIComponent(counselingTabs[name]||'records')+'&v=ab95d2c';
   return;
 }
 const isClass=name==='کلاس آنلاین';
