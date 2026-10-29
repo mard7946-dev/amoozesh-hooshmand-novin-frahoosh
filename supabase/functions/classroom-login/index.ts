@@ -18,7 +18,7 @@ function roleAllowed(actual: string, expected: string) {
   const student = ["student", "دانش آموز"];
   const parent = ["parent", "guardian", "ولی", "والد", "والدین", "سرپرست"];
   const counselor = ["counselor", "advisor", "cultural", "مشاور", "مشاوره", "پرورشی"];
-  const deputyAliases = ["executive", "educational", "cultural", "advisor", "counselor", "deputy"];
+  const deputyAliases = ["executive", "educational", "deputy", "executive_deputy", "educational_deputy", "معاون اجرایی", "معاون آموزشی", "معاونت"];
   if (e === "manager") return manager.includes(a);
   if (e === "deputy") return deputyAliases.includes(a);
   if (e === "teacher") return teacher.includes(a);
