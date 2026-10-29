@@ -90,10 +90,13 @@ async function loadRows(){
  try{rows=await api(c.table);if(!Array.isArray(rows))rows=[];drawTable();updateMetrics();showNotice('اطلاعات «'+c.plural+'» از Supabase دریافت شد.','ok');}
  catch(e){rows=[];drawTable();showNotice('دریافت '+c.plural+' ناموفق بود. ممکن است نقش حساب یا سیاست دسترسی جدول اجازه ندهد. جزئیات: '+e.message,'error');}
 }
-function updateMetrics(){
- $('countRecords').textContent=tab==='records'?rows.length:'—';
- if(tab==='followups')$('countFollowups').textContent=rows.filter(r=>!['انجام شد','بسته‌شده'].includes(r.status)).length;
- if(tab==='referrals')$('countReferrals').textContent=rows.filter(r=>['در انتظار بررسی','در حال پیگیری'].includes(r.status)).length;
+async function updateMetrics(){
+ try{
+  const [records,followups,referrals]=await Promise.all([api('counseling_records'),api('counseling_followups'),api('student_referrals')]);
+  $('countRecords').textContent=records.length;
+  $('countFollowups').textContent=followups.filter(r=>!['انجام شد','بسته‌شده'].includes(r.status)).length;
+  $('countReferrals').textContent=referrals.filter(r=>['در انتظار بررسی','در حال پیگیری'].includes(r.status)).length;
+ }catch(e){$('countRecords').textContent='—';$('countFollowups').textContent='—';$('countReferrals').textContent='—';}
 }
 async function loadStudents(){
  try{students=await api('students');students.sort((a,b)=>String(a.last_name||'').localeCompare(String(b.last_name||''),'fa'));}
