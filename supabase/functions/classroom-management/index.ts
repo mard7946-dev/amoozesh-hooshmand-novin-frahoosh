@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "list_classes") {
-      let q = admin.from("online_classes").select("id,title,subject,teacher,grade,class_name,start_time,end_time,status,tenant_school_id").eq("tenant_school_id", school).order("id", { ascending: false });
+      let q = admin.from("online_classes").select("id,title,subject,teacher,grade,class_name,start_time,end_time,day_of_week,status,tenant_school_id").eq("tenant_school_id", school).order("id", { ascending: false });
       if (studentRole) q = q.eq("class_name", studentClassName);
       else if (teacher && !manager) q = q.in("teacher", teacherNames);
       const { data, error } = await q.limit(500);
@@ -92,11 +92,20 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, classes: data ?? [] });
     }
 
+    if (action === "set_class_day") {
+      if (!manager) return reply({ message: "فقط مدیریت می‌تواند برنامه هفتگی را تغییر دهد." }, 403);
+      const classId = asInt(body.class_id), day = clean(body.day_of_week);
+      if (!classId || !["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه","پنجشنبه","جمعه"].includes(day)) return reply({ message: "کلاس یا روز هفته معتبر نیست." }, 400);
+      const { data, error } = await admin.from("online_classes").update({ day_of_week: day }).eq("id", classId).eq("tenant_school_id", school).select("id,day_of_week").single();
+      if (error) throw error;
+      return reply({ ok: true, class: data });
+    }
+
     if (action === "create_class") {
       if (!manager) return reply({ message: "فقط مدیریت می‌تواند کلاس ایجاد کند." }, 403);
       const title = clean(body.title), className = clean(body.class_name), teacherName = clean(body.teacher), subject = clean(body.subject);
       if (!title || !className || !teacherName || !subject) return reply({ message: "عنوان، نام کلاس، دبیر و درس الزامی است." }, 400);
-      const row = { title, class_name: className, teacher: teacherName, subject, lesson: subject, grade: clean(body.grade), start_time: clean(body.start_time), end_time: clean(body.end_time), status: "برنامه‌ریزی‌شده", tenant_school_id: school, activated_by: callerName };
+      const row = { title, class_name: className, teacher: teacherName, subject, lesson: subject, grade: clean(body.grade), start_time: clean(body.start_time), end_time: clean(body.end_time), day_of_week: clean(body.day_of_week), status: "برنامه‌ریزی‌شده", tenant_school_id: school, activated_by: callerName };
       const { data, error } = await admin.from("online_classes").insert(row).select("id,title,class_name,teacher,subject,grade,start_time,end_time,status").single();
       if (error) throw error;
       return reply({ ok: true, class: data });
@@ -225,7 +234,7 @@ Deno.serve(async (req: Request) => {
         title: clean(raw.title) || clean(raw.subject),
         class_name: clean(raw.class_name), subject: clean(raw.subject), lesson: clean(raw.subject),
         teacher: clean(raw.teacher), grade: clean(raw.grade),
-        start_time: clean(raw.start_time), end_time: clean(raw.end_time),
+        start_time: clean(raw.start_time), end_time: clean(raw.end_time), day_of_week: clean(raw.day_of_week),
       })).filter((r: any) => r.title && r.class_name && r.subject && r.teacher);
       if (!prepared.length) return reply({ message: "ستون‌های لازم یافت نشدند؛ کلاس، درس و دبیر را بررسی کنید." }, 400);
 
@@ -235,7 +244,7 @@ Deno.serve(async (req: Request) => {
         if (!unique.has(key)) unique.set(key, row);
       }
       const { data: existing, error: listError } = await admin.from("online_classes")
-        .select("id,title,subject,lesson,teacher,grade,class_name,start_time,end_time,status")
+        .select("id,title,subject,lesson,teacher,grade,class_name,start_time,end_time,day_of_week,status")
         .eq("tenant_school_id", school).limit(1000);
       if (listError) throw listError;
 
@@ -252,6 +261,7 @@ Deno.serve(async (req: Request) => {
           if (clean(current.teacher) !== row.teacher) patch.teacher = row.teacher;
           if (clean(current.grade) !== row.grade && row.grade) patch.grade = row.grade;
           if (!clean(current.title) && row.title) patch.title = row.title;
+          if (clean(current.day_of_week) !== row.day_of_week && row.day_of_week) patch.day_of_week = row.day_of_week;
           if (!clean(current.lesson) && row.lesson) patch.lesson = row.lesson;
           if (Object.keys(patch).length) {
             const { error } = await admin.from("online_classes").update(patch)
@@ -262,7 +272,7 @@ Deno.serve(async (req: Request) => {
         } else {
           const insertRow = {
             title: row.title, class_name: row.class_name, subject: row.subject, lesson: row.lesson,
-            teacher: row.teacher, grade: row.grade, start_time: row.start_time, end_time: row.end_time,
+            teacher: row.teacher, grade: row.grade, start_time: row.start_time, end_time: row.end_time, day_of_week: row.day_of_week,
             status: "برنامه‌ریزی‌شده", tenant_school_id: school, activated_by: callerName,
             auto_activate: false, auto_close: false,
           };
