@@ -38,6 +38,19 @@
 </section>
 </main>
 <script>
+window.addEventListener('error',function(e){
+  var n=document.getElementById('notice'),w=document.getElementById('who'),s=document.getElementById('students');
+  var msg='خطای اجرای صفحه: '+(e.message||'خطای نامشخص')+(e.lineno?' · خط '+e.lineno:'');
+  if(w)w.textContent='خطای جاوااسکریپت';
+  if(s)s.innerHTML='<div class="muted">'+msg.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})+'</div>';
+  if(n){n.textContent=msg;n.className='notice error';}
+});
+window.addEventListener('unhandledrejection',function(e){
+  var n=document.getElementById('notice');
+  if(n){n.textContent='خطای اتصال: '+String(e.reason&&e.reason.message||e.reason||'نامشخص');n.className='notice error';}
+});
+</script>
+<script>
 const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
 const SUPABASE_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
 const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
