@@ -90,7 +90,7 @@ function shamsiToday(){
  return [val.year,val.month,val.day];
 }
 function jalaliOrdinal(v){
- const m=norm(v).match(/^(\\d{4})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{1,2})$/);if(!m)return null;
+  const m=norm(v).match(/^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/);if(!m)return null;
  const jy=+m[1],jm=+m[2],jd=+m[3];if(jm<1||jm>12||jd<1||jd>(jm<=6?31:jm<=11?30:30))return null;
  let j=jy+1595;
  let days=-355668+365*j+Math.floor(j/33)*8+Math.floor(((j%33)+3)/4)+jd;
