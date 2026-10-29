@@ -45,9 +45,9 @@ function render(){
   if(!people.length)list.append(el('div','empty','در این کلاس دانش‌آموزی با این مشخصات پیدا نشد.'));
  }else{
   $('pageTitle').textContent='دبیران و کارکنان';$('subtitle').textContent='برای مشاهده مشخصات و برنامه هفتگی، نام فرد را انتخاب کنید.';$('backLevel').hidden=true;
-  const people=profiles.filter(p=>(p.category==='teacher'||p.category==='deputy')&&[nameOf(p),p.national_code,p.subject,p.role].some(v=>norm(v).includes(q)));
+  const people=profiles.filter(p=>(p.category==='teacher'||p.category==='deputy'||p.category==='staff')&&[nameOf(p),p.national_code,p.subject,p.role].some(v=>norm(v).includes(q)));
   $('count').textContent=people.length+' نفر';
-  for(const p of people){const b=el('button','person');b.type='button';const kind=p.category==='teacher'?'دبیر':(p.role||'معاون/کارمند');b.append(el('strong','',nameOf(p)),el('small','',kind+(p.subject?' · '+p.subject:'')));b.addEventListener('click',()=>showProfile(p));list.append(b)}
+  for(const p of people){const b=el('button','person');b.type='button';const kind=p.category==='teacher'?'دبیر':(p.category==='deputy'?'معاون':(p.role||'کارمند'));b.append(el('strong','',nameOf(p)),el('small','',kind+(p.subject?' · '+p.subject:'')));b.addEventListener('click',()=>showProfile(p));list.append(b)}
   if(!people.length)list.append(el('div','empty','دبیر یا کارمندی در اطلاعات ثبت‌شده پیدا نشد.'));
  }
 }
