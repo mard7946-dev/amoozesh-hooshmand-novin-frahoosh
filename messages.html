@@ -64,7 +64,30 @@ $('rejectMessage')?.addEventListener('click',async()=>{const reason=prompt('عل
 }
 function setView(next){view=next;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('mainTitle').textContent=({inbox:'صندوق دریافتی',outbox:'پیام‌های ارسالی',approvals:'پیام‌های در انتظار تأیید'})[view];$('mainSubtitle').textContent=({inbox:'پیام‌هایی که پس از تأیید به شما تحویل شده‌اند',outbox:'وضعیت و مسیر تأیید پیام‌های شما',approvals:'پیام‌های منتظر اقدام شما در مرحله مجاز'})[view];selectedId=null;renderList();$('detailPanel').innerHTML='<div class="empty"><div><div style="font-size:36px">✉️</div>برای مشاهده جزئیات، یک پیام را از فهرست انتخاب کنید.</div></div>'}
 async function loadMessages(){const data=await api('list');currentUser=data.user;$('who').textContent=(currentUser.name||'کاربر')+' · '+(roleLabels[currentUser.role]||currentUser.role);messages=data.messages||[];renderList();if(selectedId&&messages.some(m=>m.id===selectedId))showMessage(selectedId)}
-async function loadUsers(){const data=await api('directory');users=data.users||[];const select=$('recipient');select.innerHTML='<option value="">گیرنده را انتخاب کنید…</option>';const managers=users.filter(u=>u.role==='manager');const others=users.filter(u=>u.role!=='manager');if(managers.length){const group=document.createElement('optgroup');group.label='مدیریت مدرسه — پیام مستقیم';for(const u of managers){const opt=document.createElement('option');opt.value=u.id;opt.textContent=u.name+' — مدیریت مدرسه';group.append(opt)}select.append(group)}if(others.length){const group=document.createElement('optgroup');group.label='سایر گیرندگان';for(const u of others){const opt=document.createElement('option');opt.value=u.id;opt.textContent=u.name+' — '+(roleLabels[u.role]||roleLabels[u.role_label]||u.role);group.append(opt)}select.append(group)}if(!users.length)select.innerHTML='<option value="">کاربر دیگری در مدرسه یافت نشد</option>'}
+async function loadUsers(){
+ const data=await api('directory');
+ users=Array.isArray(data.users)?data.users:[];
+ const select=$('recipient');
+ select.innerHTML='';
+ const placeholder=document.createElement('option');
+ placeholder.value='';
+ placeholder.textContent='گیرنده را انتخاب کنید…';
+ select.append(placeholder);
+ const normalizeRole=u=>String(u.role||u.role_label||'').trim().toLowerCase();
+ const managers=users.filter(u=>normalizeRole(u)==='manager'||normalizeRole(u)==='مدیر'||normalizeRole(u)==='مدیریت');
+ const others=users.filter(u=>!managers.includes(u));
+ if(managers.length){
+  const group=document.createElement('optgroup');group.label='مدیریت مدرسه — ارسال مستقیم به مدیر';
+  for(const u of managers){const opt=document.createElement('option');opt.value=u.id;opt.textContent=(u.name||'مدیر مدرسه')+' — مدیریت مدرسه (مستقیم)';group.append(opt)}
+  select.append(group);
+ }
+ if(others.length){
+  const group=document.createElement('optgroup');group.label='سایر گیرندگان';
+  for(const u of others){const opt=document.createElement('option');opt.value=u.id;opt.textContent=(u.name||'کاربر')+' — '+(roleLabels[normalizeRole(u)]||u.role_label||u.role||'کاربر');group.append(opt)}
+  select.append(group);
+ }
+ if(!users.length){select.innerHTML='<option value="">کاربر دیگری در مدرسه یافت نشد</option>'}
+}
 function openCompose(){selectedId=null;$('mainTitle').textContent='پیام جدید';$('mainSubtitle').textContent='پیام را بنویسید؛ ارسال مستقیم به گیرنده انجام نمی‌شود.';$('detailPanel').classList.add('hide');$('composePanel').classList.remove('hide');$('closeCompose').classList.remove('hide');$('messageForm').reset();$('fileInfo').textContent='یک فایل، حداکثر ۵ مگابایت. فایل فقط برای افراد مجاز قابل دریافت است.'}
 function closeCompose(){ $('composePanel').classList.add('hide');$('closeCompose').classList.add('hide');$('detailPanel').classList.remove('hide');setView(view)}
 $('compose').onclick=openCompose;$('closeCompose').onclick=closeCompose;$('cancelCompose').onclick=closeCompose;
