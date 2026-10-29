@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081326"><title>پرونده‌های فراهوش</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0}
+*{box-sizing:border-box}body{margin:0;padding:16px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:1050px;margin:auto}header,.actions,.heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}header{padding:12px 0}h1{font-size:clamp(22px,4vw,30px);color:var(--mint);margin:0}h2{font-size:20px}.card{border:1px solid var(--line);background:#0e1b32;border-radius:16px;padding:16px;margin:12px 0}.muted,small{color:var(--muted);line-height:1.8}.btn,input{font:inherit;color:var(--text);background:#203451;border:1px solid var(--line);border-radius:10px;padding:10px}.btn{cursor:pointer}.btn.primary{border-color:var(--mint)}input{background:#081326;flex:1;min-width:180px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.person,.class-card{width:100%;text-align:right;border:1px solid var(--line);background:#10213a;color:var(--text);border-radius:12px;padding:14px;cursor:pointer;font:inherit}.person:hover,.class-card:hover,.person[aria-pressed=true]{border-color:var(--mint)}.person small,.class-card small{display:block;margin-top:5px}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:4px 9px;font-size:12px}.status{line-height:1.9}.error{color:#ffb7b7}.empty{padding:20px;text-align:center;color:var(--muted)}.detail{margin-top:16px;border:1px solid var(--line);background:#081326;border-radius:14px;padding:14px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.field{padding:10px;border:1px solid #263958;border-radius:10px;overflow-wrap:anywhere}.field small{display:block;margin-bottom:4px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:500px}th,td{text-align:right;padding:10px;border-bottom:1px solid #263958}th{color:var(--muted)}[hidden]{display:none!important}
+</style></head>
+<body><main>
+<header><div><h1 id="pageTitle">پرونده‌های فراهوش</h1><p class="muted" id="subtitle">اطلاعات از پرونده‌های ثبت‌شده در پایگاه داده خوانده می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
+<section class="card"><div class="actions"><button class="btn" id="backLevel" hidden>بازگشت به فهرست کلاس‌ها</button><input id="search" type="search" placeholder="جست‌وجوی نام، کلاس یا کد ملی" aria-label="جست‌وجو"><span class="pill" id="count">در حال بارگذاری…</span></div><p id="status" class="status" role="status">در حال دریافت اطلاعات…</p><div id="list" class="grid"></div><div id="detail" class="detail" hidden></div></section>
+</main>
+<script>
+const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
+const SUPABASE_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=sessionStorage.getItem('frahoosh_novin_role')||'';
+const view=new URLSearchParams(location.search).get('view')||'';
+const $=id=>document.getElementById(id);
+const list=$('list');let profiles=[],schedules=[],selectedClass='',currentProfile=null;
+const nameOf=p=>String(p.display_name||[p.first_name,p.last_name].filter(Boolean).join(' ')||'بدون نام').trim();
+const norm=v=>String(v||'').trim().toLocaleLowerCase('fa');
+function setStatus(s,error=false){$('status').textContent=s;$('status').className='status'+(error?' error':'')}
+function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
+async function api(payload){const r=await fetch(SUPABASE_URL+'/functions/v1/admin-manage-users',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'دریافت اطلاعات ناموفق بود ('+r.status+')');return d}
+function field(label,value){const n=el('div','field');n.append(el('small','',label),el('strong','',String(value||'ثبت نشده')));return n}
+function render(){
+ list.replaceChildren();$('detail').hidden=true;currentProfile=null;
+ const q=norm($('search').value);
+ if(view==='student'){
+  $('pageTitle').textContent='دانش‌آموزان بر اساس کلاس';$('subtitle').textContent=selectedClass?'کلاس انتخاب‌شده: '+selectedClass+' · برای مشاهده پرونده روی نام دانش‌آموز بزنید.':'ابتدا کلاس را انتخاب کنید؛ سپس فهرست دانش‌آموزان همان کلاس نمایش داده می‌شود.';
+  $('backLevel').hidden=!selectedClass;
+  if(!selectedClass){
+   const classes=[...new Set(profiles.filter(p=>p.category==='student').map(p=>String(p.class_name||'').trim()||'کلاس ثبت نشده'))].sort((a,b)=>a.localeCompare(b,'fa'));
+   const filtered=classes.filter(c=>norm(c).includes(q)||profiles.some(p=>(String(p.class_name||'').trim()||'کلاس ثبت نشده')===c&&norm(nameOf(p)+' '+p.national_code).includes(q)));
+   $('count').textContent=filtered.length+' کلاس';
+   for(const c of filtered){const count=profiles.filter(p=>(String(p.class_name||'').trim()||'کلاس ثبت نشده')===c).length;const b=el('button','class-card');b.type='button';b.append(el('strong','',c),el('small','',count+' دانش‌آموز'));b.addEventListener('click',()=>{selectedClass=c;$('search').value='';render()});list.append(b)}
+   if(!filtered.length)list.append(el('div','empty','کلاسی در اطلاعات ثبت‌شده پیدا نشد.'));
+   return;
+  }
+  const people=profiles.filter(p=>p.category==='student'&&(String(p.class_name||'').trim()||'کلاس ثبت نشده')===selectedClass&&[nameOf(p),p.national_code,p.student_code].some(v=>norm(v).includes(q)));
+  $('count').textContent=people.length+' دانش‌آموز';
+  for(const p of people){const b=el('button','person');b.type='button';b.append(el('strong','',nameOf(p)),el('small','',p.student_code?'شماره دانش‌آموزی: '+p.student_code:(p.national_code?'کد ملی: '+p.national_code:'کد ملی ثبت نشده')));b.addEventListener('click',()=>showProfile(p));list.append(b)}
+  if(!people.length)list.append(el('div','empty','در این کلاس دانش‌آموزی با این مشخصات پیدا نشد.'));
+ }else{
+  $('pageTitle').textContent='دبیران و کارکنان';$('subtitle').textContent='برای مشاهده مشخصات و برنامه هفتگی، نام فرد را انتخاب کنید.';$('backLevel').hidden=true;
+  const people=profiles.filter(p=>(p.category==='teacher'||p.category==='deputy')&&[nameOf(p),p.national_code,p.subject,p.role].some(v=>norm(v).includes(q)));
+  $('count').textContent=people.length+' نفر';
+  for(const p of people){const b=el('button','person');b.type='button';const kind=p.category==='teacher'?'دبیر':(p.role||'معاون/کارمند');b.append(el('strong','',nameOf(p)),el('small','',kind+(p.subject?' · '+p.subject:'')));b.addEventListener('click',()=>showProfile(p));list.append(b)}
+  if(!people.length)list.append(el('div','empty','دبیر یا کارمندی در اطلاعات ثبت‌شده پیدا نشد.'));
+ }
+}
+function showProfile(p){
+ currentProfile=p;const box=$('detail');box.hidden=false;box.replaceChildren();
+ const heading=el('div','heading');heading.append(el('h2','',nameOf(p)),el('span','pill',p.category==='student'?'دانش‌آموز':p.category==='teacher'?'دبیر':'معاون/کارمند'));
+ const fields=el('div','fields');
+ const values=p.category==='student'?[['کلاس',p.class_name],['پایه',p.grade],['شماره دانش‌آموزی',p.student_code],['شماره تماس دانش‌آموز',p.phone],['شماره تماس والدین',p.parent_phone],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['تاریخ تولد',p.birth_date],['نشانی',p.address]]:[['شماره تماس',p.phone||p.mobile],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['کد پرسنلی',p.employee_code],['درس/مسئولیت',p.subject||p.role],['ایمیل',p.email]];
+ for(const [k,v] of values)fields.append(field(k,v));
+ box.append(heading,fields,el('h2','','برنامه هفتگی'));
+ const isStudent=p.category==='student',personName=norm(nameOf(p));
+ const matches=schedules.filter(s=>isStudent?norm(s.class_name)===norm(p.class_name):norm(s.teacher)===personName);
+ if(!matches.length){box.append(el('p','empty',isStudent?'برای کلاس این دانش‌آموز برنامه هفتگی ثبت نشده است.':'برای این دبیر برنامه هفتگی ثبت نشده است.'));return}
+ const wrap=el('div','table-wrap'),table=document.createElement('table'),thead=document.createElement('thead'),tr=document.createElement('tr');
+ for(const h of(isStudent?['روز','زنگ','درس','دبیر']:['روز','زنگ','کلاس','درس']))tr.append(el('th','',h));thead.append(tr);
+ const body=document.createElement('tbody');
+ for(const s of matches){const row=document.createElement('tr');for(const v of(isStudent?[s.weekday,s.bell,s.subject,s.teacher]:[s.weekday,s.bell,s.class_name,s.subject]))row.append(el('td','',v||'—'));body.append(row)}
+ table.append(thead,body);wrap.append(table);box.append(wrap);
+}
+async function load(){if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const d=await api({action:'list_profiles'});profiles=Array.isArray(d.profiles)?d.profiles:[];schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus('اطلاعات از پایگاه داده دریافت شد.')}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
+$('search').addEventListener('input',render);$('refresh').addEventListener('click',load);$('backLevel').addEventListener('click',()=>{selectedClass='';$('search').value='';render()});$('back').addEventListener('click',()=>location.href='portal.html?step=login&role=manager');
+load();
+</script></body></html>
