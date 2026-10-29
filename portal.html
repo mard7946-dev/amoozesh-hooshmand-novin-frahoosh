@@ -57,7 +57,7 @@ function render(id){const r=roles.find(x=>x.id===id)||roles[0];selectedRole=r;up
   sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);
   sessionStorage.setItem('frahoosh_novin_role',portalAuthUserRole);
   const counselingTabs={'پرونده مشاوره':'records','نوبت‌دهی':'followups','پیگیری مشاوره‌ای':'followups','گزارش‌های مشاوره':'records','ارجاع به مدیر':'referrals'};
-  location.href='counseling.html?tab='+encodeURIComponent(counselingTabs[name]||'records')+'&v=ab95d2c';
+  location.href='https://raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/e2de6ae12b2114b8c3930016455b06b164c2c09b/counseling.html?tab='+encodeURIComponent(counselingTabs[name]||'records');
   return;
 }
 const isClass=name==='کلاس آنلاین';
