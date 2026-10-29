@@ -74,6 +74,74 @@ Deno.serve(async (req: Request) => {
     })) });
   }
 
+
+  if (action === "list_profiles") {
+    const [studentsResult, teachersResult, staffResult, schedulesResult] = await Promise.all([
+      admin.from("students").select("id,first_name,last_name,national_code,student_code,grade,class_name,phone,parent_phone,father_name,religion,sect,email,address,birth_date").eq("tenant_school_id", schoolId).order("last_name").limit(2000),
+      admin.from("teachers").select("id,first_name,last_name,national_code,phone,mobile,email,subject,grades,employee_code,father_name,religion,sect,description").eq("tenant_school_id", schoolId).order("last_name").limit(1000),
+      admin.from("staff").select("id,first_name,last_name,national_code,phone,role,employee_code,father_name,religion,sect,description,employment_status").eq("tenant_school_id", schoolId).order("last_name").limit(1000),
+      admin.from("generated_weekly_schedule").select("id,teacher,subject,grade,class_name,weekday,bell,week_index").eq("tenant_school_id", schoolId).limit(5000),
+    ]);
+    const failed = [studentsResult, teachersResult, staffResult, schedulesResult].find((x) => x.error);
+    if (failed) return reply({ message: "اطلاعات پرونده‌ها یا برنامه هفتگی دریافت نشد." }, 500);
+    const accountsResult = await admin.from("account_settings").select("display_name,username,national_code,role,phone,auth_user_id").eq("tenant_school_id", schoolId).limit(2000);
+    if (accountsResult.error) return reply({ message: "اطلاعات حساب کاربران دریافت نشد." }, 500);
+    const accountByNationalCode = new Map((accountsResult.data ?? []).map((a: any) => [clean(a.national_code), a]));
+    const profile = (row: any, category: string) => {
+      const account: any = accountByNationalCode.get(clean(row.national_code)) ?? {};
+      return { ...row, category, display_name: [clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" ") || clean(account.display_name) || clean(account.username) || "بدون نام", username: account.username ?? "", auth_user_id: account.auth_user_id ?? null, account_role: account.role ?? "" };
+    };
+    return reply({ profiles: [
+      ...(studentsResult.data ?? []).map((x: any) => profile(x, "student")),
+      ...(teachersResult.data ?? []).map((x: any) => profile(x, "teacher")),
+      ...(staffResult.data ?? []).filter((x: any) => ["executive","educational","cultural","advisor","deputy","معاون","معاون اجرایی","معاون آموزشی","معاون پرورشی"].includes(clean(x.role).toLowerCase())).map((x: any) => profile(x, "deputy")),
+    ], schedules: schedulesResult.data ?? [] });
+  }
+
+  if (action === "import_profiles") {
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    if (!rows.length || rows.length > 1000) return reply({ message: "فایل اطلاعات باید بین ۱ تا ۱۰۰۰ ردیف داشته باشد." }, 400);
+    const digits = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const roleOf = (v: unknown) => { const s=clean(v).toLowerCase().replace(/\s+/g," "); if(["student","دانش‌آموز","دانش آموز"].includes(s))return "student"; if(["teacher","دبیر","دبیران","معلم"].includes(s))return "teacher"; if(["executive","معاون اجرایی","معاون","معاونین"].includes(s))return "executive"; if(["educational","معاون آموزشی"].includes(s))return "educational"; if(["cultural","معاون پرورشی"].includes(s))return "cultural"; if(["advisor","مشاور"].includes(s))return "advisor"; return ""; };
+    const results: Array<{row:number;success:boolean;message?:string}> = [];
+    for(let i=0;i<rows.length;i++){
+      const raw=rows[i]&&typeof rows[i]==="object"?rows[i] as Record<string,unknown>:{};
+      const get=(...keys:string[])=>{for(const k of keys)if(raw[k]!==undefined&&clean(raw[k]))return clean(raw[k]);return "";};
+      const role=roleOf(get("category","role","گروه","نقش")), national=digits(get("national_code","کد ملی")), first=get("first_name","نام"), last=get("last_name","نام خانوادگی");
+      if(!role||!national||!first||!last){results.push({row:i+2,success:false,message:"گروه، کد ملی، نام و نام خانوادگی الزامی است."});continue;}
+      try{
+        const common:any={first_name:first,last_name:last,national_code:national,phone:get("phone","شماره تماس","تلفن")||null,religion:get("religion","دین")||null,sect:get("sect","مذهب")||null,father_name:get("father_name","نام پدر")||null,tenant_school_id:schoolId};
+        let table="",payload:any={...common};
+        if(role==="student"){table="students";payload={...payload,student_code:get("student_code","شماره دانش‌آموزی")||null,grade:get("grade","پایه")||null,class_name:get("class_name","کلاس","نام کلاس","پایه و کلاس")||null,parent_phone:get("parent_phone","شماره تماس اولیا","تلفن اولیا")||null,mother_name:get("mother_name","نام مادر")||null,birth_date:get("birth_date","تاریخ تولد")||null,email:get("email","ایمیل")||null,address:get("address","نشانی","آدرس")||null};}
+        else if(role==="teacher"){table="teachers";payload={...payload,mobile:get("mobile","موبایل")||get("phone","شماره تماس")||null,email:get("email","ایمیل")||null,subject:get("subject","درس")||null,grades:get("grades","پایه‌های تدریس")||null,employee_code:get("employee_code","کد پرسنلی")||null,description:get("description","توضیحات")||null};}
+        else{table="staff";payload={...payload,role,employee_code:get("employee_code","کد پرسنلی")||null,employment_status:get("employment_status","وضعیت استخدام")||null,description:get("description","توضیحات")||null};}
+        const existing=await admin.from(table).select("id").eq("tenant_school_id",schoolId).eq("national_code",national).maybeSingle();if(existing.error)throw existing.error;
+        const write=existing.data?await admin.from(table).update(payload).eq("id",existing.data.id).eq("tenant_school_id",schoolId):await admin.from(table).insert(payload);if(write.error)throw write.error;
+        results.push({row:i+2,success:true});
+      }catch(e){results.push({row:i+2,success:false,message:String((e as any)?.message??"ذخیره ناموفق بود.")});}
+    }
+    return reply({success:true,total:rows.length,succeeded:results.filter(x=>x.success).length,failed:results.filter(x=>!x.success).length,results});
+  }
+
+  if (action === "import_schedule") {
+    const rows=Array.isArray(body.rows)?body.rows:[];if(!rows.length||rows.length>3000)return reply({message:"فایل برنامه باید بین ۱ تا ۳۰۰۰ ردیف داشته باشد."},400);
+    const digits=(v:unknown)=>clean(v).replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const results:Array<{row:number;success:boolean;message?:string}>=[];
+    for(let i=0;i<rows.length;i++){
+      const raw=rows[i]&&typeof rows[i]==="object"?rows[i] as Record<string,unknown>:{};
+      const val=(...keys:string[])=>{for(const k of keys)if(raw[k]!==undefined&&clean(raw[k]))return clean(raw[k]);return "";};
+      const className=val("class_name","کلاس","نام کلاس","پایه و کلاس"),weekday=val("weekday","روز","روز هفته","روز هفته تحصیلی"),subject=val("subject","درس","نام درس"),teacherName=val("teacher","teacher_name","نام دبیر","دبیر","نام و نام خانوادگی دبیر"),period=Number(digits(val("period","زنگ","شماره زنگ","ساعت تدریس","bell"))),grade=val("grade","پایه")||className.split("/")[0]||"",bell=val("bell","زنگ","شماره زنگ","period")||String(period||"");
+      if(!className||!weekday||!subject||!teacherName||!Number.isInteger(period)||period<1||period>12){results.push({row:i+2,success:false,message:"کلاس، روز، درس، نام دبیر و شماره زنگ ۱ تا ۱۲ الزامی است."});continue;}
+      try{
+        const row={teacher:teacherName,subject,grade,class_name:className,weekday,bell,week_index:Number(digits(val("week_index","هفته")))||1,created_at:new Date().toISOString(),tenant_school_id:schoolId};
+        const existing=await admin.from("generated_weekly_schedule").select("id").eq("tenant_school_id",schoolId).eq("class_name",className).eq("weekday",weekday).eq("bell",bell).eq("subject",subject).eq("teacher",teacherName).maybeSingle();if(existing.error)throw existing.error;
+        const write=existing.data?await admin.from("generated_weekly_schedule").update(row).eq("id",existing.data.id).eq("tenant_school_id",schoolId):await admin.from("generated_weekly_schedule").insert(row);if(write.error)throw write.error;
+        results.push({row:i+2,success:true});
+      }catch(e){results.push({row:i+2,success:false,message:String((e as any)?.message??"ذخیره برنامه ناموفق بود.")});}
+    }
+    return reply({success:true,total:rows.length,succeeded:results.filter(x=>x.success).length,failed:results.filter(x=>!x.success).length,results});
+  }
+
   const targetId = clean(body.auth_user_id);
   if (!targetId || targetId === auth.user.id) return reply({ message: "حساب هدف نامعتبر است." }, 400);
   const { data: target, error: targetError } = await admin.from("account_settings")
