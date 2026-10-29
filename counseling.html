@@ -197,10 +197,30 @@ $('refresh').onclick=async()=>{try{students=await api('students');drawStudents()
 $('print').onclick=()=>window.print();
 $('back').onclick=()=>location.href='portal.html';
 (async()=>{
- if(!token){notice('نشست ورود پیدا نشد. از صفحه اصلی وارد پنل شو.','error');return;}
- if(!allowed.includes(role)){notice('این نقش اجازه دسترسی به پنل مشاور را ندارد.','error');return;}
- $('who').textContent='نقش نشست: '+role+' · اطلاعات از Supabase';
- try{students=await api('students');students.sort((a,b)=>fullName(a).localeCompare(fullName(b),'fa'));drawStudents();notice('فهرست دانش‌آموزان بارگذاری شد. یک دانش‌آموز را انتخاب کن.','ok');}
- catch(e){notice('فهرست دانش‌آموزان بارگذاری نشد: '+e.message,'error');$('students').innerHTML='<div class="muted">برای نمایش دانش‌آموزان، دسترسی نقش مشاور به جدول students را بررسی کن.</div>';}
+ $('who').textContent='در حال آماده‌سازی نشست ورود…';
+ $('students').innerHTML='<div class="muted">در حال بررسی دسترسی و دریافت فهرست…</div>';
+ if(!token){
+  $('who').textContent='نشست ورود پیدا نشد';
+  $('students').innerHTML='<div class="muted">این صفحه در یک نشست جدا باز شده یا ورود مدیریت به آن منتقل نشده است. از همان زبانه، پنل مدیریت را باز کن و از داخل پنل روی «مشاوره» بزن.</div>';
+  notice('ورود معتبر به صفحه مشاوره منتقل نشده است. برای حفظ امنیت، این صفحه بدون نشست معتبر فهرست دانش‌آموزان را نمی‌خواند.','error');
+  return;
+ }
+ if(!allowed.includes(role)){
+  $('who').textContent='نقش نشست مجاز نیست: '+role;
+  $('students').innerHTML='<div class="muted">با نقش مدیر یا مشاور وارد شو.</div>';
+  notice('این نقش اجازه دسترسی به پنل مشاور را ندارد.','error');return;
+ }
+ $('who').textContent='نشست دریافت شد · در حال اتصال به پایگاه داده…';
+ try{
+  students=await api('students');
+  students.sort((a,b)=>fullName(a).localeCompare(fullName(b),'fa'));
+  drawStudents();
+  $('who').textContent='اتصال برقرار است · نقش: '+role;
+  notice('فهرست دانش‌آموزان بارگذاری شد. یک دانش‌آموز را انتخاب کن.','ok');
+ }catch(e){
+  $('who').textContent='خطا در دریافت اطلاعات';
+  $('students').innerHTML='<div class="muted">فهرست دریافت نشد. خطا: '+esc(e.message)+'</div>';
+  notice('فهرست دانش‌آموزان بارگذاری نشد: '+e.message,'error');
+ }
 })();
 </script></body></html>
