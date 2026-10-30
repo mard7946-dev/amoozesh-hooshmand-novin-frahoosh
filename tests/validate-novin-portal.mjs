@@ -62,3 +62,12 @@ const parentScripts = [...parentPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/
 assert.ok(parentScripts.length > 0, "Parent management page must contain its operational script");
 for (const source of parentScripts) assert.doesNotThrow(() => new Function(source), "Parent management script must have valid JavaScript syntax");
 console.log("Parent panel checks passed: routes, tab selection, selected-child scoping, multi-child links, assignment privacy, and JavaScript syntax.");
+
+const meetingPage = readFileSync("parent-meetings.html", "utf8");
+assert.ok(meetingPage.includes("call('context')"), "Meeting form must use authenticated server context");
+assert.ok(meetingPage.includes('id="parentForm"'), "Meeting request form must remain present");
+assert.ok(parentPage.includes('id="associationRequestForm"'), "Parent portal must provide an association request form");
+assert.ok(parentPage.includes("create_association") && parentPage.includes("associationRequests"), "Parent portal must submit and display association requests");
+assert.ok(parentFunction.includes('action==="create_association"') && parentFunction.includes('parent_association_requests'), "Parent API must securely persist association requests");
+assert.ok(parentFunction.includes('action==="review_association"'), "Manager must be able to review association requests");
+
