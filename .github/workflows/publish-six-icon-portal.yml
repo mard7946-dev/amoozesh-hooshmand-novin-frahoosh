@@ -1,5 +1,5 @@
 name: Publish Frahoosh Six-Icon Portal
-# Ensure the latest operational reports page is included in the deployed site.
+# Include operational parent, messaging, and reports pages in the deployed site.
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'index.html'
       - 'portal.html'
       - 'settings.html'
-      - 'reports.html'
+      - 'reports.html'\n      - 'parent-management.html'\n      - 'parent-meetings.html'\n      - 'messages.html'
       - 'bulletin.html'
       - 'users.html'
       - 'classroom.html'
@@ -42,7 +42,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html settings.html reports.html users.html bulletin.html _site/
+          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom/management.html _site/classroom/management.html
