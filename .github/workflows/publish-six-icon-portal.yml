@@ -15,6 +15,7 @@ on:
       - 'bulletin.html'
       - 'users.html'
       - 'directory.html'
+      - 'counseling.html'
       - 'classroom.html'
       - 'classroom/index.html'
       - 'classroom/management.html'
@@ -46,7 +47,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html _site/
+          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom/management.html _site/classroom/management.html
