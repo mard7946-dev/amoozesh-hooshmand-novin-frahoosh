@@ -38,7 +38,7 @@ jobs:
         working-directory: server
         run: npm install --package-lock=false
       - name: Validate page structure and JavaScript syntax
-        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs
+        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
         env:
           DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
