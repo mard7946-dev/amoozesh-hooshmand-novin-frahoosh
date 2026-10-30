@@ -29,7 +29,7 @@ function render(){
  list.replaceChildren();$('detail').hidden=true;currentProfile=null;
  const q=norm($('search').value);
  if(view==='student'){
-  $('pageTitle').textContent='دانش‌آموزان بر اساس کلاس';$('subtitle').textContent=selectedClass?'کلاس انتخاب‌شده: '+selectedClass+' · برای مشاهده پرونده روی نام دانش‌آموز بزنید.':'ابتدا کلاس را انتخاب کنید؛ سپس فهرست دانش‌آموزان همان کلاس نمایش داده می‌شود.';
+  $('pageTitle').textContent='دانش‌آموزان بر اساس کلاس';const selectedParts=selectedClass.split('::');const selectedLabel=selectedClass?'پایه '+selectedParts[0]+' · کلاس '+selectedParts.slice(1).join('::'):'';$('subtitle').textContent=selectedClass?'کلاس انتخاب‌شده: '+selectedLabel+' · برای مشاهده پرونده روی نام دانش‌آموز بزنید.':'ابتدا کلاس را انتخاب کنید؛ سپس فهرست دانش‌آموزان همان کلاس نمایش داده می‌شود.';
   $('backLevel').hidden=!selectedClass;
   if(!selectedClass){
    const classKey=p=>String(p.grade||'پایه ثبت نشده').trim()+'::'+(String(p.class_name||'').trim()||'کلاس ثبت نشده');
