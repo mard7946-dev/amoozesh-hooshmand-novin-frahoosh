@@ -13,6 +13,7 @@ on:
       - 'supabase/functions/family-education/index.ts'
       - 'supabase/migrations/20261030140000_family_invitation_manager_approval.sql'
       - 'supabase/migrations/20261030143000_family_invitation_schoolwide_audience.sql'
+      - 'supabase/migrations/20261030150000_family_invitation_batch_approval.sql'
       - 'supabase/functions/parent-management/index.ts'
       - 'supabase/functions/school-settings/index.ts'
       - 'supabase/functions/school-reports/index.ts'
