@@ -3,7 +3,7 @@ const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"au
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const clean=(v:unknown,max=200)=>String(v??"").trim().slice(0,max);
 const managerRoles=new Set(["manager","مدیر","مدیریت","principal","administrator","admin"]);
-const reportRoles=new Set([...managerRoles,"educational","معاون آموزشی","معاونت آموزشی","executive","معاون اجرایی","معاونت اجرایی","cultural","معاون پرورشی","معاونت پرورشی","advisor","مشاور","counselor"]);
+const reportRoles=new Set([...managerRoles,"deputy","معاون","معاونت","educational","معاون آموزشی","معاونت آموزشی","executive","معاون اجرایی","معاونت اجرایی","cultural","معاون پرورشی","معاونت پرورشی","advisor","مشاور","counselor"]);
 async function fetchRows(admin:any,table:string,columns:string,schoolId:string){
  const all:Record<string,unknown>[]=[];const size=1000;
  for(let offset=0;offset<5000;offset+=size){
