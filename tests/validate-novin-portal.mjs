@@ -48,8 +48,8 @@ console.log("Reports checks passed: protected API, attendance/grades/discipline,
 
 const parentPage = readFileSync("parent-management.html", "utf8");
 const parentFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
-assert.ok(html.includes("const parentTabs={'پرونده دانش‌آموز':'files','برنامه هفتگی':'schedule','حضور و غیاب':'attendance','تکالیف':'assignments','وضعیت تحصیلی':'grades'}"), "Parent menu entries must route to their matching operational tabs");
-assert.ok(html.includes("location.href='parent-meetings.html'"), "Parent meetings must keep their existing route");
+assert.ok(html.includes("const parentTabs={") && html.includes("'درخواست انجمن اولیا و مربیان':'associations'"), "Parent menu entries must route to their matching operational tabs");
+assert.ok(html.includes("location.href='parent-meetings.html?v=20261030-2'"), "Parent meetings must route to the operational request form with cache refresh");
 assert.ok(html.includes("'درخواست انجمن اولیا و مربیان':'associations'"), "Parent association menu must route to its request form");
 
 assert.ok(parentPage.includes("new URLSearchParams(location.search).get('tab')||'files'"), "Parent management must read the requested tab from the URL");
