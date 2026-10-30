@@ -1,0 +1,1 @@
+alter table public.family_education_invitations add column if not exists invitation_batch_id uuid not null default gen_random_uuid(); create index if not exists family_education_invitations_batch_idx on public.family_education_invitations (tenant_school_id, invitation_batch_id);
