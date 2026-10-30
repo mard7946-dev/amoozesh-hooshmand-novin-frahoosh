@@ -55,27 +55,40 @@ Deno.serve(async (req: Request) => {
   if (action === "create") {
     if (!isManager && !isCounselor) return reply({ message: "فقط مشاور یا مدیر می‌تواند دعوت‌نامه ایجاد کند." }, 403);
     const studentId = Number(input.student_id);
+    const hasStudent = Number.isInteger(studentId) && studentId > 0;
     const title = clean(input.title);
     const description = clean(input.description).slice(0, 3000);
     const weekday = clean(input.event_weekday);
     const date = clean(input.event_date_shamsi);
     const time = clean(input.event_time);
     const venue = clean(input.venue);
-    if (!Number.isInteger(studentId) || !title || !date || !weekday) {
-      return reply({ message: "دانش‌آموز، موضوع، روز و تاریخ دعوت‌نامه الزامی است." }, 400);
+    if (!title || !date || !weekday) {
+      return reply({ message: "موضوع، روز و تاریخ دعوت‌نامه الزامی است." }, 400);
     }
-    if (!/^[0-9۰-۹]{4}[\/.-][0-9۰-۹]{1,2}[\/.-][0-9۰-۹]{1,2}$/.test(date)) {
+    if (!/^[0-9۰-۹]{4}[\\/.-][0-9۰-۹]{1,2}[\\/.-][0-9۰-۹]{1,2}$/.test(date)) {
       return reply({ message: "تاریخ را به صورت شمسی مانند ۱۴۰۵/۰۹/۱۵ وارد کنید." }, 400);
     }
-    const { data: student, error: studentError } = await db.from("students")
-      .select("id,first_name,last_name").eq("tenant_school_id", school).eq("id", studentId).maybeSingle();
-    if (studentError || !student) return reply({ message: "دانش‌آموز پیدا نشد." }, 404);
 
-    const { data: links, error: linksError } = await db.from("parent_children")
-      .select("parent_username").eq("tenant_school_id", school).eq("student_id", studentId);
-    if (linksError) return reply({ message: "ارتباط اولیا و دانش‌آموز دریافت نشد." }, 500);
-    const usernames = [...new Set((links ?? []).map((row) => clean(row.parent_username)).filter(Boolean))];
-    if (!usernames.length) return reply({ message: "برای این دانش‌آموز ولی متصل ثبت نشده است." }, 409);
+    let studentName = "همه اولیا";
+    let usernames: string[] = [];
+    let studentRecord: { id: number; first_name: string | null; last_name: string | null } | null = null;
+    if (hasStudent) {
+      const { data: student, error: studentError } = await db.from("students")
+        .select("id,first_name,last_name").eq("tenant_school_id", school).eq("id", studentId).maybeSingle();
+      if (studentError || !student) return reply({ message: "دانش‌آموز پیدا نشد." }, 404);
+      studentRecord = student;
+      studentName = [student.first_name, student.last_name].filter(Boolean).join(" ");
+      const { data: links, error: linksError } = await db.from("parent_children")
+        .select("parent_username").eq("tenant_school_id", school).eq("student_id", studentId);
+      if (linksError) return reply({ message: "ارتباط اولیا و دانش‌آموز دریافت نشد." }, 500);
+      usernames = [...new Set((links ?? []).map((row) => clean(row.parent_username)).filter(Boolean))];
+    } else {
+      const { data: parentAccounts, error: parentAccountsError } = await db.from("account_settings")
+        .select("username").eq("tenant_school_id", school).eq("role", "parent");
+      if (parentAccountsError) return reply({ message: "فهرست حساب‌های اولیا دریافت نشد." }, 500);
+      usernames = [...new Set((parentAccounts ?? []).map((row) => clean(row.username)).filter(Boolean))];
+    }
+    if (!usernames.length) return reply({ message: "هیچ حساب ولی فعالی برای دریافت دعوت‌نامه پیدا نشد." }, 409);
 
     const { data: parents, error: parentsError } = await db.from("account_settings")
       .select("username,auth_user_id").eq("tenant_school_id", school).in("username", usernames).eq("role", "parent");
@@ -83,8 +96,8 @@ Deno.serve(async (req: Request) => {
     const userIds = new Map((parents ?? []).map((row) => [row.username, row.auth_user_id]));
     const rows = usernames.map((username) => ({
       tenant_school_id: school,
-      student_id: student.id,
-      student_name: [student.first_name, student.last_name].filter(Boolean).join(" "),
+      student_id: studentRecord?.id ?? null,
+      student_name: studentName || "همه اولیا",
       parent_username: username,
       parent_user_id: userIds.get(username) || null,
       title,
