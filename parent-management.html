@@ -31,9 +31,11 @@ $('associationsTable').addEventListener('click',async ev=>{
 });
 function renderFamily(){
  const rows=(d.familyInvitations||[]).filter(x=>role==='manager'||role==='parent');
+ const grouped=new Map();rows.forEach(x=>{const key=x.invitation_batch_id||String(x.id);if(!grouped.has(key))grouped.set(key,{item:x,count:0});grouped.get(key).count++;});
+ const displayRows=role==='manager'?[...grouped.values()].map(g=>({...g.item,recipient_count:g.count})):rows;
  const statusText=x=>({pending:'در انتظار پاسخ ولی',accepted:'حضور تأیید شد',declined:'عدم حضور'}[x.status]||x.status);
  const approvalText=x=>({pending:'در انتظار تأیید مدیر',approved:'تأیید شده توسط مدیر',rejected:'رد شده توسط مدیر'}[x.approval_status]||x.approval_status||'تأیید شده');
- $('familyTable').innerHTML=rows.length?rows.map(x=>'<article class="card"><b>'+esc(x.title)+'</b><p>'+esc(x.description||'')+'</p><p>دانش‌آموز: '+esc(x.student_name)+' · روز: '+esc(x.event_weekday||'—')+' · تاریخ: '+esc(x.event_date_shamsi)+' · ساعت: '+esc(x.event_time||'—')+' · مکان: '+esc(x.venue||'—')+'</p><p>وضعیت تأیید مدیر: '+esc(approvalText(x))+'</p><p>وضعیت پاسخ ولی: '+esc(statusText(x))+'</p>'+(role==='manager'&&x.approval_status==='pending'?'<label>یادداشت مدیر<input data-family-manager-note="'+x.id+'" maxlength="1000" placeholder="توضیح اختیاری"></label><button data-family-review="'+x.id+'" data-status="approved">تأیید و انتشار برای اولیا</button> <button data-family-review="'+x.id+'" data-status="rejected">رد درخواست</button>':'')+(role==='parent'&&x.approval_status==='approved'&&x.status==='pending'?'<label>توضیح (اختیاری)<input data-family-note="'+x.id+'" placeholder="توضیح برای مشاور"></label><button data-family-answer="'+x.id+'" data-status="accepted">تأیید حضور</button> <button data-family-answer="'+x.id+'" data-status="declined">عدم حضور</button>':'')+(x.manager_note?'<p>یادداشت مدیر: '+esc(x.manager_note)+'</p>':'')+(x.parent_note?'<p>توضیح ولی: '+esc(x.parent_note)+'</p>':'')+'</article>').join(''):'<p class="muted">'+(role==='manager'?'درخواست دعوت‌نامه‌ای در انتظار بررسی نیست.':'دعوت‌نامه تأییدشده‌ای برای نمایش وجود ندارد.')+'</p>';
+ $('familyTable').innerHTML=displayRows.length?displayRows.map(x=>'<article class="card"><b>'+esc(x.title)+'</b><p>'+esc(x.description||'')+'</p><p>دانش‌آموز: '+esc(x.student_name)+' · روز: '+esc(x.event_weekday||'—')+' · تاریخ: '+esc(x.event_date_shamsi)+' · ساعت: '+esc(x.event_time||'—')+' · مکان: '+esc(x.venue||'—')+'</p><p>وضعیت تأیید مدیر: '+esc(approvalText(x))+'</p><p>وضعیت پاسخ ولی: '+esc(statusText(x))+'</p>'+(role==='manager'&&x.approval_status==='pending'?'<label>یادداشت مدیر<input data-family-manager-note="'+esc(x.invitation_batch_id||x.id)+'" maxlength="1000" placeholder="توضیح اختیاری"></label><button data-family-review="'+esc(x.invitation_batch_id||x.id)+'" data-status="approved">تأیید و انتشار برای اولیا</button> <button data-family-review="'+x.id+'" data-status="rejected">رد درخواست</button>':'')+(role==='parent'&&x.approval_status==='approved'&&x.status==='pending'?'<label>توضیح (اختیاری)<input data-family-note="'+x.id+'" placeholder="توضیح برای مشاور"></label><button data-family-answer="'+x.id+'" data-status="accepted">تأیید حضور</button> <button data-family-answer="'+x.id+'" data-status="declined">عدم حضور</button>':'')+(x.manager_note?'<p>یادداشت مدیر: '+esc(x.manager_note)+'</p>':'')+(x.parent_note?'<p>توضیح ولی: '+esc(x.parent_note)+'</p>':'')+'</article>').join(''):'<p class="muted">'+(role==='manager'?'درخواست دعوت‌نامه‌ای در انتظار بررسی نیست.':'دعوت‌نامه تأییدشده‌ای برای نمایش وجود ندارد.')+'</p>';
 }
 $('familyTable').addEventListener('click',async ev=>{
  const review=ev.target.closest('[data-family-review]');
@@ -42,8 +44,8 @@ $('familyTable').addEventListener('click',async ev=>{
  try{
   let payload;
   if(review){
-   const id=Number(review.dataset.familyReview),note=document.querySelector('[data-family-manager-note="'+id+'"]')?.value||'';
-   payload={action:'review',id,status:review.dataset.status,manager_note:note};
+   const batchId=review.dataset.familyReview,note=document.querySelector('[data-family-manager-note="'+batchId+'"]')?.value||'';
+   payload={action:'review',batch_id:batchId,status:review.dataset.status,manager_note:note};
   }else{
    const id=Number(answer.dataset.familyAnswer),note=document.querySelector('[data-family-note="'+id+'"]')?.value||'';
    payload={action:'respond',id,status:answer.dataset.status,parent_note:note};
