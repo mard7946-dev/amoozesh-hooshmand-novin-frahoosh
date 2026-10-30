@@ -58,7 +58,7 @@ assert.ok(parentPage.includes("Boolean(s&&s.grade)&&x.grade===s.grade"), "Exams 
 assert.ok(parentPage.includes("Boolean(s)&&+x.student_id===+s.id"), "Payments must be scoped to the selected child");
 assert.ok(parentFunction.includes('.eq("parent_username",clean(c.username)).limit(1000)'), "Parent-child lookup must support more than two children");
 assert.ok(parentFunction.includes("const safeAssignments=") && parentFunction.includes("assignments:safeAssignments"), "The Edge Function must filter class-level assignments to linked child classes");
-const parentScripts = [...parentPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const parentScripts = [...parentPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 assert.ok(parentScripts.length > 0, "Parent management page must contain its operational script");
 for (const source of parentScripts) assert.doesNotThrow(() => new Function(source), "Parent management script must have valid JavaScript syntax");
 console.log("Parent panel checks passed: routes, tab selection, selected-child scoping, multi-child links, assignment privacy, and JavaScript syntax.");
