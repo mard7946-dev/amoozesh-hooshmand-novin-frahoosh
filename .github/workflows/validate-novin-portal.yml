@@ -1,4 +1,4 @@
-name: Validate Portal and System Settings
+name: Validate Portal, Settings, and School Reports
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - 'settings.html'
       - 'reports.html'
       - 'supabase/functions/school-settings/index.ts'
+      - 'supabase/functions/school-reports/index.ts'
       - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
       - 'index.html'
       - 'tests/validate-novin-portal.mjs'
@@ -25,5 +26,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate portal, settings access, and JavaScript
+      - name: Validate portal, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
