@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1730">
+<title>تنظیمات سامانه | فراهوش</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--blue:#83b3ff;--danger:#ff9d9d}
+*{box-sizing:border-box}body{margin:0;padding:16px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:1050px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 2px 20px}h1{font-size:clamp(22px,4vw,30px);margin:0}h2{font-size:19px;margin:0 0 16px}.muted{color:var(--muted);font-size:13px;line-height:1.9}.card{background:#0e1b32dd;border:1px solid #263958;border-radius:17px;padding:18px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:13px;color:#c8d6ec}.field input,.field select,.field textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#081326;color:var(--text);font:inherit;min-width:0}.field textarea{min-height:76px;resize:vertical}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.btn{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:#203451;color:var(--text);padding:10px 15px}.btn.primary{background:#145b51;border-color:#277e70}.btn.danger{color:var(--danger)}.btn:disabled{opacity:.55;cursor:wait}.notice{padding:12px 14px;border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;line-height:1.9;margin:12px 0}.status{padding:10px 12px;border-radius:10px;background:#102b35;color:#b9f5e7;margin:12px 0;white-space:pre-wrap}.status.error{background:#3b2029;color:#ffd0d0}.server{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0;background:#0b182b}.server strong{display:block;margin-bottom:5px}.server small{color:var(--muted);word-break:break-all;line-height:1.8}.tag{display:inline-block;border:1px solid #426b67;border-radius:30px;padding:3px 8px;font-size:11px;color:#b9f5e7;margin-inline-start:6px}.hidden{display:none!important}a{color:var(--blue)}@media(max-width:520px){body{padding:10px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="muted">پنل اختصاصی مدیریت فراهوش</div><h1>تنظیمات سامانه</h1><div class="muted">اطلاعات مدرسه، سال تحصیلی و زیرساخت سرور</div></div><button class="btn" id="back">بازگشت به پنل مدیریت</button></header>
+<div id="status" class="status" role="status">در حال بررسی دسترسی مدیر و دریافت تنظیمات…</div>
+<section class="card" id="schoolCard">
+<h2>اطلاعات مدرسه و تنظیمات عمومی</h2>
+<div class="grid">
+<div class="field"><label for="schoolName">نام مدرسه</label><input id="schoolName" maxlength="180" required></div>
+<div class="field"><label for="schoolCode">کد مدرسه</label><input id="schoolCode" maxlength="40" required></div>
+<div class="field"><label for="academicYear">سال تحصیلی جاری</label><input id="academicYear" placeholder="۱۴۰۵–۱۴۰۶" maxlength="30" required></div>
+<div class="field"><label for="calendar">تقویم سامانه</label><select id="calendar"><option value="persian">هجری شمسی</option><option value="gregorian">میلادی</option></select></div>
+<div class="field"><label for="phone">تلفن مدرسه</label><input id="phone" maxlength="60" inputmode="tel"></div>
+<div class="field"><label for="email">ایمیل مدرسه</label><input id="email" maxlength="180" type="email"></div>
+<div class="field"><label for="logoUrl">نشانی لوگوی مدرسه (HTTPS)</label><input id="logoUrl" type="url" placeholder="https://example.com/logo.png"></div>
+<div class="field" style="grid-column:1/-1"><label for="address">نشانی مدرسه</label><textarea id="address" maxlength="500"></textarea></div>
+</div>
+<div class="actions"><button class="btn primary" id="saveSchool">ذخیره تنظیمات مدرسه</button></div>
+<p class="muted">نام و کد مدرسه از جدول اصلی مدارس به‌روزرسانی می‌شود. سال تحصیلی و سایر گزینه‌ها در جدول تنظیمات مدرسه ذخیره خواهند شد.</p>
+</section>
+<section class="card" id="serverCard">
+<h2>مدیریت سرور بیرونی</h2>
+<p class="muted">مشخصات سرور خریداری‌شده را اینجا ثبت می‌کنید تا مقصد انتقال و اتصال بعدی سامانه آماده باشد. کلید محرمانه یا Service Role را در این فرم وارد نکنید؛ فقط کلید عمومی Publishable مجاز است.</p>
+<div class="notice">ثبت سرور به‌تنهایی باعث انتقال خودکار سایت یا پایگاه داده نمی‌شود. فعال‌سازی واقعی سرور جدید پس از آماده‌سازی API، احراز هویت، انتقال داده‌ها و آزمایش سازگاری انجام می‌شود؛ تا آن زمان سرور فعلی بدون تغییر کار می‌کند.</div>
+<form id="serverForm">
+<input id="serverId" type="hidden">
+<div class="grid">
+<div class="field"><label for="serverLabel">عنوان سرور</label><input id="serverLabel" maxlength="100" placeholder="سرور اصلی جدید" required></div>
+<div class="field"><label for="provider">نوع سرویس</label><select id="provider"><option value="supabase">Supabase</option><option value="custom">API اختصاصی</option><option value="other">سرویس دیگر</option></select></div>
+<div class="field"><label for="environment">محیط</label><select id="environment"><option value="production">اصلی (Production)</option><option value="staging">آزمایشی (Staging)</option><option value="development">توسعه (Development)</option></select></div>
+<div class="field" id="supabaseUrlField"><label for="supabaseUrl">آدرس پروژه Supabase</label><input id="supabaseUrl" type="url" placeholder="https://project.supabase.co"></div>
+<div class="field" id="publishableField"><label for="publishableKey">کلید عمومی Publishable / anon</label><input id="publishableKey" autocomplete="off" placeholder="sb_publishable_…"></div>
+<div class="field hidden" id="apiUrlField"><label for="apiUrl">آدرس API سرور</label><input id="apiUrl" type="url" placeholder="https://api.example.com"></div>
+<div class="field"><label style="display:flex;align-items:center;gap:8px;margin-top:26px"><input id="isPrimary" type="checkbox" style="width:18px;height:18px"> سرور مقصد اصلی انتقال باشد</label></div>
+<div class="field" style="grid-column:1/-1"><label for="serverNotes">توضیحات</label><textarea id="serverNotes" maxlength="1000" placeholder="مشخصات پلن، محل میزبانی یا توضیحات فنی غیرمحرمانه"></textarea></div>
+</div>
+<div class="actions"><button class="btn primary" id="saveServer" type="submit">ثبت سرور</button><button class="btn" id="resetServer" type="button">پاک‌کردن فرم</button></div>
+</form>
+<div id="servers"><p class="muted">هنوز سروری ثبت نشده است.</p></div>
+</section>
+<section class="card">
+<h2>امنیت و تغییرات</h2>
+<p class="muted">تغییر رمز عبور و مدیریت حساب‌ها در بخش مدیریت کاربران انجام می‌شود. این صفحه فقط تنظیمات مدرسه و اطلاعات مقصد سرور را مدیریت می‌کند. هیچ رمز عبور، Service Role یا کلید خصوصی در مرورگر ذخیره نمی‌شود.</p>
+</section>
+</main>
+<script>
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const statusNode=document.getElementById("status");
+let serverRows=[];
+function message(text,error=false){statusNode.textContent=text;statusNode.classList.toggle("error",error);}
+function val(id){return document.getElementById(id).value.trim();}
+async function callApi(action,payload={}) {
+ const response=await fetch(SUPABASE_URL+"/functions/v1/school-settings",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...payload})});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.message||"ارتباط با سرویس تنظیمات برقرار نشد.");
+ return data;
+}
+function fillSchool(data){
+ const school=data.school||{}, settings=data.settings||{};
+ document.getElementById("schoolName").value=school.name||"";
+ document.getElementById("schoolCode").value=school.school_code||"";
+ document.getElementById("academicYear").value=settings.academic_year||"";
+ for(const [id,key] of [["phone","phone"],["email","email"],["logoUrl","logo_url"],["address","address"]])document.getElementById(id).value=settings[key]||"";
+ document.getElementById("calendar").value=settings.calendar||"persian";
+ serverRows=Array.isArray(data.servers)?data.servers:[];
+ renderServers();
+}
+function renderServers(){
+ const root=document.getElementById("servers");root.replaceChildren();
+ if(!serverRows.length){const p=document.createElement("p");p.className="muted";p.textContent="هنوز سروری ثبت نشده است.";root.append(p);return;}
+ for(const row of serverRows){
+  const card=document.createElement("article");card.className="server";
+  const title=document.createElement("strong");title.textContent=row.label;
+  if(row.is_primary){const tag=document.createElement("span");tag.className="tag";tag.textContent="مقصد اصلی انتقال";title.append(tag);}
+  const detail=document.createElement("small");detail.textContent=[row.provider==="supabase"?"Supabase":row.provider==="custom"?"API اختصاصی":"سرویس دیگر",row.environment,row.supabase_url||row.api_base_url,row.notes].filter(Boolean).join(" · ");
+  const actions=document.createElement("div");actions.className="actions";
+  const edit=document.createElement("button");edit.className="btn";edit.type="button";edit.textContent="ویرایش";edit.onclick=()=>editServer(row);
+  const remove=document.createElement("button");remove.className="btn danger";remove.type="button";remove.textContent="حذف";remove.onclick=()=>deleteServer(row.id);
+  actions.append(edit,remove);card.append(title,detail,actions);root.append(card);
+ }
+}
+function editServer(row){
+ document.getElementById("serverId").value=row.id;
+ document.getElementById("serverLabel").value=row.label||"";
+ document.getElementById("provider").value=row.provider||"custom";
+ document.getElementById("environment").value=row.environment||"production";
+ document.getElementById("supabaseUrl").value=row.supabase_url||"";
+ document.getElementById("publishableKey").value=row.publishable_key||"";
+ document.getElementById("apiUrl").value=row.api_base_url||"";
+ document.getElementById("serverNotes").value=row.notes||"";
+ document.getElementById("isPrimary").checked=!!row.is_primary;
+ document.getElementById("saveServer").textContent="ذخیره ویرایش";
+ updateProviderFields();
+ document.getElementById("serverCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function resetServer(){
+ document.getElementById("serverForm").reset();document.getElementById("serverId").value="";
+ document.getElementById("saveServer").textContent="ثبت سرور";updateProviderFields();
+}
+function updateProviderFields(){
+ const supabase=val("provider")==="supabase";
+ document.getElementById("supabaseUrlField").classList.toggle("hidden",!supabase);
+ document.getElementById("publishableField").classList.toggle("hidden",!supabase);
+ document.getElementById("apiUrlField").classList.toggle("hidden",supabase);
+}
+async function deleteServer(id){
+ if(!confirm("این مشخصات سرور حذف شود؟"))return;
+ try{await callApi("delete_server",{id});await load();message("مشخصات سرور حذف شد.");}catch(e){message(e.message,true);}
+}
+async function load(){
+ const data=await callApi("get");fillSchool(data);message("تنظیمات مدرسه بارگذاری شد.");
+}
+document.getElementById("saveSchool").onclick=async()=>{
+ const button=document.getElementById("saveSchool");button.disabled=true;message("در حال ذخیره تنظیمات مدرسه…");
+ try{await callApi("save_school",{school_name:val("schoolName"),school_code:val("schoolCode"),academic_year:val("academicYear"),calendar:val("calendar"),phone:val("phone"),email:val("email"),logo_url:val("logoUrl"),address:val("address")});await load();message("تنظیمات مدرسه با موفقیت ذخیره شد.");}
+ catch(e){message(e.message,true);}finally{button.disabled=false;}
+};
+document.getElementById("serverForm").onsubmit=async event=>{
+ event.preventDefault();const button=document.getElementById("saveServer");button.disabled=true;message("در حال ثبت مشخصات سرور…");
+ const provider=val("provider");
+ try{
+  await callApi("save_server",{id:val("serverId")||undefined,label:val("serverLabel"),provider,environment:val("environment"),supabase_url:val("supabaseUrl"),publishable_key:val("publishableKey"),api_base_url:val("apiUrl"),notes:val("serverNotes"),is_primary:document.getElementById("isPrimary").checked});
+  resetServer();await load();message("مشخصات سرور ذخیره شد. برای استفاده عملیاتی، مرحله انتقال و اتصال backend باید جداگانه اجرا و آزمایش شود.");
+ }catch(e){message(e.message,true);}finally{button.disabled=false;}
+};
+document.getElementById("provider").onchange=updateProviderFields;
+document.getElementById("resetServer").onclick=resetServer;
+document.getElementById("back").onclick=()=>location.href="portal.html?step=panel&role=manager";
+(async()=>{
+ if(!token||role!=="manager"){message("دسترسی مدیر تأیید نشد. لطفاً از پنل مدیریت خارج شوید و دوباره وارد شوید.",true);document.getElementById("schoolCard").classList.add("hidden");document.getElementById("serverCard").classList.add("hidden");return;}
+ try{await load();}catch(e){message(e.message,true);document.getElementById("schoolCard").classList.add("hidden");document.getElementById("serverCard").classList.add("hidden");}
+})();
+</script>
+</body>
+</html>
