@@ -29,7 +29,31 @@ $('associationsTable').addEventListener('click',async ev=>{
  if(!r.ok||!x.ok)throw Error(x.message||'بررسی درخواست ناموفق بود.');msg('نتیجه بررسی درخواست ثبت شد.');await load();activateTab('associations');
  }catch(e){msg(e.message||'بررسی درخواست انجام نشد.',true)}
 });
-function renderFamily(){const rows=(d.familyInvitations||[]).filter(x=>role==='manager'||x.parent_username===parent()?.username);$('familyTable').innerHTML=rows.length?rows.map(x=>'<article class="card"><b>'+esc(x.title)+'</b><p>'+esc(x.description||'')+'</p><p>دانش‌آموز: '+esc(x.student_name)+' · تاریخ: '+esc(x.event_date_shamsi)+' · ساعت: '+esc(x.event_time)+' · مکان: '+esc(x.venue)+'</p><p>وضعیت: '+esc(({pending:'در انتظار پاسخ',accepted:'حضور را تأیید کرده‌اید',declined:'عدم حضور اعلام شده'})[x.status]||x.status)+'</p>'+(role==='parent'&&x.status==='pending'?'<label>توضیح (اختیاری)<input data-family-note="'+x.id+'" placeholder="توضیح برای مشاور"></label><button data-family-answer="'+x.id+'" data-status="accepted">تأیید حضور</button> <button data-family-answer="'+x.id+'" data-status="declined">عدم حضور</button>':'')+(x.parent_note?'<p>توضیح ولی: '+esc(x.parent_note)+'</p>':'')+'</article>').join(''):'<p class="muted">دعوت‌نامه آموزش خانواده‌ای ثبت نشده است.</p>';}
-$('familyTable').addEventListener('click',async ev=>{const b=ev.target.closest('[data-family-answer]');if(!b)return;try{const id=Number(b.dataset.familyAnswer),note=document.querySelector('[data-family-note="'+id+'"]')?.value||'',r=await fetch('https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/family-education',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify({action:'respond',id,status:b.dataset.status,parent_note:note})}),x=await r.json();if(!r.ok||!x.ok)throw Error(x.message||'ثبت پاسخ ناموفق بود.');msg('پاسخ شما ثبت شد.');await load()}catch(e){msg(e.message,true)}});
+function renderFamily(){
+ const rows=(d.familyInvitations||[]).filter(x=>role==='manager'||(role==='parent'&&x.parent_username===parent()?.username));
+ const statusText=x=>({pending:'در انتظار پاسخ ولی',accepted:'حضور تأیید شد',declined:'عدم حضور'}[x.status]||x.status);
+ const approvalText=x=>({pending:'در انتظار تأیید مدیر',approved:'تأیید شده توسط مدیر',rejected:'رد شده توسط مدیر'}[x.approval_status]||x.approval_status||'تأیید شده');
+ $('familyTable').innerHTML=rows.length?rows.map(x=>'<article class="card"><b>'+esc(x.title)+'</b><p>'+esc(x.description||'')+'</p><p>دانش‌آموز: '+esc(x.student_name)+' · روز: '+esc(x.event_weekday||'—')+' · تاریخ: '+esc(x.event_date_shamsi)+' · ساعت: '+esc(x.event_time||'—')+' · مکان: '+esc(x.venue||'—')+'</p><p>وضعیت تأیید مدیر: '+esc(approvalText(x))+'</p><p>وضعیت پاسخ ولی: '+esc(statusText(x))+'</p>'+(role==='manager'&&x.approval_status==='pending'?'<label>یادداشت مدیر<input data-family-manager-note="'+x.id+'" maxlength="1000" placeholder="توضیح اختیاری"></label><button data-family-review="'+x.id+'" data-status="approved">تأیید و انتشار برای اولیا</button> <button data-family-review="'+x.id+'" data-status="rejected">رد درخواست</button>':'')+(role==='parent'&&x.approval_status==='approved'&&x.status==='pending'?'<label>توضیح (اختیاری)<input data-family-note="'+x.id+'" placeholder="توضیح برای مشاور"></label><button data-family-answer="'+x.id+'" data-status="accepted">تأیید حضور</button> <button data-family-answer="'+x.id+'" data-status="declined">عدم حضور</button>':'')+(x.manager_note?'<p>یادداشت مدیر: '+esc(x.manager_note)+'</p>':'')+(x.parent_note?'<p>توضیح ولی: '+esc(x.parent_note)+'</p>':'')+'</article>').join(''):'<p class="muted">'+(role==='manager'?'درخواست دعوت‌نامه‌ای در انتظار بررسی نیست.':'دعوت‌نامه تأییدشده‌ای برای نمایش وجود ندارد.')+'</p>';
+}
+$('familyTable').addEventListener('click',async ev=>{
+ const review=ev.target.closest('[data-family-review]');
+ const answer=ev.target.closest('[data-family-answer]');
+ if(!review&&!answer)return;
+ try{
+  let payload;
+  if(review){
+   const id=Number(review.dataset.familyReview),note=document.querySelector('[data-family-manager-note="'+id+'"]')?.value||'';
+   payload={action:'review',id,status:review.dataset.status,manager_note:note};
+  }else{
+   const id=Number(answer.dataset.familyAnswer),note=document.querySelector('[data-family-note="'+id+'"]')?.value||'';
+   payload={action:'respond',id,status:answer.dataset.status,parent_note:note};
+  }
+  const r=await fetch('https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/family-education',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify(payload)}),x=await r.json();
+  if(!r.ok||!x.ok)throw Error(x.message||'عملیات دعوت‌نامه ناموفق بود.');
+  msg(review?(review.dataset.status==='approved'?'دعوت‌نامه تأیید و برای اولیا منتشر شد.':'درخواست دعوت‌نامه رد شد.'):'پاسخ شما ثبت شد.');
+  await load();
+  activateTab('family');
+ }catch(e){msg(e.message,true)}
+});
 function activateTab(id){const target=document.getElementById(id);const button=[...document.querySelectorAll('[data-tab]')].find(x=>x.dataset.tab===id);if(!target||!button)return;document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));document.querySelectorAll('.section').forEach(x=>x.hidden=x!==target)}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>activateTab(b.dataset.tab));activateTab(requestedTab);$('parentSelect').onchange=render;$('studentSelect').onchange=render;$('search').oninput=render;$('reload').onclick=load;$('back').onclick=()=>location.href='portal.html?step=login&role='+role;load();
 </script></body></html>
