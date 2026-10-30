@@ -104,3 +104,25 @@ assert.ok(batchMigration.includes("invitation_batch_id") && parentPage.includes(
 assert.ok(familyFunction.includes("invitation_batch_id: invitationBatchId"), "Every recipient copy must share one approval batch");
 assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html _site/"), "GitHub Pages must publish the counselor page");
 console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
+
+const examsPage = readFileSync("exam-center.html", "utf8");
+assert.ok(html.includes("آزمون‌های مستقل") && html.includes("location.href='exam-center.html?v=20261030-1'"), "Teacher and student portals must route to the independent exam center");
+assert.ok(publishWorkflow.includes("- 'exam-center.html'") && publishWorkflow.includes("counseling.html exam-center.html _site/"), "GitHub Pages must publish the independent exam center");
+assert.ok(examsPage.includes("functions/v1/assessment-center"), "Independent exam page must use its dedicated backend function");
+for (const feature of ["جای خالی", "تستی / چهارگزینه‌ای", "صحیح و غلط", "پاسخ کوتاه", "پاسخ تشریحی", "ترتیب سؤال", "زمان اختصاصی سؤال", "نمایش گروهی"]) {
+  assert.ok(examsPage.includes(feature), "Independent exam center missing feature: " + feature);
+}
+assert.ok(examsPage.includes("data-symbol") && examsPage.includes("data-shape"), "Question editor must provide math symbols and geometric shapes");
+assert.ok(examsPage.includes("assessment-center") && examsPage.includes("assessment_questions"), "Independent exam center must use its dedicated persistence model");
+const examScripts = [...examsPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(examScripts.length > 0, "Independent exam page must contain its application script");
+for (const source of examScripts) assert.doesNotThrow(() => new Function(source), "Independent exam page script must have valid JavaScript syntax");
+const assessmentFunction = readFileSync("supabase/functions/assessment-center/index.ts", "utf8");
+assert.ok(assessmentFunction.includes('action === "create_exam"') && assessmentFunction.includes('action === "start_exam"') && assessmentFunction.includes('action === "submit_exam"'), "Assessment API must support authoring, starting, and submitting exams");
+assert.ok(assessmentFunction.includes('.eq("teacher_id", teacher.id)') && assessmentFunction.includes("classAllowed"), "Assessment API must restrict teachers to their own assigned classes");
+const assessmentMigration = readFileSync("supabase/migrations/20261030160000_independent_assessment_builder.sql", "utf8");
+for (const table of ["assessment_exams", "assessment_questions", "assessment_attempts", "assessment_answers"]) {
+  assert.ok(assessmentMigration.includes("public." + table), "Assessment migration missing table: " + table);
+}
+assert.ok(assessmentMigration.includes("enable row level security") && assessmentMigration.includes("to service_role"), "Assessment tables must be RLS-protected and server-only");
+console.log("Independent assessment checks passed: separate teacher/student routing, dedicated schema/API, question types, math/geometry tools, timing and JavaScript syntax.");
