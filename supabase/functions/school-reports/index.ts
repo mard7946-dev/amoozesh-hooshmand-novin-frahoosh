@@ -30,7 +30,7 @@ Deno.serve(async(req:Request)=>{
  if(membershipErr||!membership)return reply({message:"عضویت فعال شما در این مدرسه تأیید نشد."},403);
  const body=await req.json().catch(()=>({}));if(clean(body.action||"get",20)!=="get")return reply({message:"عملیات درخواستی پشتیبانی نمی‌شود."},400);
  try{
-  const [school,students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,financeVouchers,financeLines]=await Promise.all([
+  const [school,students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines]=await Promise.all([
    admin.from("schools").select("id,name,school_code").eq("id",schoolId).maybeSingle(),
    fetchRows(admin,"students","id,first_name,last_name,grade,class_name,student_code",schoolId),
    fetchRows(admin,"attendance","id,student_id,date,attendance_date,status,description,teacher_id,subject,class_name,approval_status,approved_at,approved_by",schoolId),
@@ -40,10 +40,20 @@ Deno.serve(async(req:Request)=>{
    fetchRows(admin,"teachers","id,first_name,last_name,subject,employment_status",schoolId),
    fetchRows(admin,"teacher_classes","id,teacher_id,teacher_name,subject,grade,class_name,active",schoolId),
    fetchRows(admin,"competitions","id,title,category,start_date,end_date,status,description,created_at",schoolId),
+   fetchRows(admin,"activity_programs","id,activity_key,title,category,active,amount,created_at",schoolId),
+   fetchRows(admin,"activity_registrations","id,activity_id,student_id,participation_type,team_members,competition_type,payment_status,status,created_at",schoolId),
+   fetchRows(admin,"cultural_activity_registrations","id,activity_id,activity_title,activity_kind,student_id,student_name,fee,payment_status,registration_code,registration_date,status,created_at",schoolId),
+   fetchRows(admin,"art_competitions","id,title,category,start_date,end_date,status,description,registration_start_shamsi,registration_end_shamsi",schoolId),
+   fetchRows(admin,"sport_competitions","id,title,category,start_date,end_date,status,description,sport_type,participation_type,registration_start_shamsi,registration_end_shamsi,fixed_amount",schoolId),
+   fetchRows(admin,"cultural_competitions","id,title,category,start_date,end_date,status,description",schoolId),
+   fetchRows(admin,"student_council","id,student_id,student_name,election_year,status,created_at",schoolId),
+   fetchRows(admin,"executive_requests","id,title,requester,status,description,created_at,role,target_person,request_date,followup,notification_status",schoolId),
+   fetchRows(admin,"transport_requests","id,parent_username,student_id,address,vehicle_type,origin,destination,note,status,created_at,updated_at",schoolId),
+   fetchRows(admin,"certificate_requests","id,student_id,student_name,destination,request_date,status,executive_note,created_at,registration_no,certificate_date",schoolId),
    managerRoles.has(role)?fetchRows(admin,"finance_vouchers","id,document_number,fiscal_year,voucher_date,voucher_type,description,counterparty,status",schoolId):Promise.resolve([]),
    managerRoles.has(role)?fetchRows(admin,"finance_voucher_lines","id,voucher_id,line_no,account_code,account_title,debit,credit,student_id,student_name,parent_name,description",schoolId):Promise.resolve([])
   ]);
   if(!school.data)return reply({message:"اطلاعات مدرسه پیدا نشد."},404);
-  return reply({school:school.data,permissions:{finance:managerRoles.has(role)},students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,financeVouchers,financeLines});
+  return reply({school:school.data,permissions:{finance:managerRoles.has(role)},students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines});
  }catch(e){return reply({message:e instanceof Error?e.message:"دریافت گزارش‌ها ناموفق بود."},500)}
 });
