@@ -79,6 +79,15 @@ const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.
 assert.ok(publishWorkflow.includes("- 'directory.html'"), "Changes to directory.html must trigger GitHub Pages deployment");
 assert.ok(publishWorkflow.includes("bulletin.html directory.html counseling.html exam-center.html _site/"), "GitHub Pages artifact must include directory.html");
 assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کارکنان"), "Staff directory page must exist in the repository");
+const directory = readFileSync("directory.html", "utf8");
+assert.ok(directory.includes("/rest/v1/teacher_classes?"), "Directory must read teacher assignments from Supabase REST");
+assert.ok(directory.includes("tenant_school_id=eq.'+SCHOOL_ID") && directory.includes("&active=eq.1"), "Teacher assignments must be restricted to the active school and active rows");
+assert.ok(directory.includes("Authorization:'Bearer '+token") && directory.includes("'apikey':SUPABASE_KEY"), "Teacher assignment requests must use the signed-in user's token and public key");
+assert.ok(directory.includes("assignmentMap.get(Number(p.id))"), "Teacher assignments must be joined to profiles by teacher ID");
+assert.ok(directory.includes("const classKey=p=>String(p.grade||'پایه ثبت نشده').trim()+'::'"), "Student classes must be grouped by both grade and class name");
+const directoryScripts = [...directory.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(directoryScripts.length > 0, "Directory must contain its interactive script");
+for (const source of directoryScripts) assert.doesNotThrow(() => new Function(source), "Directory script must have valid JavaScript syntax");
 console.log("Staff directory deployment checks passed: trigger, published artifact, and page source.");
 
 
