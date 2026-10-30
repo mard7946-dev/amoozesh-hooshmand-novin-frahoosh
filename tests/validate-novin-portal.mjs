@@ -25,7 +25,7 @@ assert.ok(settings.includes("/functions/v1/school-settings"), "Settings page mus
 assert.ok(settings.includes('role!=="manager"'), "Settings page must block non-manager roles");
 assert.ok(settings.includes("مدیریت سرور بیرونی"), "Settings page must include external server management");
 assert.ok(!settings.includes("service_role"), "Settings page must not expose a service-role key");
-const settingsScripts = [...settings.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
+const settingsScripts = [...settings.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1]).filter(source => source.trim());
 assert.ok(settingsScripts.length > 0, "Settings page must contain its interactive script");
 for (const source of settingsScripts) {
