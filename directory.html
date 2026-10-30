@@ -32,14 +32,16 @@ function render(){
   $('pageTitle').textContent='دانش‌آموزان بر اساس کلاس';$('subtitle').textContent=selectedClass?'کلاس انتخاب‌شده: '+selectedClass+' · برای مشاهده پرونده روی نام دانش‌آموز بزنید.':'ابتدا کلاس را انتخاب کنید؛ سپس فهرست دانش‌آموزان همان کلاس نمایش داده می‌شود.';
   $('backLevel').hidden=!selectedClass;
   if(!selectedClass){
-   const classes=[...new Set(profiles.filter(p=>p.category==='student').map(p=>String(p.class_name||'').trim()||'کلاس ثبت نشده'))].sort((a,b)=>a.localeCompare(b,'fa'));
-   const filtered=classes.filter(c=>norm(c).includes(q)||profiles.some(p=>(String(p.class_name||'').trim()||'کلاس ثبت نشده')===c&&norm(nameOf(p)+' '+p.national_code).includes(q)));
+   const classKey=p=>String(p.grade||'پایه ثبت نشده').trim()+'::'+(String(p.class_name||'').trim()||'کلاس ثبت نشده');
+   const classLabel=p=>'پایه '+String(p.grade||'ثبت نشده')+' · کلاس '+(String(p.class_name||'').trim()||'ثبت نشده');
+   const classes=[...new Set(profiles.filter(p=>p.category==='student').map(classKey))].sort((a,b)=>a.localeCompare(b,'fa'));
+   const filtered=classes.filter(key=>{const sample=profiles.find(p=>p.category==='student'&&classKey(p)===key);return norm(classLabel(sample)).includes(q)||profiles.some(p=>p.category==='student'&&classKey(p)===key&&norm(nameOf(p)+' '+p.national_code+' '+p.student_code).includes(q));});
    $('count').textContent=filtered.length+' کلاس';
-   for(const c of filtered){const count=profiles.filter(p=>(String(p.class_name||'').trim()||'کلاس ثبت نشده')===c).length;const b=el('button','class-card');b.type='button';b.append(el('strong','',c),el('small','',count+' دانش‌آموز'));b.addEventListener('click',()=>{selectedClass=c;$('search').value='';render()});list.append(b)}
+   for(const key of filtered){const sample=profiles.find(p=>p.category==='student'&&classKey(p)===key);const count=profiles.filter(p=>p.category==='student'&&classKey(p)===key).length;const b=el('button','class-card');b.type='button';b.append(el('strong','',classLabel(sample)),el('small','',count+' دانش‌آموز'));b.addEventListener('click',()=>{selectedClass=key;$('search').value='';render()});list.append(b)}
    if(!filtered.length)list.append(el('div','empty','کلاسی در اطلاعات ثبت‌شده پیدا نشد.'));
    return;
   }
-  const people=profiles.filter(p=>p.category==='student'&&(String(p.class_name||'').trim()||'کلاس ثبت نشده')===selectedClass&&[nameOf(p),p.national_code,p.student_code].some(v=>norm(v).includes(q)));
+  const people=profiles.filter(p=>p.category==='student'&&String(p.grade||'پایه ثبت نشده').trim()+'::'+(String(p.class_name||'').trim()||'کلاس ثبت نشده')===selectedClass&&[nameOf(p),p.national_code,p.student_code].some(v=>norm(v).includes(q)));
   $('count').textContent=people.length+' دانش‌آموز';
   for(const p of people){const b=el('button','person');b.type='button';b.append(el('strong','',nameOf(p)),el('small','',p.student_code?'شماره دانش‌آموزی: '+p.student_code:(p.national_code?'کد ملی: '+p.national_code:'کد ملی ثبت نشده')));b.addEventListener('click',()=>showProfile(p));list.append(b)}
   if(!people.length)list.append(el('div','empty','در این کلاس دانش‌آموزی با این مشخصات پیدا نشد.'));
@@ -57,9 +59,22 @@ function showProfile(p){
  const fields=el('div','fields');
  const values=p.category==='student'?[['کلاس',p.class_name],['پایه',p.grade],['شماره دانش‌آموزی',p.student_code],['شماره تماس دانش‌آموز',p.phone],['شماره تماس والدین',p.parent_phone],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['تاریخ تولد',p.birth_date],['نشانی',p.address]]:[['شماره تماس',p.phone||p.mobile],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['کد پرسنلی',p.employee_code],['درس/مسئولیت',p.subject||p.role],['ایمیل',p.email]];
  for(const [k,v] of values)fields.append(field(k,v));
- box.append(heading,fields,el('h2','','برنامه هفتگی'));
+ box.append(heading,fields);
+ if(p.category==='teacher'){
+  box.append(el('h2','','کلاس‌ها و درس‌های تخصیص‌یافته'));
+  const assignments=Array.isArray(p.assigned_classes)?p.assigned_classes:[];
+  if(!assignments.length)box.append(el('p','empty','برای این دبیر کلاس یا درسی در جدول تخصیص دبیران ثبت نشده است.'));
+  else{
+   const assignmentWrap=el('div','table-wrap'),assignmentTable=document.createElement('table'),assignmentHead=document.createElement('thead'),assignmentHeadRow=document.createElement('tr');
+   for(const h of ['پایه','کلاس','درس'])assignmentHeadRow.append(el('th','',h));
+   assignmentHead.append(assignmentHeadRow);const assignmentBody=document.createElement('tbody');
+   for(const a of assignments){const row=document.createElement('tr');for(const value of [a.grade,a.class_name,a.subject])row.append(el('td','',value||'—'));assignmentBody.append(row)}
+   assignmentTable.append(assignmentHead,assignmentBody);assignmentWrap.append(assignmentTable);box.append(assignmentWrap);
+  }
+ }
+ box.append(el('h2','','برنامه هفتگی'));
  const isStudent=p.category==='student',personName=norm(nameOf(p));
- const matches=schedules.filter(s=>isStudent?norm(s.class_name)===norm(p.class_name):norm(s.teacher)===personName);
+ const matches=schedules.filter(s=>isStudent?(norm(s.class_name)===norm(p.class_name)&&norm(s.grade)===norm(p.grade)):norm(s.teacher)===personName);
  if(!matches.length){box.append(el('p','empty',isStudent?'برای کلاس این دانش‌آموز برنامه هفتگی ثبت نشده است.':'برای این دبیر برنامه هفتگی ثبت نشده است.'));return}
  const wrap=el('div','table-wrap'),table=document.createElement('table'),thead=document.createElement('thead'),tr=document.createElement('tr');
  for(const h of(isStudent?['روز','زنگ','درس','دبیر']:['روز','زنگ','کلاس','درس']))tr.append(el('th','',h));thead.append(tr);
