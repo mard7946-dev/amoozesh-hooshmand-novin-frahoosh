@@ -18,6 +18,11 @@ assert.equal(kind("موجه"), "excused");
 assert.equal(kind("excused"), "excused");
 assert.equal(kind("نامشخص"), "other");
 
+const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
+assert.match(publishWorkflow, /'jalali-date\\.js'/);
+assert.match(publishWorkflow, /'reports-utils\\.js'/);
+assert.match(publishWorkflow, /cp jalali-date\\.js reports-utils\\.js _site\\//);
+
 const page = readFileSync("reports.html", "utf8");
 assert.match(page, /reports-utils\.js/);
 for (const id of ["presentCount", "absenceCount", "lateCount", "excusedCount"]) {
