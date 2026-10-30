@@ -114,13 +114,64 @@ function drawStudentExams(){ $('studentExams').innerHTML=state.exams.length?stat
 $('addQuestion').onclick=()=>addQuestion();
 $('examForm').addEventListener('submit',async e=>{e.preventDefault();try{const f=new FormData(e.currentTarget),key=String(f.get('class_key')||''),[grade,class_name]=key.split('||');if(!grade||!class_name)throw Error('ابتدا کلاس مجاز را انتخاب کنید.');if(!state.questions.length)throw Error('حداقل یک سؤال اضافه کنید.');const d=await call({action:'create_exam',title:f.get('title'),subject:f.get('subject'),grade,class_name,starts_at:f.get('starts_at'),ends_at:f.get('ends_at'),duration_minutes:Number(f.get('duration_minutes')),question_order:f.get('question_order'),display_mode:f.get('display_mode'),group_size:Number(f.get('group_size')),description:f.get('description'),questions:state.questions.map(q=>({...q,options:q.type==='multiple_choice'?q.options:[]}))});notice(d.message,'ok');state.questions=[];renderQuestions();e.currentTarget.reset();await bootstrap();}catch(err){notice(err.message,'error');}});
 async function bootstrap(){if(!token){notice('نشست ورود پیدا نشد؛ از همان پنل دبیر یا دانش‌آموز دوباره وارد شوید.','error');return;}try{const d=await call({action:'bootstrap'});state.role=d.role;state.classes=d.classes||[];state.exams=d.exams||[];$('who').textContent=(d.profile?.name||'کاربر')+' · '+(d.role==='teacher'?'پنل دبیر':'پنل دانش‌آموز');if(d.role==='teacher'){$('teacherArea').classList.remove('hidden');drawClasses();drawTeacherExams();notice('کلاس‌ها و دانش‌آموزان وابسته به حساب دبیر بارگذاری شدند.','ok');}else{$('studentArea').classList.remove('hidden');drawStudentExams();notice('فقط آزمون‌های منتشرشده برای کلاس ثبت‌شده شما نمایش داده می‌شوند.','ok');}}catch(e){notice(e.message,'error');}}
-let liveQuestions=[],liveAnswers={},liveAttempt=null,liveExam=null,questionIndex=0,globalTimer=null,questionTimer=null,globalRemaining=0,questionRemaining=0;
-function renderStudentQuestions(){const group=liveExam.display_mode==='group'?Math.max(1,Number(liveExam.group_size)||1):1;const start=liveExam.display_mode==='group'?0:questionIndex;const end=liveExam.display_mode==='group'?liveQuestions.length:Math.min(liveQuestions.length,start+1);const shown=liveQuestions.slice(start,end);$('questionProgress').textContent=liveExam.display_mode==='group'?'نمایش گروهی · '+shown.length+' سؤال':'سؤال '+(questionIndex+1)+' از '+liveQuestions.length;$('previousQuestion').classList.toggle('hidden',liveExam.display_mode==='group'||questionIndex===0);$('nextQuestion').classList.toggle('hidden',liveExam.display_mode==='group'||questionIndex>=liveQuestions.length-1);$('studentQuestions').innerHTML=shown.map((q,idx)=>'<article class="question-view"><strong>سؤال '+(start+idx+1)+' · '+esc(({fill_blank:'جای خالی',multiple_choice:'تستی',true_false:'صحیح و غلط',short_answer:'پاسخ کوتاه',essay:'تشریحی'})[q.question_type]||'')+' · '+esc(q.points)+' نمره</strong><p style="white-space:pre-wrap;line-height:2">'+esc(q.prompt)+'</p>'+(q.math_markup?'<div>'+esc(q.math_markup)+'</div>':'')+(q.diagram_shapes?.length?'<div class="shape-preview">'+esc(q.diagram_shapes.join(' '))+'</div>':'')+(q.question_type==='multiple_choice'?(q.options||[]).map((o,i)=>'<label class="answer-option"><input type="radio" name="ans_'+q.id+'" value="'+esc(o)+'" '+(liveAnswers[q.id]===o?'checked':'')+'>'+esc(o)+'</label>').join(''):(q.question_type==='true_false'?['صحیح','غلط'].map(o=>'<label class="answer-option"><input type="radio" name="ans_'+q.id+'" value="'+o+'" '+(liveAnswers[q.id]===o?'checked':'')+'>'+o+'</label>').join(''):'<textarea data-answer="'+q.id+'" placeholder="پاسخ خود را بنویسید">'+esc(liveAnswers[q.id]||'')+'</textarea>'))+'</article>').join('');$('studentQuestions').querySelectorAll('input[type=radio]').forEach(el=>el.onchange=()=>{const id=el.name.slice(4);liveAnswers[id]=el.value;});$('studentQuestions').querySelectorAll('[data-answer]').forEach(el=>el.oninput=()=>{liveAnswers[el.dataset.answer]=el.value;});}
-function setQuestionTimer(){if(questionTimer)clearInterval(questionTimer);const q=liveQuestions[questionIndex];questionRemaining=Number(q?.time_limit_seconds)||0;if(!questionRemaining){$('timer').textContent=Math.floor(globalRemaining/60)+':'+String(globalRemaining%60).padStart(2,'0');return;}questionTimer=setInterval(()=>{questionRemaining--;if(questionRemaining<=0){clearInterval(questionTimer);if(liveExam.display_mode==='single'&&questionIndex<liveQuestions.length-1){questionIndex++;renderStudentQuestions();setQuestionTimer();}else $('timer').textContent='۰:۰۰';}else $('timer').textContent=Math.floor(questionRemaining/60)+':'+String(questionRemaining%60).padStart(2,'0');},1000);}
-async function startExam(id){try{const d=await call({action:'start_exam',exam_id:id});liveAttempt=d.attempt;liveExam=d.exam;liveQuestions=d.questions;liveAnswers={};questionIndex=0;$('takingTitle').textContent=liveExam.title;$('takingArea').classList.remove('hidden');$('takingArea').scrollIntoView({behavior:'smooth'});renderStudentQuestions();globalRemaining=Number(liveExam.duration_minutes)*60;if(globalTimer)clearInterval(globalTimer);globalTimer=setInterval(()=>{globalRemaining--;if(globalRemaining<=0){clearInterval(globalTimer);submitExam(true);}else if(!liveQuestions[questionIndex]?.time_limit_seconds)$('timer').textContent=Math.floor(globalRemaining/60)+':'+String(globalRemaining%60).padStart(2,'0');},1000);setQuestionTimer();}catch(e){notice(e.message,'error');}}
+let liveQuestions=[],liveAnswers={},liveAttempt=null,liveExam=null,questionIndex=0,globalTimer=null,questionTimer=null,globalRemaining=0,questionRemaining=0,groupTimers={};
+function renderStudentQuestions(){
+  const groupMode=liveExam.display_mode==='group';
+  const start=groupMode?0:questionIndex;
+  const end=groupMode?liveQuestions.length:Math.min(liveQuestions.length,start+1);
+  const shown=liveQuestions.slice(start,end);
+  $('questionProgress').textContent=groupMode?'نمایش گروهی · '+shown.length+' سؤال':'سؤال '+(questionIndex+1)+' از '+liveQuestions.length;
+  $('previousQuestion').classList.toggle('hidden',groupMode||questionIndex===0);
+  $('nextQuestion').classList.toggle('hidden',groupMode||questionIndex>=liveQuestions.length-1);
+  $('studentQuestions').innerHTML=shown.map((q,idx)=>{
+    const timeText=q.time_limit_seconds?'زمان سؤال: '+q.time_limit_seconds+' ثانیه':'بدون زمان مستقل';
+    const options=q.question_type==='multiple_choice'?(q.options||[]).map(o=>'<label class="answer-option"><input type="radio" name="ans_'+q.id+'" value="'+esc(o)+'" '+(liveAnswers[q.id]===o?'checked':'')+'>'+esc(o)+'</label>').join(''):
+      q.question_type==='true_false'?['صحیح','غلط'].map(o=>'<label class="answer-option"><input type="radio" name="ans_'+q.id+'" value="'+o+'" '+(liveAnswers[q.id]===o?'checked':'')+'>'+o+'</label>').join(''):
+      '<textarea data-answer="'+q.id+'" placeholder="پاسخ خود را بنویسید">'+esc(liveAnswers[q.id]||'')+'</textarea>';
+    return '<article class="question-view" data-question-card="'+q.id+'"><div class="qhead"><strong>سؤال '+(start+idx+1)+' · '+esc(({fill_blank:'جای خالی',multiple_choice:'تستی',true_false:'صحیح و غلط',short_answer:'پاسخ کوتاه',essay:'تشریحی'})[q.question_type]||'')+' · '+esc(q.points)+' نمره</strong><span class="pill" data-q-timer="'+q.id+'">'+timeText+'</span></div><p style="white-space:pre-wrap;line-height:2">'+esc(q.prompt)+'</p>'+(q.math_markup?'<div>'+esc(q.math_markup)+'</div>':'')+(q.diagram_shapes?.length?'<div class="shape-preview">'+esc(q.diagram_shapes.join(' '))+'</div>':'')+options+'</article>';
+  }).join('');
+  $('studentQuestions').querySelectorAll('input[type=radio]').forEach(el=>el.onchange=()=>{const id=el.name.slice(4);liveAnswers[id]=el.value;});
+  $('studentQuestions').querySelectorAll('[data-answer]').forEach(el=>el.oninput=()=>{liveAnswers[el.dataset.answer]=el.value;});
+}
+function clearGroupTimers(){Object.values(groupTimers).forEach(clearInterval);groupTimers={};}
+function lockQuestion(questionId){const card=$('studentQuestions').querySelector('[data-question-card="'+questionId+'"]');if(card)card.querySelectorAll('input,textarea').forEach(el=>el.disabled=true);}
+function startGroupQuestionTimers(){
+  clearGroupTimers();
+  liveQuestions.forEach(q=>{
+    let remaining=Number(q.time_limit_seconds)||0;
+    if(!remaining)return;
+    const badge=$('studentQuestions').querySelector('[data-q-timer="'+q.id+'"]');
+    if(badge)badge.textContent='مانده: '+remaining+' ثانیه';
+    groupTimers[q.id]=setInterval(()=>{
+      remaining--;
+      if(badge)badge.textContent='مانده: '+Math.max(remaining,0)+' ثانیه';
+      if(remaining<=0){clearInterval(groupTimers[q.id]);expiredQuestions.add(q.id);lockQuestion(q.id);if(badge)badge.textContent='زمان تمام شد';}
+    },1000);
+  });
+}
+function setQuestionTimer(){
+  if(questionTimer)clearInterval(questionTimer);
+  if(liveExam.display_mode==='group'){startGroupQuestionTimers();return;}
+  const q=liveQuestions[questionIndex];
+  const badge=q&&$('studentQuestions').querySelector('[data-q-timer="'+q.id+'"]');
+  if(!q||expiredQuestions.has(q.id)){if(q)lockQuestion(q.id);return;}
+  questionRemaining=Number(q.time_limit_seconds)||0;
+  if(!questionRemaining){if(badge)badge.textContent='بدون زمان مستقل';return;}
+  if(badge)badge.textContent='مانده: '+questionRemaining+' ثانیه';
+  questionTimer=setInterval(()=>{
+    questionRemaining--;
+    if(badge)badge.textContent='مانده: '+Math.max(questionRemaining,0)+' ثانیه';
+    if(questionRemaining<=0){
+      clearInterval(questionTimer);expiredQuestions.add(q.id);lockQuestion(q.id);
+      if(badge)badge.textContent='زمان تمام شد';
+      if(questionIndex<liveQuestions.length-1){questionIndex++;renderStudentQuestions();setQuestionTimer();}
+    }
+  },1000);
+}
+async function startExam(id){try{const d=await call({action:'start_exam',exam_id:id});liveAttempt=d.attempt;liveExam=d.exam;liveQuestions=d.questions;liveAnswers={};expiredQuestions=new Set();questionIndex=0;$('takingTitle').textContent=liveExam.title;$('takingArea').classList.remove('hidden');$('takingArea').scrollIntoView({behavior:'smooth'});renderStudentQuestions();globalRemaining=Number(liveExam.duration_minutes)*60;if(globalTimer)clearInterval(globalTimer);globalTimer=setInterval(()=>{globalRemaining--;if(globalRemaining<=0){clearInterval(globalTimer);submitExam(true);}else $('timer').textContent=Math.floor(globalRemaining/60)+':'+String(globalRemaining%60).padStart(2,'0');},1000);setQuestionTimer();}catch(e){notice(e.message,'error');}}
 $('previousQuestion').onclick=()=>{if(questionIndex>0){questionIndex--;renderStudentQuestions();setQuestionTimer();}};
 $('nextQuestion').onclick=()=>{if(questionIndex<liveQuestions.length-1){questionIndex++;renderStudentQuestions();setQuestionTimer();}};
-async function submitExam(auto=false){if(!liveAttempt)return;if(!auto&&!confirm('پس از تحویل، امکان ویرایش پاسخ‌ها وجود ندارد. آزمون تحویل شود؟'))return;try{if(globalTimer)clearInterval(globalTimer);if(questionTimer)clearInterval(questionTimer);const d=await call({action:'submit_exam',attempt_id:liveAttempt.id,answers:liveQuestions.map(q=>({question_id:q.id,answer:liveAnswers[q.id]||''}))});$('takingArea').classList.add('hidden');notice(d.message+' نمره خودکار: '+d.score+' از '+d.max_score,'ok');liveAttempt=null;await bootstrap();}catch(e){notice(e.message,'error');}}
+async function submitExam(auto=false){if(!liveAttempt)return;if(!auto&&!confirm('پس از تحویل، امکان ویرایش پاسخ‌ها وجود ندارد. آزمون تحویل شود؟'))return;try{if(globalTimer)clearInterval(globalTimer);if(questionTimer)clearInterval(questionTimer);clearGroupTimers();const d=await call({action:'submit_exam',attempt_id:liveAttempt.id,answers:liveQuestions.map(q=>({question_id:q.id,answer:liveAnswers[q.id]||''}))});$('takingArea').classList.add('hidden');notice(d.message+' نمره خودکار: '+d.score+' از '+d.max_score,'ok');liveAttempt=null;await bootstrap();}catch(e){notice(e.message,'error');}}
 $('submitExam').onclick=()=>submitExam(false);
 $('refresh').onclick=bootstrap;
 $('back').onclick=()=>{location.href='portal.html';};
