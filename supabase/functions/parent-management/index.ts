@@ -50,7 +50,8 @@ Deno.serve(async(req:Request)=>{
   base.from("portal_messages").select("id,sender_name,sender_role,recipient_name,recipient_role,subject,body,status,created_at,read_at").eq("school_id",school).eq("recipient_user_id",a.user.id).eq("status","delivered").order("created_at",{ascending:false}).limit(500),
   base.from("school_bulletins").select("id,board_key,title,body,status,created_at,published_at,starts_at,ends_at").eq("school_id",school).eq("status","published").order("published_at",{ascending:false}).limit(300)
  ]);
- const classNames=[...new Set((students.data??[]).map((s:any)=>clean(s.class_name)).filter(Boolean))];\n const safeAssignments=(assignments.data??[]).filter((x:any)=>x.student_id!==null&&x.student_id!==undefined?studentIds.includes(Number(x.student_id)):Boolean(x.class_name)&&classNames.includes(clean(x.class_name)));
+ const classNames=[...new Set((students.data??[]).map((s:any)=>clean(s.class_name)).filter(Boolean))];
+ const safeAssignments=(assignments.data??[]).filter((x:any)=>x.student_id!==null&&x.student_id!==undefined?studentIds.includes(Number(x.student_id)):Boolean(x.class_name)&&classNames.includes(clean(x.class_name)));
  const schedule=classNames.length?await base.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,room,academic_year,start_time,end_time").eq("tenant_school_id",school).in("class_name",classNames).order("period"):{data:[],error:null};
  const failed=[students,discipline,grades,meetings,activities,attendance,assignments,schedule,exams,payments,messages,bulletins].find((x:any)=>x.error);
  if(failed){console.error("parent-management query failed",failed.error?.code);return reply({message:"دریافت اطلاعات پنل اولیا ناموفق بود؛ ساختار جدول‌ها را بررسی کنید."},500)}
