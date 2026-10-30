@@ -4,7 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'portal.html'\n      - 'settings.html'\n      - 'supabase/functions/school-settings/index.ts'\n      - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
+      - 'portal.html'
+      - 'settings.html'
+      - 'supabase/functions/school-settings/index.ts'
+      - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
       - 'index.html'
       - 'tests/validate-novin-portal.mjs'
       - '.github/workflows/validate-novin-portal.yml'
