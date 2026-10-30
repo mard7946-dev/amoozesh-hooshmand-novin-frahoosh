@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
     const { data: authData, error: authError } = await admin.auth.getUser(token);
     if (authError || !authData.user) return reply({ message: "نشست معتبر نیست؛ دوباره وارد سامانه شوید." }, 401);
     const { data: profile, error: profileError } = await admin.from("account_settings")
-      .select("username,national_code,display_name,role,auth_user_id,tenant_school_id")
+      .select("username,national_code,display_name,phone,email,role,auth_user_id,tenant_school_id")
       .eq("auth_user_id", authData.user.id).maybeSingle();
     if (profileError || !profile || !profile.tenant_school_id) {
       return reply({ message: "پروفایل مدرسه یا نقش این حساب تأیید نشد." }, 403);
@@ -71,8 +71,8 @@ Deno.serve(async (req: Request) => {
       const digitsOnly = (value: unknown) => clean(value)
         .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
         .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-        .replace(/\\D/g, "");
-      const nameKey = (value: unknown) => norm(value).replace(/[\\s‌‍‎‏]+/g, "").replace(/[^\\p{L}\\p{N}]/gu, "");
+        .replace(/\D/g, "");
+      const nameKey = (value: unknown) => norm(value).replace(/[\s‌‍‎‏]+/g, "").replace(/[^\p{L}\p{N}]/gu, "");
       const uniqueMatch = (rows: any[]) => rows.length === 1 ? rows[0] : null;
       let candidates: any[] = [];
 
