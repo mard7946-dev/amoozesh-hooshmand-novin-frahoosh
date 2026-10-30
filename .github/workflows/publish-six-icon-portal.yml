@@ -8,7 +8,10 @@ on:
       - 'index.html'
       - 'portal.html'
       - 'settings.html'
-      - 'reports.html'\n      - 'parent-management.html'\n      - 'parent-meetings.html'\n      - 'messages.html'
+      - 'reports.html'
+      - 'parent-management.html'
+      - 'parent-meetings.html'
+      - 'messages.html'
       - 'bulletin.html'
       - 'users.html'
       - 'classroom.html'
@@ -47,7 +50,8 @@ jobs:
           cp classroom/index.html _site/classroom/index.html
           cp classroom/management.html _site/classroom/management.html
           cp classroom.html _site/classroom.html
-          printf 'frahoosh.ir\n' > _site/CNAME
+          printf 'frahoosh.ir
+' > _site/CNAME
           touch _site/.nojekyll
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
