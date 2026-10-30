@@ -79,3 +79,21 @@ assert.ok(publishWorkflow.includes("- 'directory.html'"), "Changes to directory.
 assert.ok(publishWorkflow.includes("bulletin.html directory.html _site/"), "GitHub Pages artifact must include directory.html");
 assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کارکنان"), "Staff directory page must exist in the repository");
 console.log("Staff directory deployment checks passed: trigger, published artifact, and page source.");
+
+
+const counselorPage = readFileSync("counseling.html", "utf8");
+assert.ok(html.includes("location.href='counseling.html?tab='"), "Counselor page must open on the portal origin so sessionStorage is shared");
+assert.ok(!html.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html"), "Counselor route must not cross origins and lose the session token");
+assert.ok(counselorPage.includes('name="event_weekday"') && counselorPage.includes('name="event_date_shamsi"') && counselorPage.includes('name="title"'), "Counselor invitation form must collect weekday, date, and subject");
+assert.ok(counselorPage.includes("approval_status") && counselorPage.includes("در انتظار تأیید مدیر"), "Counselor must see that invitations await manager approval");
+const counselorScripts = [...counselorPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+for (const source of counselorScripts) assert.doesNotThrow(() => new Function(source), "Counselor page script must have valid JavaScript syntax");
+assert.ok(parentPage.includes("data-family-review") && parentPage.includes("action:'review'"), "Manager must be able to approve or reject family invitations");
+assert.ok(parentPage.includes("تأیید و انتشار برای اولیا"), "Manager approval must publish the invitation for parents");
+const familyFunction = readFileSync("supabase/functions/family-education/index.ts", "utf8");
+assert.ok(familyFunction.includes('action === "review"') && familyFunction.includes('approval_status: status'), "Family education API must persist manager approval");
+assert.ok(familyFunction.includes('.eq("approval_status", "approved")'), "Parents must only receive manager-approved invitations");
+const familyMigration = readFileSync("supabase/migrations/20261030140000_family_invitation_manager_approval.sql", "utf8");
+assert.ok(familyMigration.includes("approval_status") && familyMigration.includes("event_weekday"), "Family invitation migration must add approval and weekday fields");
+assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html _site/"), "GitHub Pages must publish the counselor page");
+console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
