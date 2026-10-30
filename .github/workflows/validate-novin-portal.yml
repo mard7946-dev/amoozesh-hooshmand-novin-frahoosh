@@ -7,7 +7,9 @@ on:
     paths:
       - 'portal.html'
       - 'settings.html'
-      - 'reports.html'\n      - 'parent-management.html'\n      - 'supabase/functions/parent-management/index.ts'
+      - 'reports.html'
+      - 'parent-management.html'
+      - 'supabase/functions/parent-management/index.ts'
       - 'supabase/functions/school-settings/index.ts'
       - 'supabase/functions/school-reports/index.ts'
       - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
