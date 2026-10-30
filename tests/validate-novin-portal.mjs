@@ -82,7 +82,7 @@ assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کا�
 const directory = readFileSync("directory.html", "utf8");
 assert.ok(directory.includes("/rest/v1/teacher_classes?"), "Directory must read teacher assignments from Supabase REST");
 assert.ok(directory.includes("tenant_school_id=eq.'+SCHOOL_ID") && directory.includes("&active=eq.1"), "Teacher assignments must be restricted to the active school and active rows");
-assert.ok(directory.includes("Authorization:'Bearer '+token") && directory.includes("'apikey':SUPABASE_KEY"), "Teacher assignment requests must use the signed-in user's token and public key");
+assert.ok(directory.includes("'Authorization':'Bearer '+token") && directory.includes("'apikey':SUPABASE_KEY"), "Teacher assignment requests must use the signed-in user's token and public key");
 assert.ok(directory.includes("assignmentMap.get(Number(p.id))"), "Teacher assignments must be joined to profiles by teacher ID");
 assert.ok(directory.includes("const classKey=p=>String(p.grade||'پایه ثبت نشده').trim()+'::'"), "Student classes must be grouped by both grade and class name");
 const directoryScripts = [...directory.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
