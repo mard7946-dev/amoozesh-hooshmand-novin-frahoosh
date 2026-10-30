@@ -1,4 +1,5 @@
 name: Publish Frahoosh Six-Icon Portal
+# Ensure the latest operational reports page is included in the deployed site.
 
 on:
   push:
