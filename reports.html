@@ -12,14 +12,14 @@
 <section class="panel"><h2>فیلتر گزارش‌ها</h2><div class="filters">
 <label>کلاس<select id="classFilter"><option value="">همه کلاس‌ها</option></select></label><label>از تاریخ شمسی<input id="fromDate" placeholder="۱۴۰۵/۰۷/۰۱" inputmode="numeric"></label><label>تا تاریخ شمسی<input id="toDate" placeholder="۱۴۰۵/۱۲/۲۹" inputmode="numeric"></label><label>جست‌وجو<input id="searchFilter" placeholder="نام دانش‌آموز، درس، عنوان…"></label><button id="clearFilters">پاک‌کردن فیلترها</button></div></section>
 <section class="panel"><div class="section-title"><h2 id="sectionTitle">گزارش حضور و غیاب</h2><div class="actions no-print"><button id="csvBtn" class="primary">خروجی Excel (CSV)</button><button id="pdfBtn" class="dark">چاپ / ذخیره PDF</button></div></div>
-<div class="tabs" id="tabs"><button class="active" data-tab="attendance">حضور و غیاب</button><button data-tab="grades">نمرات ثبت‌شده</button><button data-tab="discipline">انضباطی</button><button data-tab="classes">کلاس‌ها و دبیران</button><button data-tab="activities">فعالیت‌های مدرسه</button><button data-tab="finance" id="financeTab">مالی</button></div><div id="reportTable" class="table-wrap"></div><div id="reportMeta" class="muted" style="margin-top:9px"></div></section>
+<div class="tabs" id="tabs"><button class="active" data-tab="attendance">حضور و غیاب</button><button data-tab="grades">نمرات ثبت‌شده</button><button data-tab="discipline">انضباطی</button><button data-tab="classes">کلاس‌ها و دبیران</button><button data-tab="activities">فعالیت‌ها و درخواست‌ها</button><button data-tab="finance" id="financeTab">مالی</button></div><div id="reportTable" class="table-wrap"></div><div id="reportMeta" class="muted" style="margin-top:9px"></div></section>
 <section class="panel"><h2>درباره گزارش‌ها</h2><p class="muted">این صفحه فقط برای مشاهده و گزارش‌گیری است و هیچ تغییری در نمرات، حضور و غیاب، سوابق انضباطی یا امور مالی ایجاد نمی‌کند. گزارش‌ها از داده‌های ثبت‌شده در پایگاه داده تهیه می‌شوند. خروجی Excel به‌صورت CSV سازگار با صفحه‌گسترده و خروجی PDF از مسیر چاپ مرورگر فراهم شده است.</p></section>
 </div><footer>سامانه مدیریت مدرسه فراهوش</footer></div>
 <script>
 const URL_API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/school-reports",KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const token=sessionStorage.getItem("frahoosh_novin_access_token")||"",role=sessionStorage.getItem("frahoosh_novin_role")||"",el=id=>document.getElementById(id);
 let data=null,tab="attendance",rowsNow=[],headersNow=[];
-const titles={attendance:"گزارش حضور و غیاب",grades:"گزارش نمرات ثبت‌شده",discipline:"گزارش انضباطی",classes:"گزارش کلاس‌ها و دبیران",activities:"گزارش فعالیت‌های مدرسه",finance:"گزارش مالی"};
+const titles={attendance:"گزارش حضور و غیاب",grades:"گزارش نمرات ثبت‌شده",discipline:"گزارش انضباطی",classes:"گزارش کلاس‌ها و دبیران",activities:"گزارش فعالیت‌ها و درخواست‌های مدرسه",finance:"گزارش مالی"};
 const fa=n=>String(n??"").replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[+d]),en=s=>String(s??"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function dateText(v){if(!v)return "—";let s=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(s)){let d=new Date(s.slice(0,10)+"T12:00:00");if(!isNaN(d))return new Intl.DateTimeFormat("fa-IR-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).format(d)}return fa(s.replace(/-/g,"/"))}
@@ -43,14 +43,25 @@ async function load(){
  }catch(e){status(e.message||"خطا در دریافت گزارش‌ها.",true)}
 }
 function inRange(v){let d=normDate(v),f=normDate(el("fromDate").value),t=normDate(el("toDate").value);if(!d)return !f&&!t;return (!f||d>=f)&&(!t||d<=t)}
-function match(r,cls,date){let c=el("classFilter").value,q=el("searchFilter").value.trim().toLowerCase();if(c&&cls!==c)return false;if(date!==null&&!inRange(date))return false;return !q||r.join(" ").toLowerCase().includes(q)}
+function match(r,cls,date){let c=el("classFilter").value,q=el("searchFilter").value.trim().toLowerCase();if(c&&cls!==null&&cls!==c)return false;if(date!==null&&!inRange(date))return false;return !q||r.join(" ").toLowerCase().includes(q)}
 function makeRows(){
  let ss=data.students||[];
  if(tab==="attendance"){headersNow=["دانش‌آموز","کلاس","تاریخ","وضعیت","درس","دبیر","تأیید","توضیحات"];return data.attendance.map(x=>[student(x.student_id),x.class_name||ss.find(s=>String(s.id)===String(x.student_id))?.class_name||"—",dateText(x.attendance_date||x.date),x.status,x.subject,teacher(x.teacher_id),x.approval_status==="approved"?"تأییدشده":x.approval_status||"در انتظار",x.description]).filter(r=>match(r,r[1],r[2]))}
  if(tab==="grades"){headersNow=["دانش‌آموز","کلاس","درس","نوع ارزیابی","عنوان آزمون","نمره","از","نوبت","تاریخ","منبع"];let a=data.grades.map(x=>[student(x.student_id),x.class_name,x.subject,x.grade_type,x.title||x.exam_name,x.score,x.max_score,x.term,dateText(x.assessment_date||x.grade_date),"دفتر نمرات"]),b=data.studentGrades.map(x=>[student(x.student_id),x.class_name,x.subject,x.assessment_type,x.assessment_title,x.score,"۲۰",x.term,dateText(x.grade_date_shamsi||x.grade_date),"ارزشیابی"]);return [...a,...b].filter(r=>match(r,r[1],r[8]))}
  if(tab==="discipline"){headersNow=["دانش‌آموز","کلاس","تاریخ","عنوان مورد","اولویت","وضعیت","ثبت‌کننده","امتیاز کسرشده","توضیحات"];return data.discipline.map(x=>[student(x.student_id),ss.find(s=>String(s.id)===String(x.student_id))?.class_name||"—",dateText(x.incident_date||x.created_at),x.title,x.priority,x.status,x.actor_username||teacher(x.teacher_id),x.deduction,x.note||x.description]).filter(r=>match(r,r[1],r[2]))}
  if(tab==="classes"){headersNow=["کلاس","پایه","درس","دبیر","وضعیت"];return data.teacherClasses.map(x=>[x.class_name,x.grade,x.subject,x.teacher_name||teacher(x.teacher_id),x.active===1||x.active===true?"فعال":"غیرفعال"]).filter(r=>match(r,r[0],null))}
- if(tab==="activities"){headersNow=["عنوان فعالیت","دسته‌بندی","تاریخ شروع","تاریخ پایان","وضعیت","توضیحات"];return data.competitions.map(x=>[x.title,x.category,dateText(x.start_date),dateText(x.end_date),x.status,x.description]).filter(r=>match(r,"",r[2]))}
+ if(tab==="activities"){headersNow=["نوع","عنوان/فعالیت","دانش‌آموز یا درخواست‌کننده","تاریخ","وضعیت","جزئیات"];let out=[];
+ for(let x of data.competitions)out.push(["مسابقه",x.title,"—",dateText(x.start_date),x.status,x.description]);
+ for(let x of data.artCompetitions)out.push(["مسابقه هنری",x.title,"—",dateText(x.start_date),x.status,x.description]);
+ for(let x of data.sportCompetitions)out.push(["مسابقه ورزشی",x.title,"—",dateText(x.start_date),x.status,x.description]);
+ for(let x of data.culturalCompetitions)out.push(["مسابقه فرهنگی",x.title,"—",dateText(x.start_date),x.status,x.description]);
+ for(let x of data.activityRegistrations)out.push(["ثبت‌نام فعالیت",data.activityPrograms.find(a=>String(a.id)===String(x.activity_id))?.title||"فعالیت",student(x.student_id),dateText(x.created_at),x.status,x.participation_type||x.competition_type||x.payment_status]);
+ for(let x of data.culturalRegistrations)out.push(["ثبت‌نام فرهنگی",x.activity_title||x.activity_kind,student(x.student_id)||x.student_name,dateText(x.registration_date||x.created_at),x.status,x.payment_status]);
+ for(let x of data.studentCouncil)out.push(["شورای دانش‌آموزی","عضویت شورا",x.student_name||student(x.student_id),dateText(x.created_at),x.status,x.election_year]);
+ for(let x of data.executiveRequests)out.push(["درخواست اجرایی",x.title,x.requester,dateText(x.request_date||x.created_at),x.status,x.description||x.followup]);
+ for(let x of data.transportRequests)out.push(["درخواست سرویس",student(x.student_id),x.parent_username,dateText(x.created_at),x.status,[x.origin,x.destination,x.note].filter(Boolean).join(" - ")]);
+ for(let x of data.certificateRequests)out.push(["درخواست گواهی",x.destination,x.student_name||student(x.student_id),dateText(x.request_date||x.created_at),x.status,x.executive_note]);
+ return out.filter(r=>match(r,null,r[3]))}
  if(tab==="finance"){headersNow=["شماره سند","سال مالی","تاریخ","نوع سند","طرف حساب","شرح","وضعیت","بدهکار","بستانکار"];let sums=new Map();for(let x of data.financeLines){let s=sums.get(x.voucher_id)||{d:0,c:0};s.d+=Number(x.debit||0);s.c+=Number(x.credit||0);sums.set(x.voucher_id,s)}return data.financeVouchers.map(x=>{let s=sums.get(x.id)||{};return [x.document_number,x.fiscal_year,dateText(x.voucher_date),x.voucher_type,x.counterparty,x.description,x.status,s.d||0,s.c||0]}).filter(r=>match(r,"",r[2]))}
  return []
 }
