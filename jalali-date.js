@@ -18,7 +18,7 @@
     const jy = Number(m[1]), jm = Number(m[2]), jd = Number(m[3]);
     if (jm < 1 || jm > 12 || jd < 1 || jd > 31) throw new Error('تاریخ شمسی معتبر نیست.');
     const center = Date.UTC(jy + 621, 2, 21);
-    for (let offset = -190; offset <= 190; offset++) {
+    for (let offset = -2; offset <= 370; offset++) {
       const d = new Date(center + offset * 86400000);
       const p = jalaliParts(d);
       if (p.y === jy && p.m === jm && p.d === jd) return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
