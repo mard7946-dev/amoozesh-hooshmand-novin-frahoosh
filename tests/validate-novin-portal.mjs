@@ -44,3 +44,21 @@ const reportScripts = [...reports.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/scr
 assert.ok(reportScripts.length > 0, "Reports page must contain its interactive script");
 for (const source of reportScripts) assert.doesNotThrow(() => new Function(source), "Reports page script must have valid JavaScript syntax");
 console.log("Reports checks passed: protected API, attendance/grades/discipline, exports, read-only behavior, and JavaScript syntax.");
+
+
+const parentPage = readFileSync("parent-management.html", "utf8");
+const parentFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
+assert.ok(html.includes("const parentTabs={'پرونده دانش‌آموز':'files','برنامه هفتگی':'schedule','حضور و غیاب':'attendance','تکالیف':'assignments','وضعیت تحصیلی':'grades'}"), "Parent menu entries must route to their matching operational tabs");
+assert.ok(html.includes("location.href='parent-meetings.html'"), "Parent meetings must keep their existing route");
+assert.ok(parentPage.includes("new URLSearchParams(location.search).get('tab')||'files'"), "Parent management must read the requested tab from the URL");
+assert.ok(parentPage.includes("activateTab(requestedTab)"), "Parent management must activate the requested tab on load");
+assert.ok(parentPage.includes("Boolean(s.class_name)&&x.class_name===s.class_name"), "Class-level assignments must be scoped to the selected child's class");
+assert.ok(parentPage.includes("d.schedule.filter(x=>x.class_name===s.class_name)"), "Weekly schedule must be scoped to the selected child's class");
+assert.ok(parentPage.includes("Boolean(s&&s.grade)&&x.grade===s.grade"), "Exams must be scoped to the selected child's grade");
+assert.ok(parentPage.includes("Boolean(s)&&+x.student_id===+s.id"), "Payments must be scoped to the selected child");
+assert.ok(parentFunction.includes('.eq("parent_username",clean(c.username)).limit(1000)'), "Parent-child lookup must support more than two children");
+assert.ok(parentFunction.includes("const safeAssignments=") && parentFunction.includes("assignments:safeAssignments"), "The Edge Function must filter class-level assignments to linked child classes");
+const parentScripts = [...parentPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(parentScripts.length > 0, "Parent management page must contain its operational script");
+for (const source of parentScripts) assert.doesNotThrow(() => new Function(source), "Parent management script must have valid JavaScript syntax");
+console.log("Parent panel checks passed: routes, tab selection, selected-child scoping, multi-child links, assignment privacy, and JavaScript syntax.");
