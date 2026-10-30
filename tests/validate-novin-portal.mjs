@@ -95,5 +95,8 @@ assert.ok(familyFunction.includes('action === "review"') && familyFunction.inclu
 assert.ok(familyFunction.includes('.eq("approval_status", "approved")'), "Parents must only receive manager-approved invitations");
 const familyMigration = readFileSync("supabase/migrations/20261030140000_family_invitation_manager_approval.sql", "utf8");
 assert.ok(familyMigration.includes("approval_status") && familyMigration.includes("event_weekday"), "Family invitation migration must add approval and weekday fields");
+assert.ok(familyFunction.includes("student_id: studentRecord?.id ?? null") && familyFunction.includes(".eq(\"role\", \"parent\")"), "Counselor invitation must support sending to every parent account without selecting a student");
+const audienceMigration = readFileSync("supabase/migrations/20261030143000_family_invitation_schoolwide_audience.sql", "utf8");
+assert.ok(audienceMigration.includes("alter column student_id drop not null"), "School-wide invitations must not require a single student");
 assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html _site/"), "GitHub Pages must publish the counselor page");
 console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
