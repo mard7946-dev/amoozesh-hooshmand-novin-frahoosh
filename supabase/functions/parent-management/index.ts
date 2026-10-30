@@ -23,6 +23,30 @@ Deno.serve(async(req:Request)=>{
  const isManager=managerRoles.includes(role),isParent=role==="parent";
  if(!isManager&&!isParent)return reply({message:"این حساب اجازه دسترسی به پنل اولیا را ندارد."},403);
  const expectedRole=isManager?"manager":"parent";
+ const input=await req.json().catch(()=>({}));
+ const action=clean(input.action||"list");
+ if(action==="create_association"){
+  if(!isParent)return reply({message:"ثبت درخواست انجمن فقط از پنل ولی مجاز است."},403);
+  const studentId=Number(input.student_id),requestType=clean(input.request_type),expertise=clean(input.expertise).slice(0,500),message=clean(input.message);
+  if(!Number.isInteger(studentId)||!requestType||!message)return reply({message:"انتخاب فرزند، نوع درخواست و توضیحات الزامی است."},400);
+  if(requestType.length>120||message.length<5||message.length>3000)return reply({message:"نوع درخواست یا توضیحات خارج از محدوده مجاز است."},400);
+  const {data:link,error:linkError}=await db.from("parent_children").select("student_id").eq("tenant_school_id",school).eq("parent_username",clean(c.username)).eq("student_id",studentId).maybeSingle();
+  if(linkError||!link)return reply({message:"این دانش‌آموز به حساب ولی متصل نیست."},403);
+  const {data:student,error:studentError}=await db.from("students").select("id,first_name,last_name").eq("tenant_school_id",school).eq("id",studentId).maybeSingle();
+  if(studentError||!student)return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
+  const {data:created,error}=await db.from("parent_association_requests").insert({tenant_school_id:school,parent_user_id:a.user.id,parent_username:c.username,parent_name:c.display_name||c.username,parent_phone:c.phone||"",student_id:student.id,student_name:[student.first_name,student.last_name].filter(Boolean).join(" "),request_type:requestType,expertise,message,status:"pending"}).select("id,status,created_at").single();
+  if(error){console.error("parent association create",error.code);return reply({message:"ثبت درخواست انجمن انجام نشد."},500)}
+  return reply({ok:true,request:created});
+ }
+ if(action==="review_association"){
+  if(!isManager)return reply({message:"فقط مدیر مدرسه می‌تواند درخواست انجمن را بررسی کند."},403);
+  const id=Number(input.id),status=clean(input.status),note=clean(input.manager_note).slice(0,1000);
+  if(!Number.isInteger(id)||!["approved","rejected"].includes(status))return reply({message:"اطلاعات بررسی درخواست معتبر نیست."},400);
+  const {data:updated,error}=await db.from("parent_association_requests").update({status,manager_note:note,reviewed_by:a.user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("tenant_school_id",school).eq("id",id).select("id,status").maybeSingle();
+  if(error||!updated)return reply({message:"ذخیره نتیجه بررسی درخواست ناموفق بود."},500);
+  return reply({ok:true,request:updated});
+ }
+
  const {data:m,error:me}=await db.from("school_memberships").select("id").eq("auth_user_id",a.user.id).eq("school_id",school).eq("role",expectedRole).eq("is_active",true).maybeSingle();
  if(me||!m)return reply({message:"عضویت فعال مدرسه تأیید نشد."},403);
  const [parentsResult,linksResult]=await Promise.all([
@@ -37,12 +61,13 @@ Deno.serve(async(req:Request)=>{
  const parents=parentsResult.data??[],links=linksResult.data??[];
  const studentIds=[...new Set(links.map((x:any)=>Number(x.student_id)).filter((x:number)=>Number.isInteger(x)&&x>0))];
  const base=db;
- const [students,discipline,grades,meetings,activities,attendance,assignments,exams,payments,messages,bulletins]=await Promise.all([
+ const [students,discipline,grades,meetings,activities,associationRequests,attendance,assignments,exams,payments,messages,bulletins]=await Promise.all([
   studentIds.length?base.from("students").select("id,first_name,last_name,student_code,national_code,grade,class_name,parent_phone,phone").eq("tenant_school_id",school).in("id",studentIds).order("last_name"):Promise.resolve({data:[],error:null}),
   studentIds.length?base.from("discipline_records").select("id,student_id,title,description,priority,status,incident_date,created_at").eq("tenant_school_id",school).in("student_id",studentIds).order("id",{ascending:false}).limit(3000):Promise.resolve({data:[],error:null}),
   studentIds.length?base.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,coefficient,grade_date_shamsi,term,manager_released").eq("tenant_school_id",school).in("student_id",studentIds).order("id",{ascending:false}).limit(5000):Promise.resolve({data:[],error:null}),
   isManager?base.from("parent_meeting_requests").select("id,parent_name,parent_username,student_id,student_name,target_role,target_name,requested_date_shamsi,requested_time,reason,status,educational_approval,manager_approval,created_at").eq("tenant_school_id",school).order("id",{ascending:false}).limit(2000):base.from("parent_meeting_requests").select("id,parent_name,parent_username,student_id,student_name,target_role,target_name,requested_date_shamsi,requested_time,reason,status,educational_approval,manager_approval,created_at").eq("tenant_school_id",school).eq("parent_username",clean(c.username)).order("id",{ascending:false}).limit(500),
   isManager?base.from("parent_activities").select("id,title,description,activity_date,status,parent_username,activity_type,consent_text,created_at").eq("tenant_school_id",school).order("id",{ascending:false}).limit(2000):base.from("parent_activities").select("id,title,description,activity_date,status,parent_username,activity_type,consent_text,created_at").eq("tenant_school_id",school).eq("parent_username",clean(c.username)).order("id",{ascending:false}).limit(500),
+  isManager?base.from("parent_association_requests").select("id,parent_user_id,parent_username,parent_name,parent_phone,student_id,student_name,request_type,expertise,message,status,manager_note,created_at,reviewed_at").eq("tenant_school_id",school).order("created_at",{ascending:false}).limit(2000):base.from("parent_association_requests").select("id,parent_user_id,parent_username,parent_name,parent_phone,student_id,student_name,request_type,expertise,message,status,manager_note,created_at,reviewed_at").eq("tenant_school_id",school).eq("parent_user_id",a.user.id).order("created_at",{ascending:false}).limit(500),
   studentIds.length?base.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,approval_status").eq("tenant_school_id",school).in("student_id",studentIds).order("id",{ascending:false}).limit(5000):Promise.resolve({data:[],error:null}),
   studentIds.length?base.from("assignments").select("id,student_id,title,description,status,created_at,due_date,subject,class_name").eq("tenant_school_id",school).or("student_id.in.("+studentIds.join(",")+"),student_id.is.null").order("id",{ascending:false}).limit(3000):Promise.resolve({data:[],error:null}),
   base.from("exam_schedule").select("id,subject,grade,start_date,end_date,weight,exam_date,duration,exam_start_time,exam_end_time,syllabus_scope,school_year").eq("tenant_school_id",school).order("exam_date").limit(1000),
@@ -53,7 +78,7 @@ Deno.serve(async(req:Request)=>{
  const classNames=[...new Set((students.data??[]).map((s:any)=>clean(s.class_name)).filter(Boolean))];
  const safeAssignments=(assignments.data??[]).filter((x:any)=>x.student_id!==null&&x.student_id!==undefined?studentIds.includes(Number(x.student_id)):Boolean(x.class_name)&&classNames.includes(clean(x.class_name)));
  const schedule=classNames.length?await base.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,room,academic_year,start_time,end_time").eq("tenant_school_id",school).in("class_name",classNames).order("period"):{data:[],error:null};
- const failed=[students,discipline,grades,meetings,activities,attendance,assignments,schedule,exams,payments,messages,bulletins].find((x:any)=>x.error);
+ const failed=[students,discipline,grades,meetings,activities,associationRequests,attendance,assignments,schedule,exams,payments,messages,bulletins].find((x:any)=>x.error);
  if(failed){console.error("parent-management query failed",failed.error?.code);return reply({message:"دریافت اطلاعات پنل اولیا ناموفق بود؛ ساختار جدول‌ها را بررسی کنید."},500)}
- return reply({ok:true,role:expectedRole,parents,links,students:students.data??[],discipline:discipline.data??[],grades:grades.data??[],meetings:meetings.data??[],activities:activities.data??[],attendance:attendance.data??[],assignments:safeAssignments,schedule:schedule.data??[],exams:exams.data??[],payments:payments.data??[],messages:messages.data??[],bulletins:bulletins.data??[]});
+ return reply({ok:true,role:expectedRole,parents,links,students:students.data??[],discipline:discipline.data??[],grades:grades.data??[],meetings:meetings.data??[],activities:activities.data??[],associationRequests:associationRequests.data??[],attendance:attendance.data??[],assignments:safeAssignments,schedule:schedule.data??[],exams:exams.data??[],payments:payments.data??[],messages:messages.data??[],bulletins:bulletins.data??[]});
 });
