@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 const html = readFileSync("portal.html", "utf8");
-assert.ok(html.includes("login-by-username"), "Portal must use the Supabase username login function");
+assert.ok(html.includes("/functions/v1/classroom-login"), "Portal must use the current Supabase classroom login function");
 assert.ok(html.includes("sb_publishable_"), "Portal must use a public Supabase publishable key");
 assert.ok(!html.includes("frahoosh-live-classroom-edge.mard7946.workers.dev"), "Portal must not call the legacy classroom Worker");
 assert.ok(!html.includes("sso-ticket"), "Portal must not request legacy classroom SSO tickets");
