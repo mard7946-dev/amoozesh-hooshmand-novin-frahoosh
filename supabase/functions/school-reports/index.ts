@@ -26,7 +26,7 @@ Deno.serve(async(req:Request)=>{
  const {data:caller,error:callerErr}=await admin.from("account_settings").select("auth_user_id,role,tenant_school_id").eq("auth_user_id",auth.user.id).maybeSingle();
  const role=clean(caller?.role).toLowerCase();if(callerErr||!caller||!reportRoles.has(role))return reply({message:"نقش حساب شما اجازه مشاهده گزارش‌های مدرسه را ندارد."},403);
  const schoolId=clean(caller.tenant_school_id,80);if(!schoolId)return reply({message:"شناسه مدرسه برای حساب شما ثبت نشده است."},409);
- const {data:membership,error:membershipErr}=await admin.from("school_memberships").select("id,role").eq("auth_user_id",auth.user.id).eq("school_id",schoolId).eq("is_active",true).maybeSingle();
+ const {data:membership,error:membershipErr}=await admin.from("school_memberships").select("id,role").eq("auth_user_id",auth.user.id).eq("school_id",schoolId).eq("is_active",true).limit(1).maybeSingle();
  if(membershipErr||!membership)return reply({message:"عضویت فعال شما در این مدرسه تأیید نشد."},403);
  const body=await req.json().catch(()=>({}));if(clean(body.action||"get",20)!=="get")return reply({message:"عملیات درخواستی پشتیبانی نمی‌شود."},400);
  try{
