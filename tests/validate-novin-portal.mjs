@@ -86,7 +86,7 @@ assert.ok(html.includes("location.href='counseling.html?tab='"), "Counselor page
 assert.ok(!html.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html"), "Counselor route must not cross origins and lose the session token");
 assert.ok(counselorPage.includes('name="event_weekday"') && counselorPage.includes('name="event_date_shamsi"') && counselorPage.includes('name="title"'), "Counselor invitation form must collect weekday, date, and subject");
 assert.ok(counselorPage.includes("approval_status") && counselorPage.includes("در انتظار تأیید مدیر"), "Counselor must see that invitations await manager approval");
-const counselorScripts = [...counselorPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const counselorScripts = [...counselorPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 for (const source of counselorScripts) assert.doesNotThrow(() => new Function(source), "Counselor page script must have valid JavaScript syntax");
 assert.ok(parentPage.includes("data-family-review") && parentPage.includes("action:'review'"), "Manager must be able to approve or reject family invitations");
 assert.ok(parentPage.includes("تأیید و انتشار برای اولیا"), "Manager approval must publish the invitation for parents");
