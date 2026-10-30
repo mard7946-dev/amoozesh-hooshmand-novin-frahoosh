@@ -94,7 +94,9 @@ Deno.serve(async (req: Request) => {
       .select("username,auth_user_id").eq("tenant_school_id", school).in("username", usernames).eq("role", "parent");
     if (parentsError) return reply({ message: "حساب‌های اولیا دریافت نشد." }, 500);
     const userIds = new Map((parents ?? []).map((row) => [row.username, row.auth_user_id]));
+    const invitationBatchId = crypto.randomUUID();
     const rows = usernames.map((username) => ({
+      invitation_batch_id: invitationBatchId,
       tenant_school_id: school,
       student_id: studentRecord?.id ?? null,
       student_name: studentName || "همه اولیا",
@@ -119,7 +121,7 @@ Deno.serve(async (req: Request) => {
 
   if (action === "list") {
     let query = db.from("family_education_invitations")
-      .select("id,student_id,student_name,parent_username,title,description,event_weekday,event_date_shamsi,event_time,venue,status,approval_status,manager_note,parent_note,invited_by_name,invited_at,responded_at,manager_reviewed_at")
+      .select("id,invitation_batch_id,student_id,student_name,parent_username,title,description,event_weekday,event_date_shamsi,event_time,venue,status,approval_status,manager_note,parent_note,invited_by_name,invited_at,responded_at,manager_reviewed_at")
       .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000);
     if (!isManager && !isCounselor) {
       if (role !== "parent") return reply({ message: "دسترسی مجاز نیست." }, 403);
@@ -132,23 +134,28 @@ Deno.serve(async (req: Request) => {
 
   if (action === "review") {
     if (!isManager) return reply({ message: "فقط مدیر مدرسه اجازه تأیید یا رد دعوت‌نامه را دارد." }, 403);
+    const batchId = clean(input.batch_id);
     const id = Number(input.id);
     const status = clean(input.status);
     const note = clean(input.manager_note).slice(0, 1000);
-    if (!Number.isInteger(id) || !["approved", "rejected"].includes(status)) {
+    if ((!batchId && !Number.isInteger(id)) || !["approved", "rejected"].includes(status)) {
       return reply({ message: "نتیجه بررسی معتبر نیست." }, 400);
     }
-    const { data: row, error: rowError } = await db.from("family_education_invitations")
-      .select("id").eq("id", id).eq("tenant_school_id", school).eq("approval_status", "pending").maybeSingle();
-    if (rowError || !row) return reply({ message: "درخواست پیدا نشد یا قبلاً بررسی شده است." }, 404);
-    const { error: updateError } = await db.from("family_education_invitations").update({
+    let lookup = db.from("family_education_invitations").select("id")
+      .eq("tenant_school_id", school).eq("approval_status", "pending");
+    lookup = batchId ? lookup.eq("invitation_batch_id", batchId) : lookup.eq("id", id);
+    const { data: rows, error: rowError } = await lookup;
+    if (rowError || !rows?.length) return reply({ message: "درخواست پیدا نشد یا قبلاً بررسی شده است." }, 404);
+    let update = db.from("family_education_invitations").update({
       approval_status: status,
       manager_note: note,
       manager_reviewed_by: authData.user.id,
       manager_reviewed_at: new Date().toISOString(),
-    }).eq("id", id).eq("tenant_school_id", school);
+    }).eq("tenant_school_id", school).eq("approval_status", "pending");
+    update = batchId ? update.eq("invitation_batch_id", batchId) : update.eq("id", id);
+    const { error: updateError } = await update;
     if (updateError) return reply({ message: "ثبت نتیجه بررسی مدیر ناموفق بود." }, 500);
-    return reply({ ok: true, approval_status: status });
+    return reply({ ok: true, approval_status: status, reviewed_count: rows.length });
   }
 
   if (action === "respond") {
