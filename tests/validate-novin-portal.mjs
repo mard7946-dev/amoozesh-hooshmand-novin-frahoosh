@@ -32,3 +32,15 @@ for (const source of settingsScripts) {
   assert.doesNotThrow(() => new Function(source), "Settings page script must have valid JavaScript syntax");
 }
 console.log("Settings checks passed: manager-only routing, protected API, external server registry, and JavaScript syntax.");
+
+const reports = readFileSync("reports.html", "utf8");
+assert.ok(html.includes("location.href='reports.html?role='"), "Manager/deputy report tile must open the operational reports page");
+assert.ok(reports.includes("/functions/v1/school-reports"), "Reports page must use the protected reports API");
+assert.ok(reports.includes("حضور و غیاب") && reports.includes("نمرات ثبت‌شده") && reports.includes("گزارش انضباطی"), "Reports page must include attendance, grades, and discipline reports");
+assert.ok(reports.includes("خروجی Excel (CSV)") && reports.includes("چاپ / ذخیره PDF"), "Reports page must provide spreadsheet and PDF print exports");
+assert.ok(reports.includes("frahoosh_novin_access_token"), "Reports page must use the authenticated session token");
+assert.ok(!reports.includes(".insert(") && !reports.includes(".update(") && !reports.includes(".delete("), "Reports page must remain read-only");
+const reportScripts = [...reports.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(reportScripts.length > 0, "Reports page must contain its interactive script");
+for (const source of reportScripts) assert.doesNotThrow(() => new Function(source), "Reports page script must have valid JavaScript syntax");
+console.log("Reports checks passed: protected API, attendance/grades/discipline, exports, read-only behavior, and JavaScript syntax.");
