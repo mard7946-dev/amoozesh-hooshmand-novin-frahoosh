@@ -60,7 +60,7 @@ function render(id){const r=roles.find(x=>x.id===id)||roles[0];selectedRole=r;up
   location.href='https://raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html?tab='+encodeURIComponent(counselingTabs[name]||'records')+'&v=99ff170';
   return;
 }
-if((selectedRole.id==='parent'&&name==='ملاقات و جلسات')||(selectedRole.id==='deputy'&&name==='ارجاعات')){if(!portalAuthToken){document.getElementById('moduleNotice').hidden=false;document.getElementById('moduleNotice').textContent='نشست ورود معتبر نیست؛ دوباره وارد پنل شوید.';return;}sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);sessionStorage.setItem('frahoosh_novin_role',portalAuthUserRole);location.href='parent-meetings.html';return;}
+if((selectedRole.id==='parent'&&name==='ملاقات و جلسات')||(selectedRole.id==='deputy'&&name==='ارجاعات')){if(!portalAuthToken){document.getElementById('moduleNotice').hidden=false;document.getElementById('moduleNotice').textContent='نشست ورود معتبر نیست؛ دوباره وارد پنل شوید.';return;}sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);sessionStorage.setItem('frahoosh_novin_role',portalAuthUserRole);location.href='https://raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/parent-meetings.html?v=20261030b';return;}
 const isClass=name==='کلاس آنلاین';
 const tabMap=[
   [/(حضور و غیاب|غیبت)/,'attendance'],
