@@ -84,12 +84,28 @@ Deno.serve(async (req: Request) => {
     ]);
     const failed = [studentsResult, teachersResult, staffResult, schedulesResult].find((x) => x.error);
     if (failed) return reply({ message: "اطلاعات پرونده‌ها یا برنامه هفتگی دریافت نشد." }, 500);
-    const accountsResult = await admin.from("account_settings").select("display_name,username,national_code,role,phone,auth_user_id").eq("tenant_school_id", schoolId).limit(2000);
+    const [accountsResult, teacherAssignmentsResult] = await Promise.all([
+      admin.from("account_settings").select("display_name,username,national_code,role,phone,auth_user_id").eq("tenant_school_id", schoolId).limit(2000),
+      admin.from("teacher_classes").select("id,teacher_id,subject,grade,class_name,active").eq("tenant_school_id", schoolId).eq("active", 1).limit(5000),
+    ]);
     if (accountsResult.error) return reply({ message: "اطلاعات حساب کاربران دریافت نشد." }, 500);
+    if (teacherAssignmentsResult.error) {
+      console.error("admin-manage-users teacher assignments failed", teacherAssignmentsResult.error.code);
+      return reply({ message: "ارتباط دبیران با کلاس‌ها و درس‌ها دریافت نشد." }, 500);
+    }
     const accountByNationalCode = new Map((accountsResult.data ?? []).map((a: any) => [clean(a.national_code), a]));
+    const assignmentsByTeacher = new Map<number, any[]>();
+    for (const assignment of teacherAssignmentsResult.data ?? []) {
+      const teacherId = Number(assignment.teacher_id);
+      if (!Number.isFinite(teacherId)) continue;
+      const current = assignmentsByTeacher.get(teacherId) ?? [];
+      current.push({ id: assignment.id, subject: assignment.subject, grade: assignment.grade, class_name: assignment.class_name, active: assignment.active });
+      assignmentsByTeacher.set(teacherId, current);
+    }
     const profile = (row: any, category: string) => {
       const account: any = accountByNationalCode.get(clean(row.national_code)) ?? {};
-      return { ...row, category, display_name: [clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" ") || clean(account.display_name) || clean(account.username) || "بدون نام", username: account.username ?? "", auth_user_id: account.auth_user_id ?? null, account_role: account.role ?? "" };
+      const base = { ...row, category, display_name: [clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" ") || clean(account.display_name) || clean(account.username) || "بدون نام", username: account.username ?? "", auth_user_id: account.auth_user_id ?? null, account_role: account.role ?? "" };
+      return category === "teacher" ? { ...base, assigned_classes: (assignmentsByTeacher.get(Number(row.id)) ?? []).sort((a, b) => String(a.grade).localeCompare(String(b.grade), "fa") || String(a.class_name).localeCompare(String(b.class_name), "fa") || String(a.subject).localeCompare(String(b.subject), "fa")) } : base;
     };
     return reply({ profiles: [
       ...(studentsResult.data ?? []).map((x: any) => profile(x, "student")),
