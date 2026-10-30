@@ -20,9 +20,9 @@ for (const file of ['exam-center.html', 'classroom/management.html']) {
   assert.doesNotMatch(html, /type=["']date["']|type=["']datetime-local["']/i, file + ' must not expose Gregorian native date controls');
 }
 const bulletin = readFileSync(new URL('../bulletin.html', import.meta.url), 'utf8');
-assert.match(bulletin, /for\\(let i=-2;i<=370;i\\+\\+\\)/, 'bulletin date conversion must scan the full Jalali year');
-assert.match(bulletin, /timeZone:'Asia\\/Tehran'/, 'bulletin dates must use Tehran time');
-assert.match(bulletin, /-210\\*60\\*1000/, 'bulletin date-time inputs must be converted from Tehran time to UTC');
+assert.match(bulletin, /for\(let i=-2;i<=370;i\+\+\)/, 'bulletin date conversion must scan the full Jalali year');
+assert.match(bulletin, /timeZone:'Asia\/Tehran'/, 'bulletin dates must use Tehran time');
+assert.match(bulletin, /-210\*60\*1000/, 'bulletin date-time inputs must be converted from Tehran time to UTC');
 
 const exam = readFileSync(new URL('../exam-center.html', import.meta.url), 'utf8');
 assert.match(exam, /toISODateTime\(f\.get\('starts_at'\)\)/);
