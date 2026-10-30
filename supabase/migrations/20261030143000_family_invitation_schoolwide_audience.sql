@@ -1,0 +1,1 @@
+alter table public.family_education_invitations alter column student_id drop not null;
