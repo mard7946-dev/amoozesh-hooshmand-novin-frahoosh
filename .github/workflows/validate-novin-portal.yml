@@ -1,4 +1,4 @@
-name: Validate Novin Portal Auth
+name: Validate Portal and System Settings
 
 on:
   push:
@@ -24,5 +24,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate portal auth and JavaScript
+      - name: Validate portal, settings access, and JavaScript
         run: node tests/validate-novin-portal.mjs
