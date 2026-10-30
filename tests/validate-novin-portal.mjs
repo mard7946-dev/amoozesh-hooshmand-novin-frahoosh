@@ -113,7 +113,7 @@ for (const feature of ["جای خالی", "تستی / چهارگزینه‌ای"
   assert.ok(examsPage.includes(feature), "Independent exam center missing feature: " + feature);
 }
 assert.ok(examsPage.includes("data-symbol") && examsPage.includes("data-shape"), "Question editor must provide math symbols and geometric shapes");
-assert.ok(examsPage.includes("assessment-center") && examsPage.includes("assessment_questions"), "Independent exam center must use its dedicated persistence model");
+assert.ok(examsPage.includes("functions/v1/assessment-center") && examsPage.includes("create_exam"), "Independent exam page must call its dedicated create action");
 const examScripts = examsPage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
 assert.ok(examScripts.length > 0, "Independent exam page must contain its application script");
 for (const source of examScripts) assert.doesNotThrow(() => new Function(source), "Independent exam page script must have valid JavaScript syntax");
