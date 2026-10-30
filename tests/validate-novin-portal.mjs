@@ -114,7 +114,7 @@ for (const feature of ["جای خالی", "تستی / چهارگزینه‌ای"
 }
 assert.ok(examsPage.includes("data-symbol") && examsPage.includes("data-shape"), "Question editor must provide math symbols and geometric shapes");
 assert.ok(examsPage.includes("assessment-center") && examsPage.includes("assessment_questions"), "Independent exam center must use its dedicated persistence model");
-const examScripts = [...examsPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const examScripts = examsPage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
 assert.ok(examScripts.length > 0, "Independent exam page must contain its application script");
 for (const source of examScripts) assert.doesNotThrow(() => new Function(source), "Independent exam page script must have valid JavaScript syntax");
 const assessmentFunction = readFileSync("supabase/functions/assessment-center/index.ts", "utf8");
