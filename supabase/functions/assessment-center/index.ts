@@ -63,13 +63,48 @@ Deno.serve(async (req: Request) => {
     let student: any = null;
     let teacherClasses: any[] = [];
     if (role === "teacher") {
-      let tq = admin.from("teachers").select("id,first_name,last_name,national_code,tenant_school_id")
+      const { data: teacherRows, error: teacherLookupError } = await admin.from("teachers")
+        .select("id,first_name,last_name,national_code,tenant_school_id,phone,mobile,email,employee_code")
         .eq("tenant_school_id", schoolId);
-      if (nationalCode) tq = tq.eq("national_code", nationalCode);
-      else tq = tq.eq("national_code", username);
-      const { data, error } = await tq.maybeSingle();
-      if (error || !data) return reply({ message: "پرونده دبیر با حساب ورودش تطبیق داده نشد." }, 403);
-      teacher = data;
+      if (teacherLookupError) throw teacherLookupError;
+
+      const digitsOnly = (value: unknown) => clean(value)
+        .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+        .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+        .replace(/\\D/g, "");
+      const nameKey = (value: unknown) => norm(value).replace(/[\\s‌‍‎‏]+/g, "").replace(/[^\\p{L}\\p{N}]/gu, "");
+      const uniqueMatch = (rows: any[]) => rows.length === 1 ? rows[0] : null;
+      let candidates: any[] = [];
+
+      if (nationalCode) {
+        candidates = (teacherRows ?? []).filter((row: any) => digitsOnly(row.national_code) === digitsOnly(nationalCode));
+      }
+      if (!candidates.length && username) {
+        candidates = (teacherRows ?? []).filter((row: any) => clean(row.employee_code) && norm(row.employee_code) === norm(username));
+      }
+      if (!candidates.length && profile.phone) {
+        const phone = digitsOnly(profile.phone);
+        if (phone) candidates = (teacherRows ?? []).filter((row: any) =>
+          [row.phone, row.mobile].some((value: unknown) => digitsOnly(value) === phone));
+      }
+      if (!candidates.length && profile.email) {
+        const email = clean(profile.email).toLocaleLowerCase("en");
+        if (email) candidates = (teacherRows ?? []).filter((row: any) =>
+          clean(row.email).toLocaleLowerCase("en") === email);
+      }
+      if (!candidates.length && profile.display_name) {
+        const displayName = nameKey(profile.display_name);
+        if (displayName) candidates = (teacherRows ?? []).filter((row: any) =>
+          nameKey([row.first_name, row.last_name].filter(Boolean).join(" ")) === displayName);
+      }
+
+      teacher = uniqueMatch(candidates);
+      if (!teacher) {
+        return reply({ message: candidates.length > 1
+          ? "چند پروندهٔ دبیر با اطلاعات این حساب مطابقت دارد؛ مدیر مدرسه باید مشخصات حساب را بررسی کند."
+          : "پروندهٔ دبیر با شماره تلفن، ایمیل یا نام حساب پیدا نشد؛ اطلاعات حساب و پرونده باید توسط مدیر مدرسه تطبیق داده شود." }, 403);
+      }
+
       const { data: assigned, error: classError } = await admin.from("teacher_classes")
         .select("id,teacher_id,subject,grade,class_name,active")
         .eq("teacher_id", teacher.id).eq("tenant_school_id", schoolId).eq("active", 1)
