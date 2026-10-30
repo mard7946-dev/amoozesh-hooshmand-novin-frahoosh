@@ -1,4 +1,5 @@
 name: Validate Portal, Settings, and School Reports
+# Regression checks cover the live school reports dashboard and its API.
 
 on:
   push:
