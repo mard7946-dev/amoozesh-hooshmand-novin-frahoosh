@@ -73,3 +73,9 @@ assert.ok(parentPage.includes("create_association") && parentPage.includes("asso
 assert.ok(parentFunction.includes('action==="create_association"') && parentFunction.includes('parent_association_requests'), "Parent API must securely persist association requests");
 assert.ok(parentFunction.includes('action==="review_association"'), "Manager must be able to review association requests");
 
+
+const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
+assert.ok(publishWorkflow.includes("- 'directory.html'"), "Changes to directory.html must trigger GitHub Pages deployment");
+assert.ok(publishWorkflow.includes("bulletin.html directory.html _site/"), "GitHub Pages artifact must include directory.html");
+assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کارکنان"), "Staff directory page must exist in the repository");
+console.log("Staff directory deployment checks passed: trigger, published artifact, and page source.");
