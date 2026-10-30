@@ -6,6 +6,7 @@ on:
     paths:
       - 'portal.html'
       - 'settings.html'
+      - 'reports.html'
       - 'supabase/functions/school-settings/index.ts'
       - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
       - 'index.html'
