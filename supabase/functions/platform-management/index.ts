@@ -8,6 +8,9 @@ const cors = {
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const clean = (value: unknown, max = 200) => String(value ?? "").trim().slice(0, max);
+const normalizeDigits = (value: string) => value
+  .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+  .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 
 function getServiceKey(): string {
   let key = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
@@ -176,8 +179,11 @@ Deno.serve(async (req: Request) => {
       const email = clean(body?.email, 254).toLowerCase();
       const username = clean(body?.username, 40);
       const displayName = clean(body?.display_name, 120);
-      const phone = clean(body?.phone, 20);
-      const nationalCode = clean(body?.national_code, 20);
+      let phone = normalizeDigits(clean(body?.phone, 20)).replace(/\\D/g, "");
+      const nationalCode = normalizeDigits(clean(body?.national_code, 20)).replace(/\\D/g, "");
+      if (phone.startsWith("0098") && phone.length === 14) phone = "0" + phone.slice(4);
+      else if (phone.startsWith("98") && phone.length === 12) phone = "0" + phone.slice(2);
+      else if (phone.startsWith("9") && phone.length === 10) phone = "0" + phone;
       const origin = req.headers.get("origin") ?? "";
       const allowedOrigins = new Set(["https://frahoosh.ir", "https://www.frahoosh.ir"]);
       if (!allowedOrigins.has(origin)) {
