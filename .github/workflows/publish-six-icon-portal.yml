@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
+      - 'index.html'\n      - 'about.html'\n      - 'finance.html'
       - 'portal.html'
       - 'settings.html'
       - 'reports.html'
@@ -50,7 +50,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html _site/
+          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html _site/\n          cp finance.html about.html _site/\n          printf '{\"build\":\"%s\",\"commit\":\"%.7s\",\"built_at\":\"%s\"}\\n' \"$GITHUB_RUN_NUMBER\" \"$GITHUB_SHA\" \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" > _site/build-info.json
           cp jalali-date.js reports-utils.js _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
