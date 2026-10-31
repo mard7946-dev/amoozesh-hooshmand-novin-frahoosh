@@ -35,9 +35,12 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'portal.html'
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
+      - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
+      - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
       - 'tests/validate-commercial-platform.mjs'
       - '.github/workflows/validate-novin-portal.yml'
   workflow_dispatch:
