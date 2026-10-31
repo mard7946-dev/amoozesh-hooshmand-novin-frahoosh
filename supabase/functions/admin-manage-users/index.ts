@@ -165,7 +165,7 @@ Deno.serve(async (req: Request) => {
     }
     const parentCodes = [...groups.keys()];
     const accountsResult = parentCodes.length
-      ? await admin.from("account_settings").select("username,email,role,auth_user_id,tenant_school_id").eq("tenant_school_id", schoolId).in("username", parentCodes).limit(1000)
+      ? await admin.from("account_settings").select("username,email,role,auth_user_id,tenant_school_id").in("username", parentCodes).limit(1000)
       : { data: [], error: null };
     if (accountsResult.error) return reply({ message: "بررسی حساب‌های قبلی اولیا انجام نشد." }, 500);
     const accountsByUsername = new Map((accountsResult.data ?? []).map((x: any) => [clean(x.username), x]));
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
       const students = group.children.map(child => (studentsByCode.get(child.code) ?? [])[0]);
       const email = group.parentCode + "@parent.frahoosh.invalid";
       const existing = accountsByUsername.get(group.parentCode);
-      if (existing && (clean(existing.role) !== "parent" || clean(existing.email).toLowerCase() !== email || !clean(existing.auth_user_id))) {
+      if (existing && (clean(existing.tenant_school_id) !== schoolId || clean(existing.role) !== "parent" || clean(existing.email).toLowerCase() !== email || !clean(existing.auth_user_id))) {
         results.push({ row: group.children[0].row, rows: group.children.map(x => x.row), success: false,
           message: "کد ملی ولی قبلاً برای حساب دیگری ثبت شده است؛ برای جلوگیری از اتصال اشتباه، تغییری انجام نشد." });
         continue;
@@ -251,7 +251,7 @@ Deno.serve(async (req: Request) => {
           message: "ساخت حساب یا اتصال فرزندان انجام نشد؛ اطلاعات این ولی ذخیره نشد." });
       }
     }
-    const succeeded = results.filter(x => x.success).length;
+    const succeeded = results.filter(x => x.success).reduce((sum, x) => sum + (Array.isArray(x.rows) ? x.rows.length : 1), 0);
     return reply({ success: true, total: rows.length, succeeded, failed: rows.length - succeeded, results });
   }
 
