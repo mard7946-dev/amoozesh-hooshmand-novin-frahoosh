@@ -120,6 +120,8 @@ assert.ok(familyFunction.includes('audience === "all"') && familyFunction.includ
 assert.ok(familyFunction.includes('.eq("class_name", className)') && familyFunction.includes('.in("student_id", studentIds)'), "Class-wide invitations must resolve only parents linked to students in the selected class");
 assert.ok(familyFunction.includes('.eq("is_active", true)') && familyFunction.includes('.eq("role", "parent")'), "Bulk invitations must only target active parent memberships");
 assert.ok(familyFunction.includes('studentName = "اولیای کلاس " + className'), "Class-wide invitations must preserve the selected class as the audience label");
+assert.ok(familyFunction.includes('approval_status: isManager ? "approved" : "pending"') && familyFunction.includes("manager_reviewed_by: isManager ? authData.user.id : null"), "Manager-created invitations must publish immediately while counselor invitations remain pending review");
+assert.ok(parentPage.includes("x.approval_status==='approved'?'دعوت‌نامه برای '"), "Manager UI must confirm immediate publication separately from counselor approval");
 assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html exam-center.html _site/"), "GitHub Pages must publish the counselor page");
 console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
 
