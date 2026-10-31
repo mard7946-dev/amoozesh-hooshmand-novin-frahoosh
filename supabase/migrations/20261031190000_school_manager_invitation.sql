@@ -53,6 +53,12 @@ begin
     raise exception 'برای این مدرسه قبلاً مدیر اصلی ثبت شده است.' using errcode = '23505';
   end if;
   if exists (
+    select 1 from public.school_memberships
+     where school_id = p_school_id and role = 'manager' and is_active = true
+  ) then
+    raise exception 'برای این مدرسه عضویت فعال مدیر ثبت شده است.' using errcode = '23505';
+  end if;
+  if exists (
     select 1 from public.account_settings
      where auth_user_id = p_auth_user_id or username = v_username
   ) then
