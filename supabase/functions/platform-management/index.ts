@@ -189,7 +189,7 @@ Deno.serve(async (req: Request) => {
       if (!allowedOrigins.has(origin)) {
         return reply({ message: "دامنه فراهوش برای ارسال دعوت‌نامه تأیید نشده است." }, 400);
       }
-      if (!schoolId || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email) ||
+      if (!schoolId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
           !/^[A-Za-z0-9._-]{4,40}$/.test(username) || displayName.length < 3) {
         return reply({ message: "شناسه مدرسه، ایمیل معتبر، نام کاربری و نام مدیر را کامل وارد کنید." }, 400);
       }
