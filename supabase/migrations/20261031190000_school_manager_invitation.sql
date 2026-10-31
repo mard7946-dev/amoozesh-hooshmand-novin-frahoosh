@@ -8,7 +8,8 @@ create or replace function public.frahoosh_platform_attach_school_manager(
   p_display_name text,
   p_email text,
   p_phone text default null,
-  p_national_code text default null
+  p_national_code text default null,
+  p_actor_auth_user_id uuid
 )
 returns jsonb
 language plpgsql
@@ -82,7 +83,7 @@ begin
   insert into public.platform_audit_logs (
     actor_auth_user_id, action, school_id, details
   ) values (
-    auth.uid(), 'school.manager_invited', p_school_id,
+    p_actor_auth_user_id, 'school.manager_invited', p_school_id,
     jsonb_build_object(
       'manager_auth_user_id', p_auth_user_id,
       'username', v_username
@@ -99,7 +100,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text)
+revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text,uuid)
   from public, anon, authenticated;
 grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text)
   to service_role;
