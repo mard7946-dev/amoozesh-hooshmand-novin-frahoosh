@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 
 const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
+const classroomBoard = readFileSync(new URL("../classroom/index.html", import.meta.url), "utf8");
+const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
+const classroomAuthorize = readFileSync(new URL("../supabase/functions/classroom-authorize/index.ts", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
@@ -23,6 +26,22 @@ assert.ok(classroom.includes("if(!token)"), "Classroom must reject entry without
 assert.ok(classroom.includes("if(!response.ok||!data.ok)"), "Classroom must reject unsuccessful authorization responses");
 assert.ok(classroom.includes("navigator.mediaDevices.getUserMedia"), "Classroom must request explicit local microphone/camera permission");
 assert.ok(classroom.includes("صدا، تصویر زنده و گفت‌وگوی چندکاربره هنوز"), "Classroom must not claim live media is connected when it is not");
+assert.ok(rootPortal.includes("classroom/schedule.html") && rootPortal.includes("classroomEntry"), "Teacher and student classroom entry must open the separate schedule page");
+assert.ok(classroomSchedule.includes("برنامه هفتگی و روزانه کلاس‌ها") && classroomSchedule.includes("ورود به تخته"), "Separate schedule page must show weekly/daily classes and a board-entry action");
+assert.ok(classroomSchedule.includes("join.disabled=!lesson.is_active"), "Only activated bells may be entered from the schedule");
+assert.ok(classroomSchedule.includes("schedule_entry_id:lesson.schedule_entry_id"), "Schedule entry identity must be passed for server-side authorization");
+assert.ok(classroomBoard.includes("authorize(requestedRoom,scheduleEntryId)") && classroomBoard.includes("location.replace('schedule.html')"), "The board must require a selected schedule entry for teacher/student accounts");
+assert.ok(classroomAuthorize.includes("weekly_schedule_entries") && classroomAuthorize.includes("day_enabled") && classroomAuthorize.includes("is_active"), "Authorization must return each user's enabled weekly schedule and active bell state");
+assert.ok(classroomAuthorize.includes("schedule_entry_id") && classroomAuthorize.includes("این زنگ هنوز توسط مدیریت فعال نشده است"), "Server must reject entry to a non-activated scheduled bell");
+for (const [name, html] of [["classroom/index.html", classroomBoard], ["classroom/schedule.html", classroomSchedule]]) {
+  const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]).filter(s => s.trim());
+  for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
+}
+const mediaStart=classroomBoard.indexOf("async function startOffer(remote)");
+const mediaEnd=classroomBoard.indexOf("async function boot()",mediaStart);
+let mediaHash=2166136261;
+for(const char of classroomBoard.slice(mediaStart,mediaEnd)){mediaHash^=char.charCodeAt(0);mediaHash=Math.imul(mediaHash,16777619);}
+assert.equal((mediaHash>>>0).toString(16),"f45d5e9b","WebRTC, realtime, board media session, and peer connection logic must remain byte-for-byte unchanged");
 assert.ok(portal.includes("import/excel"), "Portal should support Excel import");
 assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule");
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
