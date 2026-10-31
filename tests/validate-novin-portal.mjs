@@ -150,7 +150,8 @@ console.log("Independent assessment checks passed: separate teacher/student rout
 
 const homePage = readFileSync("index.html", "utf8");
 const aboutPage = readFileSync("about.html", "utf8");
-assert.ok(homePage.includes('href="about.html"') && homePage.includes("درباره برنامه فراهوش"), "Home page must link to the About page");
+assert.ok(homePage.includes('class="role about-page" href="about.html"') && homePage.includes("درباره برنامه") && homePage.includes('aria-label="درباره برنامه فراهوش"'), "Home page must show About as a dedicated icon tile in the portal grid");
+assert.ok(homePage.includes('<circle cx="32" cy="32" r="25"') && homePage.includes(".role.about-page{grid-column:2;grid-row:5"), "About tile must include its icon and centered responsive grid placement");
 assert.ok(aboutPage.includes("حسن مردانه جهان‌تیغ") && aboutPage.includes("۱۴۰۵"), "About page must identify the creator and production year");
 assert.ok(aboutPage.includes("build-info.json") && aboutPage.includes("commit") && aboutPage.includes("built_at"), "About page must display the generated release/build identifier and build date");
 const aboutScripts = [...aboutPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
