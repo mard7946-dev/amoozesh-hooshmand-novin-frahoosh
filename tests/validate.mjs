@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
+const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
 const parentMeetings = readFileSync(new URL("../parent-meetings.html", import.meta.url), "utf8");
 const parentMeetingsApi = readFileSync(new URL("../supabase/functions/parent-meetings/index.ts", import.meta.url), "utf8");
@@ -26,6 +27,7 @@ assert.ok(portal.includes("import/excel"), "Portal should support Excel import")
 assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule");
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
 assert.ok(parentMeetings.includes("ثبت و ارسال برای معاون"), "Parent meeting form must let parents submit a request for deputy review");
+assert.ok(rootPortal.includes("parent-meetings.html?v=20261031-meetings-2"), "Parent meeting navigation must bypass stale cached meeting pages");
 assert.ok(parentMeetings.includes("role==='teacher'&&m.recipient_user_id&&m.status==='awaiting_recipient'"), "Only the selected teacher should see the final response controls");
 assert.ok(parentMeetings.includes("علت رد درخواست را وارد کنید (الزامی)"), "Teacher rejection must require a reason in the UI");
 assert.ok(parentMeetingsApi.includes('patch.status="pending_manager"') && parentMeetingsApi.includes('patch.manager_approval="pending"'), "Deputy approval must route the request to the manager before the teacher");
