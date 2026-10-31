@@ -152,7 +152,7 @@ const aboutPage = readFileSync("about.html", "utf8");
 assert.ok(html.includes('href="about.html"') && html.includes("درباره برنامه فراهوش"), "Home page must link to the About page");
 assert.ok(aboutPage.includes("حسن مردانه جهان‌تیغ") && aboutPage.includes("۱۴۰۵"), "About page must identify the creator and production year");
 assert.ok(aboutPage.includes("build-info.json") && aboutPage.includes("commit") && aboutPage.includes("built_at"), "About page must display the generated release/build identifier and build date");
-const aboutScripts = [...aboutPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const aboutScripts = [...aboutPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 assert.ok(aboutScripts.length > 0, "About page must contain its dynamic version script");
 for (const source of aboutScripts) assert.doesNotThrow(() => new Function(source), "About page script must have valid JavaScript syntax");
 assert.ok(publishWorkflow.includes("- 'about.html'") && publishWorkflow.includes("- 'finance.html'"), "About and finance page changes must trigger GitHub Pages deployment");
