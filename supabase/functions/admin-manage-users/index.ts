@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
       const phone = digits(get(raw, "parent_phone", "شماره تماس ولی", "تلفن ولی"));
       const childCode = digits(get(raw, "student_national_code", "کد ملی دانش‌آموز", "کد ملی فرزند"));
       const childName = [get(raw, "student_first_name", "نام دانش‌آموز", "نام فرزند"), get(raw, "student_last_name", "نام خانوادگی دانش‌آموز", "نام خانوادگی فرزند")].filter(Boolean).join(" ");
-      if (!/^\\d{10}$/.test(parentCode) || !parentName || !/^\\d{10}$/.test(childCode)) {
+      if (!/^\d{10}$/.test(parentCode) || !parentName || !/^\d{10}$/.test(childCode)) {
         rowErrors.push({ row: i + 2, success: false, message: "کد ملی ۱۰ رقمی ولی، نام ولی و کد ملی ۱۰ رقمی دانش‌آموز الزامی است." });
         continue;
       }
