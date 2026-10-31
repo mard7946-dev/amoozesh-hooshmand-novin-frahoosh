@@ -111,6 +111,15 @@ assert.ok(audienceMigration.includes("alter column student_id drop not null"), "
 const batchMigration = readFileSync("supabase/migrations/20261030150000_family_invitation_batch_approval.sql", "utf8");
 assert.ok(batchMigration.includes("invitation_batch_id") && parentPage.includes("recipient_count") && parentPage.includes("batch_id:batchId"), "Manager must approve one grouped invitation for all parent recipients");
 assert.ok(familyFunction.includes("invitation_batch_id: invitationBatchId"), "Every recipient copy must share one approval batch");
+
+assert.ok(parentPage.includes('id="familySendForm"') && parentPage.includes('id="familyAudience"'), "Manager family education tab must provide a real group invitation form and audience selector");
+assert.ok(parentPage.includes('id="familyClass"') && parentPage.includes("اولیای یک کلاس مشخص"), "Manager must be able to select a specific class for parent invitations");
+assert.ok(parentPage.includes("action:'create',audience,class_name:audience==='class'?className:null"), "Family education form must submit the selected audience and class to the protected API");
+assert.ok(parentPage.includes("دعوت‌نامه برای '+x.count+' ولی ثبت شد"), "Family education UI must report the actual recipient count");
+assert.ok(familyFunction.includes('audience === "all"') && familyFunction.includes('audience === "class"'), "Family education API must support school-wide and class-wide audiences");
+assert.ok(familyFunction.includes('.eq("class_name", className)') && familyFunction.includes('.in("student_id", studentIds)'), "Class-wide invitations must resolve only parents linked to students in the selected class");
+assert.ok(familyFunction.includes('.eq("is_active", true)') && familyFunction.includes('.eq("role", "parent")'), "Bulk invitations must only target active parent memberships");
+assert.ok(familyFunction.includes('studentName = "اولیای کلاس " + className'), "Class-wide invitations must preserve the selected class as the audience label");
 assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html exam-center.html _site/"), "GitHub Pages must publish the counselor page");
 console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
 
