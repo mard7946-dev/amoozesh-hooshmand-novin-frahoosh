@@ -7,8 +7,10 @@ on:
     paths:
       - 'portal.html'
       - 'platform-admin.html'
+      - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
+      - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
       - 'tests/validate-commercial-platform.mjs'
       - 'settings.html'
       - 'reports.html'
