@@ -25,6 +25,16 @@
 <div class="actions"><button class="btn primary" id="createParentAccount">ساخت حساب و اتصال دانش‌آموزان</button></div></div>
 <div class="upload-box"><strong>نتیجه ساخت حساب</strong><div id="parentCreateStatus" class="status" role="status">پس از ثبت، نتیجه اینجا نمایش داده می‌شود.</div><div id="parentCredentials" hidden></div></div>
 </div></section>
+<section class="card" id="parentBulkImport">
+<h2>ورود گروهی اولیا و اتصال خودکار به فرزندان</h2>
+<p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
+<div class="upload-row">
+<div class="upload-box"><strong>قالب اکسل اولیا</strong><p>ستون‌های ضروری: کد ملی ولی، نام ولی، کد ملی دانش‌آموز. شماره تماس ولی نیز وارد شود. کد ملی دانش‌آموز باید دقیقاً در پرونده همان مدرسه موجود باشد.</p><button class="btn" id="parentTemplate">دریافت نمونه قالب اکسل اولیا</button></div>
+<div class="upload-box"><strong>بارگذاری فایل تکمیل‌شده</strong><input id="parentExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importParents">ساخت حساب‌ها و اتصال خودکار فرزندان</button></div><small>حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری. حساب‌های موجود به‌روزرسانی و فرزندان جدید به آن‌ها اضافه می‌شوند؛ رمز حساب‌های قبلی تغییر نمی‌کند.</small></div>
+</div>
+<div id="parentImportStatus" class="status" role="status" aria-live="polite">پس از بارگذاری، نتیجه هر ولی و ردیف‌های نامعتبر نمایش داده می‌شود.</div>
+<div class="table-wrap" id="parentImportResults"></div>
+</section>
 <section class="card"><h2>ورود اطلاعات با فایل اکسل</h2><p>دو فایل جداگانه استفاده می‌شود: یکی برای مشخصات افراد و دیگری برای برنامه هفتگی. فایل‌ها به پایگاه داده همین مدرسه وارد می‌شوند؛ ردیف‌های نامعتبر گزارش می‌شوند.</p><div class="upload-row"><div class="upload-box"><strong>۱. اکسل اطلاعات افراد</strong><p>ستون‌های لازم: گروه، کد ملی، نام، نام خانوادگی. ستون‌های کلاس، تلفن اولیا، دین، مذهب و نام پدر نیز خوانده می‌شوند.</p><input id="peopleExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importPeople">ورود اکسل اطلاعات</button><button class="btn" id="peopleTemplate">نمونه اکسل اطلاعات</button></div></div><div class="upload-box"><strong>۲. اکسل برنامه هفتگی</strong><p>ستون‌های لازم: کلاس، روز، زنگ (عدد ۱ تا ۱۲)، درس و نام دبیر. این فایل برنامه ثبت‌شده را به‌روز می‌کند.</p><input id="scheduleExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importSchedule">ورود اکسل برنامه</button><button class="btn" id="scheduleTemplate">نمونه اکسل برنامه</button></div></div></div><div id="importStatus" class="status" role="status" aria-live="polite"></div></section><section class="card"><div class="actions"><input id="search" type="search" placeholder="جست‌وجو بر اساس نام، نام کاربری یا کد ملی" aria-label="جست‌وجوی کاربران"><span id="count" class="pill">در حال بارگذاری…</span></div><div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست مدیریت…</div><div class="table-wrap"><table><thead><tr><th>کاربر</th><th>نام کاربری</th><th>نقش فعلی</th><th>وضعیت دسترسی</th><th>عملیات</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div></section>
 <p class="foot">تغییرات فقط برای حساب‌های همین مدرسه اعمال می‌شوند. حساب‌های مدیریتی از این صفحه قابل تغییر یا غیرفعال‌سازی نیستند.</p>
 </main>
@@ -92,6 +102,47 @@ document.getElementById("createParentAccount").addEventListener("click",async()=
  finally{button.disabled=false}
 });
 
+document.getElementById("parentTemplate").addEventListener("click",()=>downloadTemplate([
+ {"کد ملی ولی":"1234567890","نام ولی":"ولی نمونه الف","شماره تماس ولی":"09120000000","کد ملی دانش‌آموز":"1111111111","نام دانش‌آموز":"فرزند اول","نام خانوادگی دانش‌آموز":"نمونه"},
+ {"کد ملی ولی":"1234567890","نام ولی":"ولی نمونه الف","شماره تماس ولی":"09120000000","کد ملی دانش‌آموز":"2222222222","نام دانش‌آموز":"فرزند دوم","نام خانوادگی دانش‌آموز":"نمونه"},
+ {"کد ملی ولی":"0987654321","نام ولی":"ولی نمونه ب","شماره تماس ولی":"09123333333","کد ملی دانش‌آموز":"3333333333","نام دانش‌آموز":"فرزند سوم","نام خانوادگی دانش‌آموز":"نمونه"}
+],"frahoosh-parent-children-template.xlsx"));
+function renderParentImport(data){
+ const status=document.getElementById("parentImportStatus"),wrap=document.getElementById("parentImportResults");
+ const succeededRows=(data.results||[]).filter(x=>x.success).reduce((n,x)=>n+((x.rows&&x.rows.length)||1),0);
+ const failedRows=Math.max(0,Number(data.total||0)-succeededRows);
+ status.className="status "+(failedRows?"error":"ok");
+ status.textContent="ردیف‌ها: "+data.total+" · ردیف‌های موفق: "+succeededRows+" · ردیف‌های ناموفق: "+failedRows+" · حساب‌های ایجادشده: "+(data.results||[]).filter(x=>x.success&&x.created).length;
+ wrap.replaceChildren();
+ const table=document.createElement("table"),head=document.createElement("thead"),hr=document.createElement("tr");
+ ["وضعیت","ردیف‌های اکسل","نام کاربری ولی","رمز اولیه (فقط حساب جدید)","فرزندان متصل / توضیح"].forEach(v=>hr.append(el("th","",v)));
+ head.append(hr);const body=document.createElement("tbody");
+ for(const item of data.results||[]){
+  const tr=document.createElement("tr"),children=(item.linked_students||[]).map(x=>x.name).join("، ");
+  const values=[item.success?"موفق":"ناموفق",(item.rows||[item.row]).join("، "),item.username||"—",item.temporary_password|| (item.success?"حساب قبلی؛ رمز تغییر نکرد":"—"),item.success?children:(item.message||"خطا")];
+  values.forEach(v=>tr.append(el("td","",String(v||"—"))));body.append(tr);
+ }
+ table.append(head,body);wrap.append(table);
+ const copyRows=(data.results||[]).filter(x=>x.success&&x.created&&x.temporary_password);
+ if(copyRows.length){
+  const copy=el("button","btn","کپی فهرست نام کاربری و رمزهای اولیه");
+  copy.addEventListener("click",()=>navigator.clipboard?.writeText(copyRows.map(x=>"نام کاربری: "+x.username+" | رمز اولیه: "+x.temporary_password).join("\n")));
+  wrap.append(copy);
+ }
+}
+document.getElementById("importParents").addEventListener("click",async()=>{
+ const button=document.getElementById("importParents");button.disabled=true;
+ try{
+  const rows=await parseExcel(document.getElementById("parentExcel"));
+  if(!rows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");
+  if(rows.length>1000)throw new Error("حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری مجاز است.");
+  document.getElementById("parentImportStatus").textContent="در حال بررسی پرونده دانش‌آموزان و ساخت حساب‌های اولیا…";
+  const result=await api({action:"import_parents",rows});
+  renderParentImport(result);await load();await loadProfiles();
+ }catch(error){
+  const status=document.getElementById("parentImportStatus");status.className="status error";status.textContent=error.message||"ورود گروهی اولیا انجام نشد.";
+ }finally{button.disabled=false}
+});
 document.getElementById("peopleTemplate").addEventListener("click",()=>downloadTemplate([{"گروه":"دانش‌آموز","کد ملی":"0012345678","نام":"نمونه","نام خانوادگی":"دانش‌آموز","کلاس":"۷/۱","پایه":"هفتم","شماره تماس":"09120000000","شماره تماس اولیا":"09121111111","نام پدر":"نام پدر","دین":"اسلام","مذهب":"شیعه"},{"گروه":"دبیر","کد ملی":"0023456789","نام":"نمونه","نام خانوادگی":"دبیر","شماره تماس":"09122222222","نام پدر":"نام پدر","دین":"اسلام","مذهب":"شیعه","درس":"ریاضی"},{"گروه":"معاون اجرایی","کد ملی":"0034567890","نام":"نمونه","نام خانوادگی":"معاون","شماره تماس":"09123333333","نام پدر":"نام پدر","دین":"اسلام","مذهب":"شیعه"}],"frahoosh-profile-template.xlsx"));document.getElementById("scheduleTemplate").addEventListener("click",()=>downloadTemplate([{"کلاس":"۷/۱","روز":"شنبه","زنگ":1,"درس":"ریاضی","نام دبیر":"نام دبیر","پایه":"هفتم","هفته":1},{"کلاس":"۷/۱","روز":"شنبه","زنگ":2,"درس":"فارسی","نام دبیر":"نام دبیر","پایه":"هفتم","هفته":1}],"frahoosh-weekly-schedule-template.xlsx"));
 document.getElementById("importPeople").addEventListener("click",async()=>{const b=document.getElementById("importPeople");b.disabled=true;document.getElementById("importStatus").textContent="در حال خواندن اکسل اطلاعات…";try{const rows=await parseExcel(document.getElementById("peopleExcel"));if(!rows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");reportImport(await api({action:"import_profiles",rows}));await loadProfiles()}catch(e){document.getElementById("importStatus").className="status error";document.getElementById("importStatus").textContent=e.message}finally{b.disabled=false}});
 document.getElementById("importSchedule").addEventListener("click",async()=>{const b=document.getElementById("importSchedule");b.disabled=true;document.getElementById("importStatus").textContent="در حال خواندن اکسل برنامه…";try{const rows=await parseExcel(document.getElementById("scheduleExcel"));if(!rows.length)throw new Error("فایل اکسل برنامه ردیف اطلاعات ندارد.");reportImport(await api({action:"import_schedule",rows}));await loadProfiles()}catch(e){document.getElementById("importStatus").className="status error";document.getElementById("importStatus").textContent=e.message}finally{b.disabled=false}});
