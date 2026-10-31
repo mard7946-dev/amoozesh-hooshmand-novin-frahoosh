@@ -34,7 +34,7 @@ assert.ok(classroomBoard.includes("authorize(requestedRoom,scheduleEntryId)") &&
 assert.ok(classroomAuthorize.includes("weekly_schedule_entries") && classroomAuthorize.includes("day_enabled") && classroomAuthorize.includes("is_active"), "Authorization must return each user's enabled weekly schedule and active bell state");
 assert.ok(classroomAuthorize.includes("schedule_entry_id") && classroomAuthorize.includes("این زنگ هنوز توسط مدیریت فعال نشده است"), "Server must reject entry to a non-activated scheduled bell");
 for (const [name, html] of [["classroom/index.html", classroomBoard], ["classroom/schedule.html", classroomSchedule]]) {
-  const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]).filter(s => s.trim());
+  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
 const mediaStart=classroomBoard.indexOf("async function startOffer(remote)");
