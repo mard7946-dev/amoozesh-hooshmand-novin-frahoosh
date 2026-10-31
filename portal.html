@@ -141,6 +141,37 @@ function updatePersianDateClock(){
  if(timeNode)timeNode.textContent=timeText;
 }
 updatePersianDateClock();
+if(step==="accept-invite"){
+ const hashParams=new URLSearchParams(location.hash.slice(1));
+ const inviteToken=hashParams.get("access_token")||"";
+ const inviteType=hashParams.get("type")||"";
+ history.replaceState(null,"",location.pathname+location.search);
+ document.body.innerHTML='<main style="max-width:480px;margin:8vh auto;padding:24px;border:1px solid #304461;border-radius:18px;background:#0e1b32;color:#f3f6ff;font-family:Tahoma,Segoe UI,sans-serif"><div style="color:#63e0c0;font-weight:bold">FRAHOOSH · SCHOOL ACCOUNT</div><h1>تکمیل حساب مدیر مدرسه</h1><p style="color:#a8b8d2;line-height:1.9">برای فعال‌کردن حساب، یک رمز عبور جدید انتخاب کنید. این رمز فقط در اختیار خودتان باشد.</p><form id="invitePasswordForm" hidden><label for="invitePassword">رمز عبور جدید</label><input id="invitePassword" type="password" minlength="10" autocomplete="new-password" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border:1px solid #304461;border-radius:10px;background:#081326;color:#f3f6ff;box-sizing:border-box"><label for="invitePasswordConfirm">تکرار رمز عبور</label><input id="invitePasswordConfirm" type="password" minlength="10" autocomplete="new-password" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border:1px solid #304461;border-radius:10px;background:#081326;color:#f3f6ff;box-sizing:border-box"><button id="invitePasswordSubmit" type="submit" style="padding:12px 16px;border:1px solid #63e0c0;border-radius:10px;background:#164b48;color:#f3f6ff;font:inherit">ثبت رمز و فعال‌سازی حساب</button></form><div id="invitePasswordStatus" role="status" style="margin-top:14px;padding:11px;border-radius:10px;background:#162a43"></div><a id="inviteLoginLink" href="portal.html?step=login&amp;role=manager" hidden style="display:inline-block;margin-top:16px;color:#63e0c0">ورود به پنل مدیر مدرسه</a></main>';
+ const form=document.getElementById("invitePasswordForm");
+ const status=document.getElementById("invitePasswordStatus");
+ const loginLink=document.getElementById("inviteLoginLink");
+ const showInviteStatus=(message,error=false)=>{status.textContent=message;status.style.background=error?"#452525":"#162a43";};
+ if(inviteToken&&inviteType==="invite"){
+  form.hidden=false;showInviteStatus("دعوت‌نامه معتبر است. رمز جدید خود را تعیین کنید.");
+ }else{
+  showInviteStatus("پیوند دعوت‌نامه معتبر یا فعال نیست. از مدیر کل بخواهید دعوت‌نامه تازه‌ای ارسال کند.",true);
+ }
+ form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const password=document.getElementById("invitePassword").value;
+  const confirm=document.getElementById("invitePasswordConfirm").value;
+  if(password.length<10){showInviteStatus("رمز عبور باید دست‌کم ۱۰ نویسه داشته باشد.",true);return;}
+  if(password!==confirm){showInviteStatus("تکرار رمز عبور با رمز واردشده یکسان نیست.",true);return;}
+  const button=document.getElementById("invitePasswordSubmit");button.disabled=true;showInviteStatus("در حال ثبت رمز عبور…");
+  try{
+   const response=await fetch(supabaseUrl+"/auth/v1/user",{method:"PUT",headers:{"Content-Type":"application/json","apikey":supabaseAnonKey,"Authorization":"Bearer "+inviteToken},body:JSON.stringify({password})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.msg||data.message||"ثبت رمز عبور ناموفق بود.");
+   form.hidden=true;loginLink.hidden=false;showInviteStatus("رمز عبور ثبت شد. اکنون می‌توانید با نام کاربری و رمز جدید وارد پنل مدیر مدرسه شوید.");
+  }catch(error){showInviteStatus(error.message||"ارتباط با سرویس احراز هویت برقرار نشد.",true);}
+  finally{button.disabled=false;}
+ });
+}
 setInterval(updatePersianDateClock,1000);
 
 </script>
