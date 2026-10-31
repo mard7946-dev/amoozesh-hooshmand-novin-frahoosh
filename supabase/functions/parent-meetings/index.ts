@@ -91,7 +91,7 @@ Deno.serve(async(req:Request)=>{
  }
  if(action==="approve_deputy"||action==="reject_deputy"){
   if(!isDeputy||m.status!=="pending_deputy"||m.approval_deputy_role!==role)return reply({message:"این درخواست در صف تأیید معاون شما نیست."},403);
-  if(action==="approve_deputy"){patch.status="awaiting_recipient";patch.educational_approval="approved";patch.manager_approval="not_required";patch.deputy_approved_by=a.user.id;patch.deputy_approved_at=new Date().toISOString()}
+  if(action==="approve_deputy"){patch.status="pending_manager";patch.educational_approval="approved";patch.manager_approval="pending";patch.deputy_approved_by=a.user.id;patch.deputy_approved_at=new Date().toISOString()}
   else{const why=clean(input.reason);if(!why)return reply({message:"علت رد الزامی است."},400);patch.status="rejected_deputy";patch.educational_approval="rejected";patch.rejection_stage="deputy";patch.rejection_reason=why;patch.rejected_by=a.user.id}
  }else if(action==="approve_manager"||action==="reject_manager"){
   if(!isManager||m.status!=="pending_manager")return reply({message:"این درخواست در صف تأیید مدیریت نیست."},403);
@@ -100,7 +100,7 @@ Deno.serve(async(req:Request)=>{
  }else if(action==="respond"){
   if(m.recipient_user_id!==a.user.id||m.status!=="awaiting_recipient")return reply({message:"فقط مخاطب درخواستِ تأییدشده می‌تواند پاسخ دهد."},403);
   const response=clean(input.response);if(!["approved","rejected"].includes(response))return reply({message:"پاسخ تأیید یا رد را انتخاب کنید."},400);
-  patch.status=response==="approved"?"completed":"rejected_recipient";patch.recipient_response=response;patch.recipient_response_note=clean(input.note).slice(0,1000)||null;patch.recipient_responded_at=new Date().toISOString();
+  const responseNote=clean(input.note).slice(0,1000);if(response==="rejected"&&!responseNote)return reply({message:"علت رد درخواست توسط دبیر الزامی است."},400);patch.status=response==="approved"?"completed":"rejected_recipient";patch.recipient_response=response;patch.recipient_response_note=responseNote||null;patch.recipient_responded_at=new Date().toISOString();
  }else return reply({message:"عملیات ناشناخته است."},400);
  const {error:updateError}=await db.from("parent_meeting_requests").update(patch).eq("id",id).eq("tenant_school_id",school);
  if(updateError){console.error("parent meeting update",updateError.code);return reply({message:"ذخیره مرحله درخواست ناموفق بود."},500)}
