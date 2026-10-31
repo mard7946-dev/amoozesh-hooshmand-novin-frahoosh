@@ -40,7 +40,6 @@ for (const marker of [
   "inviteUserByEmail",
   "frahoosh_platform_attach_school_manager",
   "admin.auth.admin.deleteUser",
-  "accept-invite.html",
   'rpc("frahoosh_platform_create_school"',
   'rpc("frahoosh_platform_set_school_status"',
   'rpc("frahoosh_platform_set_subscription"'
@@ -62,13 +61,11 @@ const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
 assert.ok(scripts.length, "Platform admin page must contain application JavaScript");
 for (const script of scripts) assert.doesNotThrow(() => new Function(script), "Platform admin JavaScript must parse");
 
-const invitationPage = readFileSync("accept-invite.html", "utf8");
-assert.ok(invitationPage.includes("/auth/v1/user") && invitationPage.includes('inviteType==="invite"'), "Invitation acceptance must validate invite tokens and let the manager set a password");
-assert.ok(invitationPage.includes("history.replaceState"), "Invitation token must be removed from the browser URL after password setup");
-
+const portal = readFileSync("portal.html", "utf8");
+assert.ok(portal.includes('step==="accept-invite"') && portal.includes("/auth/v1/user"), "The deployed portal must accept manager invitations and set passwords");
+assert.ok(portal.includes('inviteType==="invite"') && portal.includes("history.replaceState"), "Invitation acceptance must validate invite tokens and remove them from the URL");
 const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(publish.includes("'platform-admin.html'"), "Changes to platform-admin.html must trigger Pages deployment");
 assert.ok(publish.includes("platform-admin.html"), "Pages artifact must include the platform admin page");
-assert.ok(publish.includes("accept-invite.html"), "Pages artifact must include the invitation acceptance page");
 
 console.log("Commercial platform checks passed: privileged API, audited SQL RPCs, school/subscription UI, secret-free browser code, and deployment packaging.");
