@@ -54,14 +54,22 @@ Deno.serve(async (req: Request) => {
 
   if (action === "create") {
     if (!isManager && !isCounselor) return reply({ message: "فقط مشاور یا مدیر می‌تواند دعوت‌نامه ایجاد کند." }, 403);
+    const requestedAudience = clean(input.audience);
     const studentId = Number(input.student_id);
     const hasStudent = Number.isInteger(studentId) && studentId > 0;
+    const audience = requestedAudience || (hasStudent ? "student" : "all");
+    const className = clean(input.class_name);
     const title = clean(input.title);
     const description = clean(input.description).slice(0, 3000);
     const weekday = clean(input.event_weekday);
     const date = clean(input.event_date_shamsi);
     const time = clean(input.event_time);
     const venue = clean(input.venue);
+    if (!["all", "class", "student"].includes(audience)) {
+      return reply({ message: "نوع گیرنده معتبر نیست." }, 400);
+    }
+    if (audience === "student" && !hasStudent) return reply({ message: "دانش‌آموز انتخاب‌شده معتبر نیست." }, 400);
+    if (audience === "class" && !className) return reply({ message: "برای ارسال کلاسی، کلاس را انتخاب کنید." }, 400);
     if (!title || !date || !weekday) {
       return reply({ message: "موضوع، روز و تاریخ دعوت‌نامه الزامی است." }, 400);
     }
@@ -69,31 +77,52 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "تاریخ را به صورت شمسی مانند ۱۴۰۵/۰۹/۱۵ وارد کنید." }, 400);
     }
 
-    let studentName = "همه اولیا";
+    let studentName = audience === "all" ? "همه اولیا" : "";
     let usernames: string[] = [];
     let studentRecord: { id: number; first_name: string | null; last_name: string | null } | null = null;
-    if (hasStudent) {
+    if (audience === "student") {
       const { data: student, error: studentError } = await db.from("students")
         .select("id,first_name,last_name").eq("tenant_school_id", school).eq("id", studentId).maybeSingle();
       if (studentError || !student) return reply({ message: "دانش‌آموز پیدا نشد." }, 404);
       studentRecord = student;
       studentName = [student.first_name, student.last_name].filter(Boolean).join(" ");
       const { data: links, error: linksError } = await db.from("parent_children")
-        .select("parent_username").eq("tenant_school_id", school).eq("student_id", studentId);
+        .select("parent_username").eq("tenant_school_id", school).eq("student_id", studentId).limit(5000);
       if (linksError) return reply({ message: "ارتباط اولیا و دانش‌آموز دریافت نشد." }, 500);
       usernames = [...new Set((links ?? []).map((row) => clean(row.parent_username)).filter(Boolean))];
-    } else {
-      const { data: parentAccounts, error: parentAccountsError } = await db.from("account_settings")
-        .select("username").eq("tenant_school_id", school).eq("role", "parent");
-      if (parentAccountsError) return reply({ message: "فهرست حساب‌های اولیا دریافت نشد." }, 500);
-      usernames = [...new Set((parentAccounts ?? []).map((row) => clean(row.username)).filter(Boolean))];
+    } else if (audience === "class") {
+      const { data: classStudents, error: classError } = await db.from("students")
+        .select("id").eq("tenant_school_id", school).eq("class_name", className).limit(2000);
+      if (classError) return reply({ message: "فهرست دانش‌آموزان کلاس دریافت نشد." }, 500);
+      const studentIds = (classStudents ?? []).map((row) => Number(row.id)).filter((id) => Number.isInteger(id) && id > 0);
+      if (!studentIds.length) return reply({ message: "در این کلاس دانش‌آموزی پیدا نشد." }, 404);
+      const { data: links, error: linksError } = await db.from("parent_children")
+        .select("parent_username").eq("tenant_school_id", school).in("student_id", studentIds).limit(10000);
+      if (linksError) return reply({ message: "ارتباط اولیای این کلاس دریافت نشد." }, 500);
+      usernames = [...new Set((links ?? []).map((row) => clean(row.parent_username)).filter(Boolean))];
+      studentName = "اولیای کلاس " + className;
     }
+
+    let parentQuery = db.from("account_settings")
+      .select("username,auth_user_id").eq("tenant_school_id", school).eq("role", "parent").limit(2000);
+    if (audience !== "all") {
+      if (!usernames.length) return reply({ message: "برای این مخاطب هیچ حساب ولی متصل‌شده‌ای پیدا نشد." }, 409);
+      parentQuery = parentQuery.in("username", usernames);
+    }
+    const { data: parents, error: parentsError } = await parentQuery;
+    if (parentsError) return reply({ message: "حساب‌های اولیا دریافت نشد." }, 500);
+    const authUserIds = [...new Set((parents ?? []).map((row) => clean(row.auth_user_id)).filter(Boolean))];
+    if (!authUserIds.length) return reply({ message: "هیچ حساب ولی معتبری برای دریافت دعوت‌نامه پیدا نشد." }, 409);
+    const { data: memberships, error: membershipsError } = await db.from("school_memberships")
+      .select("auth_user_id").eq("school_id", school).eq("role", "parent").eq("is_active", true)
+      .in("auth_user_id", authUserIds).limit(3000);
+    if (membershipsError) return reply({ message: "وضعیت عضویت اولیا بررسی نشد." }, 500);
+    const activeParentIds = new Set((memberships ?? []).map((row) => clean(row.auth_user_id)));
+    const activeParents = (parents ?? []).filter((row) => activeParentIds.has(clean(row.auth_user_id)));
+    usernames = [...new Set(activeParents.map((row) => clean(row.username)).filter(Boolean))];
     if (!usernames.length) return reply({ message: "هیچ حساب ولی فعالی برای دریافت دعوت‌نامه پیدا نشد." }, 409);
 
-    const { data: parents, error: parentsError } = await db.from("account_settings")
-      .select("username,auth_user_id").eq("tenant_school_id", school).in("username", usernames).eq("role", "parent");
-    if (parentsError) return reply({ message: "حساب‌های اولیا دریافت نشد." }, 500);
-    const userIds = new Map((parents ?? []).map((row) => [row.username, row.auth_user_id]));
+    const userIds = new Map(activeParents.map((row) => [row.username, row.auth_user_id]));
     const invitationBatchId = crypto.randomUUID();
     const rows = usernames.map((username) => ({
       invitation_batch_id: invitationBatchId,
@@ -115,8 +144,15 @@ Deno.serve(async (req: Request) => {
     }));
     const { data: created, error: insertError } = await db.from("family_education_invitations")
       .insert(rows).select("id,parent_username,approval_status");
-    if (insertError) return reply({ message: "ثبت درخواست دعوت‌نامه انجام نشد.", detail: insertError.message }, 500);
-    return reply({ ok: true, created: created ?? [], count: (created ?? []).length, approval_status: "pending" });
+    if (insertError) return reply({ message: "ثبت دعوت‌نامه گروهی انجام نشد." }, 500);
+    return reply({
+      ok: true,
+      created: created ?? [],
+      count: (created ?? []).length,
+      audience,
+      class_name: audience === "class" ? className : null,
+      approval_status: "pending",
+    });
   }
 
   if (action === "list") {
