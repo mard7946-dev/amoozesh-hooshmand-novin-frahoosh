@@ -28,7 +28,7 @@ for (const marker of [
   "to service_role"
 ]) assert.ok(managerMigration.includes(marker), "Manager invitation migration missing marker: " + marker);
 assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+(public|anon|authenticated)/i.test(managerMigration), "Manager attachment RPC must be service-role-only");
-assert.ok(managerMigration.includes("p_actor_auth_user_id uuid,\\n  p_phone text default null,\\n  p_national_code text default null"), "Required actor argument must precede optional manager fields");
+assert.ok(managerMigration.includes("p_actor_auth_user_id uuid," + String.fromCharCode(10) + "  p_phone text default null," + String.fromCharCode(10) + "  p_national_code text default null"), "Required actor argument must precede optional manager fields");
 assert.ok(managerMigration.includes("revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)"), "RPC revoke signature must match all eight function arguments");
 assert.ok(managerMigration.includes("grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)"), "Service-role grant signature must match all eight function arguments");
 
