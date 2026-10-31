@@ -146,3 +146,17 @@ for (const table of ["assessment_exams", "assessment_questions", "assessment_att
 }
 assert.ok(assessmentMigration.includes("enable row level security") && assessmentMigration.includes("to service_role"), "Assessment tables must be RLS-protected and server-only");
 console.log("Independent assessment checks passed: separate teacher/student routing, dedicated schema/API, question types, math/geometry tools, timing and JavaScript syntax.");
+
+
+const aboutPage = readFileSync("about.html", "utf8");
+assert.ok(html.includes('href="about.html"') && html.includes("درباره برنامه فراهوش"), "Home page must link to the About page");
+assert.ok(aboutPage.includes("حسن مردانه جهان‌تیغ") && aboutPage.includes("۱۴۰۵"), "About page must identify the creator and production year");
+assert.ok(aboutPage.includes("build-info.json") && aboutPage.includes("commit") && aboutPage.includes("built_at"), "About page must display the generated release/build identifier and build date");
+const aboutScripts = [...aboutPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(aboutScripts.length > 0, "About page must contain its dynamic version script");
+for (const source of aboutScripts) assert.doesNotThrow(() => new Function(source), "About page script must have valid JavaScript syntax");
+assert.ok(publishWorkflow.includes("- 'about.html'") && publishWorkflow.includes("- 'finance.html'"), "About and finance page changes must trigger GitHub Pages deployment");
+assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub Pages artifact must include the finance and About pages");
+assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
+assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
+console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");
