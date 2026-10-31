@@ -179,8 +179,8 @@ Deno.serve(async (req: Request) => {
       const email = clean(body?.email, 254).toLowerCase();
       const username = clean(body?.username, 40);
       const displayName = clean(body?.display_name, 120);
-      let phone = normalizeDigits(clean(body?.phone, 20)).replace(/\\D/g, "");
-      const nationalCode = normalizeDigits(clean(body?.national_code, 20)).replace(/\\D/g, "");
+      let phone = normalizeDigits(clean(body?.phone, 20)).replace(/\D/g, "");
+      const nationalCode = normalizeDigits(clean(body?.national_code, 20)).replace(/\D/g, "");
       if (phone.startsWith("0098") && phone.length === 14) phone = "0" + phone.slice(4);
       else if (phone.startsWith("98") && phone.length === 12) phone = "0" + phone.slice(2);
       else if (phone.startsWith("9") && phone.length === 10) phone = "0" + phone;
@@ -189,14 +189,14 @@ Deno.serve(async (req: Request) => {
       if (!allowedOrigins.has(origin)) {
         return reply({ message: "دامنه فراهوش برای ارسال دعوت‌نامه تأیید نشده است." }, 400);
       }
-      if (!schoolId || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+      if (!schoolId || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email) ||
           !/^[A-Za-z0-9._-]{4,40}$/.test(username) || displayName.length < 3) {
         return reply({ message: "شناسه مدرسه، ایمیل معتبر، نام کاربری و نام مدیر را کامل وارد کنید." }, 400);
       }
-      if (phone && !/^09\\d{9}$/.test(phone)) {
+      if (phone && !/^09\d{9}$/.test(phone)) {
         return reply({ message: "شماره همراه باید با قالب 09123456789 وارد شود." }, 400);
       }
-      if (nationalCode && !/^\\d{10}$/.test(nationalCode)) {
+      if (nationalCode && !/^\d{10}$/.test(nationalCode)) {
         return reply({ message: "کد ملی باید ۱۰ رقم باشد." }, 400);
       }
 
