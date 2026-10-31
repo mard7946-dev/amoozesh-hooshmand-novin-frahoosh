@@ -38,7 +38,7 @@ assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No se
 for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق"]) {
   assert.ok(page.includes(feature), "Platform admin UI missing feature: " + feature);
 }
-const scripts = [...page.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(x => x[1]).filter(x => x.trim());
+const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x => x[1]).filter(x => x.trim());
 assert.ok(scripts.length, "Platform admin page must contain application JavaScript");
 for (const script of scripts) assert.doesNotThrow(() => new Function(script), "Platform admin JavaScript must parse");
 
