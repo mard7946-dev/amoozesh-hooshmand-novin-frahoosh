@@ -65,7 +65,7 @@ Deno.serve(async(req:Request)=>{
   const {data:student,error:se}=await db.from("students").select("id,first_name,last_name").eq("tenant_school_id",school).eq("id",studentId).maybeSingle();
   if(se||!student)return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
   const {data:recipient,error:re}=await db.from("account_settings").select("auth_user_id,display_name,username,role").eq("tenant_school_id",school).eq("auth_user_id",targetId).maybeSingle();
-  if(re||!recipient||!["teacher","educational","executive","cultural","advisor"].includes(clean(recipient.role).toLowerCase()))return reply({message:"مخاطب انتخاب‌شده معتبر نیست."},400);
+  if(re||!recipient||clean(recipient.role).toLowerCase()!=="teacher")return reply({message:"برای درخواست ملاقات فقط می‌توانید یک دبیر را انتخاب کنید."},400);
   const row={tenant_school_id:school,parent_id:profile.username,parent_name:userName,parent_username:profile.username,student_id:student.id,student_name:[student.first_name,student.last_name].filter(Boolean).join(" "),target_role:recipient.role,target_name:recipient.display_name||recipient.username,recipient_user_id:recipient.auth_user_id,recipient_role:recipient.role,requested_date_shamsi:date,requested_time:time||null,reason,status:"pending_deputy",approval_deputy_role:"educational",educational_approval:"pending",manager_approval:"pending"};
   const {data:created,error}=await db.from("parent_meeting_requests").insert(row).select("id,status").single();
   if(error){console.error("parent meeting create",error.code);return reply({message:"ثبت درخواست ملاقات انجام نشد."},500)}
@@ -91,7 +91,7 @@ Deno.serve(async(req:Request)=>{
  }
  if(action==="approve_deputy"||action==="reject_deputy"){
   if(!isDeputy||m.status!=="pending_deputy"||m.approval_deputy_role!==role)return reply({message:"این درخواست در صف تأیید معاون شما نیست."},403);
-  if(action==="approve_deputy"){patch.status="awaiting_recipient";patch.educational_approval="approved";patch.manager_approval="not_required";patch.deputy_approved_by=a.user.id;patch.deputy_approved_at=new Date().toISOString()}
+  if(action==="approve_deputy"){patch.status="pending_manager";patch.educational_approval="approved";patch.manager_approval="pending";patch.deputy_approved_by=a.user.id;patch.deputy_approved_at=new Date().toISOString()}
   else{const why=clean(input.reason);if(!why)return reply({message:"علت رد الزامی است."},400);patch.status="rejected_deputy";patch.educational_approval="rejected";patch.rejection_stage="deputy";patch.rejection_reason=why;patch.rejected_by=a.user.id}
  }else if(action==="approve_manager"||action==="reject_manager"){
   if(!isManager||m.status!=="pending_manager")return reply({message:"این درخواست در صف تأیید مدیریت نیست."},403);
@@ -100,7 +100,7 @@ Deno.serve(async(req:Request)=>{
  }else if(action==="respond"){
   if(m.recipient_user_id!==a.user.id||m.status!=="awaiting_recipient")return reply({message:"فقط مخاطب درخواستِ تأییدشده می‌تواند پاسخ دهد."},403);
   const response=clean(input.response);if(!["approved","rejected"].includes(response))return reply({message:"پاسخ تأیید یا رد را انتخاب کنید."},400);
-  patch.status=response==="approved"?"completed":"rejected_recipient";patch.recipient_response=response;patch.recipient_response_note=clean(input.note).slice(0,1000)||null;patch.recipient_responded_at=new Date().toISOString();
+  const responseNote=clean(input.note).slice(0,1000);if(response==="rejected"&&!responseNote)return reply({message:"علت رد درخواست توسط دبیر الزامی است."},400);patch.status=response==="approved"?"completed":"rejected_recipient";patch.recipient_response=response;patch.recipient_response_note=responseNote||null;patch.recipient_responded_at=new Date().toISOString();
  }else return reply({message:"عملیات ناشناخته است."},400);
  const {error:updateError}=await db.from("parent_meeting_requests").update(patch).eq("id",id).eq("tenant_school_id",school);
  if(updateError){console.error("parent meeting update",updateError.code);return reply({message:"ذخیره مرحله درخواست ناموفق بود."},500)}
