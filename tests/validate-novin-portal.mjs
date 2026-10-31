@@ -148,8 +148,9 @@ assert.ok(assessmentMigration.includes("enable row level security") && assessmen
 console.log("Independent assessment checks passed: separate teacher/student routing, dedicated schema/API, question types, math/geometry tools, timing and JavaScript syntax.");
 
 
+const homePage = readFileSync("index.html", "utf8");
 const aboutPage = readFileSync("about.html", "utf8");
-assert.ok(html.includes('href="about.html"') && html.includes("درباره برنامه فراهوش"), "Home page must link to the About page");
+assert.ok(homePage.includes('href="about.html"') && homePage.includes("درباره برنامه فراهوش"), "Home page must link to the About page");
 assert.ok(aboutPage.includes("حسن مردانه جهان‌تیغ") && aboutPage.includes("۱۴۰۵"), "About page must identify the creator and production year");
 assert.ok(aboutPage.includes("build-info.json") && aboutPage.includes("commit") && aboutPage.includes("built_at"), "About page must display the generated release/build identifier and build date");
 const aboutScripts = [...aboutPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
