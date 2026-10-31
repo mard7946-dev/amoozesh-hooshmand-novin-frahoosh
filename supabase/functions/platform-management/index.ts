@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     if (action === "overview") {
       const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult] = await Promise.all([
         admin.from("schools")
-          .select("id,name,slug,school_code,status,created_at,updated_at")
+          .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500),
         admin.from("school_subscriptions")
           .select("id,school_id,plan_id,status,starts_at,ends_at,grace_days,student_min,student_limit,price_irr,created_at")
@@ -169,6 +169,79 @@ Deno.serve(async (req: Request) => {
         return reply({ message: error.message || "ثبت اشتراک انجام نشد." }, 400);
       }
       return reply({ success: true, subscription: data });
+    }
+
+    if (action === "invite_school_manager") {
+      const schoolId = clean(body?.school_id, 80);
+      const email = clean(body?.email, 254).toLowerCase();
+      const username = clean(body?.username, 40);
+      const displayName = clean(body?.display_name, 120);
+      const phone = clean(body?.phone, 20);
+      const nationalCode = clean(body?.national_code, 20);
+      const origin = req.headers.get("origin") ?? "";
+      const allowedOrigins = new Set(["https://frahoosh.ir", "https://www.frahoosh.ir"]);
+      if (!allowedOrigins.has(origin)) {
+        return reply({ message: "دامنه فراهوش برای ارسال دعوت‌نامه تأیید نشده است." }, 400);
+      }
+      if (!schoolId || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+          !/^[A-Za-z0-9._-]{4,40}$/.test(username) || displayName.length < 3) {
+        return reply({ message: "شناسه مدرسه، ایمیل معتبر، نام کاربری و نام مدیر را کامل وارد کنید." }, 400);
+      }
+      if (phone && !/^09\\d{9}$/.test(phone)) {
+        return reply({ message: "شماره همراه باید با قالب 09123456789 وارد شود." }, 400);
+      }
+      if (nationalCode && !/^\\d{10}$/.test(nationalCode)) {
+        return reply({ message: "کد ملی باید ۱۰ رقم باشد." }, 400);
+      }
+
+      const { data: school, error: schoolError } = await admin.from("schools")
+        .select("id,name,status,owner_auth_user_id").eq("id", schoolId).maybeSingle();
+      if (schoolError || !school) return reply({ message: "مدرسه انتخاب‌شده پیدا نشد." }, 404);
+      if (school.status !== "active") return reply({ message: "ابتدا وضعیت مدرسه را فعال کنید." }, 409);
+      if (school.owner_auth_user_id) return reply({ message: "برای این مدرسه قبلاً مدیر اصلی ثبت شده است." }, 409);
+
+      const { data: existingUsername, error: usernameError } = await admin.from("account_settings")
+        .select("username").eq("username", username).maybeSingle();
+      if (usernameError) return reply({ message: "بررسی نام کاربری ناموفق بود." }, 500);
+      if (existingUsername) return reply({ message: "این نام کاربری قبلاً استفاده شده است." }, 409);
+      const { data: existingEmail, error: emailError } = await admin.from("account_settings")
+        .select("username").ilike("email", email).limit(1);
+      if (emailError) return reply({ message: "بررسی ایمیل ناموفق بود." }, 500);
+      if (existingEmail?.length) return reply({ message: "این ایمیل قبلاً به یک حساب فراهوش متصل شده است." }, 409);
+
+      const redirectTo = origin + "/accept-invite.html";
+      const { data: invitation, error: invitationError } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { display_name: displayName, role: "manager", username, school_id: schoolId },
+        redirectTo,
+      });
+      if (invitationError || !invitation.user) {
+        console.error("platform manager invitation failed", invitationError?.message ?? "missing user");
+        return reply({ message: "ارسال دعوت‌نامه مدیر مدرسه ناموفق بود؛ تنظیمات ایمیل و نشانی بازگشت Supabase را بررسی کنید." }, 400);
+      }
+
+      const { data: attached, error: attachError } = await admin.rpc("frahoosh_platform_attach_school_manager", {
+        p_school_id: schoolId,
+        p_auth_user_id: invitation.user.id,
+        p_username: username,
+        p_display_name: displayName,
+        p_email: email,
+        p_phone: phone || null,
+        p_national_code: nationalCode || null,
+        p_actor_auth_user_id: auth.user.id,
+      });
+      if (attachError) {
+        const { error: cleanupError } = await admin.auth.admin.deleteUser(invitation.user.id);
+        console.error("platform manager attachment failed", JSON.stringify({
+          code: attachError.code ?? null,
+          cleanup_failed: Boolean(cleanupError),
+        }));
+        return reply({ message: "دعوت‌نامه ایجاد شد اما اتصال حساب به مدرسه کامل نشد؛ حساب موقت پاک‌سازی شد و عملیات را دوباره بررسی کنید." }, 500);
+      }
+      return reply({
+        success: true,
+        message: "دعوت‌نامه مدیر مدرسه ارسال و عضویت مدیریتی ثبت شد.",
+        manager: attached,
+      }, 201);
     }
 
     return reply({ message: "عملیات درخواستی شناخته نشد." }, 400);
