@@ -40,6 +40,21 @@
 <div id="schools"><div class="empty">در حال دریافت فهرست مدارس…</div></div>
 </section>
 <section class="card">
+<h2>دعوت مدیر مدرسه</h2>
+<p class="muted">برای هر مدرسه یک مدیر اصلی معرفی کنید. دعوت‌نامه به ایمیل مدیر ارسال می‌شود و او رمز عبور خود را در صفحه امن فراهوش تعیین می‌کند.</p>
+<form id="inviteManager">
+<div class="grid">
+<div><label for="managerSchool">مدرسه</label><select id="managerSchool" required></select></div>
+<div><label for="managerName">نام و نام خانوادگی مدیر</label><input id="managerName" required maxlength="120"></div>
+<div><label for="managerEmail">ایمیل مدیر</label><input id="managerEmail" type="email" required maxlength="254" dir="ltr" autocomplete="email"></div>
+<div><label for="managerUsername">نام کاربری ورود</label><input id="managerUsername" required minlength="4" maxlength="40" pattern="[A-Za-z0-9._-]{4,40}" dir="ltr" autocomplete="username"></div>
+<div><label for="managerPhone">شماره همراه (اختیاری)</label><input id="managerPhone" inputmode="numeric" maxlength="11" placeholder="09123456789" dir="ltr"></div>
+<div><label for="managerNationalCode">کد ملی (اختیاری)</label><input id="managerNationalCode" inputmode="numeric" maxlength="10" dir="ltr"></div>
+</div>
+<div style="margin-top:14px"><button class="primary" id="inviteManagerSubmit" type="submit">ارسال دعوت‌نامه و اتصال مدیر به مدرسه</button></div>
+</form>
+</section>
+<section class="card">
 <h2>گزارش فعالیت مدیر کل</h2>
 <div id="audit"><div class="empty">هنوز گزارشی ثبت نشده است.</div></div>
 </section>
@@ -65,6 +80,15 @@ function fillPlans(){
  const selects=[$("newPlan"),...document.querySelectorAll("[data-plan-select]")];
  for(const select of selects){const current=select.value;select.replaceChildren();for(const plan of state.plans.filter(x=>x.is_active)){const option=node("option","",plan.name+" · "+money(plan.price_irr));option.value=plan.id;select.append(option);}if(current&&state.plans.some(x=>x.id===current))select.value=current;}
 }
+function fillManagerSchools(){
+ const select=$("managerSchool");select.replaceChildren();
+ const eligible=state.schools.filter(s=>s.status==="active"&&!s.owner_auth_user_id);
+ if(!eligible.length){
+  const option=node("option","","مدرسه فعالِ بدون مدیر اصلی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
+ }
+ select.disabled=false;$("inviteManagerSubmit").disabled=false;
+ for(const school of eligible){const option=node("option","",school.name+" · "+(school.school_code||school.slug));option.value=school.id;select.append(option);}
+}
 function renderMetrics(metrics){
  $("metrics").replaceChildren();
  for(const [label,value] of [["تعداد مدارس",metrics.schools_total],["مدارس فعال",metrics.schools_active],["مدارس تعلیق‌شده",metrics.schools_suspended],["عضویت‌های فعال",metrics.active_memberships]]){
@@ -88,7 +112,7 @@ function renderSchools(){
   const statusWrap=node("div");const statusLabel=node("label","","وضعیت مدرسه");const statusSelect=node("select");for(const [value,label] of [["active","فعال"],["suspended","تعلیق"],["archived","بایگانی"]]){const op=node("option","",label);op.value=value;statusSelect.append(op);}statusSelect.value=school.status;const statusButton=node("button","","ذخیره وضعیت");statusButton.onclick=async()=>{statusButton.disabled=true;try{await api({action:"set_school_status",school_id:school.id,status:statusSelect.value});show("وضعیت مدرسه به‌روزرسانی شد.","success");await load();}catch(e){show(e.message,"error");}finally{statusButton.disabled=false;}};statusWrap.append(statusLabel,statusSelect,statusButton);
   const planWrap=node("div");const planLabel=node("label","","تمدید یا تغییر اشتراک");const planSelect=node("select");planSelect.dataset.planSelect="1";for(const plan of state.plans.filter(x=>x.is_active)){const op=node("option","",plan.name+" · "+money(plan.price_irr));op.value=plan.id;planSelect.append(op);}if(sub?.plan_id)planSelect.value=sub.plan_id;const planButton=node("button","","ثبت اشتراک جدید");planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
   tools.append(statusWrap,planWrap);card.append(tools);
-  card.append(node("p","muted","وضعیت راه‌اندازی: ثبت مدرسه و اشتراک انجام شده؛ ایجاد حساب مدیر مدرسه در مرحله بعدی لازم است."));
+  card.append(node("p","muted",school.owner_auth_user_id?"مدیر اصلی مدرسه معرفی و به عضویت مدیریتی متصل شده است.":"مدیر اصلی مدرسه هنوز معرفی نشده است."));
   root.append(card);
  }
 }
@@ -101,7 +125,7 @@ async function load(){
  $("refresh").disabled=true;
  try{
   const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];
-  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();renderSchools();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
+  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
  }catch(error){$("app").hidden=true;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
  finally{$("refresh").disabled=false;}
 }
@@ -112,6 +136,24 @@ $("createSchool").onsubmit=async event=>{
   await api({action:"create_school",name:$("schoolName").value.trim(),slug:$("schoolSlug").value.trim(),school_code:$("schoolCode").value.trim(),plan_id:$("newPlan").value,grace_days:Number($("graceDays").value)});
   $("createSchool").reset();$("graceDays").value="7";show("مدرسه و اشتراک اولیه با موفقیت ثبت شدند. برای ورود کاربران مدرسه باید حساب مدیر آن مدرسه نیز ساخته شود.","success");await load();
  }catch(error){show(error.message||"ثبت مدرسه انجام نشد.","error");}
+ finally{button.disabled=false;}
+};
+$("inviteManager").onsubmit=async event=>{
+ event.preventDefault();const button=$("inviteManagerSubmit");button.disabled=true;
+ try{
+  await api({
+   action:"invite_school_manager",
+   school_id:$("managerSchool").value,
+   display_name:$("managerName").value.trim(),
+   email:$("managerEmail").value.trim(),
+   username:$("managerUsername").value.trim(),
+   phone:$("managerPhone").value.trim(),
+   national_code:$("managerNationalCode").value.trim()
+  });
+  $("inviteManager").reset();
+  show("دعوت‌نامه مدیر مدرسه ارسال شد و عضویت مدیریتی او به مدرسه متصل شد. مدیر باید از ایمیل خود دعوت‌نامه را باز کند و رمز عبور را تعیین کند.","success");
+  await load();
+ }catch(error){show(error.message||"ارسال دعوت‌نامه مدیر مدرسه انجام نشد.","error");}
  finally{button.disabled=false;}
 };
 load();
