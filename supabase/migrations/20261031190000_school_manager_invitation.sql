@@ -108,5 +108,5 @@ $function$;
 
 revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)
   from public, anon, authenticated;
-grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text)
+grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)
   to service_role;
