@@ -28,6 +28,8 @@ for (const marker of [
   "to service_role"
 ]) assert.ok(managerMigration.includes(marker), "Manager invitation migration missing marker: " + marker);
 assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+(public|anon|authenticated)/i.test(managerMigration), "Manager attachment RPC must be service-role-only");
+assert.ok(managerMigration.includes("p_actor_auth_user_id uuid,\\n  p_phone text default null,\\n  p_national_code text default null"), "Required actor argument must precede optional manager fields");
+assert.ok(managerMigration.includes("frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)"), "RPC grants must match all eight function arguments");
 
 const fn = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
 for (const marker of [
@@ -48,6 +50,7 @@ for (const marker of [
 assert.ok(fn.includes("req.headers.get(\"apikey\")") || fn.includes("SUPABASE_ANON_KEY"), "Platform management API must initialize its user-scoped RPC client with the public key");
 assert.ok(!fn.includes("body?.is_admin") && !fn.includes("body?.platform_admin"), "Platform management API must not trust a client-supplied admin flag");
 assert.ok(fn.includes("auth.user.id"), "Platform admin access must be bound to the authenticated user");
+assert.ok(fn.includes(".replace(/\\D/g") && fn.includes("/^09\\d{9}$/") && fn.includes("/^\\d{10}$/"), "Manager contact validation must use digit regexes");
 assert.ok(fn.includes("userClient.rpc"), "Privileged SQL RPCs must receive the authenticated caller JWT, not the service-role identity.");
 
 const page = readFileSync("platform-admin.html", "utf8");
