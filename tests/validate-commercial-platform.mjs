@@ -32,6 +32,13 @@ assert.ok(managerMigration.includes("p_actor_auth_user_id uuid," + String.fromCh
 assert.ok(managerMigration.includes("revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)"), "RPC revoke signature must match all eight function arguments");
 assert.ok(managerMigration.includes("grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)"), "Service-role grant signature must match all eight function arguments");
 
+const sensitiveRpcMigration = readFileSync("supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql", "utf8");
+for (const rpc of ["finance_audit_row()", "lookup_auth_email_by_national_code(text)"]) {
+  assert.ok(sensitiveRpcMigration.includes("alter function public." + rpc + "\n  set search_path = ''"), "Sensitive RPC must pin an empty search_path: " + rpc);
+  assert.ok(sensitiveRpcMigration.includes("revoke all on function public." + rpc + "\n  from public, anon, authenticated"), "Sensitive RPC must be revoked from client roles: " + rpc);
+  assert.ok(sensitiveRpcMigration.includes("grant execute on function public." + rpc + "\n  to service_role"), "Sensitive RPC must remain available to server-side service role: " + rpc);
+}
+
 const fn = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
 for (const marker of [
   "admin.auth.getUser",
