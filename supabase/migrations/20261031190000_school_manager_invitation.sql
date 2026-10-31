@@ -7,9 +7,9 @@ create or replace function public.frahoosh_platform_attach_school_manager(
   p_username text,
   p_display_name text,
   p_email text,
+  p_actor_auth_user_id uuid,
   p_phone text default null,
-  p_national_code text default null,
-  p_actor_auth_user_id uuid
+  p_national_code text default null
 )
 returns jsonb
 language plpgsql
@@ -106,7 +106,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text,uuid)
+revoke all on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,uuid,text,text)
   from public, anon, authenticated;
 grant execute on function public.frahoosh_platform_attach_school_manager(uuid,uuid,text,text,text,text,text)
   to service_role;
