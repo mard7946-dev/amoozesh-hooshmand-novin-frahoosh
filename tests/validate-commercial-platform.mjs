@@ -30,6 +30,7 @@ for (const marker of [
 ]) assert.ok(fn.includes(marker), "Platform management API missing marker: " + marker);
 assert.ok(!fn.includes("SUPABASE_ANON_KEY"), "Platform management API must not depend on a client-supplied admin identity");
 assert.ok(fn.includes("auth.user.id"), "Platform admin access must be bound to the authenticated user");
+assert.ok(fn.includes("userClient.rpc"), "Privileged SQL RPCs must receive the authenticated caller JWT, not the service-role identity.");
 
 const page = readFileSync("platform-admin.html", "utf8");
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
