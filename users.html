@@ -13,18 +13,6 @@
 <header><div><h1>مدیریت کاربران و نقش‌ها</h1><p>نقش و عضویت کاربران از پایگاه داده مدرسه خوانده و همان‌جا ذخیره می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
 <section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
 
-<section class="card" id="parentAccountCard">
-<h2>ساخت حساب ولی و اتصال فرزندان</h2>
-<p>یک یا دو دانش‌آموز را انتخاب کنید. نام کاربری حساب بر اساس کد ملی دانش‌آموز اول ساخته می‌شود و هر دو پرونده به همان حساب متصل خواهند شد.</p>
-<div class="upload-row">
-<div class="upload-box"><label>تعداد فرزندان<select id="parentChildCount"><option value="1">تک‌فرزند</option><option value="2">دو فرزند</option></select></label>
-<label>دانش‌آموز اول<select id="parentStudent1"><option value="">ابتدا پرونده‌ها را بارگذاری کنید</option></select></label>
-<label id="parentStudent2Wrap" hidden>دانش‌آموز دوم<select id="parentStudent2"><option value="">انتخاب دانش‌آموز دوم</option></select></label>
-<label>نام ولی (اختیاری)<input id="parentDisplayName" placeholder="نام و نام خانوادگی ولی"></label>
-<label>شماره تماس ولی (اختیاری)<input id="parentPhone" inputmode="tel" placeholder="شماره تماس"></label>
-<div class="actions"><button class="btn primary" id="createParentAccount">ساخت حساب و اتصال دانش‌آموزان</button></div></div>
-<div class="upload-box"><strong>نتیجه ساخت حساب</strong><div id="parentCreateStatus" class="status" role="status">پس از ثبت، نتیجه اینجا نمایش داده می‌شود.</div><div id="parentCredentials" hidden></div></div>
-</div></section>
 <section class="card" id="parentBulkImport">
 <h2>ورود گروهی اولیا و اتصال خودکار به فرزندان</h2>
 <p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
@@ -35,6 +23,18 @@
 <div id="parentImportStatus" class="status" role="status" aria-live="polite">پس از بارگذاری، نتیجه هر ولی و ردیف‌های نامعتبر نمایش داده می‌شود.</div>
 <div class="table-wrap" id="parentImportResults"></div>
 </section>
+<section class="card" id="parentAccountCard">
+<h2>ثبت دستی موردی ولی (برای موارد استثنایی)</h2>
+<p>یک یا دو دانش‌آموز را انتخاب کنید. نام کاربری حساب بر اساس کد ملی دانش‌آموز اول ساخته می‌شود و هر دو پرونده به همان حساب متصل خواهند شد.</p>
+<div class="upload-row">
+<div class="upload-box"><label>تعداد فرزندان<select id="parentChildCount"><option value="1">تک‌فرزند</option><option value="2">دو فرزند</option></select></label>
+<label>دانش‌آموز اول<select id="parentStudent1"><option value="">ابتدا پرونده‌ها را بارگذاری کنید</option></select></label>
+<label id="parentStudent2Wrap" hidden>دانش‌آموز دوم<select id="parentStudent2"><option value="">انتخاب دانش‌آموز دوم</option></select></label>
+<label>نام ولی (اختیاری)<input id="parentDisplayName" placeholder="نام و نام خانوادگی ولی"></label>
+<label>شماره تماس ولی (اختیاری)<input id="parentPhone" inputmode="tel" placeholder="شماره تماس"></label>
+<div class="actions"><button class="btn primary" id="createParentAccount">ساخت حساب و اتصال دانش‌آموزان</button></div></div>
+<div class="upload-box"><strong>نتیجه ساخت حساب</strong><div id="parentCreateStatus" class="status" role="status">پس از ثبت، نتیجه اینجا نمایش داده می‌شود.</div><div id="parentCredentials" hidden></div></div>
+</div></section>
 <section class="card"><h2>ورود اطلاعات با فایل اکسل</h2><p>دو فایل جداگانه استفاده می‌شود: یکی برای مشخصات افراد و دیگری برای برنامه هفتگی. فایل‌ها به پایگاه داده همین مدرسه وارد می‌شوند؛ ردیف‌های نامعتبر گزارش می‌شوند.</p><div class="upload-row"><div class="upload-box"><strong>۱. اکسل اطلاعات افراد</strong><p>ستون‌های لازم: گروه، کد ملی، نام، نام خانوادگی. ستون‌های کلاس، تلفن اولیا، دین، مذهب و نام پدر نیز خوانده می‌شوند.</p><input id="peopleExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importPeople">ورود اکسل اطلاعات</button><button class="btn" id="peopleTemplate">نمونه اکسل اطلاعات</button></div></div><div class="upload-box"><strong>۲. اکسل برنامه هفتگی</strong><p>ستون‌های لازم: کلاس، روز، زنگ (عدد ۱ تا ۱۲)، درس و نام دبیر. این فایل برنامه ثبت‌شده را به‌روز می‌کند.</p><input id="scheduleExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importSchedule">ورود اکسل برنامه</button><button class="btn" id="scheduleTemplate">نمونه اکسل برنامه</button></div></div></div><div id="importStatus" class="status" role="status" aria-live="polite"></div></section><section class="card"><div class="actions"><input id="search" type="search" placeholder="جست‌وجو بر اساس نام، نام کاربری یا کد ملی" aria-label="جست‌وجوی کاربران"><span id="count" class="pill">در حال بارگذاری…</span></div><div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست مدیریت…</div><div class="table-wrap"><table><thead><tr><th>کاربر</th><th>نام کاربری</th><th>نقش فعلی</th><th>وضعیت دسترسی</th><th>عملیات</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div></section>
 <p class="foot">تغییرات فقط برای حساب‌های همین مدرسه اعمال می‌شوند. حساب‌های مدیریتی از این صفحه قابل تغییر یا غیرفعال‌سازی نیستند.</p>
 </main>
