@@ -1,4 +1,4 @@
-name: Validate Portal, Parent Panel, Settings, and School Reports
+name: Validate Portal, Parent Panel, Settings, Reports, and Commercial Platform
 # Regression checks cover the live school reports dashboard and its API.
 
 on:
@@ -6,6 +6,13 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'platform-admin.html'
+      - 'accept-invite.html'
+      - 'supabase/functions/platform-management/index.ts'
+      - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
+      - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
+      - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
+      - 'tests/validate-commercial-platform.mjs'
       - 'settings.html'
       - 'reports.html'
       - 'parent-management.html'
@@ -25,6 +32,17 @@ on:
       - 'index.html'
       - 'tests/validate-novin-portal.mjs'
       - '.github/workflows/validate-novin-portal.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'portal.html'
+      - 'platform-admin.html'
+      - 'supabase/functions/platform-management/index.ts'
+      - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
+      - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
+      - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
+      - 'tests/validate-commercial-platform.mjs'
+      - '.github/workflows/validate-novin-portal.yml'
   workflow_dispatch:
 
 permissions:
@@ -40,3 +58,10 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate commercial platform security and dashboard
+        run: node tests/validate-commercial-platform.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check platform management Edge Function
+        run: deno check supabase/functions/platform-management/index.ts

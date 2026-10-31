@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101d33">
+<title>مدیریت کل فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#e5c16d}
+*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(ellipse at 12% 4%,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}main{max-width:1120px;margin:auto}header{padding:14px 4px 22px}h1{margin:8px 0;font-size:clamp(23px,4vw,34px)}h2{font-size:19px;margin:0 0 14px}p{color:var(--muted);line-height:1.8}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:17px;background:#0e1b32ed;padding:17px;margin:12px 0}.metric{font-size:27px;font-weight:800;color:var(--mint)}.metric-label{color:var(--muted);font-size:13px;margin-top:5px}label{display:block;margin:10px 0 6px;font-size:13px;color:#d9e5f7}input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#081326;color:var(--text);font:inherit}button,.link{font:inherit;border:1px solid #52718e;border-radius:11px;background:#203a58;color:var(--text);padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}button.primary{background:linear-gradient(120deg,#17604f,#174c67);border-color:#63e0c0}button:disabled{opacity:.55;cursor:wait}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.school{border:1px solid var(--line);border-radius:15px;padding:15px;margin:10px 0;background:#0a192d}.school-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.pill{border:1px solid #526b89;border-radius:30px;padding:4px 9px;font-size:12px}.pill.active{color:#9df2d6;border-color:#3c9c80}.pill.suspended{color:#ffd1a6;border-color:#9c714b}.school-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.status{padding:11px;border-radius:10px;background:#162a43;color:#c8d8ee;margin:10px 0;white-space:pre-wrap}.status.error{background:#452525;color:#ffd5d5}.status.success{background:#123d34;color:#c9ffeb}.audit{border-top:1px solid #273b56;padding:9px 0;font-size:13px}.empty{padding:20px;text-align:center;color:var(--muted)}@media(max-width:520px){body{padding:11px}.card{padding:13px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div style="color:var(--mint);font-weight:bold">FRAHOOSH · PLATFORM CONTROL</div>
+<h1>مدیریت کل فراهوش نوین</h1>
+<p>مدیریت مدارس مشتری، وضعیت سرویس و اشتراک‌ها. این بخش فقط برای حساب‌های ثبت‌شده در فهرست مدیران کل قابل استفاده است.</p>
+<div class="row"><a class="link" href="portal.html">بازگشت به فراهوش</a><a class="link" href="portal.html?step=login&amp;role=manager">ورود به حساب مدیر کل</a><button id="refresh" type="button">به‌روزرسانی اطلاعات</button></div>
+</header>
+<div id="status" class="status">در حال بررسی دسترسی…</div>
+<section id="app" hidden>
+<div class="grid" id="metrics"></div>
+<section class="card">
+<h2>ثبت مدرسه جدید</h2>
+<p class="muted">با ثبت مدرسه، یک فضای مستقل و اشتراک اولیه ساخته می‌شود. ساخت حساب مدیر مدرسه و دعوت‌نامه ورود، مرحله بعدی راه‌اندازی مشتری است.</p>
+<form id="createSchool">
+<div class="grid">
+<div><label for="schoolName">نام مدرسه</label><input id="schoolName" required maxlength="180" placeholder="مثلاً دبیرستان نمونه"></div>
+<div><label for="schoolSlug">شناسه لاتین مدرسه</label><input id="schoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nemoneh-school" dir="ltr"></div>
+<div><label for="schoolCode">کد مدرسه</label><input id="schoolCode" required maxlength="40" placeholder="NEM001" dir="ltr"></div>
+<div><label for="newPlan">طرح اشتراک اولیه</label><select id="newPlan" required></select></div>
+<div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
+</div>
+<div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه و ایجاد اشتراک</button></div>
+</form>
+</section>
+<section class="card">
+<h2>مدارس ثبت‌شده</h2>
+<div id="schools"><div class="empty">در حال دریافت فهرست مدارس…</div></div>
+</section>
+<section class="card">
+<h2>دعوت مدیر مدرسه</h2>
+<p class="muted">برای هر مدرسه یک مدیر اصلی معرفی کنید. دعوت‌نامه به ایمیل مدیر ارسال می‌شود و او رمز عبور خود را در صفحه امن فراهوش تعیین می‌کند.</p>
+<form id="inviteManager">
+<div class="grid">
+<div><label for="managerSchool">مدرسه</label><select id="managerSchool" required></select></div>
+<div><label for="managerName">نام و نام خانوادگی مدیر</label><input id="managerName" required maxlength="120"></div>
+<div><label for="managerEmail">ایمیل مدیر</label><input id="managerEmail" type="email" required maxlength="254" dir="ltr" autocomplete="email"></div>
+<div><label for="managerUsername">نام کاربری ورود</label><input id="managerUsername" required minlength="4" maxlength="40" pattern="[A-Za-z0-9._-]{4,40}" dir="ltr" autocomplete="username"></div>
+<div><label for="managerPhone">شماره همراه (اختیاری)</label><input id="managerPhone" inputmode="numeric" maxlength="11" placeholder="09123456789" dir="ltr"></div>
+<div><label for="managerNationalCode">کد ملی (اختیاری)</label><input id="managerNationalCode" inputmode="numeric" maxlength="10" dir="ltr"></div>
+</div>
+<div style="margin-top:14px"><button class="primary" id="inviteManagerSubmit" type="submit">ارسال دعوت‌نامه و اتصال مدیر به مدرسه</button></div>
+</form>
+</section>
+<section class="card">
+<h2>گزارش فعالیت مدیر کل</h2>
+<div id="audit"><div class="empty">هنوز گزارشی ثبت نشده است.</div></div>
+</section>
+</section>
+</main>
+<script>
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const $=id=>document.getElementById(id);
+let state={plans:[],schools:[]};
+function show(message,kind=""){const el=$("status");el.textContent=message;el.className="status"+(kind?" "+kind:"");}
+async function api(body){
+ const response=await fetch(SUPABASE_URL+"/functions/v1/platform-management",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.message||"درخواست مدیریت انجام نشد.");
+ return data;
+}
+const money=value=>new Intl.NumberFormat("fa-IR").format(Number(value||0))+" ریال";
+const date=value=>value?new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"medium",timeZone:"Asia/Tehran"}).format(new Date(value)):"—";
+function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
+function fillPlans(){
+ const selects=[$("newPlan"),...document.querySelectorAll("[data-plan-select]")];
+ for(const select of selects){const current=select.value;select.replaceChildren();for(const plan of state.plans.filter(x=>x.is_active)){const option=node("option","",plan.name+" · "+money(plan.price_irr));option.value=plan.id;select.append(option);}if(current&&state.plans.some(x=>x.id===current))select.value=current;}
+}
+function fillManagerSchools(){
+ const select=$("managerSchool");select.replaceChildren();
+ const eligible=state.schools.filter(s=>s.status==="active"&&!s.owner_auth_user_id);
+ if(!eligible.length){
+  const option=node("option","","مدرسه فعالِ بدون مدیر اصلی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
+ }
+ select.disabled=false;$("inviteManagerSubmit").disabled=false;
+ for(const school of eligible){const option=node("option","",school.name+" · "+(school.school_code||school.slug));option.value=school.id;select.append(option);}
+}
+function renderMetrics(metrics){
+ $("metrics").replaceChildren();
+ for(const [label,value] of [["تعداد مدارس",metrics.schools_total],["مدارس فعال",metrics.schools_active],["مدارس تعلیق‌شده",metrics.schools_suspended],["عضویت‌های فعال",metrics.active_memberships]]){
+  const card=node("div","card");card.append(node("div","metric",new Intl.NumberFormat("fa-IR").format(value||0)),node("div","metric-label",label));$("metrics").append(card);
+ }
+}
+function renderSchools(){
+ const root=$("schools");root.replaceChildren();
+ if(!state.schools.length){root.append(node("div","empty","هنوز مدرسه‌ای ثبت نشده است."));return;}
+ for(const school of state.schools){
+  const card=node("article","school");
+  const head=node("div","school-head");
+  const title=node("div");title.append(node("strong","",school.name),node("div","muted",school.slug+" · کد "+(school.school_code||"—")));
+  const pill=node("span","pill "+(school.status==="active"?"active":"suspended"),school.status==="active"?"فعال":school.status==="suspended"?"تعلیق‌شده":"بایگانی‌شده");
+  head.append(title,pill);card.append(head);
+  const sub=school.subscription;
+  const summary=sub?("اشتراک: "+(state.plans.find(p=>p.id===sub.plan_id)?.name||"طرح نامشخص")+" · ظرفیت "+new Intl.NumberFormat("fa-IR").format(sub.student_limit)+" دانش‌آموز · پایان "+date(sub.ends_at)+" · "+money(sub.price_irr)):"بدون اشتراک";
+  card.append(node("p","muted",summary));
+  card.append(node("p","muted","اعضای فعال: "+new Intl.NumberFormat("fa-IR").format(school.active_members)+" · شناسه: "+school.id));
+  const tools=node("div","school-tools");
+  const statusWrap=node("div");const statusLabel=node("label","","وضعیت مدرسه");const statusSelect=node("select");for(const [value,label] of [["active","فعال"],["suspended","تعلیق"],["archived","بایگانی"]]){const op=node("option","",label);op.value=value;statusSelect.append(op);}statusSelect.value=school.status;const statusButton=node("button","","ذخیره وضعیت");statusButton.onclick=async()=>{statusButton.disabled=true;try{await api({action:"set_school_status",school_id:school.id,status:statusSelect.value});show("وضعیت مدرسه به‌روزرسانی شد.","success");await load();}catch(e){show(e.message,"error");}finally{statusButton.disabled=false;}};statusWrap.append(statusLabel,statusSelect,statusButton);
+  const planWrap=node("div");const planLabel=node("label","","تمدید یا تغییر اشتراک");const planSelect=node("select");planSelect.dataset.planSelect="1";for(const plan of state.plans.filter(x=>x.is_active)){const op=node("option","",plan.name+" · "+money(plan.price_irr));op.value=plan.id;planSelect.append(op);}if(sub?.plan_id)planSelect.value=sub.plan_id;const planButton=node("button","","ثبت اشتراک جدید");planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
+  tools.append(statusWrap,planWrap);card.append(tools);
+  card.append(node("p","muted",school.owner_auth_user_id?"مدیر اصلی مدرسه معرفی و به عضویت مدیریتی متصل شده است.":"مدیر اصلی مدرسه هنوز معرفی نشده است."));
+  root.append(card);
+ }
+}
+function renderAudit(rows){
+ const root=$("audit");root.replaceChildren();if(!rows.length){root.append(node("div","empty","هنوز گزارشی ثبت نشده است."));return;}
+ for(const row of rows){const item=node("div","audit");const label=({ "school.created":"ایجاد مدرسه","school.status_changed":"تغییر وضعیت مدرسه","subscription.created":"ایجاد اشتراک"})[row.action]||row.action;item.append(node("strong","",label),node("div","muted",date(row.created_at)+" · مدرسه: "+(state.schools.find(s=>s.id===row.school_id)?.name||row.school_id||"—")));root.append(item);}
+}
+async function load(){
+ if(!token){show("نشست ورود پیدا نشد. ابتدا با حساب مدیر کل وارد شوید.","error");return;}
+ $("refresh").disabled=true;
+ try{
+  const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];
+  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
+ }catch(error){$("app").hidden=true;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
+ finally{$("refresh").disabled=false;}
+}
+$("refresh").onclick=load;
+$("createSchool").onsubmit=async event=>{
+ event.preventDefault();const button=$("createSchool").querySelector('button[type="submit"]');button.disabled=true;
+ try{
+  await api({action:"create_school",name:$("schoolName").value.trim(),slug:$("schoolSlug").value.trim(),school_code:$("schoolCode").value.trim(),plan_id:$("newPlan").value,grace_days:Number($("graceDays").value)});
+  $("createSchool").reset();$("graceDays").value="7";show("مدرسه و اشتراک اولیه با موفقیت ثبت شدند. برای ورود کاربران مدرسه باید حساب مدیر آن مدرسه نیز ساخته شود.","success");await load();
+ }catch(error){show(error.message||"ثبت مدرسه انجام نشد.","error");}
+ finally{button.disabled=false;}
+};
+$("inviteManager").onsubmit=async event=>{
+ event.preventDefault();const button=$("inviteManagerSubmit");button.disabled=true;
+ try{
+  await api({
+   action:"invite_school_manager",
+   school_id:$("managerSchool").value,
+   display_name:$("managerName").value.trim(),
+   email:$("managerEmail").value.trim(),
+   username:$("managerUsername").value.trim(),
+   phone:$("managerPhone").value.trim(),
+   national_code:$("managerNationalCode").value.trim()
+  });
+  $("inviteManager").reset();
+  show("دعوت‌نامه مدیر مدرسه ارسال شد و عضویت مدیریتی او به مدرسه متصل شد. مدیر باید از ایمیل خود دعوت‌نامه را باز کند و رمز عبور را تعیین کند.","success");
+  await load();
+ }catch(error){show(error.message||"ارسال دعوت‌نامه مدیر مدرسه انجام نشد.","error");}
+ finally{button.disabled=false;}
+};
+load();
+</script>
+</body>
+</html>

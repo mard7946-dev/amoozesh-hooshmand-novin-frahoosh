@@ -9,6 +9,7 @@ on:
       - 'about.html'
       - 'finance.html'
       - 'portal.html'
+      - 'platform-admin.html'
       - 'settings.html'
       - 'reports.html'
       - 'jalali-date.js'
@@ -52,7 +53,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html _site/
+          cp index.html portal.html platform-admin.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html _site/
           cp finance.html about.html _site/
           printf '%s' "{\"build\":\"$GITHUB_RUN_NUMBER\",\"commit\":\"${GITHUB_SHA:0:7}\",\"built_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > _site/build-info.json
           cp jalali-date.js reports-utils.js _site/
