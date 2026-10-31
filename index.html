@@ -41,6 +41,8 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:var(--g
 .role.deputy,.role.teachers,.role.parents,.role.students{min-height:140px}.role.teachers,.role.students{grid-column:1;}.role.deputy,.role.parents{grid-column:3;}.role.deputy,.role.teachers{grid-row:2}.role.parents,.role.students{grid-row:3}
 .brand-center{display:none}
 .role.counseling{grid-column:2;grid-row:4;min-height:230px;border:2px solid #698bb7;background:linear-gradient(145deg,#1b3c65,#0b1c36);box-shadow:inset 0 1px 0 #ffffff18,0 12px 34px #477bb51c}
+.role.about-page{grid-column:2;grid-row:5;min-height:140px;border-color:#8a7546;background:linear-gradient(145deg,#263b58,#10213b)}
+.role.about-page .ico{color:var(--gold);border-color:#8a7546;background:linear-gradient(145deg,#35496a,#172b48)}
 .note{font-size:12px;color:#91a7c5;line-height:1.9;margin-top:22px}
 .about-link{display:inline-flex;align-items:center;gap:9px;margin-top:12px;padding:11px 18px;border:1px solid #8a7546;border-radius:14px;background:linear-gradient(145deg,#263b58,#10213b);color:#f4dfaa;text-decoration:none;font-weight:700;box-shadow:0 8px 22px #0003}.about-link:hover,.about-link:focus-visible{border-color:var(--gold);outline:2px solid #e5c16d55;outline-offset:2px}
 @media(max-width:600px){
@@ -53,6 +55,7 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:var(--g
  .role.management .ico,.role.counseling .ico{width:100px;height:100px;border-radius:22px}.role.management .ico svg,.role.counseling .ico svg{width:64px;height:64px}
  .role.deputy,.role.teachers,.role.parents,.role.students{min-height:120px}.role.teachers,.role.students{grid-column:1}.role.deputy,.role.parents{grid-column:3}.role.deputy,.role.teachers{grid-row:2}.role.parents,.role.students{grid-row:3}
  .role.counseling{grid-column:2;grid-row:4;min-height:208px}
+ .role.about-page{grid-column:2;grid-row:5;min-height:120px}
 }
 </style>
 </head>
@@ -93,9 +96,10 @@ h1{margin:0 0 6px;font-size:clamp(23px,4.8vw,35px);font-weight:800;color:var(--g
 <a class="role parents" href="portal.html?step=login&role=parent"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="22" cy="18" r="10"/><circle cx="44" cy="21" r="8"/><path d="M3 54V47c0-10 8-17 19-17s19 7 19 17v7Z"/><path d="M42 33c11 0 18 7 18 16v5H45v-7c0-5-1-10-3-14Z"/></svg></span><strong>اولیا</strong><small>پیگیری وضعیت فرزند</small></a>
 <a class="role students" href="portal.html?step=login&role=student"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m3 20 29-15 29 15-29 15Z"/><path d="M13 27v16c12 10 26 10 38 0V27L32 37Z"/><path d="M58 22v20" fill="none" stroke="#d9b85f" stroke-width="4" stroke-linecap="round"/><circle cx="58" cy="46" r="4"/></svg></span><strong>دانش‌آموز</strong><small>برنامه و تکالیف</small></a>
 <a class="role counseling" href="portal.html?step=login&role=counselor"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5a22 22 0 0 0-13 39v8h26v-8A22 22 0 0 0 32 5Z"/><path d="M25 25a7 7 0 1 1 12 5c-3 3-5 4-5 8" fill="none" stroke="#e5c16d" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="45" r="2.5" fill="#e5c16d"/></svg></span><strong>مشاوره</strong><small>خدمات مشاوره‌ای</small></a>
+<a class="role about-page" href="about.html" aria-label="درباره برنامه فراهوش"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="32" cy="19" r="3.5"/><path d="M32 29v17" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span><strong>درباره برنامه</strong><small>سازنده و مشخصات فراهوش</small></a>
 </section>
 <p class="note">برای ورود، بخش موردنظر را انتخاب کنید.</p>
-<a class="about-link" href="about.html" aria-label="مشاهده اطلاعات درباره سامانه فراهوش">ⓘ درباره برنامه فراهوش</a>
+
 </main>
 <script>
 (function(){
