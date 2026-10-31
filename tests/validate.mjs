@@ -31,7 +31,7 @@ assert.ok(parentMeetings.includes("علت رد درخواست را وارد کن
 assert.ok(parentMeetingsApi.includes('patch.status="pending_manager"') && parentMeetingsApi.includes('patch.manager_approval="pending"'), "Deputy approval must route the request to the manager before the teacher");
 assert.ok(parentMeetingsApi.includes('response==="rejected"&&!responseNote'), "The API must reject a teacher rejection without a reason");
 assert.ok(parentMeetingsApi.includes('clean(recipient.role).toLowerCase()!=="teacher"'), "Meeting requests must target a teacher account only");
-assert.ok(parentMeetingMembershipMigration.includes("ON CONFLICT (school_id, auth_user_id, role) DO NOTHING"), "Membership backfill must preserve existing membership states");
+assert.ok(parentMeetingMembershipMigration.toLowerCase().includes("on conflict (school_id, auth_user_id, role) do nothing"), "Membership backfill must preserve existing membership states");
 assert.ok(server.includes("app.get('/api/auth/me', auth"), "Backend should provide authenticated session identity");
 assert.ok(server.includes("app.get('/api/classes/:id/access', auth"), "Backend should validate access to a specific classroom");
 assert.ok(classroom.includes("authorize(roomId)") && classroom.includes("classroom-authorize"), "Classroom must validate session and room access before entering");
