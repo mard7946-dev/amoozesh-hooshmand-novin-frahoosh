@@ -5,6 +5,8 @@ const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
+const finance = readFileSync(new URL("../finance.html", import.meta.url), "utf8");
+const financeMigration = readFileSync(new URL("../supabase/migrations/20261031200000_finance_voucher_audience.sql", import.meta.url), "utf8");
 
 assert.ok(["manager","deputy","teacher","parent","student","counselor"].every(role => landing.includes(`href="portal.html?step=login&role=${role}"`)), "Landing must route all six roles through the current authenticated portal login");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
@@ -44,7 +46,17 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal]]) {
+
+assert.ok(finance.includes('id="audienceType"') && finance.includes('value="parent"') && finance.includes('value="general"'), "Financial vouchers must support parent-specific and general-school audiences");
+assert.ok(finance.includes("audience_type:audience"), "Financial voucher audience must be persisted");
+assert.ok(finance.includes("جمع بستانکار / پرداختی") && finance.includes("مانده تراز سند"), "Financial printouts must show debit, credit/payment, and remaining balance");
+assert.ok(finance.includes("مدیریت آموزش و پرورش شهرستان قدس") && finance.includes("دبیرستان سردارشهید حاجی زاده ۲") && finance.includes("سال تحصیلی ۱۴۰۶ - ۱۴۰۵"), "Every financial printout must use the official school heading and academic year");
+const voucherPrint = finance.slice(finance.indexOf("window.printVoucher=async id=>"), finance.indexOf("$('printDraft').onclick="));
+assert.ok(voucherPrint && !voucherPrint.includes("فراهوش"), "Printed voucher must not contain Frahoosh branding");
+assert.ok(finance.includes("finance-documents/") && finance.includes("image/jpeg,image/png,image/webp,application/pdf"), "Financial vouchers must retain private image/PDF attachments");
+assert.ok(financeMigration.includes("ADD COLUMN IF NOT EXISTS audience_type") && financeMigration.includes("CHECK (audience_type IN ('parent', 'general'))"), "Financial audience migration must be additive and constrained");
+
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal], ["finance.html", finance]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
