@@ -42,6 +42,11 @@ const mediaEnd=classroomBoard.indexOf("async function boot()",mediaStart);
 let mediaHash=2166136261;
 for(const char of classroomBoard.slice(mediaStart,mediaEnd)){mediaHash^=char.charCodeAt(0);mediaHash=Math.imul(mediaHash,16777619);}
 assert.equal((mediaHash>>>0).toString(16),"f45d5e9b","WebRTC, realtime, board media session, and peer connection logic must remain byte-for-byte unchanged");
+const mediaControlsStart=classroomBoard.indexOf("async function enableTrack(kind)");
+const mediaControlsEnd=classroomBoard.indexOf("async function leave()",mediaControlsStart);
+let mediaControlsHash=2166136261;
+for(const char of classroomBoard.slice(mediaControlsStart,mediaControlsEnd)){mediaControlsHash^=char.charCodeAt(0);mediaControlsHash=Math.imul(mediaControlsHash,16777619);}
+assert.equal((mediaControlsHash>>>0).toString(16),"78755cd0","Microphone, camera, screen sharing, and media teardown controls must remain byte-for-byte unchanged");
 assert.ok(portal.includes("import/excel"), "Portal should support Excel import");
 assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule");
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
