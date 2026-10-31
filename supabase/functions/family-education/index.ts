@@ -124,6 +124,7 @@ Deno.serve(async (req: Request) => {
 
     const userIds = new Map(activeParents.map((row) => [row.username, row.auth_user_id]));
     const invitationBatchId = crypto.randomUUID();
+    const managerReviewedAt = isManager ? new Date().toISOString() : null;
     const rows = usernames.map((username) => ({
       invitation_batch_id: invitationBatchId,
       tenant_school_id: school,
@@ -138,7 +139,9 @@ Deno.serve(async (req: Request) => {
       event_time: time,
       venue,
       status: "pending",
-      approval_status: "pending",
+      approval_status: isManager ? "approved" : "pending",
+      manager_reviewed_by: isManager ? authData.user.id : null,
+      manager_reviewed_at: managerReviewedAt,
       invited_by: authData.user.id,
       invited_by_name: actorName,
     }));
@@ -151,7 +154,7 @@ Deno.serve(async (req: Request) => {
       count: (created ?? []).length,
       audience,
       class_name: audience === "class" ? className : null,
-      approval_status: "pending",
+      approval_status: isManager ? "approved" : "pending",
     });
   }
 
