@@ -16,6 +16,18 @@ assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+anon/i.test(migration), 
 assert.ok(migration.includes("security definer") && migration.includes("set search_path = ''"), "Privileged SQL functions must pin an empty search_path");
 assert.ok(migration.includes("school.created") && migration.includes("school.status_changed") && migration.includes("subscription.created"), "All privileged school and subscription changes must be audited");
 
+const managerMigration = readFileSync("supabase/migrations/20261031190000_school_manager_invitation.sql", "utf8");
+for (const marker of [
+  "frahoosh_platform_attach_school_manager",
+  "current_user <> 'service_role'",
+  "school_memberships",
+  "owner_auth_user_id",
+  "school.manager_invited",
+  "grant execute",
+  "to service_role"
+]) assert.ok(managerMigration.includes(marker), "Manager invitation migration missing marker: " + marker);
+assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+(public|anon|authenticated)/i.test(managerMigration), "Manager attachment RPC must be service-role-only");
+
 const fn = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
 for (const marker of [
   "admin.auth.getUser",
@@ -24,6 +36,11 @@ for (const marker of [
   'action === "create_school"',
   'action === "set_school_status"',
   'action === "set_subscription"',
+  'action === "invite_school_manager"',
+  "inviteUserByEmail",
+  "frahoosh_platform_attach_school_manager",
+  "admin.auth.admin.deleteUser",
+  "accept-invite.html",
   'rpc("frahoosh_platform_create_school"',
   'rpc("frahoosh_platform_set_school_status"',
   'rpc("frahoosh_platform_set_subscription"'
@@ -34,6 +51,7 @@ assert.ok(fn.includes("auth.user.id"), "Platform admin access must be bound to t
 assert.ok(fn.includes("userClient.rpc"), "Privileged SQL RPCs must receive the authenticated caller JWT, not the service-role identity.");
 
 const page = readFileSync("platform-admin.html", "utf8");
+assert.ok(page.includes("invite_school_manager") && page.includes("دعوت مدیر مدرسه"), "Platform admin UI must provide school-manager invitations");
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
 assert.ok(page.includes("frahoosh_novin_access_token"), "Platform admin UI must reuse the authenticated session token");
 assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No service-role or secret key may appear in the browser");
@@ -44,8 +62,13 @@ const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
 assert.ok(scripts.length, "Platform admin page must contain application JavaScript");
 for (const script of scripts) assert.doesNotThrow(() => new Function(script), "Platform admin JavaScript must parse");
 
+const invitationPage = readFileSync("accept-invite.html", "utf8");
+assert.ok(invitationPage.includes("/auth/v1/user") && invitationPage.includes('inviteType==="invite"'), "Invitation acceptance must validate invite tokens and let the manager set a password");
+assert.ok(invitationPage.includes("history.replaceState"), "Invitation token must be removed from the browser URL after password setup");
+
 const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(publish.includes("'platform-admin.html'"), "Changes to platform-admin.html must trigger Pages deployment");
 assert.ok(publish.includes("platform-admin.html"), "Pages artifact must include the platform admin page");
+assert.ok(publish.includes("accept-invite.html"), "Pages artifact must include the invitation acceptance page");
 
 console.log("Commercial platform checks passed: privileged API, audited SQL RPCs, school/subscription UI, secret-free browser code, and deployment packaging.");
