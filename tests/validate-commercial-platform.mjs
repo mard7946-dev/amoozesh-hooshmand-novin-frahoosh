@@ -28,7 +28,8 @@ for (const marker of [
   'rpc("frahoosh_platform_set_school_status"',
   'rpc("frahoosh_platform_set_subscription"'
 ]) assert.ok(fn.includes(marker), "Platform management API missing marker: " + marker);
-assert.ok(!fn.includes("SUPABASE_ANON_KEY"), "Platform management API must not depend on a client-supplied admin identity");
+assert.ok(fn.includes("req.headers.get(\"apikey\")") || fn.includes("SUPABASE_ANON_KEY"), "Platform management API must initialize its user-scoped RPC client with the public key");
+assert.ok(!fn.includes("body?.is_admin") && !fn.includes("body?.platform_admin"), "Platform management API must not trust a client-supplied admin flag");
 assert.ok(fn.includes("auth.user.id"), "Platform admin access must be bound to the authenticated user");
 assert.ok(fn.includes("userClient.rpc"), "Privileged SQL RPCs must receive the authenticated caller JWT, not the service-role identity.");
 
