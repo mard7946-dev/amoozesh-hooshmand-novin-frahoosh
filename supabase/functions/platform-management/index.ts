@@ -34,10 +34,15 @@ Deno.serve(async (req: Request) => {
 
   const url = (Deno.env.get("SUPABASE_URL") ?? "").trim();
   const serviceKey = getServiceKey();
-  if (!url || !serviceKey) return reply({ message: "تنظیمات امن سرویس کامل نیست." }, 503);
+  const anonKey = (Deno.env.get("SUPABASE_ANON_KEY") ?? req.headers.get("apikey") ?? "").trim();
+  if (!url || !serviceKey || !anonKey) return reply({ message: "تنظیمات امن سرویس کامل نیست." }, 503);
 
   try {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const userClient = createClient(url, anonKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const { data: auth, error: authError } = await admin.auth.getUser(authorization.slice(7));
     if (authError || !auth.user) return reply({ message: "نشست ورود معتبر نیست؛ دوباره وارد شوید." }, 401);
 
@@ -116,7 +121,7 @@ Deno.serve(async (req: Request) => {
       if (!name || !slug || !schoolCode || !planId) {
         return reply({ message: "نام مدرسه، شناسه لاتین، کد مدرسه و طرح اشتراک الزامی است." }, 400);
       }
-      const { data, error } = await admin.rpc("frahoosh_platform_create_school", {
+      const { data, error } = await userClient.rpc("frahoosh_platform_create_school", {
         p_name: name,
         p_slug: slug,
         p_school_code: schoolCode,
@@ -136,7 +141,7 @@ Deno.serve(async (req: Request) => {
       if (!schoolId || !["active", "suspended", "archived"].includes(status)) {
         return reply({ message: "مدرسه یا وضعیت انتخاب‌شده معتبر نیست." }, 400);
       }
-      const { data, error } = await admin.rpc("frahoosh_platform_set_school_status", {
+      const { data, error } = await userClient.rpc("frahoosh_platform_set_school_status", {
         p_school_id: schoolId,
         p_status: status,
       });
@@ -153,7 +158,7 @@ Deno.serve(async (req: Request) => {
       const status = clean(body?.status || "active", 20);
       const graceDays = Number.isInteger(body?.grace_days) ? body.grace_days : 7;
       if (!schoolId || !planId) return reply({ message: "مدرسه و طرح اشتراک را انتخاب کنید." }, 400);
-      const { data, error } = await admin.rpc("frahoosh_platform_set_subscription", {
+      const { data, error } = await userClient.rpc("frahoosh_platform_set_subscription", {
         p_school_id: schoolId,
         p_plan_id: planId,
         p_status: status,
