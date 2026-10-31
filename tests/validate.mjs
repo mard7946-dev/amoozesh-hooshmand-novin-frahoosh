@@ -9,6 +9,8 @@ const server = readFileSync(new URL("../server/src/server.js", import.meta.url),
 const parentMeetings = readFileSync(new URL("../parent-meetings.html", import.meta.url), "utf8");
 const parentMeetingsApi = readFileSync(new URL("../supabase/functions/parent-meetings/index.ts", import.meta.url), "utf8");
 const parentMeetingMembershipMigration = readFileSync(new URL("../supabase/migrations/20261031150000_backfill_school_memberships_for_existing_accounts.sql", import.meta.url), "utf8");
+const usersPage = readFileSync(new URL("../users.html", import.meta.url), "utf8");
+const adminUsersApi = readFileSync(new URL("../supabase/functions/admin-manage-users/index.ts", import.meta.url), "utf8");
 
 assert.ok(["manager","deputy","teacher","parent","student","counselor"].every(role => landing.includes(`href="portal.html?step=login&role=${role}"`)), "Landing must route all six roles through the current authenticated portal login");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
@@ -26,6 +28,15 @@ assert.ok(classroom.includes("صدا، تصویر زنده و گفت‌وگوی 
 assert.ok(portal.includes("import/excel"), "Portal should support Excel import");
 assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule");
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
+assert.ok(usersPage.includes('id="parentExcel"') && usersPage.includes('id="parentTemplate"') && usersPage.includes('id="importParents"'), "Users page must provide parent Excel upload and downloadable template");
+assert.ok(usersPage.includes('action:"import_parents"'), "Parent Excel upload must call the protected bulk-import action");
+assert.ok(usersPage.includes("کد ملی ولی") && usersPage.includes("کد ملی دانش‌آموز"), "Parent template must identify guardian and child by national code");
+assert.ok(usersPage.includes("نام کاربری ولی") && usersPage.includes("رمز اولیه"), "Import results must show credentials for newly created parent accounts");
+assert.ok(adminUsersApi.includes('action === "import_parents"'), "Admin API must implement the bulk parent import action");
+assert.ok(adminUsersApi.includes('parent_children').toString() && adminUsersApi.includes('onConflict: "parent_username,student_id"'), "Bulk import must create idempotent parent-child links");
+assert.ok(adminUsersApi.includes('school_memberships') && adminUsersApi.includes('role: "parent"'), "Bulk import must activate parent school membership");
+assert.ok(adminUsersApi.includes('admin.auth.admin.createUser'), "Bulk import must create real Supabase Auth accounts");
+assert.ok(adminUsersApi.includes('tenant_school_id: schoolId'), "Bulk import must scope accounts and links to the manager school");
 assert.ok(parentMeetings.includes("ثبت و ارسال برای معاون"), "Parent meeting form must let parents submit a request for deputy review");
 assert.ok(rootPortal.includes("parent-meetings.html?v=20261031-meetings-2"), "Parent meeting navigation must bypass stale cached meeting pages");
 assert.ok(rootPortal.includes("تأیید ملاقات اولیا") && rootPortal.includes("درخواست‌های ملاقات") && rootPortal.includes("parent-meetings.html?v=20261031-meetings-3"), "Manager and teacher must have navigation to their meeting approval/response queues");
@@ -57,8 +68,8 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal]]) {
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal], ["users.html", usersPage]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
-console.log("Static checks passed: classroom controls, portal workflows, student privacy hashing, and page script syntax.");
+console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
