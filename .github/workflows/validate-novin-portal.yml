@@ -54,3 +54,8 @@ jobs:
         run: node tests/validate-novin-portal.mjs
       - name: Validate commercial platform security and dashboard
         run: node tests/validate-commercial-platform.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check platform management Edge Function
+        run: deno check supabase/functions/platform-management/index.ts
