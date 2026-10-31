@@ -103,7 +103,7 @@ if(isClass||isOperationalTab){
   }
   sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);
   sessionStorage.setItem('frahoosh_novin_role',classroomRole);
-  if(isClass){location.href='classroom/?role='+encodeURIComponent(classroomRole);return;}
+  if(isClass){const classroomEntry=['teacher','student'].includes(classroomRole)?'classroom/schedule.html':'classroom/';location.href=classroomEntry+'?role='+encodeURIComponent(classroomRole);return;}
   location.href='classroom/management.html?tab='+encodeURIComponent(matchedTab[1]);
   return;
 }
