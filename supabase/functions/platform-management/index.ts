@@ -209,7 +209,7 @@ Deno.serve(async (req: Request) => {
       if (emailError) return reply({ message: "بررسی ایمیل ناموفق بود." }, 500);
       if (existingEmail?.length) return reply({ message: "این ایمیل قبلاً به یک حساب فراهوش متصل شده است." }, 409);
 
-      const redirectTo = origin + "/accept-invite.html";
+      const redirectTo = origin + "/portal.html?step=accept-invite&role=manager";
       const { data: invitation, error: invitationError } = await admin.auth.admin.inviteUserByEmail(email, {
         data: { display_name: displayName, role: "manager", username, school_id: schoolId },
         redirectTo,
