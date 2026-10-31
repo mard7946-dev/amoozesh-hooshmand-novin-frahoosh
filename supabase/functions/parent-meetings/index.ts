@@ -65,7 +65,7 @@ Deno.serve(async(req:Request)=>{
   const {data:student,error:se}=await db.from("students").select("id,first_name,last_name").eq("tenant_school_id",school).eq("id",studentId).maybeSingle();
   if(se||!student)return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
   const {data:recipient,error:re}=await db.from("account_settings").select("auth_user_id,display_name,username,role").eq("tenant_school_id",school).eq("auth_user_id",targetId).maybeSingle();
-  if(re||!recipient||!["teacher","educational","executive","cultural","advisor"].includes(clean(recipient.role).toLowerCase()))return reply({message:"مخاطب انتخاب‌شده معتبر نیست."},400);
+  if(re||!recipient||clean(recipient.role).toLowerCase()!=="teacher")return reply({message:"برای درخواست ملاقات فقط می‌توانید یک دبیر را انتخاب کنید."},400);
   const row={tenant_school_id:school,parent_id:profile.username,parent_name:userName,parent_username:profile.username,student_id:student.id,student_name:[student.first_name,student.last_name].filter(Boolean).join(" "),target_role:recipient.role,target_name:recipient.display_name||recipient.username,recipient_user_id:recipient.auth_user_id,recipient_role:recipient.role,requested_date_shamsi:date,requested_time:time||null,reason,status:"pending_deputy",approval_deputy_role:"educational",educational_approval:"pending",manager_approval:"pending"};
   const {data:created,error}=await db.from("parent_meeting_requests").insert(row).select("id,status").single();
   if(error){console.error("parent meeting create",error.code);return reply({message:"ثبت درخواست ملاقات انجام نشد."},500)}
