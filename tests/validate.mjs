@@ -53,7 +53,7 @@ assert.ok(finance.includes("جمع بستانکار / پرداختی") && financ
 assert.ok(finance.includes("مدیریت آموزش و پرورش شهرستان قدس") && finance.includes("دبیرستان سردارشهید حاجی زاده ۲") && finance.includes("سال تحصیلی ۱۴۰۶ - ۱۴۰۵"), "Every financial printout must use the official school heading and academic year");
 const voucherPrint = finance.slice(finance.indexOf("window.printVoucher=async id=>"), finance.indexOf("$('printDraft').onclick="));
 assert.ok(voucherPrint && !voucherPrint.includes("فراهوش"), "Printed voucher must not contain Frahoosh branding");
-assert.ok(finance.includes("finance-documents/") && finance.includes("image/*,application/pdf"), "Financial vouchers must retain private image/PDF attachments");
+assert.ok(finance.includes("finance-documents/") && finance.includes("image/jpeg,image/png,image/webp,application/pdf"), "Financial vouchers must retain private image/PDF attachments");
 assert.ok(financeMigration.includes("ADD COLUMN IF NOT EXISTS audience_type") && financeMigration.includes("CHECK (audience_type IN ('parent', 'general'))"), "Financial audience migration must be additive and constrained");
 
 for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal], ["finance.html", finance]]) {
