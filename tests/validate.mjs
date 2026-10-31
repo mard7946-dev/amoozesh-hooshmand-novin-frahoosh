@@ -28,6 +28,7 @@ assert.ok(portal.includes("/schedule/today"), "Portal should show daily schedule
 assert.ok(server.includes("api/auth/student-login"), "Backend should support student identity login");
 assert.ok(parentMeetings.includes("ثبت و ارسال برای معاون"), "Parent meeting form must let parents submit a request for deputy review");
 assert.ok(rootPortal.includes("parent-meetings.html?v=20261031-meetings-2"), "Parent meeting navigation must bypass stale cached meeting pages");
+assert.ok(rootPortal.includes("تأیید ملاقات اولیا") && rootPortal.includes("درخواست‌های ملاقات") && rootPortal.includes("parent-meetings.html?v=20261031-meetings-3"), "Manager and teacher must have navigation to their meeting approval/response queues");
 assert.ok(parentMeetings.includes("role==='teacher'&&m.recipient_user_id&&m.status==='awaiting_recipient'"), "Only the selected teacher should see the final response controls");
 assert.ok(parentMeetings.includes("علت رد درخواست را وارد کنید (الزامی)"), "Teacher rejection must require a reason in the UI");
 assert.ok(parentMeetingsApi.includes('patch.status="pending_manager"') && parentMeetingsApi.includes('patch.manager_approval="pending"'), "Deputy approval must route the request to the manager before the teacher");
