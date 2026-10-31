@@ -22,6 +22,7 @@ for (const marker of [
   "current_user <> 'service_role'",
   "school_memberships",
   "owner_auth_user_id",
+  "role = 'manager' and is_active = true",
   "school.manager_invited",
   "grant execute",
   "to service_role"
