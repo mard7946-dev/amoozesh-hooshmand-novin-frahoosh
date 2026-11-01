@@ -69,7 +69,6 @@ jobs:
         if: github.event_name != 'pull_request' && steps.release-signing.outputs.enabled == 'true'
         working-directory: android
         env:
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/release-keystore.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
