@@ -24,6 +24,19 @@ for (const source of scripts) {
 for (const role of ["manager", "deputy", "teacher", "parent", "student", "counselor"]) {
   assert.ok(html.includes("id:'" + role + "'"), "Missing portal role: " + role);
 }
+const platformAdminPage = readFileSync("platform-admin.html", "utf8");
+assert.ok(platformAdminPage.includes('id="platformLoginForm"'), "Platform admin page must provide its own login form");
+assert.ok(platformAdminPage.includes('/functions/v1/login-by-username'), "Platform admin page must authenticate directly without depending on a school portal tab");
+assert.ok(platformAdminPage.includes('body:JSON.stringify({username:$("platformUsername").value.trim(),password:$("platformPassword").value})'), "Platform admin login must authenticate credentials without forcing a school-manager role");
+assert.ok(platformAdminPage.includes('sessionStorage.setItem("frahoosh_novin_access_token",token)'), "Platform admin login must retain the token in the same origin session");
+assert.ok(platformAdminPage.includes('platformLogin").hidden=true'), "Platform admin page must hide the login form only after successful authorization");
+const platformFunction = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
+assert.ok(platformFunction.includes('.from("platform_admins")') && platformFunction.includes('.eq("auth_user_id", auth.user.id)'), "Platform management API must independently enforce platform-admin membership");
+const platformScripts = [...platformAdminPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(platformScripts.length > 0, "Platform admin page must contain its interactive script");
+for (const source of platformScripts) assert.doesNotThrow(() => new Function(source), "Platform admin script must have valid JavaScript syntax");
+console.log("Platform admin checks passed: direct login, token handling, server-side allowlist, and JavaScript syntax.");
+
 console.log("Novin portal checks passed: JavaScript syntax, six roles, Supabase auth, no legacy classroom dependency.");
 
 const settings = readFileSync("settings.html", "utf8");
