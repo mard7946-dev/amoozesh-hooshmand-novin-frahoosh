@@ -19,7 +19,8 @@ android {
         minSdk 24
         targetSdk 35
         // Increase versionCode for every published update. Never reset it.
-        versionCode (System.getenv('ANDROID_VERSION_CODE') ?: '1').toInteger()
+        def ciVersionCode = (System.getenv('ANDROID_VERSION_CODE') ?: '1').toInteger()
+        versionCode ciVersionCode
         versionName '1.0.0'
     }
 
