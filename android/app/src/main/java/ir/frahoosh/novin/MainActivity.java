@@ -30,9 +30,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
-    private static final String HOME_URL = "https://mard7946-dev.github.io/amoozesh-hooshmand-novin-frahoosh/";
-    private static final String TRUSTED_HOST = "mard7946-dev.github.io";
-    private static final String TRUSTED_PATH = "/amoozesh-hooshmand-novin-frahoosh/";
+    private static final String HOME_URL = "https://frahoosh.ir/";
+    private static final String TRUSTED_HOST = "frahoosh.ir";
     private static final int MEDIA_PERMISSION_REQUEST = 4101;
     private static final int FILE_CHOOSER_REQUEST = 4102;
     private static final String RELEASES_API = "https://api.github.com/repos/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/releases?per_page=20";
@@ -46,9 +45,7 @@ public final class MainActivity extends Activity {
     private boolean isTrusted(Uri uri) {
         if (uri == null || !"https".equalsIgnoreCase(uri.getScheme())) return false;
         String host = uri.getHost();
-        return TRUSTED_HOST.equalsIgnoreCase(host)
-                && (uri.getPath() == null || uri.getPath().equals(TRUSTED_PATH.substring(0, TRUSTED_PATH.length() - 1))
-                || uri.getPath().startsWith(TRUSTED_PATH));
+        return TRUSTED_HOST.equalsIgnoreCase(host) || ("www." + TRUSTED_HOST).equalsIgnoreCase(host);
     }
 
     @Override
@@ -188,7 +185,7 @@ public final class MainActivity extends Activity {
         updateDialogShown = true;
         new AlertDialog.Builder(this)
                 .setTitle("بروزرسانی فراهوش نوین")
-                .setMessage("نسخه جدیدی منتشر شده است: " + latestName + "\nبرای دریافت نسخه جدید اقدام کنید. اطلاعات و ورود شما با نصب بروزرسانی حذف نمی‌شود.")
+                .setMessage("نسخه جدیدی منتشر شده است: " + latestName + "\nبرای دریافت نسخه جدید اقدام کنید. در صورت یکسان بودن امضای برنامه، نصب بروزرسانی معمولاً اطلاعات برنامه را حفظ می‌کند.")
                 .setPositiveButton("دریافت بروزرسانی", (dialog, which) -> openExternal(Uri.parse(downloadUrl)))
                 .setNegativeButton("بعداً", (dialog, which) -> dialog.dismiss())
                 .setCancelable(true)
