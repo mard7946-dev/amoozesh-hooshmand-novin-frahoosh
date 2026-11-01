@@ -39,6 +39,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
             echo "Release signing secrets are incomplete." >&2
             exit 1
@@ -55,21 +56,65 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle --no-daemon assembleRelease
 
-      - name: Publish GitHub Release with APK
+      - name: Verify APK signature and create checksum
+        id: verify-apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK_PATH"
+          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
+          (cd "$(dirname "$APK_PATH")" && sha256sum app-release.apk) > "$RUNNER_TEMP/app-release.apk.sha256"
+          echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$RUNNER_TEMP/app-release.apk.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the exact release APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Frahoosh-Novin-Android-Published-Release-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            ${{ runner.temp }}/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish GitHub Release with the verified APK
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
+          set -euo pipefail
           VERSION_CODE=$(grep "^versionCode=" android/version.properties | cut -d= -f2-)
           VERSION_NAME=$(grep "^versionName=" android/version.properties | cut -d= -f2-)
           TAG="novin-v${VERSION_CODE}"
           TITLE="فراهوش نوین ${VERSION_NAME}"
           APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          CHECKSUM_PATH="$RUNNER_TEMP/app-release.apk.sha256"
           test -s "$APK_PATH"
-          gh release create "$TAG" "$APK_PATH" \
+          test -s "$CHECKSUM_PATH"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Increase versionCode before publishing; existing releases are never overwritten." >&2
+            exit 1
+          fi
+          gh release create "$TAG" "$APK_PATH" "$CHECKSUM_PATH" \
             --target "$GITHUB_SHA" \
             --title "$TITLE" \
             --notes "$RELEASE_NOTES"
+
+      - name: Verify published APK is byte-for-byte identical
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION_CODE=$(grep "^versionCode=" android/version.properties | cut -d= -f2-)
+          TAG="novin-v${VERSION_CODE}"
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          mkdir -p "$RUNNER_TEMP/published-release"
+          gh release download "$TAG" --pattern app-release.apk --dir "$RUNNER_TEMP/published-release"
+          cmp --silent "$APK_PATH" "$RUNNER_TEMP/published-release/app-release.apk"
+          echo "Published APK exactly matches the verified build output."
 
       - name: Remove temporary signing key
         if: always()
