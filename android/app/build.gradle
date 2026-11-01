@@ -37,9 +37,13 @@ android {
 
     buildTypes {
         debug {
-            // Debug builds intentionally use a separate package and debug certificate.
+            // Keep the debug package separate, but use the same stable certificate
+            // as release whenever the production keystore is available.
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
         }
         release {
             minifyEnabled false
