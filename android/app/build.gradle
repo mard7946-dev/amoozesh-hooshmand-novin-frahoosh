@@ -21,7 +21,7 @@ android {
         // Increase versionCode for every published update. Never reset it.
         def ciVersionCode = (System.getenv('ANDROID_VERSION_CODE') ?: '1').toInteger()
         versionCode ciVersionCode
-        versionName '1.0.0'
+        versionName (System.getenv('ANDROID_VERSION_NAME') ?: '1.0.0')
     }
 
     signingConfigs {
