@@ -162,12 +162,12 @@ function renderAudit(rows){
  for(const row of rows){const item=node("div","audit");const label=({ "school.created":"ایجاد مدرسه","school.status_changed":"تغییر وضعیت مدرسه","subscription.created":"ایجاد اشتراک"})[row.action]||row.action;item.append(node("strong","",label),node("div","muted",date(row.created_at)+" · مدرسه: "+(state.schools.find(s=>s.id===row.school_id)?.name||row.school_id||"—")));root.append(item);}
 }
 async function load(){
- if(!token){show("نشست ورود پیدا نشد. ابتدا با حساب مدیر کل وارد شوید.","error");return;}
+ if(!token){$("app").hidden=true;$("platformLogin").hidden=false;show("برای ورود، اطلاعات حساب مدیر کل را وارد کنید.");return;}
  $("refresh").disabled=true;
  try{
   const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];state.drafts=data.drafts||[];
-  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderDrafts();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
- }catch(error){$("app").hidden=true;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
+  $("app").hidden=false;$("platformLogin").hidden=true;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderDrafts();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
+ }catch(error){token="";sessionStorage.removeItem("frahoosh_novin_access_token");$("app").hidden=true;$("platformLogin").hidden=false;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
  finally{$("refresh").disabled=false;}
 }
 $("refresh").onclick=load;
