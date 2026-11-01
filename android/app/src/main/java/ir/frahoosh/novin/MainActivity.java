@@ -23,8 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class MainActivity extends Activity {
-    private static final String HOME_URL = "https://frahoosh.ir/";
-    private static final String TRUSTED_HOST = "frahoosh.ir";
+    private static final String HOME_URL = "https://mard7946-dev.github.io/amoozesh-hooshmand-novin-frahoosh/";
+    private static final String TRUSTED_HOST = "mard7946-dev.github.io";
+    private static final String TRUSTED_PATH = "/amoozesh-hooshmand-novin-frahoosh/";
     private static final int MEDIA_PERMISSION_REQUEST = 4101;
     private static final int FILE_CHOOSER_REQUEST = 4102;
 
@@ -35,7 +36,9 @@ public final class MainActivity extends Activity {
     private boolean isTrusted(Uri uri) {
         if (uri == null || !"https".equalsIgnoreCase(uri.getScheme())) return false;
         String host = uri.getHost();
-        return TRUSTED_HOST.equalsIgnoreCase(host) || ("www." + TRUSTED_HOST).equalsIgnoreCase(host);
+        return TRUSTED_HOST.equalsIgnoreCase(host)
+                && (uri.getPath() == null || uri.getPath().equals(TRUSTED_PATH.substring(0, TRUSTED_PATH.length() - 1))
+                || uri.getPath().startsWith(TRUSTED_PATH));
     }
 
     @Override
