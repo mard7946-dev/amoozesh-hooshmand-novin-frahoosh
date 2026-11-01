@@ -57,6 +57,17 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
  .role.counseling{grid-column:auto;grid-row:auto;min-height:128px}
  .role.about{grid-column:auto;grid-row:auto;min-height:128px}
 }
+
+.access-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:900px;margin:0 auto 28px;text-align:right}
+.access-card{display:flex;align-items:center;gap:14px;min-height:108px;padding:18px;border:1px solid #42658e;border-radius:20px;background:linear-gradient(145deg,#173557,#0b1e38);color:var(--text);text-decoration:none;box-shadow:0 12px 30px #0004,inset 0 1px 0 #ffffff16;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.access-card:hover,.access-card:focus-visible{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 16px 36px #0005,0 0 20px #d9b85f18;outline:none}
+.access-icon{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border:1px solid #688bb2;border-radius:16px;background:#24486d;color:#dcecff;font-size:27px}
+.access-card.android .access-icon{border-color:#a58c4f;background:#3a3b32;color:#f2d78c}
+.access-copy{display:flex;flex-direction:column;gap:7px;min-width:0}
+.access-copy strong{font-size:16px;color:#fff}
+.access-copy small{font-size:12px;color:var(--muted);line-height:1.8}
+.access-arrow{margin-right:auto;color:var(--gold);font-size:22px}
+@media(max-width:600px){.access-panel{grid-template-columns:1fr;gap:10px;margin-bottom:22px}.access-card{min-height:88px;padding:13px}.access-copy strong{font-size:14px}.access-copy small{font-size:11px}}
 </style>
 </head>
 <body>
@@ -89,6 +100,14 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 <span id="live-time" class="clock-time">ساعت ۷:۴۲:۲۵</span>
 <span class="live"><span class="live-dot"></span>آنلاین</span>
 </div>
+<section class="access-panel" aria-label="دسترسی به نسخه‌های فراهوش">
+<a class="access-card android" href="https://github.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/releases/download/novin-v22/app-release.apk" aria-label="دریافت اپلیکیشن اندروید فراهوش نوین نسخه ۱.۰.۱">
+<span class="access-icon" aria-hidden="true">↓</span><span class="access-copy"><strong>دانلود اپلیکیشن اندروید</strong><small>فراهوش نوین · نسخه ۱.۰.۱ · فایل APK</small></span><span class="access-arrow" aria-hidden="true">←</span>
+</a>
+<a class="access-card web" href="https://frahoosh.ir/" aria-label="ورود به نسخه وب فراهوش">
+<span class="access-icon" aria-hidden="true">⌘</span><span class="access-copy"><strong>ورود به نسخه تحت وب</strong><small>استفاده مستقیم با مرورگر، بدون نصب برنامه</small></span><span class="access-arrow" aria-hidden="true">←</span>
+</a>
+</section>
 <section class="roles" aria-label="بخش‌های سامانه">
 <a class="role management" href="portal.html?step=login&role=manager"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 3 54 12v16c0 15-8.8 25.6-22 33C18.8 53.6 10 43 10 28V12L32 3Z"/><path d="m21 31 7 7 15-17" fill="none" stroke="#d9b85f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>مدیریت</strong><small>مدیریت یکپارچه مدرسه</small></a>
 <a class="role deputy" href="portal.html?step=login&role=deputy"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="24" cy="20" r="11"/><circle cx="45" cy="24" r="8"/><path d="M4 54V48C4 36 13 29 24 29s20 7 20 19v6Z"/><path d="M43 34c10 0 17 6 17 16v4H49v-6c0-5-2-10-6-14Z"/></svg></span><strong>معاونت</strong><small>امور اجرایی و آموزشی</small></a>
