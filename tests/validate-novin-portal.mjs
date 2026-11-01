@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 const html = readFileSync("portal.html", "utf8");
-assert.ok(html.includes("/functions/v1/classroom-login"), "Portal must use the current Supabase classroom login function");
+assert.ok(html.includes("/functions/v1/school-portal-login"), "Portal must use the school-code aware portal login function");
+assert.ok(html.includes('id="schoolCodeRow"') && html.includes('id="schoolCode"'), "Portal must collect a school code for every role");
+assert.ok(html.includes("school_code:document.getElementById('schoolCode').value.trim()"), "Portal must submit the selected school code");
+const schoolLogin = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
+assert.ok(schoolLogin.includes("body?.school_code") && schoolLogin.includes("profile.tenant_school_id"), "School login must resolve the authenticated account's school");
+assert.ok(schoolLogin.includes('normalize(school.school_code) !== normalize(schoolCode)'), "School login must reject a mismatched school code");
+assert.ok(schoolLogin.includes('.eq("tenant_school_id", school.id)'), "Student lookup must be restricted to the selected school");
+assert.ok(schoolLogin.includes("hasActiveSubscription"), "School login must require an active school subscription");
 assert.ok(html.includes("sb_publishable_"), "Portal must use a public Supabase publishable key");
 assert.ok(!html.includes("frahoosh-live-classroom-edge.mard7946.workers.dev"), "Portal must not call the legacy classroom Worker");
 assert.ok(!html.includes("sso-ticket"), "Portal must not request legacy classroom SSO tickets");
