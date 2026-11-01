@@ -32,7 +32,7 @@ assert.ok(platformAdminPage.includes('sessionStorage.setItem("frahoosh_novin_acc
 assert.ok(platformAdminPage.includes('platformLogin").hidden=true'), "Platform admin page must hide the login form only after successful authorization");
 const platformFunction = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
 assert.ok(platformFunction.includes('.from("platform_admins")') && platformFunction.includes('.eq("auth_user_id", auth.user.id)'), "Platform management API must independently enforce platform-admin membership");
-const platformScripts = [...platformAdminPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const platformScripts = [...platformAdminPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 assert.ok(platformScripts.length > 0, "Platform admin page must contain its interactive script");
 for (const source of platformScripts) assert.doesNotThrow(() => new Function(source), "Platform admin script must have valid JavaScript syntax");
 console.log("Platform admin checks passed: direct login, token handling, server-side allowlist, and JavaScript syntax.");
