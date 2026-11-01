@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application'
 }
 
+def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+def releaseStorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD')
+def releaseSigningReady = [releaseKeystorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword]
+    .every { value -> value != null && !value.trim().isEmpty() } &&
+    file(releaseKeystorePath ?: 'missing-release-keystore').exists()
+
 android {
     namespace 'ir.frahoosh.novin'
     compileSdk 35
@@ -10,18 +18,34 @@ android {
         applicationId 'ir.frahoosh.novin'
         minSdk 24
         targetSdk 35
+        // Increase versionCode for every published update. Never reset it.
         versionCode 1
         versionName '1.0.0'
     }
 
+    signingConfigs {
+        if (releaseSigningReady) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
+            // Debug builds intentionally use a separate package and debug certificate.
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
         }
         release {
             minifyEnabled false
             shrinkResources false
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
