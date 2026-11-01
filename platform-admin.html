@@ -16,9 +16,17 @@
 <div style="color:var(--mint);font-weight:bold">FRAHOOSH · PLATFORM CONTROL</div>
 <h1>مدیریت کل فراهوش نوین</h1>
 <p>مدیریت مدارس مشتری، وضعیت سرویس و اشتراک‌ها. این بخش فقط برای حساب‌های ثبت‌شده در فهرست مدیران کل قابل استفاده است.</p>
-<div class="row"><a class="link" href="portal.html">بازگشت به فراهوش</a><a class="link" href="portal.html?step=login&amp;role=manager">ورود به حساب مدیر کل</a><button id="refresh" type="button">به‌روزرسانی اطلاعات</button></div>
+<div class="row"><a class="link" href="portal.html">بازگشت به فراهوش</a><button id="refresh" type="button">به‌روزرسانی اطلاعات</button></div>
 </header>
-<div id="status" class="status">در حال بررسی دسترسی…</div>
+<section id="platformLogin" class="card">
+<h2>ورود امن مدیر کل</h2>
+<p class="muted">نام کاربری و رمز حسابی را وارد کنید که قبلاً در فهرست مدیران کل فراهوش ثبت شده است. حساب مدیر یک مدرسه به‌تنهایی مجوز مدیریت کل ندارد.</p>
+<form id="platformLoginForm">
+<div class="grid"><div><label for="platformUsername">نام کاربری مدیر کل</label><input id="platformUsername" name="username" autocomplete="username" required maxlength="160" dir="auto"></div><div><label for="platformPassword">رمز عبور</label><input id="platformPassword" name="password" type="password" autocomplete="current-password" required maxlength="1024"></div></div>
+<div style="margin-top:14px"><button class="primary" id="platformLoginSubmit" type="submit">ورود به مدیریت کل</button></div>
+</form>
+</section>
+<div id="status" class="status">برای ورود، اطلاعات حساب مدیر کل را وارد کنید.</div>
 <section id="app" hidden>
 <div class="grid" id="metrics"></div>
 <section class="card">
@@ -68,7 +76,7 @@
 <script>
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
-const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+let token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const $=id=>document.getElementById(id);
 let state={plans:[],schools:[],drafts:[]};
 function show(message,kind=""){const el=$("status");el.textContent=message;el.className="status"+(kind?" "+kind:"");}
@@ -163,6 +171,16 @@ async function load(){
  finally{$("refresh").disabled=false;}
 }
 $("refresh").onclick=load;
+$("platformLoginForm").onsubmit=async event=>{
+ event.preventDefault();const button=$("platformLoginSubmit");button.disabled=true;show("در حال بررسی حساب مدیر کل…");
+ try{
+  const response=await fetch(SUPABASE_URL+"/functions/v1/login-by-username",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},body:JSON.stringify({username:$("platformUsername").value.trim(),password:$("platformPassword").value})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.session?.access_token)throw new Error(result.message||"ورود انجام نشد؛ نام کاربری و رمز عبور را بررسی کنید.");
+  token=result.session.access_token;sessionStorage.setItem("frahoosh_novin_access_token",token);$("platformPassword").value="";await load();
+ }catch(error){token="";sessionStorage.removeItem("frahoosh_novin_access_token");$("app").hidden=true;$("platformLogin").hidden=false;show(error.message||"ورود مدیر کل ناموفق بود.","error");}
+ finally{button.disabled=false;}
+};
 $("createSchool").onsubmit=async event=>{
  event.preventDefault();const button=$("createSchool").querySelector('button[type="submit"]');button.disabled=true;
  try{
@@ -189,7 +207,7 @@ $("inviteManager").onsubmit=async event=>{
  }catch(error){show(error.message||"ارسال دعوت‌نامه مدیر مدرسه انجام نشد.","error");}
  finally{button.disabled=false;}
 };
-load();
+if(token)load();else show("برای ورود، اطلاعات حساب مدیر کل را وارد کنید.");
 </script>
 </body>
 </html>
