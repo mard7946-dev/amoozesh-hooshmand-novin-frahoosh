@@ -156,7 +156,7 @@ public final class MainActivity extends Activity {
                         newest = release;
                     }
                 }
-                if (newest == null || newestCode <= BuildConfig.VERSION_CODE) return;
+                if (newest == null || newestCode <= getPackageManager().getPackageInfo(getPackageName(), 0).versionCode) return;
 
                 JSONArray assets = newest.optJSONArray("assets");
                 if (assets == null) return;
