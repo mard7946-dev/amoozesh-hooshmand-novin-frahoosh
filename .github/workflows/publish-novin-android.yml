@@ -3,11 +3,6 @@ name: Publish Frahoosh Novin Android Update
 on:
   workflow_dispatch:
     inputs:
-      version_name:
-        description: "نسخه برنامه (مثلاً 1.0.1)"
-        required: true
-        type: string
-        default: "1.0.1"
       release_notes:
         description: "توضیحات بروزرسانی"
         required: false
@@ -40,6 +35,9 @@ jobs:
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
             echo "Release signing secrets are incomplete." >&2
@@ -51,8 +49,6 @@ jobs:
       - name: Build signed release APK
         working-directory: android
         env:
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
-          ANDROID_VERSION_NAME: ${{ inputs.version_name }}
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/release-keystore.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -62,10 +58,11 @@ jobs:
       - name: Publish GitHub Release with APK
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ inputs.version_name }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
-          TAG="novin-v${GITHUB_RUN_NUMBER}"
+          VERSION_CODE=$(grep "^versionCode=" android/version.properties | cut -d= -f2-)
+          VERSION_NAME=$(grep "^versionName=" android/version.properties | cut -d= -f2-)
+          TAG="novin-v${VERSION_CODE}"
           TITLE="فراهوش نوین ${VERSION_NAME}"
           APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK_PATH"
