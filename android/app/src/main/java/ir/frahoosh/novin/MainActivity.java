@@ -188,7 +188,7 @@ public final class MainActivity extends Activity {
         updateDialogShown = true;
         new AlertDialog.Builder(this)
                 .setTitle("بروزرسانی فراهوش نوین")
-                .setMessage("نسخه جدیدی منتشر شده است: " + latestName + "\\nبرای دریافت نسخه جدید اقدام کنید. اطلاعات و ورود شما با نصب بروزرسانی حذف نمی‌شود.")
+                .setMessage("نسخه جدیدی منتشر شده است: " + latestName + "\nبرای دریافت نسخه جدید اقدام کنید. اطلاعات و ورود شما با نصب بروزرسانی حذف نمی‌شود.")
                 .setPositiveButton("دریافت بروزرسانی", (dialog, which) -> openExternal(Uri.parse(downloadUrl)))
                 .setNegativeButton("بعداً", (dialog, which) -> dialog.dismiss())
                 .setCancelable(true)
