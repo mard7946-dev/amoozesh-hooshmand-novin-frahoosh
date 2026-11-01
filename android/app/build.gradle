@@ -11,7 +11,7 @@ def releaseSigningReady = [releaseKeystorePath, releaseStorePassword, releaseKey
     file(releaseKeystorePath ?: 'missing-release-keystore').exists()
 
 def appVersion = new Properties()
-file('version.properties').withInputStream { appVersion.load(it) }
+file('../version.properties').withInputStream { appVersion.load(it) }
 
 android {
     namespace 'ir.frahoosh.novin'
