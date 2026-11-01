@@ -2,6 +2,12 @@ package ir.frahoosh.novin;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,6 +27,10 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
     private static final String HOME_URL = "https://mard7946-dev.github.io/amoozesh-hooshmand-novin-frahoosh/";
@@ -28,6 +38,9 @@ public final class MainActivity extends Activity {
     private static final String TRUSTED_PATH = "/amoozesh-hooshmand-novin-frahoosh/";
     private static final int MEDIA_PERMISSION_REQUEST = 4101;
     private static final int FILE_CHOOSER_REQUEST = 4102;
+    private static final String RELEASES_API = "https://api.github.com/repos/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/releases?per_page=20";
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean updateDialogShown = false;
 
     private WebView webView;
     private PermissionRequest pendingMediaRequest;
@@ -109,6 +122,80 @@ public final class MainActivity extends Activity {
         });
 
         webView.loadUrl(HOME_URL);
+        checkForAppUpdate();
+    }
+
+
+    private void checkForAppUpdate() {
+        Thread thread = new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(RELEASES_API).openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(7000);
+                connection.setReadTimeout(7000);
+                connection.setRequestProperty("Accept", "application/vnd.github+json");
+                connection.setRequestProperty("User-Agent", "FrahooshNovin-Android");
+                int status = connection.getResponseCode();
+                if (status != HttpURLConnection.HTTP_OK) return;
+                java.io.InputStream input = connection.getInputStream();
+                java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int count;
+                while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+                input.close();
+
+                JSONArray releases = new JSONArray(output.toString("UTF-8"));
+                JSONObject newest = null;
+                int newestCode = -1;
+                for (int i = 0; i < releases.length(); i++) {
+                    JSONObject release = releases.getJSONObject(i);
+                    if (release.optBoolean("draft", true) || release.optBoolean("prerelease", true)) continue;
+                    String tag = release.optString("tag_name", "");
+                    if (!tag.matches("novin-v[0-9]+")) continue;
+                    int code = Integer.parseInt(tag.substring("novin-v".length()));
+                    if (code > newestCode) {
+                        newestCode = code;
+                        newest = release;
+                    }
+                }
+                if (newest == null || newestCode <= BuildConfig.VERSION_CODE) return;
+
+                JSONArray assets = newest.optJSONArray("assets");
+                if (assets == null) return;
+                String apkUrl = null;
+                for (int i = 0; i < assets.length(); i++) {
+                    JSONObject asset = assets.getJSONObject(i);
+                    String name = asset.optString("name", "");
+                    if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".apk")) {
+                        apkUrl = asset.optString("browser_download_url", null);
+                        break;
+                    }
+                }
+                if (apkUrl == null || !apkUrl.startsWith("https://")) return;
+                final String downloadUrl = apkUrl;
+                final String latestName = newest.optString("name", "نسخه " + newestCode);
+                mainHandler.post(() -> showUpdateDialog(latestName, downloadUrl));
+            } catch (Exception ignored) {
+                // Update checks are best-effort; the app remains usable offline.
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showUpdateDialog(String latestName, String downloadUrl) {
+        if (isFinishing() || updateDialogShown) return;
+        updateDialogShown = true;
+        new AlertDialog.Builder(this)
+                .setTitle("بروزرسانی فراهوش نوین")
+                .setMessage("نسخه جدیدی منتشر شده است: " + latestName + "\\nبرای دریافت نسخه جدید اقدام کنید. اطلاعات و ورود شما با نصب بروزرسانی حذف نمی‌شود.")
+                .setPositiveButton("دریافت بروزرسانی", (dialog, which) -> openExternal(Uri.parse(downloadUrl)))
+                .setNegativeButton("بعداً", (dialog, which) -> dialog.dismiss())
+                .setCancelable(true)
+                .show();
     }
 
     private void openExternal(Uri uri) {
