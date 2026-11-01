@@ -1,6 +1,9 @@
 name: Publish Frahoosh Novin Android Update
 
 on:
+  push:
+    paths:
+      - '.github/workflows/publish-novin-android.yml'
   workflow_dispatch:
     inputs:
       publish_release:
