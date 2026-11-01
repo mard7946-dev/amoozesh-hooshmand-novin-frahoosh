@@ -3,6 +3,11 @@ name: Publish Frahoosh Novin Android Update
 on:
   workflow_dispatch:
     inputs:
+      publish_release:
+        description: "انتشار عمومی در GitHub Releases (برای آزمایش، خاموش بماند)"
+        required: true
+        type: boolean
+        default: false
       release_notes:
         description: "توضیحات بروزرسانی"
         required: false
@@ -75,7 +80,7 @@ jobs:
       - name: Upload the exact release APK as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Frahoosh-Novin-Android-Published-Release-${{ github.run_number }}
+          name: Frahoosh-Novin-Android-Verified-Release-${{ github.run_number }}
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             ${{ runner.temp }}/app-release.apk.sha256
@@ -83,6 +88,7 @@ jobs:
           retention-days: 90
 
       - name: Publish GitHub Release with the verified APK
+        if: ${{ inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
@@ -106,6 +112,7 @@ jobs:
             --notes "$RELEASE_NOTES"
 
       - name: Verify published APK is byte-for-byte identical
+        if: ${{ inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -117,6 +124,19 @@ jobs:
           gh release download "$TAG" --pattern app-release.apk --dir "$RUNNER_TEMP/published-release"
           cmp --silent "$APK_PATH" "$RUNNER_TEMP/published-release/app-release.apk"
           echo "Published APK exactly matches the verified build output."
+
+      - name: Report validation-only run
+        if: ${{ !inputs.publish_release }}
+        run: |
+          {
+            echo "## فراهوش نوین – اعتبارسنجی APK"
+            echo ""
+            echo "- ساخت APK امضاشده: موفق"
+            echo "- بررسی امضای APK: موفق"
+            echo "- محاسبه SHA-256: موفق"
+            echo "- ذخیره Artifact: انجام شد"
+            echo "- انتشار عمومی: انجام نشد (حالت آزمایشی)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove temporary signing key
         if: always()
