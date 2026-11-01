@@ -7,7 +7,7 @@
 <title>مدیریت کل فراهوش نوین</title>
 <style>
 :root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#e5c16d}
-*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(ellipse at 12% 4%,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}main{max-width:1120px;margin:auto}header{padding:14px 4px 22px}h1{margin:8px 0;font-size:clamp(23px,4vw,34px)}h2{font-size:19px;margin:0 0 14px}p{color:var(--muted);line-height:1.8}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:17px;background:#0e1b32ed;padding:17px;margin:12px 0}.metric{font-size:27px;font-weight:800;color:var(--mint)}.metric-label{color:var(--muted);font-size:13px;margin-top:5px}label{display:block;margin:10px 0 6px;font-size:13px;color:#d9e5f7}input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#081326;color:var(--text);font:inherit}button,.link{font:inherit;border:1px solid #52718e;border-radius:11px;background:#203a58;color:var(--text);padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}button.primary{background:linear-gradient(120deg,#17604f,#174c67);border-color:#63e0c0}button:disabled{opacity:.55;cursor:wait}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.school{border:1px solid var(--line);border-radius:15px;padding:15px;margin:10px 0;background:#0a192d}.school-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.pill{border:1px solid #526b89;border-radius:30px;padding:4px 9px;font-size:12px}.pill.active{color:#9df2d6;border-color:#3c9c80}.pill.suspended{color:#ffd1a6;border-color:#9c714b}.school-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.status{padding:11px;border-radius:10px;background:#162a43;color:#c8d8ee;margin:10px 0;white-space:pre-wrap}.status.error{background:#452525;color:#ffd5d5}.status.success{background:#123d34;color:#c9ffeb}.audit{border-top:1px solid #273b56;padding:9px 0;font-size:13px}.empty{padding:20px;text-align:center;color:var(--muted)}@media(max-width:520px){body{padding:11px}.card{padding:13px}}
+*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(ellipse at 12% 4%,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}main{max-width:1120px;margin:auto}header{padding:14px 4px 22px}h1{margin:8px 0;font-size:clamp(23px,4vw,34px)}h2{font-size:19px;margin:0 0 14px}p{color:var(--muted);line-height:1.8}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:17px;background:#0e1b32ed;padding:17px;margin:12px 0}.metric{font-size:27px;font-weight:800;color:var(--mint)}.metric-label{color:var(--muted);font-size:13px;margin-top:5px}label{display:block;margin:10px 0 6px;font-size:13px;color:#d9e5f7}input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#081326;color:var(--text);font:inherit}button,.link{font:inherit;border:1px solid #52718e;border-radius:11px;background:#203a58;color:var(--text);padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}button.primary{background:linear-gradient(120deg,#17604f,#174c67);border-color:#63e0c0}button:disabled{opacity:.55;cursor:wait}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.school{border:1px solid var(--line);border-radius:15px;padding:15px;margin:10px 0;background:#0a192d}.school-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.pill{border:1px solid #526b89;border-radius:30px;padding:4px 9px;font-size:12px}.pill.active{color:#9df2d6;border-color:#3c9c80}.pill.suspended{color:#ffd1a6;border-color:#9c714b}.school-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.draft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.draft-slot{border:1px dashed #52718e;border-radius:13px;padding:13px;background:#0a192d}.draft-slot h3{font-size:15px;margin:0 0 8px}.draft-slot button{margin-top:10px;width:100%}.status{padding:11px;border-radius:10px;background:#162a43;color:#c8d8ee;margin:10px 0;white-space:pre-wrap}.status.error{background:#452525;color:#ffd5d5}.status.success{background:#123d34;color:#c9ffeb}.audit{border-top:1px solid #273b56;padding:9px 0;font-size:13px}.empty{padding:20px;text-align:center;color:var(--muted)}@media(max-width:520px){body{padding:11px}.card{padding:13px}}
 </style>
 </head>
 <body>
@@ -40,6 +40,11 @@
 <div id="schools"><div class="empty">در حال دریافت فهرست مدارس…</div></div>
 </section>
 <section class="card">
+<h2>پیش‌ثبت‌نام مدارس آینده</h2>
+<p class="muted">چهار جایگاه آماده شده است. فعلاً فقط نام مدرسه را وارد و ذخیره کن؛ این موارد پیش‌نویس هستند و هنوز مدرسه فعال، حساب کاربری یا اشتراک ایجاد نمی‌کنند.</p>
+<div id="schoolDrafts" class="draft-grid"><div class="empty">در حال دریافت جایگاه‌ها…</div></div>
+</section>
+<section class="card">
 <h2>دعوت مدیر مدرسه</h2>
 <p class="muted">برای هر مدرسه یک مدیر اصلی معرفی کنید. دعوت‌نامه به ایمیل مدیر ارسال می‌شود و او رمز عبور خود را در صفحه امن فراهوش تعیین می‌کند.</p>
 <form id="inviteManager">
@@ -65,7 +70,7 @@ const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const $=id=>document.getElementById(id);
-let state={plans:[],schools:[]};
+let state={plans:[],schools:[],drafts:[]};
 function show(message,kind=""){const el=$("status");el.textContent=message;el.className="status"+(kind?" "+kind:"");}
 async function api(body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/platform-management",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});
@@ -116,6 +121,34 @@ function renderSchools(){
   root.append(card);
  }
 }
+function renderDrafts(){
+ const root=$("schoolDrafts");root.replaceChildren();
+ for(let slot=1;slot<=4;slot++){
+  const draft=state.drafts.find(x=>Number(x.slot_no)===slot);
+  const card=node("div","draft-slot");
+  card.append(node("h3","","جایگاه مدرسه "+new Intl.NumberFormat("fa-IR").format(slot)));
+  const label=node("label","","نام مدرسه");
+  const input=node("input");input.maxLength=180;input.placeholder="نام مدرسه را وارد کن";input.value=draft?.school_name||"";
+  const button=node("button","primary",draft?.school_name?"ذخیره تغییر نام":"ذخیره نام مدرسه");
+  button.type="button";
+  button.onclick=async()=>{
+   const schoolName=input.value.trim();
+   if(schoolName.length===1){show("نام مدرسه باید حداقل دو نویسه باشد.","error");return;}
+   button.disabled=true;
+   try{
+    const result=await api({action:"save_school_draft",slot_no:slot,school_name:schoolName});
+    state.drafts=state.drafts.filter(x=>Number(x.slot_no)!==slot);
+    state.drafts.push(result.draft);
+    button.textContent=schoolName?"ذخیره تغییر نام":"ذخیره نام مدرسه";
+    show(schoolName?"نام مدرسه در پیش‌نویس ذخیره شد.":"نام این جایگاه پاک شد.","success");
+   }catch(error){show(error.message||"ذخیره نام مدرسه انجام نشد.","error");}
+   finally{button.disabled=false;}
+  };
+  card.append(label,input,button);
+  card.append(node("div","muted",draft?.school_name?"وضعیت: پیش‌نویس ذخیره‌شده":"وضعیت: خالی"));
+  root.append(card);
+ }
+}
 function renderAudit(rows){
  const root=$("audit");root.replaceChildren();if(!rows.length){root.append(node("div","empty","هنوز گزارشی ثبت نشده است."));return;}
  for(const row of rows){const item=node("div","audit");const label=({ "school.created":"ایجاد مدرسه","school.status_changed":"تغییر وضعیت مدرسه","subscription.created":"ایجاد اشتراک"})[row.action]||row.action;item.append(node("strong","",label),node("div","muted",date(row.created_at)+" · مدرسه: "+(state.schools.find(s=>s.id===row.school_id)?.name||row.school_id||"—")));root.append(item);}
@@ -124,8 +157,8 @@ async function load(){
  if(!token){show("نشست ورود پیدا نشد. ابتدا با حساب مدیر کل وارد شوید.","error");return;}
  $("refresh").disabled=true;
  try{
-  const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];
-  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
+  const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];state.drafts=data.drafts||[];
+  $("app").hidden=false;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderDrafts();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
  }catch(error){$("app").hidden=true;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
  finally{$("refresh").disabled=false;}
 }
