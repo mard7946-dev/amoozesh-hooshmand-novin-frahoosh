@@ -63,7 +63,9 @@ jobs:
           set -euo pipefail
           APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK_PATH"
-          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$SDK_ROOT"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
           (cd "$(dirname "$APK_PATH")" && sha256sum app-release.apk) > "$RUNNER_TEMP/app-release.apk.sha256"
