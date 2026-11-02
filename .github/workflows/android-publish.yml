@@ -48,16 +48,25 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
 
-      - name: Configure signing key
+      - name: Configure signing key and detect its real alias
         shell: bash
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "$KEYSTORE_BASE64"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/frahoosh-release.keystore"
-          test -s "$RUNNER_TEMP/frahoosh-release.keystore"
-          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/frahoosh-release.keystore" >> "$GITHUB_ENV"
+          test -n "$KEYSTORE_PASSWORD"
+          KEYSTORE="$RUNNER_TEMP/frahoosh-release.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          KEY_ALIAS="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" 2>/dev/null | awk -F': ' '/Alias name:/{alias=$2} /Entry type: PrivateKeyEntry/{print alias; exit}')"
+          if [[ -z "$KEY_ALIAS" ]]; then
+            echo "No private-key alias found in the configured keystore." >&2
+            exit 1
+          fi
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
 
       - name: Build signed release APK
         working-directory: android
