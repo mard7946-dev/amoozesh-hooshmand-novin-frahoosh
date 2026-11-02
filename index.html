@@ -17,8 +17,6 @@
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;padding:26px 16px 34px;background:radial-gradient(ellipse at 50% -12%,#3b5278 0,transparent 42%),radial-gradient(circle at 8% 55%,#a77a2518 0,transparent 28%),radial-gradient(circle at 92% 68%,#3984c51c 0,transparent 30%),linear-gradient(145deg,#040d1d,#091a34 55%,#07152b);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif;overflow-x:hidden}
 .wrap{width:min(1080px,100%);margin:auto;text-align:center;position:relative;isolation:isolate}.wrap:before,.wrap:after{content:"";position:fixed;width:260px;height:260px;border:1px solid #d9b85f18;border-radius:50%;pointer-events:none;z-index:-1}.wrap:before{top:18%;right:-210px;box-shadow:0 0 0 24px #d9b85f08,0 0 0 50px #d9b85f05}.wrap:after{bottom:8%;left:-215px;box-shadow:0 0 0 24px #7eb6ff08,0 0 0 50px #7eb6ff05}
-.flag{position:absolute;top:0;right:0;width:76px;height:48px;border-radius:7px;overflow:hidden;border:1px solid #ffffff40;box-shadow:0 5px 18px #0005}
-.flag svg,.flag img{display:block;width:100%;height:100%;object-fit:cover}
 .brand-head{padding-top:12px;animation:rise-in .8s both}.eyebrow{display:inline-block;margin:0 auto 8px;padding:6px 16px;border:1px solid #d9b85f55;border-radius:999px;background:#d9b85f10;color:#f2d991;font-size:12px;letter-spacing:.2px;box-shadow:0 0 24px #d9b85f12}
 .brain{display:grid;place-items:center;width:112px;height:112px;margin:0 auto 12px;color:#f4d47c;filter:drop-shadow(0 0 12px #e5c16d66) drop-shadow(0 0 32px #d9a83d35);animation:brain-float 5s ease-in-out infinite}.brain svg{overflow:visible}
 .brain svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
@@ -53,7 +51,7 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 .note{font-size:12px;color:#a9bdd8;line-height:1.9;margin-top:24px}.note:before{content:"◆";font-size:8px;color:#d9b85f;margin-left:8px}@keyframes rise-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes brain-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}@keyframes tile-enter{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}.role:nth-child(1){animation-delay:.08s}.role:nth-child(2){animation-delay:.16s}.role:nth-child(3){animation-delay:.24s}.role:nth-child(4){animation-delay:.32s}.role:nth-child(5){animation-delay:.4s}.role:nth-child(6){animation-delay:.48s}.role:nth-child(7){animation-delay:.56s}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 .about-link{display:inline-flex;align-items:center;gap:9px;margin-top:12px;padding:11px 18px;border:1px solid #8a7546;border-radius:14px;background:linear-gradient(145deg,#263b58,#10213b);color:#f4dfaa;text-decoration:none;font-weight:700;box-shadow:0 8px 22px #0003}.about-link:hover,.about-link:focus-visible{border-color:var(--gold);outline:2px solid #e5c16d55;outline-offset:2px}
 @media(max-width:600px){
- body{padding:16px 12px 26px}.flag{width:57px;height:36px}.brain{width:88px;height:88px;margin-top:28px}.eyebrow{font-size:10px;padding:6px 12px}
+ body{padding:16px 12px 26px}.brain{width:88px;height:88px;margin-top:28px}.eyebrow{font-size:10px;padding:6px 12px}
  .clock-panel{gap:8px 12px;padding:10px 12px}.clock-date{font-size:12px}.clock-time{font-size:16px}
  .roles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px}
  .role{min-height:120px;padding:12px 6px;gap:8px}.role .ico{width:52px;height:52px;border-radius:15px}.role .ico svg{width:31px;height:31px}
@@ -80,7 +78,6 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 </head>
 <body>
 <main class="wrap">
-<div class="flag" role="img" aria-label="پرچم ایران با نشان الله در مرکز"><img src="icons/iran-flag.svg" alt="" aria-hidden="true"></div>
 <header class="brand-head">
 <div class="brain" role="img" aria-label="نشان طلایی مغز فراهوش">
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
