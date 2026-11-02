@@ -1,12 +1,12 @@
 {
-  "id": "/",
+  "id": "/amoozesh-hooshmand-novin-frahoosh/",
   "name": "فراهوش نوین | سامانه هوشمند مدارس",
   "short_name": "فراهوش",
   "description": "سامانه یکپارچه مدیریت و خدمات هوشمند مدارس",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -17,13 +17,13 @@
   "theme_color": "#07152d",
   "icons": [
     {
-      "src": "/icons/frahoosh-192.svg",
+      "src": "icons/frahoosh-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/frahoosh-512.svg",
+      "src": "icons/frahoosh-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
