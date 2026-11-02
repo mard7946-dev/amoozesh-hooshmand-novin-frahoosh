@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07152d">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="فراهوش نوین">
+<link rel="icon" href="/icons/frahoosh-192.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/frahoosh-192.svg">
 <title>سامانه آموزشی نوین فراهوش</title>
 <style>
 :root{color-scheme:dark;--bg:#061329;--panel:#0b1e3b;--panel2:#10294b;--line:#294568;--text:#f4f7ff;--muted:#b4c3da;--gold:#e5c16d;--blue:#7eb6ff}
@@ -68,6 +75,7 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 .access-copy small{font-size:12px;color:var(--muted);line-height:1.8}
 .access-arrow{margin-right:auto;color:var(--gold);font-size:22px}
 @media(max-width:600px){.access-panel{grid-template-columns:1fr;gap:10px;margin-bottom:22px}.access-card{min-height:88px;padding:13px}.access-copy strong{font-size:14px}.access-copy small{font-size:11px}}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -107,6 +115,7 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 <a class="access-card web" href="https://frahoosh.ir/" aria-label="ورود به نسخه وب فراهوش">
 <span class="access-icon" aria-hidden="true">⌘</span><span class="access-copy"><strong>ورود به نسخه تحت وب</strong><small>استفاده مستقیم با مرورگر، بدون نصب برنامه</small></span><span class="access-arrow" aria-hidden="true">←</span>
 </a>
+<a class="access-card pwa" id="pwa-install-card" href="#install" aria-label="نصب نسخه موبایلی فراهوش" hidden><span class="access-icon" aria-hidden="true">▣</span><span class="access-copy"><strong>نصب نسخه موبایلی از سایت</strong><small id="pwa-install-help">افزودن فراهوش به صفحه اصلی گوشی</small></span><span class="access-arrow" aria-hidden="true">＋</span></a>
 </section>
 <section class="roles" aria-label="بخش‌های سامانه">
 <a class="role management" href="portal.html?step=login&role=manager"><span class="ico" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 3 54 12v16c0 15-8.8 25.6-22 33C18.8 53.6 10 43 10 28V12L32 3Z"/><path d="m21 31 7 7 15-17" fill="none" stroke="#d9b85f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>مدیریت</strong><small>مدیریت یکپارچه مدرسه</small></a>
@@ -135,6 +144,23 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
     timeNode.textContent='ساعت '+faDigits(timeFmt.format(now));
   }
   tick();setInterval(tick,1000);
+})();
+</script>
+<script>
+(function(){
+ if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).catch(function(e){console.warn('PWA registration failed',e);});});}
+ var card=document.getElementById('pwa-install-card'),help=document.getElementById('pwa-install-help'),deferred=null;
+ if(!card)return;
+ var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+ if(standalone)return;
+ card.hidden=false;
+ card.addEventListener('click',async function(e){
+  e.preventDefault();
+  if(deferred){deferred.prompt();var choice=await deferred.userChoice;help.textContent=choice&&choice.outcome==='accepted'?'در حال نصب فراهوش…':'در صورت تمایل، افزودن به صفحه اصلی را انتخاب کنید.';deferred=null;}
+  else help.textContent='در منوی مرورگر، «نصب برنامه» یا «افزودن به صفحه اصلی» را انتخاب کنید.';
+ });
+ window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;help.textContent='نصب مستقیم روی گوشی اندروید';});
+ window.addEventListener('appinstalled',function(){card.hidden=true;});
 })();
 </script>
 </body>
