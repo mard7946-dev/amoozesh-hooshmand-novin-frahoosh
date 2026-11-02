@@ -148,7 +148,7 @@ h1{margin:0 0 6px;font-size:clamp(25px,5vw,39px);font-weight:900;letter-spacing:
 </script>
 <script>
 (function(){
- if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).catch(function(e){console.warn('PWA registration failed',e);});});}
+ if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('service-worker.js',{scope:'./'}).catch(function(e){console.warn('PWA registration failed',e);});});}
  var card=document.getElementById('pwa-install-card'),help=document.getElementById('pwa-install-help'),deferred=null;
  if(!card)return;
  var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
