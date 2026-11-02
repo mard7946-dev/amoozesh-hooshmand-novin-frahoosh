@@ -37,17 +37,16 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Install required Android SDK packages
+      - name: Verify preinstalled Android SDK
         shell: bash
         run: |
           set -euo pipefail
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [[ ! -x "$SDKMANAGER" ]]; then
-            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
-          fi
-          test -x "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null
-          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
+          test -d "$ANDROID_HOME/platforms"
+          test -d "$ANDROID_HOME/build-tools"
+          find "$ANDROID_HOME/platforms" -maxdepth 1 -mindepth 1 -type d -printf '%f\\n'
+          find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d -printf '%f\\n'
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
 
       - name: Configure signing key
         shell: bash
