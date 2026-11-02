@@ -1,12 +1,13 @@
 const BASE = '/amoozesh-hooshmand-novin-frahoosh/';
-const VERSION = 'frahoosh-pwa-v3';
+const VERSION = 'frahoosh-pwa-v4';
 const CORE = [
   BASE,
   BASE + 'manifest.webmanifest',
   BASE + 'icons/frahoosh-192.svg',
   BASE + 'icons/frahoosh-512.svg',
   BASE + 'icons/frahoosh-192.png',
-  BASE + 'icons/frahoosh-512.png'
+  BASE + 'icons/frahoosh-512.png',
+  BASE + 'icons/iran-flag.svg'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
