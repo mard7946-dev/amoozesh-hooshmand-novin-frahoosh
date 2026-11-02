@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 480" role="img" aria-label="پرچم ایران با نشان الله در مرکز">
+<rect width="760" height="160" fill="#239f40"/><rect y="160" width="760" height="160" fill="#fff"/><rect y="320" width="760" height="160" fill="#da0000"/>
+<defs><pattern id="kufi" width="76" height="18" patternUnits="userSpaceOnUse"><path d="M0 2H72V6H58V14H72V17H48V9H64V5H8V9H26V17H0V13H18V12H4V6H0Z" fill="none" stroke="#fff" stroke-width="2.4"/></pattern></defs>
+<rect y="143" width="760" height="17" fill="url(#kufi)"/><rect y="320" width="760" height="17" fill="url(#kufi)"/>
+<g fill="#da0000" transform="translate(380 239)">
+<path d="M-5-65C-29-92-54-81-62-57C-72-27-53 15-17 48C-48 34-78 3-83-33C-90-83-47-116-8-83Z"/>
+<path d="M5-65C29-92 54-81 62-57C72-27 53 15 17 48C48 34 78 3 83-33C90-83 47-116 8-83Z"/>
+<path d="M-10-78L0-91L10-78L8 70L0 86L-8 70Z"/>
+<path d="M-19-105C-8-95 8-95 19-105C18-88 8-82 0-82C-8-82-18-88-19-105Z"/>
+<path d="M-48 63Q-22 76 0 69Q22 76 48 63Q24 84 0 79Q-24 84-48 63Z"/>
+</g></svg>
