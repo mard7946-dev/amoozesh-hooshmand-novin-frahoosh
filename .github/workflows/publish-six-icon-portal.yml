@@ -62,11 +62,16 @@ jobs:
           cp jalali-date.js reports-utils.js _site/
           mkdir -p _site/icons
           cp icons/frahoosh-192.svg icons/frahoosh-512.svg _site/icons/
+          python -m pip install --quiet cairosvg
+          python - <<'PY'
+          import cairosvg
+          for size in (192, 512):
+              cairosvg.svg2png(url=f'icons/frahoosh-{size}.svg', write_to=f'_site/icons/frahoosh-{size}.png', output_width=size, output_height=size)
+          PY
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom/management.html _site/classroom/management.html
           cp classroom.html _site/classroom.html
-          printf 'frahoosh.ir\n' > _site/CNAME
           touch _site/.nojekyll
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
