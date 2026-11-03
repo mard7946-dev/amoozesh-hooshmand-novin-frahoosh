@@ -3,6 +3,17 @@ import assert from "node:assert/strict";
 
 const html = readFileSync("portal.html", "utf8");
 assert.ok(html.includes("/functions/v1/school-portal-login"), "Portal must use the school-code aware portal login function");
+assert.ok(html.includes("sessionStorage.getItem('frahoosh_novin_access_token')"), "Portal must restore the authenticated session when returning from a subpanel");
+assert.ok(html.includes("step==='panel'&&portalAuthToken&&portalAuthUserRole===initial.id"), "Portal must reopen the authenticated user's own role panel without asking for login again");
+assert.ok(html.includes("ثبت و پیگیری موارد انضباطی کلاس‌های مجاز"), "Teacher portal must expose the discipline module");
+assert.ok(html.includes("['انضباطی|انضباط)/,'discipline']") || html.includes("انضباطی|انضباط"), "Portal must route discipline menu entries to the existing discipline tab");
+const classroomManagement = readFileSync("classroom/management.html", "utf8");
+const classroomApi = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+assert.ok(classroomManagement.includes('data-tab="discipline"') && classroomManagement.includes('id="discipline"'), "Discipline must use the existing operational classroom tab");
+assert.ok(classroomApi.includes('if (action === "discipline")') && classroomApi.includes("if (!teacher && !manager)"), "Discipline writes must remain restricted to authorized teachers and managers/deputies");
+assert.ok(classroomApi.includes('.eq("tenant_school_id", school)') && classroomApi.includes("assertTeacherClass(className)"), "Discipline records must remain school-scoped and teacher-class-scoped");
+assert.ok(classroomApi.includes('.from("discipline_records").insert(inserts)'), "Discipline must persist through the existing protected API");
+
 assert.ok(html.includes('id="schoolCodeRow"') && html.includes('id="schoolCode"'), "Portal must collect a school code for every role");
 assert.ok(html.includes("school_code:document.getElementById('schoolCode').value.trim()"), "Portal must submit the selected school code");
 const schoolLogin = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
