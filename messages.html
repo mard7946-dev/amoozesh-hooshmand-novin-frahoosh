@@ -99,4 +99,6 @@ $('back').onclick=()=>{const role=new URLSearchParams(location.search).get('role
 (async()=>{if(!token){notice('نشست ورود معتبر نیست؛ به صفحه ورود برگردید.',true);$('who').textContent='بدون نشست ورود';return}try{await Promise.all([loadUsers(),loadMessages()]);}catch(e){notice(e.message,true)}})();
 })();
 </script>
+
+<script src="back-to-panel-menu.js" defer></script>
 </body></html>
