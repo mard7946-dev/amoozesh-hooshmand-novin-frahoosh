@@ -22,8 +22,8 @@
     const button = document.createElement('button');
     button.id = 'frahooshBackToPanelMenu';
     button.type = 'button';
-    button.textContent = '↩ بازگشت به منوی پنل';
-    button.setAttribute('aria-label', 'بازگشت به منوی پنل');
+    button.textContent = '↩ بازگشت به پنل اصلی';
+    button.setAttribute('aria-label', 'بازگشت به پنل اصلی');
     button.style.cssText = 'position:fixed;top:12px;right:12px;z-index:100000;min-height:42px;padding:9px 14px;border:1px solid #16a34a;border-radius:12px;background:#102a3c;color:#fff;font:600 14px Tahoma,Arial,sans-serif;box-shadow:0 3px 14px #0004;cursor:pointer';
     button.addEventListener('click', function () {
       if (!sessionStorage.getItem(TOKEN_KEY) || !getRole()) {
