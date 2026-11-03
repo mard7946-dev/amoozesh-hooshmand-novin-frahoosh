@@ -41,13 +41,17 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "مجوز نقش این حساب تأیید نشد." }, 403);
     }
 
+    if (!profile.tenant_school_id) {
+      return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست." }, 403);
+    }
+
     const role = norm(profile.role);
     const name = clean(profile.display_name) || clean(profile.username);
     let className = "";
     if (role === "student") {
       let studentQuery = admin.from("students").select("class_name")
         .eq("national_code", profile.national_code);
-      if (profile.tenant_school_id) studentQuery = studentQuery.eq("tenant_school_id", profile.tenant_school_id);
+      studentQuery = studentQuery.eq("tenant_school_id", profile.tenant_school_id);
       const { data: student, error } = await studentQuery.maybeSingle();
       if (error || !student?.class_name) return reply({ message: "کلاس ثبت‌شده دانش‌آموز پیدا نشد." }, 403);
       className = clean(student.class_name);
@@ -56,7 +60,7 @@ Deno.serve(async (req: Request) => {
     let classesQuery = admin.from("online_classes")
       .select("id,title,subject,lesson,teacher,grade,class_name,start_time,end_time,status,start_at,end_at,join_url,meeting_url,tenant_school_id")
       .order("start_time", { ascending: true });
-    if (profile.tenant_school_id) classesQuery = classesQuery.eq("tenant_school_id", profile.tenant_school_id);
+    classesQuery = classesQuery.eq("tenant_school_id", profile.tenant_school_id);
     if (role === "student") {
       classesQuery = classesQuery.eq("class_name", className);
     } else if (role === "teacher") {
