@@ -79,6 +79,14 @@ public final class MainActivity extends Activity {
             }
 
             @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
+                if (request.isForMainFrame() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    String offlinePage = "<!doctype html><html lang='fa' dir='rtl'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>عدم اتصال</title><body style='margin:0;background:#07152d;color:#f4f7ff;font-family:Tahoma,sans-serif;display:grid;min-height:100vh;place-items:center;text-align:center'><main style='padding:28px;max-width:420px'><h2>ارتباط با فراهوش برقرار نشد</h2><p>اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</p><button onclick='location.href=&quot;https://frahoosh.ir/&quot;' style='padding:12px 22px;border:0;border-radius:10px;background:#e5c16d;color:#07152d;font:inherit'>تلاش مجدد</button></main></body></html>";
+                    view.loadDataWithBaseURL("https://frahoosh.ir/", offlinePage, "text/html", "UTF-8", null);
+                }
+            }
+
+            @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 handler.cancel();
             }
