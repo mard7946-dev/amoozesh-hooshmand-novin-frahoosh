@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: profile, error: profileError } = await admin.from("account_settings")
-      .select("username,national_code,display_name,role,auth_user_id")
+      .select("username,national_code,display_name,role,auth_user_id,tenant_school_id")
       .eq("auth_user_id", login.user.id).maybeSingle();
     if (profileError || !profile) {
       console.error("classroom-login profile lookup failed", JSON.stringify({ code: profileError?.code ?? null, message: profileError?.message ?? null }));
@@ -76,8 +76,14 @@ Deno.serve(async (req: Request) => {
 
     let className = "";
     if (expectedRole === "student") {
+      if (!profile.tenant_school_id) {
+        return reply({ message: "حساب دانش‌آموز به مدرسه مشخصی متصل نیست." }, 403);
+      }
       const { data: student, error: studentError } = await admin.from("students")
-        .select("class_name").eq("national_code", profile.national_code).maybeSingle();
+        .select("class_name")
+        .eq("national_code", profile.national_code)
+        .eq("tenant_school_id", profile.tenant_school_id)
+        .maybeSingle();
       if (studentError || !student?.class_name) {
         console.error("classroom-login student class lookup failed", JSON.stringify({ code: studentError?.code ?? null, message: studentError?.message ?? null }));
         return reply({ message: "کلاس ثبت‌شده برای این دانش‌آموز پیدا نشد؛ مدیریت باید پرونده کلاس را تکمیل کند." }, 403);
