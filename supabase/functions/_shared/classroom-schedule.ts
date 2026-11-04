@@ -33,7 +33,8 @@ export function isScheduleSlotActive(
   endTime: unknown,
   clock: { weekday: string; time: string } = getTehranClock(),
 ): boolean {
-  if (clean(weekday) !== clean(clock.weekday)) return false;
+  const dayKey = (value: unknown) => clean(value).replace(/\s+/g, "");
+  if (dayKey(weekday) !== dayKey(clock.weekday)) return false;
   const start = minutes(startTime), end = minutes(endTime), current = minutes(clock.time);
   if (start === null || end === null || current === null || end <= start) return false;
   return current >= start && current < end;
