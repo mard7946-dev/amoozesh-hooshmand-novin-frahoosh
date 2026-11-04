@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
 const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
+const classroomManagement = readFileSync(new URL("../classroom/management.html", import.meta.url), "utf8");
+const apiSource = readFileSync(new URL("../supabase/functions/classroom-management/index.ts", import.meta.url), "utf8");
 const publishWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
@@ -70,7 +72,7 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
@@ -81,5 +83,12 @@ assert.ok(classroomSchedule.includes("data.schedule"), "Weekly schedule must ren
 assert.ok(classroomSchedule.includes("!lesson.id"), "Unlinked schedule slots must not expose a room-entry action");
 assert.ok(classroomSchedule.includes("schedule_entry_id"), "Room entry must be tied to the exact schedule slot");
 assert.ok(publishWorkflow.includes("cp classroom/schedule.html _site/classroom/schedule.html"), "Pages workflow must publish the weekly schedule page");
+
+
+assert.ok(classroomManagement.includes('value="import_weekly_schedule"'), "Management must offer a separate full weekly schedule import");
+assert.ok(classroomManagement.includes("normalizeExcelClock"), "Weekly schedule import must normalize Excel time cells");
+assert.ok(classroomManagement.includes("import_timetable"), "Existing teacher-to-class Excel import must remain available");
+assert.ok(apiSource.includes('action === "import_weekly_schedule"'), "Backend must persist weekly schedule entries separately");
+assert.ok(apiSource.includes('from("weekly_schedule_entries")'), "Weekly schedule importer must write the weekly schedule table");
 
 console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
