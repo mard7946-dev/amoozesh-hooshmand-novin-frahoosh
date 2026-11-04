@@ -61,8 +61,7 @@ Deno.serve(async (req: Request) => {
     let scheduleRows: any[] = [];
     if (role === "teacher" || role === "student") {
       let scheduleQuery = admin.from("weekly_schedule_entries")
-        .select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled,tenant_school_id")
-        .eq("day_enabled", true);
+        .select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled,tenant_school_id");
       scheduleQuery = scheduleQuery.eq("tenant_school_id", profile.tenant_school_id);
       if (role === "student") {
         scheduleQuery = scheduleQuery.eq("class_name", className);
@@ -131,7 +130,6 @@ Deno.serve(async (req: Request) => {
     const roomById = new Map(rooms.map((room: any) => [Number(room.id), room]));
     const clock = getTehranClock();
     const schedule = scheduleRows.flatMap((entry: any) => {
-      if (!entry.day_enabled) return [];
       const room: any = roomById.get(Number(entry.online_class_id));
       const status = norm(room?.status);
       const explicitlyDisabled = ["inactive", "غیرفعال", "لغو", "لغوشده", "cancelled", "canceled", "disabled"].includes(status);
@@ -139,7 +137,7 @@ Deno.serve(async (req: Request) => {
       const endTime = clean(entry.end_time) || clean(room?.end_time);
       const weekday = clean(entry.weekday);
       const period = Number(entry.period);
-      const active = Boolean(room && !explicitlyDisabled && isScheduleSlotActive(weekday, startTime, endTime, clock));
+      const active = Boolean(room && entry.day_enabled === true && !explicitlyDisabled && isScheduleSlotActive(weekday, startTime, endTime, clock));
       return [{
         ...(room ?? {}),
         id: room?.id ?? null,
