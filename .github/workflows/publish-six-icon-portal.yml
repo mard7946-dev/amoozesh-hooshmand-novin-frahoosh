@@ -28,6 +28,7 @@ on:
       - 'exam-center.html'
       - 'classroom.html'
       - 'classroom/index.html'
+      - 'classroom/schedule.html'
       - 'classroom/management.html'
       - '.github/workflows/publish-six-icon-portal.yml'
   workflow_dispatch:
@@ -71,6 +72,7 @@ jobs:
           PY
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
+          cp classroom/schedule.html _site/classroom/schedule.html
           cp classroom/management.html _site/classroom/management.html
           cp classroom.html _site/classroom.html
           touch _site/.nojekyll

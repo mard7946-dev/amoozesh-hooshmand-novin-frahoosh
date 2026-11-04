@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 
 const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
+const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
+const classroomManagement = readFileSync(new URL("../classroom/management.html", import.meta.url), "utf8");
+const apiSource = readFileSync(new URL("../supabase/functions/classroom-management/index.ts", import.meta.url), "utf8");
+const classroomAuthorize = readFileSync(new URL("../supabase/functions/classroom-authorize/index.ts", import.meta.url), "utf8");
+const publishWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
@@ -68,8 +73,33 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal], ["users.html", usersPage]]) {
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
+
+assert.ok(rootPortal.includes("classroom/schedule.html"), "The deployed portal should route teachers and students through the weekly schedule before the room");
+assert.ok(classroomSchedule.includes("Asia/Tehran"), "Weekly schedule must use Iran local time");
+assert.ok(classroomSchedule.includes("data.schedule"), "Weekly schedule must render server-authorized schedule entries");
+assert.ok(classroomSchedule.includes("!lesson.id"), "Unlinked schedule slots must not expose a room-entry action");
+assert.ok(classroomSchedule.includes("schedule_entry_id"), "Room entry must be tied to the exact schedule slot");
+assert.ok(publishWorkflow.includes("cp classroom/schedule.html _site/classroom/schedule.html"), "Pages workflow must publish the weekly schedule page");
+
+
+assert.ok(classroomManagement.includes('value="import_weekly_schedule"'), "Management must offer a separate full weekly schedule import");
+assert.ok(classroomManagement.includes("normalizeExcelClock"), "Weekly schedule import must normalize Excel time cells");
+assert.ok(classroomManagement.includes("import_timetable"), "Existing teacher-to-class Excel import must remain available");
+assert.ok(apiSource.includes('action === "import_weekly_schedule"'), "Backend must persist weekly schedule entries separately");
+assert.ok(apiSource.includes('action === "list_weekly_schedule"'), "Manager must be able to list all schedule entries for approval");
+assert.ok(apiSource.includes('action === "set_weekly_schedule_enabled"'), "Manager must control individual, class-wide, and school-wide schedule activation");
+assert.ok(apiSource.includes('day_enabled: existing?.day_enabled === true'), "New schedule rows must remain disabled until the manager activates them");
+assert.ok(classroomManagement.includes('id="activation"') && classroomManagement.includes('فعال‌سازی همه کلاس‌ها'), "Manager UI must provide schedule activation controls");
+assert.ok(classroomManagement.includes('data-entry-toggle') && classroomManagement.includes('data-class-enable'), "Manager UI must allow per-slot and per-class activation");
+assert.ok(apiSource.includes('from("weekly_schedule_entries")'), "Weekly schedule importer must write the weekly schedule table");
+
+
+assert.ok(classroomAuthorize.includes('entry.day_enabled === true'), "Disabled schedule periods must remain visible but not be enterable");
+assert.ok(classroomAuthorize.includes("isScheduleSlotActive"), "Server must enforce the active bell time window");
+assert.ok(classroomAuthorize.includes('schedule_entry_id'), "Room entry must be tied to an exact weekly schedule row");
+
 console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
