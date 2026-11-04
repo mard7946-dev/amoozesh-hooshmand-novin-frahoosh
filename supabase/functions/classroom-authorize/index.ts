@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
         day_of_week: weekday,
         period,
         period_label: "زنگ " + period,
-        day_enabled: true,
+        day_enabled: entry.day_enabled === true,
         is_active: active,
       }];
     });
