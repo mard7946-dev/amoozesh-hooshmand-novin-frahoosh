@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { hasActiveSchoolMembership } from "../_shared/active-school-membership.ts";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -9,6 +10,7 @@ const reply = (body: unknown, status = 200) =>
 const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
+
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -44,6 +46,9 @@ Deno.serve(async (req: Request) => {
     if (!profile.tenant_school_id) {
       return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست." }, 403);
     }
+
+    const membershipActive = await hasActiveSchoolMembership(admin, authData.user.id, profile.tenant_school_id, profile.role, norm);
+    if (!membershipActive) return reply({ message: "عضویت این حساب در مدرسه فعال نیست یا نقش آن تأیید نشده است." }, 403);
 
     const role = norm(profile.role);
     const name = clean(profile.display_name) || clean(profile.username);

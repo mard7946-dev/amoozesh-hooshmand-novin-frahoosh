@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { hasActiveSchoolMembership } from "../_shared/active-school-membership.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,7 @@ const reply = (body: unknown, status = 200) =>
 const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\s+/g, " ").toLocaleLowerCase("fa");
+
 const allowedTypes = new Set(["fill_blank", "multiple_choice", "true_false", "short_answer", "essay"]);
 const shuffle = <T>(items: T[]) => {
   const a = [...items];
@@ -51,6 +53,9 @@ Deno.serve(async (req: Request) => {
     if (profileError || !profile || !profile.tenant_school_id) {
       return reply({ message: "پروفایل مدرسه یا نقش این حساب تأیید نشد." }, 403);
     }
+
+    const membershipActive = await hasActiveSchoolMembership(admin, authData.user.id, profile.tenant_school_id, profile.role, norm);
+    if (!membershipActive) return reply({ message: "عضویت این حساب در مدرسه فعال نیست یا نقش آن تأیید نشده است." }, 403);
 
     const role = norm(profile.role);
     const username = clean(profile.username);

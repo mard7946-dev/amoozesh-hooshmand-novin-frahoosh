@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { hasActiveSchoolMembership } from "../_shared/active-school-membership.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,7 @@ function roleAllowed(actual: string, expected: string) {
   if (e === "counselor") return counselor.includes(a);
   return false;
 }
+
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -73,6 +75,9 @@ Deno.serve(async (req: Request) => {
     if (!roleAllowed(profile.role, expectedRole)) {
       return reply({ message: "این حساب مجوز ورود به بخش انتخاب‌شده را ندارد." }, 403);
     }
+
+    const membershipActive = await hasActiveSchoolMembership(admin, login.user.id, profile.tenant_school_id, profile.role, norm);
+    if (!membershipActive) return reply({ message: "عضویت این حساب در مدرسه فعال نیست یا نقش آن تأیید نشده است." }, 403);
 
     let className = "";
     if (expectedRole === "student") {
