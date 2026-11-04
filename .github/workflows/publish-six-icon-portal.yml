@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'finance.html'
       - 'portal.html'
       - 'settings.html'
       - 'reports.html'
@@ -50,7 +51,7 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html _site/
+          cp index.html portal.html settings.html reports.html parent-management.html parent-meetings.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html finance.html _site/
           cp jalali-date.js reports-utils.js _site/
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
