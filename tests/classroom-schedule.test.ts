@@ -15,5 +15,5 @@ Deno.test("supports Persian digits in schedule times", () => {
 Deno.test("Tehran clock returns a Persian weekday and HH:mm time", () => {
   const clock = getTehranClock(new Date("2026-11-04T04:30:00.000Z"));
   if (!["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"].includes(clock.weekday)) throw new Error("Unexpected Tehran weekday");
-  if (!/^\\d{2}:\\d{2}$/.test(clock.time)) throw new Error("Unexpected Tehran time");
+  if (!/^\d{2}:\d{2}$/.test(clock.time)) throw new Error("Unexpected Tehran time");
 });
