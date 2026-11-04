@@ -91,6 +91,30 @@ BEGIN
     NULL;
   END;
 
+  BEGIN
+    INSERT INTO classroom_sessions(token_hash,user_id,expires_at,school_id)
+    VALUES ('cross-tenant-session-test', teacher_b, now()+interval '1 hour', school_a);
+    RAISE EXCEPTION 'Cross-tenant session unexpectedly succeeded';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO classroom_events(classroom_id,actor_user_id,event_type,school_id)
+    VALUES (room_a, teacher_b, 'cross-tenant-event-test', school_a);
+    RAISE EXCEPTION 'Cross-tenant event unexpectedly succeeded';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO school_schedule(day_of_week,period,grade_class,teacher_user_id,classroom_id,school_id)
+    VALUES ('sunday',2,'Grade 7 / A',teacher_b,room_a,school_a);
+    RAISE EXCEPTION 'Cross-tenant schedule references unexpectedly succeeded';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
   RAISE NOTICE 'Multischool migration rehearsal assertions passed';
 END $$;
 
