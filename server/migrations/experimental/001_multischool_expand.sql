@@ -34,11 +34,17 @@ UPDATE classroom_sessions SET school_id='5c8b8880-1346-445c-89d8-3f76275a7ae5' W
 UPDATE classroom_memberships SET school_id='5c8b8880-1346-445c-89d8-3f76275a7ae5' WHERE school_id IS NULL;
 UPDATE classroom_events SET school_id='5c8b8880-1346-445c-89d8-3f76275a7ae5' WHERE school_id IS NULL;
 
+ALTER TABLE classroom_users ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE classroom_users ALTER COLUMN school_id SET NOT NULL;
+ALTER TABLE classrooms ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE classrooms ALTER COLUMN school_id SET NOT NULL;
+ALTER TABLE school_schedule ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE school_schedule ALTER COLUMN school_id SET NOT NULL;
+ALTER TABLE classroom_sessions ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE classroom_sessions ALTER COLUMN school_id SET NOT NULL;
+ALTER TABLE classroom_memberships ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE classroom_memberships ALTER COLUMN school_id SET NOT NULL;
+ALTER TABLE classroom_events ALTER COLUMN school_id SET DEFAULT '5c8b8880-1346-445c-89d8-3f76275a7ae5';
 ALTER TABLE classroom_events ALTER COLUMN school_id SET NOT NULL;
 
 ALTER TABLE classroom_users
@@ -58,20 +64,10 @@ ALTER TABLE classroom_events
 ALTER TABLE classroom_users ADD CONSTRAINT classroom_users_id_school_id_key UNIQUE (id, school_id);
 ALTER TABLE classrooms ADD CONSTRAINT classrooms_id_school_id_key UNIQUE (id, school_id);
 
--- Remove global uniqueness so identical identifiers can exist in different schools.
-ALTER TABLE classroom_users DROP CONSTRAINT IF EXISTS classroom_users_username_key;
-DROP INDEX IF EXISTS classroom_users_national_id_hash_uidx;
-ALTER TABLE classrooms DROP CONSTRAINT IF EXISTS classrooms_room_code_key;
-ALTER TABLE school_schedule DROP CONSTRAINT IF EXISTS school_schedule_day_of_week_period_grade_class_key;
-
-CREATE UNIQUE INDEX classroom_users_school_username_uidx
-  ON classroom_users (school_id, username) WHERE username IS NOT NULL;
-CREATE UNIQUE INDEX classroom_users_school_national_id_uidx
-  ON classroom_users (school_id, national_id_hash) WHERE national_id_hash IS NOT NULL;
-CREATE UNIQUE INDEX classrooms_school_room_code_uidx
-  ON classrooms (school_id, room_code);
-CREATE UNIQUE INDEX school_schedule_school_slot_uidx
-  ON school_schedule (school_id, day_of_week, period, grade_class);
+-- Keep legacy global unique constraints during the expand phase. The application
+-- continues to use ON CONFLICT(username) until tenant-aware API code is deployed.
+-- Tenant-scoped unique indexes and removal of these legacy constraints belong to
+-- the gated contract migration, after all writers pass explicit school_id.
 
 ALTER TABLE classrooms
   ADD CONSTRAINT classrooms_teacher_school_fkey
