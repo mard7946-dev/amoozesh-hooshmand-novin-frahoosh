@@ -9,6 +9,9 @@ Deno.test("schedule slot is inactive at its end boundary", () => {
 Deno.test("schedule slot is inactive on a different weekday", () => {
   if (isScheduleSlotActive("چهارشنبه", "08:00", "08:45", { weekday: "پنجشنبه", time: "08:15" })) throw new Error("Wrong weekday must be inactive");
 });
+Deno.test("normalizes half-space and ordinary-space weekday spellings", () => {
+  if (!isScheduleSlotActive("سه شنبه", "08:00", "08:45", { weekday: "سه‌شنبه", time: "08:15" })) throw new Error("Equivalent weekday spellings should match");
+});
 Deno.test("supports Persian digits in schedule times", () => {
   if (!isScheduleSlotActive("شنبه", "۰۸:۰۰", "۰۸:۴۵", { weekday: "شنبه", time: "08:20" })) throw new Error("Persian time digits should be normalized");
 });
