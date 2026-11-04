@@ -223,6 +223,161 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, saved: data?.length ?? inserts.length });
     }
 
+
+    if (action === "import_weekly_schedule") {
+      if (!manager) return reply({ message: "فقط مدیریت می‌تواند برنامه هفتگی را وارد کند." }, 403);
+      const rows = boundedRows(body.rows);
+      if (!rows || rows.length < 1) return reply({ message: "فایل برنامه هفتگی خالی یا بیش از ۱۰۰۰ ردیف است." }, 400);
+
+      const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+      const key = (value: unknown) => norm(value).replace(/\s+/g, "");
+      const canonicalDay = (value: unknown) => days.find(day => key(day) === key(value)) ?? "";
+      const canonicalTime = (value: unknown) => {
+        const match = norm(value).match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        if (!match) return "";
+        const hour = Number(match[1]), minute = Number(match[2]);
+        if (hour > 23 || minute > 59) return "";
+        return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+      };
+
+      const [accountsResult, roomsResult, scheduleResult] = await Promise.all([
+        admin.from("account_settings").select("username,display_name,role")
+          .eq("tenant_school_id", school).limit(1000),
+        admin.from("online_classes").select("id,title,subject,lesson,teacher,class_name,grade,status")
+          .eq("tenant_school_id", school).limit(1000),
+        admin.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled")
+          .eq("tenant_school_id", school).limit(2000),
+      ]);
+      if (accountsResult.error) throw accountsResult.error;
+      if (roomsResult.error) throw roomsResult.error;
+      if (scheduleResult.error) throw scheduleResult.error;
+
+      const teacherAccounts = (accountsResult.data ?? []).filter((account: any) => isTeacher(clean(account.role)));
+      const resolveTeacher = (row: any) => {
+        const requested = clean(row.teacher_username);
+        if (requested) return teacherAccounts.find((account: any) => key(account.username) === key(requested)) ?? null;
+        const teacherKey = key(row.teacher);
+        const matches = teacherAccounts.filter((account: any) =>
+          key(account.display_name) === teacherKey || key(account.username) === teacherKey
+        );
+        return matches.length === 1 ? matches[0] : null;
+      };
+
+      const prepared = (rows as any[]).map((raw, index) => {
+        const weekday = canonicalDay(raw.weekday ?? raw.day_of_week);
+        const period = Number(norm(raw.period));
+        const startTime = canonicalTime(raw.start_time);
+        const endTime = canonicalTime(raw.end_time);
+        const teacherAccount = resolveTeacher(raw);
+        return {
+          rowNumber: index + 2,
+          class_name: clean(raw.class_name),
+          weekday,
+          period,
+          subject: clean(raw.subject),
+          teacher_name: clean(raw.teacher_name || raw.teacher),
+          teacher_username: clean(teacherAccount?.username),
+          grade: clean(raw.grade),
+          room: clean(raw.room),
+          academic_year: clean(raw.academic_year),
+          start_time: startTime,
+          end_time: endTime,
+        };
+      });
+
+      const invalid = prepared.filter(row =>
+        !row.class_name || !row.weekday || !Number.isInteger(row.period) || row.period < 1 ||
+        !row.subject || !row.teacher_name || !row.teacher_username ||
+        !row.start_time || !row.end_time ||
+        Number(row.end_time.replace(":", "")) <= Number(row.start_time.replace(":", ""))
+      );
+      if (invalid.length) {
+        const rowNumbers = invalid.slice(0, 12).map(row => row.rowNumber).join("، ");
+        return reply({
+          message: "ردیف‌های " + rowNumbers + " ناقص یا نامعتبرند. کلاس، روز، شماره زنگ، درس، دبیر دارای حساب فعال، ساعت شروع و پایان را بررسی کنید.",
+          invalid_rows: invalid.length,
+        }, 400);
+      }
+
+      const seen = new Set<string>();
+      for (const row of prepared) {
+        const rowKey = [key(row.class_name), key(row.weekday), row.period].join("::");
+        if (seen.has(rowKey)) return reply({ message: "برای یک کلاس، روز و شماره زنگ تکراری در فایل وجود دارد: " + row.class_name + " · " + row.weekday + " · زنگ " + row.period }, 400);
+        seen.add(rowKey);
+      }
+
+      const roomKey = (className: unknown, subject: unknown, teacher: unknown) =>
+        [key(className), key(subject), key(teacher)].join("::");
+      const roomByKey = new Map<string, any>();
+      for (const room of roomsResult.data ?? []) {
+        const k = roomKey(room.class_name, room.subject || room.lesson || room.title, room.teacher);
+        if (!roomByKey.has(k)) roomByKey.set(k, room);
+      }
+      const existingBySlot = new Map<string, any>();
+      for (const entry of scheduleResult.data ?? []) {
+        const k = [key(entry.class_name), key(entry.weekday), Number(entry.period)].join("::");
+        if (!existingBySlot.has(k)) existingBySlot.set(k, entry);
+      }
+
+      let inserted = 0, updated = 0, roomsCreated = 0;
+      for (const row of prepared) {
+        const k = roomKey(row.class_name, row.subject, row.teacher_name);
+        let room = roomByKey.get(k);
+        if (!room) {
+          const { data, error } = await admin.from("online_classes").insert({
+            title: row.subject + " · " + row.class_name,
+            class_name: row.class_name,
+            subject: row.subject,
+            lesson: row.subject,
+            teacher: row.teacher_name,
+            grade: row.grade,
+            start_time: row.start_time,
+            end_time: row.end_time,
+            day_of_week: row.weekday,
+            status: "برنامه‌ریزی‌شده",
+            tenant_school_id: school,
+            activated_by: callerName,
+            auto_activate: false,
+            auto_close: false,
+          }).select("id,title,subject,lesson,teacher,class_name,grade,status").single();
+          if (error) throw error;
+          room = data;
+          roomByKey.set(k, room);
+          roomsCreated++;
+        }
+
+        const slotKey = [key(row.class_name), key(row.weekday), row.period].join("::");
+        const scheduleEntry = {
+          class_name: row.class_name,
+          weekday: row.weekday,
+          period: row.period,
+          subject: row.subject,
+          teacher_name: row.teacher_name,
+          teacher_username: row.teacher_username,
+          room: row.room || null,
+          academic_year: row.academic_year || null,
+          online_class_id: room.id,
+          start_time: row.start_time,
+          end_time: row.end_time,
+          day_enabled: true,
+          tenant_school_id: school,
+        };
+        const existing = existingBySlot.get(slotKey);
+        if (existing) {
+          const { error } = await admin.from("weekly_schedule_entries").update(scheduleEntry)
+            .eq("id", existing.id).eq("tenant_school_id", school);
+          if (error) throw error;
+          updated++;
+        } else {
+          const { data, error } = await admin.from("weekly_schedule_entries").insert(scheduleEntry).select("id").single();
+          if (error) throw error;
+          existingBySlot.set(slotKey, { ...scheduleEntry, id: data.id });
+          inserted++;
+        }
+      }
+      return reply({ ok: true, saved: inserted + updated, inserted, updated, rooms_created: roomsCreated });
+    }
+
     if (action === "import_timetable") {
       if (!manager) return reply({ message: "فقط مدیریت می‌تواند برنامه را وارد کند." }, 403);
       const rows = boundedRows(body.rows);
