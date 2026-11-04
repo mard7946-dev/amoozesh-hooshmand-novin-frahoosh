@@ -266,7 +266,7 @@ app.post('/api/schedule', auth, allow('manager','educational_deputy'), async (re
       const room = await client.query("SELECT id FROM classrooms WHERE school_id=$1 AND id=$2", [req.user.school_id, linkedClassroomId]);
       if (!room.rowCount) throw Object.assign(new Error('کلاس انتخاب‌شده پیدا نشد.'), { status: 400 });
       await client.query(
-        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
+        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5 AND school_id=$5",
         [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId,req.user.school_id]
       );
     } else {
@@ -309,8 +309,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
       const password = normalizeDigits(field(row,'رمز','رمز عبور','password','passcode'));
       if (!displayName || !username || !/^\d{8,12}$/.test(password)) continue;
       const cred = await hashPassword(password);
-      const saved = await client.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('teacher',$1,$2,$3,$4) ON CONFLICT(username) DO UPDATE SET role='teacher',display_name=EXCLUDED.display_name,password_salt=EXCLUDED.password_salt,password_hash=EXCLUDED.password_hash RETURNING id,display_name,username",
-        [displayName,username,cred.salt,cred.hash]);
+      const saved = await client.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'teacher',$2,$3,$4,$5) ON CONFLICT(school_id,username) DO UPDATE SET role='teacher',display_name=EXCLUDED.display_name,password_salt=EXCLUDED.password_salt,password_hash=EXCLUDED.password_hash RETURNING id,display_name,username",
+        [req.user.school_id,displayName,username,cred.salt,cred.hash]);
       teacherIds.set(normalizeText(displayName), saved.rows[0].id);
       teacherIds.set(normalizeText(username), saved.rows[0].id);
       teacherCount++;
@@ -318,7 +318,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
     // Existing staff accounts are authoritative: resolve schedule rows by their actual usernames
     // or exact display names without requiring a second teacher-account import.
     const existingTeachers = await client.query(
-      "SELECT id,display_name,username FROM classroom_users WHERE role IN ('teacher','educational_deputy','pastoral_deputy')"
+      "SELECT id,display_name,username FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')"
+      [req.user.school_id]
     );
     for (const teacher of existingTeachers.rows) {
       const displayKey = normalizeText(teacher.display_name);
@@ -333,8 +334,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
       const nationalId = normalizeNationalId(field(row,'کد ملی','کدملی','nationalId','national_id','national code'));
       const username = field(row,'نام کاربری','username') || ('stu-' + crypto.createHash('sha256').update(first+'|'+family+'|'+gradeClass+'|'+nationalId).digest('hex').slice(0,16));
       if (!first || !family || !gradeClass || !/^\d{10}$/.test(nationalId)) continue;
-      const saved = await client.query("INSERT INTO classroom_users(role,display_name,family_name,username,national_id_hash,grade_class) VALUES('student',$1,$2,$3,$4,$5) ON CONFLICT(username) DO UPDATE SET role='student',display_name=EXCLUDED.display_name,family_name=EXCLUDED.family_name,national_id_hash=EXCLUDED.national_id_hash,grade_class=EXCLUDED.grade_class RETURNING id,display_name,family_name,username,grade_class",
-        [first,family,username,nationalIdHash(nationalId),gradeClass]);
+      const saved = await client.query("INSERT INTO classroom_users(school_id,role,display_name,family_name,username,national_id_hash,grade_class) VALUES($1,'student',$2,$3,$4,$5,$6) ON CONFLICT(school_id,username) DO UPDATE SET role='student',display_name=EXCLUDED.display_name,family_name=EXCLUDED.family_name,national_id_hash=EXCLUDED.national_id_hash,grade_class=EXCLUDED.grade_class RETURNING id,display_name,family_name,username,grade_class",
+        [req.user.school_id,first,family,username,nationalIdHash(nationalId),gradeClass]);
       studentCount++;
     }
     for (const row of schedules) {
@@ -349,26 +350,26 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
         continue;
       }
       const existing = await client.query(
-        "SELECT classroom_id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 FOR UPDATE",
-        [day,period,gradeClass]
+        "SELECT classroom_id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 FOR UPDATE",
+        [req.user.school_id,day,period,gradeClass]
       );
       let classroomId = existing.rows[0]?.classroom_id || null;
       if (classroomId) {
         await client.query(
           "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4",
-          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,classroomId]
+          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,classroomId,req.user.school_id]
         );
       } else {
         const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
         const room = await client.query(
-          "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id",
-          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
+          "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+          [req.user.school_id,subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
         );
         classroomId = room.rows[0].id;
       }
       await client.query(
-        "INSERT INTO school_schedule(day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time",
-        [day,period,gradeClass,subject,teacherId,classroomId,startTime,endTime]
+        "INSERT INTO school_schedule(school_id,day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(school_id,day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time",
+        [req.user.school_id,day,period,gradeClass,subject,teacherId,classroomId,startTime,endTime]
       );
       scheduleCount++;
     }
