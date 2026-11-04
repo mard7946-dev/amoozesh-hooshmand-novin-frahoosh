@@ -10,6 +10,9 @@ on:
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
+      - 'supabase/functions/_shared/active-school-membership.ts'
+      - 'tests/active-school-membership.test.ts'
+      - 'tests/validate-active-school-memberships.mjs'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
       - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
       - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
@@ -43,6 +46,8 @@ on:
       - 'supabase/functions/classroom-login/index.ts'
       - 'supabase/functions/classroom-authorize/index.ts'
       - 'supabase/functions/assessment-center/index.ts'
+      - 'supabase/functions/_shared/active-school-membership.ts'
+      - 'tests/active-school-membership.test.ts'
       - 'tests/validate-active-school-memberships.mjs'
       - 'tests/validate-novin-portal.mjs'
       - 'index.html'
@@ -79,5 +84,7 @@ jobs:
         run: deno check supabase/functions/classroom-login/index.ts supabase/functions/classroom-authorize/index.ts
       - name: Type-check assessment center Edge Function
         run: deno check supabase/functions/assessment-center/index.ts
+      - name: Run active school membership authorization unit tests
+        run: deno test tests/active-school-membership.test.ts
       - name: Validate active school membership guards
         run: node tests/validate-active-school-memberships.mjs
