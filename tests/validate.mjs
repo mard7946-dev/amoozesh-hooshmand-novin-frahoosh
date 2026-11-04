@@ -7,6 +7,7 @@ const portal = readFileSync(new URL("../server/public/portal.html", import.meta.
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
 const finance = readFileSync(new URL("../finance.html", import.meta.url), "utf8");
 const financeMigration = readFileSync(new URL("../supabase/migrations/20261031200000_finance_voucher_audience.sql", import.meta.url), "utf8");
+const pagesWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
 
 assert.ok(["manager","deputy","teacher","parent","student","counselor"].every(role => landing.includes(`href="portal.html?step=login&role=${role}"`)), "Landing must route all six roles through the current authenticated portal login");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
@@ -55,6 +56,7 @@ const voucherPrint = finance.slice(finance.indexOf("window.printVoucher=async id
 assert.ok(voucherPrint && !voucherPrint.includes("فراهوش"), "Printed voucher must not contain Frahoosh branding");
 assert.ok(finance.includes("finance-documents/") && finance.includes("image/jpeg,image/png,image/webp,application/pdf"), "Financial vouchers must retain private image/PDF attachments");
 assert.ok(financeMigration.includes("ADD COLUMN IF NOT EXISTS audience_type") && financeMigration.includes("CHECK (audience_type IN ('parent', 'general'))"), "Financial audience migration must be additive and constrained");
+assert.ok(pagesWorkflow.includes("'finance.html'") && pagesWorkflow.includes("exam-center.html finance.html _site/"), "Pages deployment must publish the finance voucher page");
 
 for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["portal.html", portal], ["finance.html", finance]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
