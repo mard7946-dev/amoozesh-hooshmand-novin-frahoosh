@@ -1,6 +1,6 @@
 # Standalone classroom multi-school migration rehearsal
 
-**Experimental rehearsal only. Never apply this draft to the live Render PostgreSQL database.**
+**Experimental rehearsal only. Never apply these drafts to the live Render PostgreSQL database.**
 
 ## Confirmed legacy tenant
 All existing standalone-classroom records are assigned to:
@@ -9,25 +9,43 @@ All existing standalone-classroom records are assigned to:
 
 This assignment was explicitly confirmed by the project owner for the current standalone classroom database.
 
-## Scope
-- Additive tenant registry and nullable tenant columns, followed by deterministic backfill and NOT NULL.
-- Preserve all existing primary keys and row contents.
-- Convert global username, national-ID hash, room-code and schedule-slot uniqueness to school-scoped uniqueness.
-- Add composite user/school references for classroom teacher and creator.
-- Add disposable PostgreSQL assertions for two-school coexistence and cross-school reference rejection.
+## Two-phase rollout design
 
-## Important limitations
-This is only the **database expand-phase rehearsal**. It does not yet make the running Express API tenant-safe. The API still needs a mandatory tenant context and tenant predicates for every read/write, including login, sessions, schedule, Excel import, class lifecycle, memberships and events. The production deployment must remain unchanged until that application phase is complete and tested.
+### Phase 1 — expand (`001_multischool_expand.sql`)
+- Adds a tenant registry and tenant columns.
+- Backfills all existing records to the confirmed legacy school.
+- Preserves primary keys and existing row contents.
+- Adds tenant-aware composite references between users, classrooms, sessions, schedules, memberships and events.
+- Uses a temporary default tenant so the existing single-school API continues inserting rows into the only current school while the application is upgraded.
+- Retains legacy global unique constraints during the compatibility window.
 
-The draft assumes the existing schema from `server/schema.sql` and the startup schema in `server/src/server.js` have been reconciled. The startup schema currently creates a subset of the same tables; that reconciliation is a prerequisite before any real migration.
+### Phase 2 — contract (`002_multischool_contract.sql`)
+- Removes global username, national-ID hash, room-code and schedule-slot uniqueness.
+- Replaces them with school-scoped uniqueness.
+- Removes the temporary default tenant from all tables.
 
-## Local / CI rehearsal
-1. Create an empty disposable PostgreSQL database.
-2. Apply `server/schema.sql`.
-3. Insert representative legacy fixtures **before** the migration.
-4. Apply `server/migrations/experimental/001_multischool_expand.sql`.
-5. Run `server/tests/multischool-migration.test.sql`.
-6. Verify row counts and primary keys are unchanged.
-7. Destroy the disposable database.
+**Phase 2 must not be run on a live database until the tenant-aware Express API is deployed and every write supplies an explicit school_id.** Otherwise the old API will fail inserts after the defaults are removed.
 
-No command in this folder targets Supabase or the live Render database.
+## Important application work still required
+These migrations do not by themselves make the running Express API tenant-safe. Before any live rollout, update and test all paths:
+- password and student login (same usernames may exist in multiple schools; school code/slug must be part of login context);
+- DB sessions and `/api/auth/me` (session tenant must be validated on every request);
+- manager/staff/teacher/student creation and credentials;
+- schedule reads/writes and class lifecycle;
+- Excel import (teacher map, student upsert, schedule linking and conflict handling must all include tenant scope);
+- classroom access, memberships, events and RTC configuration authorization.
+
+The existing global username-based login cannot safely distinguish two schools that use the same username. The application changes are a hard prerequisite for enabling the second school.
+
+## Disposable CI rehearsal
+The existing `.github/workflows/validate.yml` creates a separate PostgreSQL database named `frahoosh_migration_rehearsal` inside the ephemeral GitHub Actions service. It applies the legacy schema, seeds sample legacy rows, runs phases 1 and 2, and executes regression assertions for:
+- confirmed legacy tenant backfill and row preservation;
+- same usernames, room codes and schedule slots in two schools;
+- rejection of cross-school teacher, creator, session, schedule, classroom membership and event references.
+
+The entire database is disposable and is destroyed with the Actions runner. No Supabase or Render production connection is used.
+
+## Current status
+- Prepared for rehearsal; awaiting GitHub Actions result.
+- Not applied to production.
+- No live records, schema, secrets or deployment settings were changed.
