@@ -2,7 +2,7 @@ name: Build Frahoosh Novin Android
 
 on:
   push:
-    branches: [feat/novin-android-app]
+    branches: [main, feat/novin-android-app]
     paths:
       - 'android/**'
       - '.github/workflows/build-novin-android.yml'
