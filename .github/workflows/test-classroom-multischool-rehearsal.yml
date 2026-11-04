@@ -57,10 +57,6 @@ jobs:
           SELECT 'saturday',1,'Grade 7 / A',t.id,c.id
           FROM classroom_users t CROSS JOIN classrooms c WHERE t.username='legacy-teacher';
           SQL
-      - name: Capture legacy row counts
-        run: |
-          psql -v ON_ERROR_STOP=1 -Atc "SELECT 'users='||(SELECT count(*) FROM classroom_users)||';rooms='||(SELECT count(*) FROM classrooms)||';schedule='||(SELECT count(*) FROM school_schedule)"
-          psql -v ON_ERROR_STOP=1 -Atc "CREATE TEMP TABLE legacy_ids AS SELECT 'user' AS kind,id::text FROM classroom_users UNION ALL SELECT 'room',id::text FROM classrooms UNION ALL SELECT 'schedule',id::text FROM school_schedule;"
       - name: Apply experimental expand migration
         run: psql -v ON_ERROR_STOP=1 -f server/migrations/experimental/001_multischool_expand.sql
       - name: Assert two-school isolation constraints and legacy preservation
@@ -78,6 +74,18 @@ jobs:
             END IF;
             IF EXISTS (SELECT 1 FROM school_schedule WHERE school_id <> '5c8b8880-1346-445c-89d8-3f76275a7ae5') THEN
               RAISE EXCEPTION 'Legacy schedule tenant mismatch';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM classroom_users WHERE username='legacy-manager' AND role='manager') THEN
+              RAISE EXCEPTION 'Legacy manager row was not preserved';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM classroom_users WHERE username='legacy-teacher' AND role='teacher') THEN
+              RAISE EXCEPTION 'Legacy teacher row was not preserved';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM classrooms WHERE room_code='LEGACYROOM') THEN
+              RAISE EXCEPTION 'Legacy classroom row was not preserved';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM school_schedule WHERE day_of_week='saturday' AND period=1) THEN
+              RAISE EXCEPTION 'Legacy schedule row was not preserved';
             END IF;
           END $$;
           SQL
