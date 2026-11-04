@@ -44,7 +44,30 @@ Deno.serve(async (req: Request) => {
 
     if (!profile.tenant_school_id) return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست." }, 403);
 
-    const role = norm(profile.role);
+    const requestBody = await req.clone().json().catch(() => ({}));
+    const requestedRole = norm(requestBody?.active_role);
+    const mainRole = norm(profile.role);
+    const deputyRoles = ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy",
+      "مدیر", "مدیریت", "معاون", "معاون آموزشی", "معاون اجرایی", "پرورشی"];
+    const { data: activeMemberships, error: membershipsError } = await admin.from("school_memberships")
+      .select("role").eq("school_id", profile.tenant_school_id).eq("auth_user_id", authData.user.id).eq("is_active", true);
+    if (membershipsError) {
+      console.error("classroom-authorize membership lookup failed", membershipsError.message);
+      return reply({ message: "بررسی سمت‌های فعال حساب انجام نشد." }, 503);
+    }
+    const membershipRoles = new Set((activeMemberships ?? []).map((item: any) => norm(item.role)));
+    const hasTeacherMembership = membershipRoles.has("teacher") || membershipRoles.has("دبیر") || membershipRoles.has("معلم");
+    const isDeputyAccount = deputyRoles.some(value => mainRole === norm(value));
+    let role = mainRole;
+    if (requestedRole === "teacher") {
+      if (!hasTeacherMembership && mainRole !== "teacher" && mainRole !== "دبیر" && mainRole !== "معلم") {
+        return reply({ message: "عضویت فعال دبیر برای این حساب تأیید نشد." }, 403);
+      }
+      role = "teacher";
+    } else if (requestedRole === "deputy") {
+      if (!isDeputyAccount) return reply({ message: "سمت معاونت این حساب تأیید نشد." }, 403);
+      role = mainRole;
+    }
     const name = clean(profile.display_name) || clean(profile.username);
     let className = "";
     if (role === "student") {
@@ -157,19 +180,19 @@ Deno.serve(async (req: Request) => {
       }];
     });
 
-    const requestedId = Number((await req.clone().json().catch(() => ({})))?.room_id ?? 0);
+    const requestedId = Number(requestBody?.room_id ?? 0);
     if (requestedId) {
       const room = roomById.get(requestedId);
       if (!room) return reply({ message: "این کلاس در فهرست کلاس‌های مجاز شما نیست." }, 403);
       if (role === "teacher" || role === "student") {
-        const requestedEntryId = Number((await req.clone().json().catch(() => ({})))?.schedule_entry_id ?? 0);
+        const requestedEntryId = Number(requestBody?.schedule_entry_id ?? 0);
         const matchingEntry = schedule.find((entry: any) =>
           Number(entry.schedule_entry_id) === requestedEntryId && Number(entry.id) === requestedId
         );
         if (!requestedEntryId || !matchingEntry) return reply({ message: "برای ورود، زنگ باید از برنامه روزانه خودتان انتخاب شود." }, 403);
         if (!matchingEntry.is_active) return reply({ message: "این زنگ هنوز توسط مدیریت فعال نشده است." }, 403);
         return reply({ ok: true, profile: {
-          username: clean(profile.username), display_name: name, role: clean(profile.role), class_name: className,
+          username: clean(profile.username), display_name: name, role, main_role: clean(profile.role), class_name: className, active_role: role === "teacher" ? "teacher" : requestedRole || role,
         }, room: { ...room, schedule_entry_id: requestedEntryId } });
       }
       return reply({ ok: true, profile: {
