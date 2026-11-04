@@ -40,7 +40,17 @@ Deno.serve(async (req: Request) => {
       .select("username,national_code,display_name,role,auth_user_id,tenant_school_id")
       .eq("auth_user_id", authData.user.id).maybeSingle();
     if (profileError || !profile) return reply({ message: "مجوز نقش این حساب تأیید نشد." }, 403);
-    const role = norm(profile.role);
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body.action !== "string") return reply({ message: "درخواست ناقص است." }, 400);
+    const mainRole = norm(profile.role);
+    const requestedRole = norm(body.active_role);
+    const { data: activeMemberships, error: membershipsError } = await admin.from("school_memberships")
+      .select("role").eq("school_id", profile.tenant_school_id).eq("auth_user_id", authData.user.id).eq("is_active", true);
+    if (membershipsError) return reply({ message: "بررسی سمت‌های فعال حساب انجام نشد." }, 503);
+    const membershipRoles = new Set((activeMemberships ?? []).map((item: any) => norm(item.role)));
+    const hasTeacherMembership = membershipRoles.has("teacher") || membershipRoles.has("دبیر") || membershipRoles.has("معلم");
+    const role = requestedRole === "teacher" && hasTeacherMembership ? "teacher" : mainRole;
+    if (requestedRole === "teacher" && role !== "teacher") return reply({ message: "عضویت فعال دبیر برای این حساب تأیید نشد." }, 403);
     const manager = isManager(role);
     const teacher = isTeacher(role);
     const studentRole = ["student", "دانش آموز", "دانش‌آموز"].includes(role);
@@ -64,8 +74,6 @@ Deno.serve(async (req: Request) => {
       if (error) throw error;
       return !!data?.length;
     };
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body.action !== "string") return reply({ message: "درخواست ناقص است." }, 400);
     const action = body.action;
     const boundedRows = (rows: unknown) => Array.isArray(rows) && rows.length <= 1000 ? rows : null;
 
