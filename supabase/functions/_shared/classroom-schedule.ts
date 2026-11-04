@@ -1,4 +1,4 @@
-const clean = (value: unknown) => String(value ?? "").replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "").trim();
+const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const digits = (value: string) => value
   .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
@@ -20,7 +20,7 @@ export function getTehranClock(now: Date = new Date()): { weekday: string; time:
 
 function minutes(value: unknown): number | null {
   const normalized = digits(clean(value));
-  const match = normalized.match(/^(\\d{1,2}):(\\d{2})(?::\\d{2})?$/);
+  const match = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (!match) return null;
   const hour = Number(match[1]), minute = Number(match[2]);
   if (hour > 23 || minute > 59) return null;
