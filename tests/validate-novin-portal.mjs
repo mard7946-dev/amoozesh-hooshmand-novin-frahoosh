@@ -14,6 +14,23 @@ assert.ok(html.includes("sb_publishable_"), "Portal must use a public Supabase p
 assert.ok(!html.includes("frahoosh-live-classroom-edge.mard7946.workers.dev"), "Portal must not call the legacy classroom Worker");
 assert.ok(!html.includes("sso-ticket"), "Portal must not request legacy classroom SSO tickets");
 assert.ok(!html.includes("new URL('classroom.html'"), "Portal must not bypass the new classroom's authenticated room access");
+assert.ok(html.includes("data.profile.available_roles.includes('teacher')"), "Dual-role deputy accounts must be offered the teacher choice after deputy login");
+assert.ok(html.includes("openAuthenticatedPanel('deputy','deputy')") && html.includes("openAuthenticatedPanel('teacher','teacher')"), "Deputy and teacher choices must activate separate session roles");
+assert.ok(html.includes("sessionStorage.setItem('frahoosh_novin_role',effectiveRole)"), "The selected role must be stored for the authenticated session");
+const classroomAuthorize = readFileSync("supabase/functions/classroom-authorize/index.ts", "utf8");
+assert.ok(classroomAuthorize.includes('.from("school_memberships")') && classroomAuthorize.includes("hasTeacherMembership"), "Classroom authorization must verify an active teacher membership on the server");
+assert.ok(classroomAuthorize.includes('requestedRole === "teacher"') && classroomAuthorize.includes('role = "teacher"'), "Classroom authorization must honor a validated secondary teacher role");
+assert.ok(classroomAuthorize.includes("teacher_id,teacher_name,teacher_username") && classroomAuthorize.includes("Number(entry.teacher_id) === teacherId"), "Teacher timetable lookup must use the linked teacher record ID");
+const classroomManagement = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+assert.ok(classroomManagement.includes('.from("school_memberships")') && classroomManagement.includes("body.active_role"), "Classroom management must validate the selected role against active memberships");
+assert.ok(classroomManagement.includes('requestedRole === "teacher" && role !== "teacher"'), "Classroom management must reject an unverified secondary teacher role");
+const schedulePage = readFileSync("classroom/schedule.html", "utf8");
+assert.ok(schedulePage.includes("active_role:activeRole"), "Weekly schedule requests must carry the selected role");
+const classroomPage = readFileSync("classroom/index.html", "utf8");
+assert.ok(classroomPage.includes("active_role:activeRole") && classroomPage.includes("schedule_entry_id:scheduleEntryId"), "Room authorization must carry selected role and exact schedule entry");
+const classroomManagementPage = readFileSync("classroom/management.html", "utf8");
+assert.ok(classroomManagementPage.includes("active_role:role"), "Classroom management requests must carry the selected role");
+
 
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1]).filter(source => source.trim());
