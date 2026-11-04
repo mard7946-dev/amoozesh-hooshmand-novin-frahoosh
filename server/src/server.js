@@ -223,20 +223,20 @@ app.post('/api/auth/student-login', loginLimiter, async (req, res, next) => {
 
 app.get('/api/schedule/today', auth, async (req, res, next) => {
   try {
-    await pool.query("UPDATE classrooms SET status='ended',updated_at=now() WHERE status='active' AND ends_at<=now()");
+    await pool.query("UPDATE classrooms SET status='ended',updated_at=now() WHERE school_id=$1 AND status='active' AND ends_at<=now()", [req.user.school_id]);
     const today = dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date()));
     const day = dayAliases(req.query.day || today);
     if (!day) return res.status(400).json({ error: 'روز انتخاب‌شده معتبر نیست.' });
     let sql, params;
     if (['teacher','educational_deputy','pastoral_deputy'].includes(req.user.role)) {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE (s.teacher_user_id=$1 OR c.teacher_user_id=$1) AND s.day_of_week=$2 ORDER BY s.period";
-      params = [req.user.id, day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND c.school_id=s.school_id AND (s.teacher_user_id=$2 OR c.teacher_user_id=$2) AND s.day_of_week=$3 ORDER BY s.period";
+      params = [req.user.school_id, req.user.id, day];
     } else if (req.user.role === 'student') {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.grade_class=$1 AND s.day_of_week=$2 ORDER BY s.period";
-      params = [req.user.grade_class, day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND s.grade_class=$2 AND s.day_of_week=$3 ORDER BY s.period";
+      params = [req.user.school_id, req.user.grade_class, day];
     } else {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.day_of_week=$1 ORDER BY s.grade_class,s.period";
-      params = [day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND s.day_of_week=$2 ORDER BY s.grade_class,s.period";
+      params = [req.user.school_id, day];
     }
     const result = await pool.query(sql, params);
     const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
@@ -254,32 +254,32 @@ app.post('/api/schedule', auth, allow('manager','educational_deputy'), async (re
       return res.status(400).json({ error: 'روز، زنگ، کلاس و دبیر الزامی است.' });
     if ((startTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) || (endTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)) || (startTime && endTime && startTime >= endTime))
       return res.status(400).json({ error: 'ساعت شروع و پایان معتبر نیست.' });
-    const teacher = await client.query("SELECT id FROM classroom_users WHERE id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [teacherId]);
+    const teacher = await client.query("SELECT id FROM classroom_users WHERE school_id=$1 AND id=$2 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [req.user.school_id, teacherId]);
     if (!teacher.rowCount) return res.status(400).json({ error: 'دبیر انتخاب‌شده معتبر نیست.' });
     await client.query('BEGIN');
     const existing = await client.query(
-      "SELECT classroom_id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 FOR UPDATE",
-      [day,period,gradeClass]
+      "SELECT classroom_id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 FOR UPDATE",
+      [req.user.school_id,day,period,gradeClass]
     );
     let linkedClassroomId = requestedClassroomId || existing.rows[0]?.classroom_id || null;
     if (linkedClassroomId) {
-      const room = await client.query("SELECT id FROM classrooms WHERE id=$1", [linkedClassroomId]);
+      const room = await client.query("SELECT id FROM classrooms WHERE school_id=$1 AND id=$2", [req.user.school_id, linkedClassroomId]);
       if (!room.rowCount) throw Object.assign(new Error('کلاس انتخاب‌شده پیدا نشد.'), { status: 400 });
       await client.query(
-        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4",
-        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId]
+        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
+        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId,req.user.school_id]
       );
     } else {
       const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
       const room = await client.query(
-        "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id",
-        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
+        "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+        [req.user.school_id,subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
       );
       linkedClassroomId = room.rows[0].id;
     }
     const result = await client.query(
-      "INSERT INTO school_schedule(day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time RETURNING *",
-      [day,period,gradeClass,subject,teacherId,linkedClassroomId,startTime,endTime]
+      "INSERT INTO school_schedule(school_id,day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(school_id,day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time RETURNING *",
+      [req.user.school_id,day,period,gradeClass,subject,teacherId,linkedClassroomId,startTime,endTime]
     );
     await client.query('COMMIT');
     res.status(201).json({ schedule: result.rows[0], classroom: { id: linkedClassroomId }, message: 'برنامه به کلاس مشترک دبیر و دانش‌آموز متصل شد.' });
