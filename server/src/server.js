@@ -468,15 +468,15 @@ app.post('/api/classes', auth, allow('manager'), async (req, res, next) => {
     const day = dayAliases(req.body?.day), period = Number(req.body?.period);
     if (!title || !gradeClass || !Number.isSafeInteger(teacherId) || teacherId < 1 || !day || !Number.isInteger(period) || period < 1 || period > 12)
       return res.status(400).json({ error: 'عنوان، پایه/کلاس، دبیر، روز و زنگ الزامی است.' });
-    const teacher = await pool.query("SELECT id FROM classroom_users WHERE id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [teacherId]);
+    const teacher = await pool.query("SELECT id FROM classroom_users WHERE school_id=$1 AND id=$2 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [req.user.school_id, teacherId]);
     if (!teacher.rowCount) return res.status(400).json({ error: 'دبیر انتخاب‌شده معتبر نیست.' });
-    const scheduled = await pool.query("SELECT id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 AND teacher_user_id=$4", [day,period,gradeClass,teacherId]);
+    const scheduled = await pool.query("SELECT id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [req.user.school_id,day,period,gradeClass,teacherId]);
     if (!scheduled.rowCount) return res.status(400).json({ error: 'در فایل برنامه، این دبیر برای این کلاس و زنگ ثبت نشده است.' });
     const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
     const result = await pool.query(
-      "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id,title,grade_class,teacher_user_id,room_code,status,created_at",
-      [title, gradeClass, teacherId, roomCode, req.user.id]);
-    await pool.query("UPDATE school_schedule SET classroom_id=$1 WHERE day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [result.rows[0].id,day,period,gradeClass,teacherId]);
+      "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,title,grade_class,teacher_user_id,room_code,status,created_at",
+      [req.user.school_id,title, gradeClass, teacherId, roomCode, req.user.id]);
+    await pool.query("UPDATE school_schedule SET classroom_id=$1 WHERE school_id=$6 AND day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [result.rows[0].id,day,period,gradeClass,teacherId,req.user.school_id]);
     res.status(201).json({ classroom: { ...result.rows[0], day, period } });
   } catch (e) { next(e); }
 });
@@ -485,11 +485,11 @@ app.get('/api/classes', auth, async (req, res, next) => {
   try {
     let result;
     if (['manager','educational_deputy','executive_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id ORDER BY c.created_at DESC');
+      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 ORDER BY c.created_at DESC');
     } else if (['teacher','pastoral_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.teacher_user_id=$1 ORDER BY c.created_at DESC', [req.user.id]);
+      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.teacher_user_id=$2 ORDER BY c.created_at DESC', [req.user.school_id, req.user.id]);
     } else {
-      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.grade_class=$1 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.grade_class || '']);
+      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.school_id, req.user.grade_class || '']);
     }
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
@@ -498,8 +498,8 @@ app.get('/api/classes', auth, async (req, res, next) => {
 app.get('/api/classes/:id/access', auth, async (req, res, next) => {
   try {
     const result = await pool.query(
-      "SELECT c.id,c.room_code,c.grade_class,c.status,c.ends_at,c.teacher_user_id FROM classrooms c WHERE c.id=$1",
-      [req.params.id]);
+      "SELECT c.id,c.room_code,c.grade_class,c.status,c.ends_at,c.teacher_user_id FROM classrooms c WHERE c.school_id=$1 AND c.id=$2",
+      [req.user.school_id, req.params.id]);
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس پیدا نشد.' });
     const room = result.rows[0];
     const manager = ['manager','educational_deputy'].includes(req.user.role);
