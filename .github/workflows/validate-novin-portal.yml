@@ -40,6 +40,10 @@ on:
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
+      - 'supabase/functions/classroom-login/index.ts'
+      - 'supabase/functions/classroom-authorize/index.ts'
+      - 'supabase/functions/assessment-center/index.ts'
+      - 'tests/validate-active-school-memberships.mjs'
       - 'tests/validate-novin-portal.mjs'
       - 'index.html'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
@@ -71,3 +75,9 @@ jobs:
         run: deno check supabase/functions/platform-management/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check classroom login and authorization Edge Functions
+        run: deno check supabase/functions/classroom-login/index.ts supabase/functions/classroom-authorize/index.ts
+      - name: Type-check assessment center Edge Function
+        run: deno check supabase/functions/assessment-center/index.ts
+      - name: Validate active school membership guards
+        run: node tests/validate-active-school-memberships.mjs
