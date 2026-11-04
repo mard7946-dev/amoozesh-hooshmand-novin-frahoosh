@@ -79,15 +79,18 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS grade_class TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_salt TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_hash TEXT");
-  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_national_id_hash_uidx ON classroom_users(national_id_hash) WHERE national_id_hash IS NOT NULL");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx ON classroom_users(school_id,username) WHERE username IS NOT NULL");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx ON classroom_users(school_id,national_id_hash) WHERE national_id_hash IS NOT NULL");
   await pool.query(`CREATE TABLE IF NOT EXISTS school_schedule (
     id BIGSERIAL PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), day_of_week TEXT NOT NULL, period INTEGER NOT NULL CHECK(period BETWEEN 1 AND 12),
     grade_class TEXT NOT NULL, subject TEXT NOT NULL DEFAULT '', teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id),
     classroom_id UUID REFERENCES classrooms(id) ON DELETE SET NULL, start_time TIME, end_time TIME,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
-  await pool.query("CREATE INDEX IF NOT EXISTS school_schedule_teacher_day_idx ON school_schedule(teacher_user_id,day_of_week,period)");
-  await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_teacher_status_idx ON classrooms(teacher_user_id,status)`);
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS school_schedule_school_slot_uidx ON school_schedule(school_id,day_of_week,period,grade_class)");
+  await pool.query("CREATE INDEX IF NOT EXISTS school_schedule_teacher_day_idx ON school_schedule(school_id,teacher_user_id,day_of_week,period)");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classrooms_school_room_code_uidx ON classrooms(school_id,room_code)");
+  await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_teacher_status_idx ON classrooms(school_id,teacher_user_id,status)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_grade_status_idx ON classrooms(grade_class,status)`);
   await pool.query(`CREATE TABLE IF NOT EXISTS classroom_sessions (
     token_hash TEXT PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
@@ -98,13 +101,15 @@ async function ensureSchema() {
     actor_user_id BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL,
     event_type TEXT NOT NULL, payload JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
-  await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(classroom_id,created_at)');
+  await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(school_id,classroom_id,created_at)');
   if (process.env.MANAGER_USERNAME && process.env.MANAGER_PASSWORD) {
-    const existing = await pool.query('SELECT id FROM classroom_users WHERE username=$1', [process.env.MANAGER_USERNAME]);
+    const schoolId = process.env.DEFAULT_SCHOOL_ID;
+    if (!schoolId) throw new Error('DEFAULT_SCHOOL_ID is required for the initial manager account');
+    const existing = await pool.query('SELECT id FROM classroom_users WHERE school_id=$1 AND username=$2', [schoolId, process.env.MANAGER_USERNAME]);
     if (!existing.rowCount) {
       const cred = await hashPassword(process.env.MANAGER_PASSWORD);
-      await pool.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('manager',$1,$2,$3,$4)",
-        [process.env.MANAGER_DISPLAY_NAME || 'مدیریت مدرسه', process.env.MANAGER_USERNAME, cred.salt, cred.hash]);
+      await pool.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'manager',$2,$3,$4,$5)",
+        [schoolId, process.env.MANAGER_DISPLAY_NAME || 'مدیریت مدرسه', process.env.MANAGER_USERNAME, cred.salt, cred.hash]);
       console.log('Initial manager account created from environment.');
     }
   }
@@ -115,7 +120,7 @@ async function auth(req, res, next) {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
     if (!token) return res.status(401).json({ error: 'برای ادامه وارد حساب شوید.' });
     const result = await pool.query(
-      'SELECT u.id,u.role,u.display_name,u.username,u.grade_class FROM classroom_sessions s JOIN classroom_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',
+      'SELECT u.id,u.role,u.display_name,u.username,u.grade_class,u.school_id FROM classroom_sessions s JOIN classroom_users u ON u.id=s.user_id AND u.school_id=s.school_id WHERE s.token_hash=$1 AND s.expires_at>now()',
       [hashToken(token)]);
     if (!result.rowCount) return res.status(401).json({ error: 'نشست منقضی شده؛ دوباره وارد شوید.' });
     req.user = result.rows[0];
@@ -124,6 +129,14 @@ async function auth(req, res, next) {
 }
 const allow = (...roles) => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ error: 'اجازه انجام این کار را ندارید.' });
 const text = (value, max = 120) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+async function resolveSchoolId(requestedId, requestedSlug) {
+  const id = text(requestedId, 64), slug = text(requestedSlug, 80), fallback = text(process.env.DEFAULT_SCHOOL_ID, 64);
+  if (!id && !slug && !fallback) return null;
+  const result = id ? await pool.query('SELECT id FROM school_tenants WHERE id=$1',[id]) : slug ? await pool.query('SELECT id FROM school_tenants WHERE slug=$1',[slug]) : await pool.query('SELECT id FROM school_tenants WHERE id=$1',[fallback]);
+  if (!result.rowCount) return null;
+  if (id && slug && !(await pool.query('SELECT 1 FROM school_tenants WHERE id=$1 AND slug=$2',[id,slug])).rowCount) return null;
+  return result.rows[0].id;
+}
 
 app.get('/', (_req, res) => res.sendFile(path.resolve(__dirname, '../../index.html')));
 app.get('/portal.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../public/portal.html')));
