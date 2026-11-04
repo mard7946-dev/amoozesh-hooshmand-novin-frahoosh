@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { Pool } from "pg";
+import { createRequire } from "node:module";
+const require = createRequire(new URL("../server/package.json", import.meta.url));
+const { Pool } = require("pg");
 
 const port = Number(process.env.E2E_PORT || 8091);
 const base = `http://127.0.0.1:${port}`;
