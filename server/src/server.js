@@ -79,7 +79,7 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS grade_class TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_salt TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_hash TEXT");
-  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx ON classroom_users(school_id,username) WHERE username IS NOT NULL");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx ON classroom_users(school_id,username)");
   await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx ON classroom_users(school_id,national_id_hash) WHERE national_id_hash IS NOT NULL");
   await pool.query(`CREATE TABLE IF NOT EXISTS school_schedule (
     id BIGSERIAL PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), day_of_week TEXT NOT NULL, period INTEGER NOT NULL CHECK(period BETWEEN 1 AND 12),
