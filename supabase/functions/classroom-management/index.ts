@@ -375,6 +375,7 @@ Deno.serve(async (req: Request) => {
         }
 
         const slotKey = [key(row.class_name), key(row.weekday), row.period, key(row.subject), key(row.teacher_name)].join("::");
+        const existing = existingBySlot.get(slotKey);
         const scheduleEntry = {
           class_name: row.class_name,
           weekday: row.weekday,
@@ -390,7 +391,6 @@ Deno.serve(async (req: Request) => {
           day_enabled: existing?.day_enabled === true,
           tenant_school_id: school,
         };
-        const existing = existingBySlot.get(slotKey);
         if (existing) {
           const { error } = await admin.from("weekly_schedule_entries").update(scheduleEntry)
             .eq("id", existing.id).eq("tenant_school_id", school);
