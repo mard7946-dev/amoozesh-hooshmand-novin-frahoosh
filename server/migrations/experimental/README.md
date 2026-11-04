@@ -26,8 +26,13 @@ This assignment was explicitly confirmed by the project owner for the current st
 
 **Phase 2 must not be run on a live database until the tenant-aware Express API is deployed and every write supplies an explicit school_id.** Otherwise the old API will fail inserts after the defaults are removed.
 
-## Important application work still required
-These migrations do not by themselves make the running Express API tenant-safe. Before any live rollout, update and test all paths:
+## Tenant-aware application branch prepared (not deployed)
+A companion draft PR now scopes the Express API by authenticated school context: login and student login, database sessions, manager bootstrap, staff/student writes, Excel import writes/lookups, schedules, class listing/access/start/end, and event records. It includes disposable PostgreSQL tests for duplicate usernames in separate schools and cross-school room access denial.
+
+The companion branch is still draft and has not been deployed. The current Render single-school compatibility fallback is controlled by `ALLOW_DEFAULT_SCHOOL_FALLBACK=true`; it must be disabled for a multi-school deployment, and every client must send `schoolId` or `schoolSlug`.
+
+## Remaining rollout prerequisites
+Before any live rollout, independently verify every client sends school context and that all external routes and operational jobs are tenant-scoped. These migrations do not by themselves make the running API tenant-safe.
 - password and student login (same usernames may exist in multiple schools; school code/slug must be part of login context);
 - DB sessions and `/api/auth/me` (session tenant must be validated on every request);
 - manager/staff/teacher/student creation and credentials;
@@ -46,6 +51,7 @@ The existing `.github/workflows/validate.yml` creates a separate PostgreSQL data
 The entire database is disposable and is destroyed with the Actions runner. No Supabase or Render production connection is used.
 
 ## Current status
-- Prepared for rehearsal; awaiting GitHub Actions result.
+- Database migration rehearsal passed in the original draft PR.
+- Companion tenant-aware Express API draft prepared; PostgreSQL integration rerun pending.
 - Not applied to production.
 - No live records, schema, secrets or deployment settings were changed.

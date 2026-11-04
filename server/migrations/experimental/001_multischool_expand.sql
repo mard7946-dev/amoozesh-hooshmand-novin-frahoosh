@@ -69,6 +69,17 @@ ALTER TABLE classrooms ADD CONSTRAINT classrooms_id_school_id_key UNIQUE (id, sc
 -- Tenant-scoped unique indexes and removal of these legacy constraints belong to
 -- the gated contract migration, after all writers pass explicit school_id.
 
+-- Prepare tenant-scoped unique indexes during expand while retaining legacy global
+-- constraints for compatibility. The contract phase removes the global constraints.
+CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx
+  ON classroom_users (school_id, username);
+CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx
+  ON classroom_users (school_id, national_id_hash) WHERE national_id_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS classrooms_school_room_code_uidx
+  ON classrooms (school_id, room_code);
+CREATE UNIQUE INDEX IF NOT EXISTS school_schedule_school_slot_uidx
+  ON school_schedule (school_id, day_of_week, period, grade_class);
+
 ALTER TABLE classrooms
   ADD CONSTRAINT classrooms_teacher_school_fkey
   FOREIGN KEY (teacher_user_id, school_id) REFERENCES classroom_users(id, school_id);

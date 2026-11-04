@@ -10,7 +10,7 @@ ALTER TABLE classrooms DROP CONSTRAINT IF EXISTS classrooms_room_code_key;
 ALTER TABLE school_schedule DROP CONSTRAINT IF EXISTS school_schedule_day_of_week_period_grade_class_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx
-  ON classroom_users (school_id, username) WHERE username IS NOT NULL;
+  ON classroom_users (school_id, username);
 CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx
   ON classroom_users (school_id, national_id_hash) WHERE national_id_hash IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS classrooms_school_room_code_uidx

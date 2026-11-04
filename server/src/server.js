@@ -59,14 +59,15 @@ const verifyPassword = (password, salt, expected) => new Promise((resolve, rejec
 });
 
 async function ensureSchema() {
+  await pool.query(`CREATE TABLE IF NOT EXISTS school_tenants (id UUID PRIMARY KEY, slug TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
   await pool.query(`CREATE TABLE IF NOT EXISTS classroom_users (
-    id BIGSERIAL PRIMARY KEY, role TEXT NOT NULL CHECK (role IN ('manager','teacher','student','educational_deputy','executive_deputy','pastoral_deputy')),
-    display_name TEXT NOT NULL, username TEXT UNIQUE, password_salt TEXT, password_hash TEXT,
+    id BIGSERIAL PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), role TEXT NOT NULL CHECK (role IN ('manager','teacher','student','educational_deputy','executive_deputy','pastoral_deputy')),
+    display_name TEXT NOT NULL, username TEXT, password_salt TEXT, password_hash TEXT,
     grade_class TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS classrooms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), title TEXT NOT NULL, grade_class TEXT NOT NULL,
-    teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id), room_code TEXT NOT NULL UNIQUE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), school_id UUID NOT NULL REFERENCES school_tenants(id), title TEXT NOT NULL, grade_class TEXT NOT NULL,
+    teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id), room_code TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','active','ended')),
     starts_at TIMESTAMPTZ, ends_at TIMESTAMPTZ, created_by BIGINT NOT NULL REFERENCES classroom_users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -78,32 +79,37 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS grade_class TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_salt TEXT");
   await pool.query("ALTER TABLE classroom_users ADD COLUMN IF NOT EXISTS password_hash TEXT");
-  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_national_id_hash_uidx ON classroom_users(national_id_hash) WHERE national_id_hash IS NOT NULL");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx ON classroom_users(school_id,username)");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx ON classroom_users(school_id,national_id_hash) WHERE national_id_hash IS NOT NULL");
   await pool.query(`CREATE TABLE IF NOT EXISTS school_schedule (
-    id BIGSERIAL PRIMARY KEY, day_of_week TEXT NOT NULL, period INTEGER NOT NULL CHECK(period BETWEEN 1 AND 12),
+    id BIGSERIAL PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), day_of_week TEXT NOT NULL, period INTEGER NOT NULL CHECK(period BETWEEN 1 AND 12),
     grade_class TEXT NOT NULL, subject TEXT NOT NULL DEFAULT '', teacher_user_id BIGINT NOT NULL REFERENCES classroom_users(id),
     classroom_id UUID REFERENCES classrooms(id) ON DELETE SET NULL, start_time TIME, end_time TIME,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(day_of_week,period,grade_class)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
-  await pool.query("CREATE INDEX IF NOT EXISTS school_schedule_teacher_day_idx ON school_schedule(teacher_user_id,day_of_week,period)");
-  await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_teacher_status_idx ON classrooms(teacher_user_id,status)`);
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS school_schedule_school_slot_uidx ON school_schedule(school_id,day_of_week,period,grade_class)");
+  await pool.query("CREATE INDEX IF NOT EXISTS school_schedule_teacher_day_idx ON school_schedule(school_id,teacher_user_id,day_of_week,period)");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS classrooms_school_room_code_uidx ON classrooms(school_id,room_code)");
+  await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_teacher_status_idx ON classrooms(school_id,teacher_user_id,status)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS classrooms_grade_status_idx ON classrooms(grade_class,status)`);
   await pool.query(`CREATE TABLE IF NOT EXISTS classroom_sessions (
-    token_hash TEXT PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
+    token_hash TEXT PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), user_id BIGINT NOT NULL REFERENCES classroom_users(id) ON DELETE CASCADE,
     expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS classroom_events (
-    id BIGSERIAL PRIMARY KEY, classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY, school_id UUID NOT NULL REFERENCES school_tenants(id), classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
     actor_user_id BIGINT REFERENCES classroom_users(id) ON DELETE SET NULL,
     event_type TEXT NOT NULL, payload JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
-  await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(classroom_id,created_at)');
+  await pool.query('CREATE INDEX IF NOT EXISTS classroom_events_room_time_idx ON classroom_events(school_id,classroom_id,created_at)');
   if (process.env.MANAGER_USERNAME && process.env.MANAGER_PASSWORD) {
-    const existing = await pool.query('SELECT id FROM classroom_users WHERE username=$1', [process.env.MANAGER_USERNAME]);
+    const schoolId = process.env.DEFAULT_SCHOOL_ID;
+    if (!schoolId) throw new Error('DEFAULT_SCHOOL_ID is required for the initial manager account');
+    const existing = await pool.query('SELECT id FROM classroom_users WHERE school_id=$1 AND username=$2', [schoolId, process.env.MANAGER_USERNAME]);
     if (!existing.rowCount) {
       const cred = await hashPassword(process.env.MANAGER_PASSWORD);
-      await pool.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('manager',$1,$2,$3,$4)",
-        [process.env.MANAGER_DISPLAY_NAME || 'مدیریت مدرسه', process.env.MANAGER_USERNAME, cred.salt, cred.hash]);
+      await pool.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'manager',$2,$3,$4,$5)",
+        [schoolId, process.env.MANAGER_DISPLAY_NAME || 'مدیریت مدرسه', process.env.MANAGER_USERNAME, cred.salt, cred.hash]);
       console.log('Initial manager account created from environment.');
     }
   }
@@ -114,7 +120,7 @@ async function auth(req, res, next) {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
     if (!token) return res.status(401).json({ error: 'برای ادامه وارد حساب شوید.' });
     const result = await pool.query(
-      'SELECT u.id,u.role,u.display_name,u.username,u.grade_class FROM classroom_sessions s JOIN classroom_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',
+      'SELECT u.id,u.role,u.display_name,u.username,u.grade_class,u.school_id FROM classroom_sessions s JOIN classroom_users u ON u.id=s.user_id AND u.school_id=s.school_id WHERE s.token_hash=$1 AND s.expires_at>now()',
       [hashToken(token)]);
     if (!result.rowCount) return res.status(401).json({ error: 'نشست منقضی شده؛ دوباره وارد شوید.' });
     req.user = result.rows[0];
@@ -123,6 +129,15 @@ async function auth(req, res, next) {
 }
 const allow = (...roles) => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ error: 'اجازه انجام این کار را ندارید.' });
 const text = (value, max = 120) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+async function resolveSchoolId(requestedId, requestedSlug) {
+  const id = text(requestedId, 64), slug = text(requestedSlug, 80);
+  const fallback = process.env.ALLOW_DEFAULT_SCHOOL_FALLBACK === 'true' ? text(process.env.DEFAULT_SCHOOL_ID, 64) : '';
+  if (!id && !slug && !fallback) return null;
+  const result = id ? await pool.query('SELECT id FROM school_tenants WHERE id=$1',[id]) : slug ? await pool.query('SELECT id FROM school_tenants WHERE slug=$1',[slug]) : await pool.query('SELECT id FROM school_tenants WHERE id=$1',[fallback]);
+  if (!result.rowCount) return null;
+  if (id && slug && !(await pool.query('SELECT 1 FROM school_tenants WHERE id=$1 AND slug=$2',[id,slug])).rowCount) return null;
+  return result.rows[0].id;
+}
 
 app.get('/', (_req, res) => res.sendFile(path.resolve(__dirname, '../../index.html')));
 app.get('/portal.html', (_req, res) => res.sendFile(path.resolve(__dirname, '../public/portal.html')));
@@ -165,60 +180,64 @@ app.post('/api/auth/login', loginLimiter, async (req, res, next) => {
     const username = normalizeNumerals(text(req.body?.username, 80));
     const password = typeof req.body?.password === 'string' ? normalizeNumerals(req.body.password) : '';
     if (!username || !password) return res.status(400).json({ error: 'نام کاربری و رمز عبور الزامی است.' });
-    const found = await pool.query('SELECT * FROM classroom_users WHERE username=$1', [username]);
+    const schoolId = await resolveSchoolId(req.body?.schoolId, req.body?.schoolSlug);
+    if (!schoolId) return res.status(400).json({ error: 'مدرسهٔ ورود معتبر نیست؛ شناسه یا کد مدرسه را وارد کنید.' });
+    const found = await pool.query('SELECT * FROM classroom_users WHERE school_id=$1 AND username=$2', [schoolId, username]);
     if (!found.rowCount || !found.rows[0].password_hash ||
         !(await verifyPassword(password, found.rows[0].password_salt, found.rows[0].password_hash))) {
       return res.status(401).json({ error: 'نام کاربری یا رمز عبور نادرست است.' });
     }
     const user = found.rows[0], token = randomToken();
-    await pool.query(`INSERT INTO classroom_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')`,
-      [hashToken(token), user.id]);
-    res.json({ token, expiresIn: 43200, user: { id: user.id, role: user.role, displayName: user.display_name, username: user.username, gradeClass: user.grade_class } });
+    await pool.query(`INSERT INTO classroom_sessions(school_id,token_hash,user_id,expires_at) VALUES($1,$2,$3,now()+interval '12 hours')`,
+      [schoolId, hashToken(token), user.id]);
+    res.json({ token, expiresIn: 43200, user: { id: user.id, role: user.role, displayName: user.display_name, username: user.username, gradeClass: user.grade_class, schoolId: user.school_id } });
   } catch (e) { next(e); }
 });
 
 app.get('/api/auth/me', auth, (req, res) => {
-  res.json({ user: { id: req.user.id, role: req.user.role, displayName: req.user.display_name, username: req.user.username, gradeClass: req.user.grade_class } });
+  res.json({ user: { id: req.user.id, role: req.user.role, displayName: req.user.display_name, username: req.user.username, gradeClass: req.user.grade_class, schoolId: req.user.school_id } });
 });
 
 app.post('/api/auth/logout', auth, async (req, res, next) => {
-  try { const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim(); await pool.query('DELETE FROM classroom_sessions WHERE token_hash=$1', [hashToken(token)]); res.json({ ok: true }); }
+  try { const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim(); await pool.query('DELETE FROM classroom_sessions WHERE token_hash=$1 AND school_id=$2', [hashToken(token), req.user.school_id]); res.json({ ok: true }); }
   catch (e) { next(e); }
 });
 
 
 app.post('/api/auth/student-login', loginLimiter, async (req, res, next) => {
   try {
+    const schoolId = await resolveSchoolId(req.body?.schoolId, req.body?.schoolSlug);
+    if (!schoolId) return res.status(400).json({ error: 'مدرسهٔ ورود معتبر نیست؛ شناسه یا کد مدرسه را وارد کنید.' });
     const firstName = text(req.body?.firstName), familyName = text(req.body?.familyName);
     const gradeClass = text(req.body?.gradeClass, 40), nationalId = normalizeNationalId(req.body?.nationalId);
     if (!firstName || !familyName || !gradeClass || !/^\d{10}$/.test(nationalId))
       return res.status(400).json({ error: 'نام، نام خانوادگی، کلاس و کد ملی کامل را وارد کنید.' });
     const result = await pool.query(
-      "SELECT id,display_name || ' ' || family_name AS display_name,family_name,grade_class FROM classroom_users WHERE role='student' AND lower(display_name)=lower($1) AND lower(family_name)=lower($2) AND grade_class=$3 AND national_id_hash=$4",
-      [firstName, familyName, gradeClass, nationalIdHash(nationalId)]);
+      "SELECT id,display_name || ' ' || family_name AS display_name,family_name,grade_class FROM classroom_users WHERE school_id=$1 AND role='student' AND lower(display_name)=lower($2) AND lower(family_name)=lower($3) AND grade_class=$4 AND national_id_hash=$5",
+      [schoolId, firstName, familyName, gradeClass, nationalIdHash(nationalId)]);
     if (!result.rowCount) return res.status(401).json({ error: 'اطلاعات واردشده با فهرست مدرسه مطابقت ندارد.' });
     const user = result.rows[0], token = randomToken();
-    await pool.query("INSERT INTO classroom_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')", [hashToken(token), user.id]);
-    res.json({ token, expiresIn: 43200, user: { id: user.id, role: 'student', displayName: user.display_name, gradeClass: user.grade_class } });
+    await pool.query("INSERT INTO classroom_sessions(school_id,token_hash,user_id,expires_at) VALUES($1,$2,$3,now()+interval '12 hours')", [schoolId, hashToken(token), user.id]);
+    res.json({ token, expiresIn: 43200, user: { id: user.id, role: 'student', displayName: user.display_name, gradeClass: user.grade_class, schoolId: user.school_id } });
   } catch (e) { next(e); }
 });
 
 app.get('/api/schedule/today', auth, async (req, res, next) => {
   try {
-    await pool.query("UPDATE classrooms SET status='ended',updated_at=now() WHERE status='active' AND ends_at<=now()");
+    await pool.query("UPDATE classrooms SET status='ended',updated_at=now() WHERE school_id=$1 AND status='active' AND ends_at<=now()", [req.user.school_id]);
     const today = dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date()));
     const day = dayAliases(req.query.day || today);
     if (!day) return res.status(400).json({ error: 'روز انتخاب‌شده معتبر نیست.' });
     let sql, params;
     if (['teacher','educational_deputy','pastoral_deputy'].includes(req.user.role)) {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE (s.teacher_user_id=$1 OR c.teacher_user_id=$1) AND s.day_of_week=$2 ORDER BY s.period";
-      params = [req.user.id, day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND (s.teacher_user_id=$2 OR c.teacher_user_id=$2) AND s.day_of_week=$3 ORDER BY s.period";
+      params = [req.user.school_id, req.user.id, day];
     } else if (req.user.role === 'student') {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.grade_class=$1 AND s.day_of_week=$2 ORDER BY s.period";
-      params = [req.user.grade_class, day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id AND u.school_id=s.school_id LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND s.grade_class=$2 AND s.day_of_week=$3 ORDER BY s.period";
+      params = [req.user.school_id, req.user.grade_class, day];
     } else {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.day_of_week=$1 ORDER BY s.grade_class,s.period";
-      params = [day];
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id AND u.school_id=s.school_id LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND s.day_of_week=$2 ORDER BY s.grade_class,s.period";
+      params = [req.user.school_id, day];
     }
     const result = await pool.query(sql, params);
     const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
@@ -236,32 +255,32 @@ app.post('/api/schedule', auth, allow('manager','educational_deputy'), async (re
       return res.status(400).json({ error: 'روز، زنگ، کلاس و دبیر الزامی است.' });
     if ((startTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) || (endTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)) || (startTime && endTime && startTime >= endTime))
       return res.status(400).json({ error: 'ساعت شروع و پایان معتبر نیست.' });
-    const teacher = await client.query("SELECT id FROM classroom_users WHERE id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [teacherId]);
+    const teacher = await client.query("SELECT id FROM classroom_users WHERE school_id=$1 AND id=$2 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [req.user.school_id, teacherId]);
     if (!teacher.rowCount) return res.status(400).json({ error: 'دبیر انتخاب‌شده معتبر نیست.' });
     await client.query('BEGIN');
     const existing = await client.query(
-      "SELECT classroom_id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 FOR UPDATE",
-      [day,period,gradeClass]
+      "SELECT classroom_id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 FOR UPDATE",
+      [req.user.school_id,day,period,gradeClass]
     );
     let linkedClassroomId = requestedClassroomId || existing.rows[0]?.classroom_id || null;
     if (linkedClassroomId) {
-      const room = await client.query("SELECT id FROM classrooms WHERE id=$1", [linkedClassroomId]);
+      const room = await client.query("SELECT id FROM classrooms WHERE school_id=$1 AND id=$2", [req.user.school_id, linkedClassroomId]);
       if (!room.rowCount) throw Object.assign(new Error('کلاس انتخاب‌شده پیدا نشد.'), { status: 400 });
       await client.query(
-        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4",
-        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId]
+        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
+        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId,req.user.school_id]
       );
     } else {
       const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
       const room = await client.query(
-        "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id",
-        [subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
+        "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+        [req.user.school_id,subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
       );
       linkedClassroomId = room.rows[0].id;
     }
     const result = await client.query(
-      "INSERT INTO school_schedule(day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time RETURNING *",
-      [day,period,gradeClass,subject,teacherId,linkedClassroomId,startTime,endTime]
+      "INSERT INTO school_schedule(school_id,day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(school_id,day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time RETURNING *",
+      [req.user.school_id,day,period,gradeClass,subject,teacherId,linkedClassroomId,startTime,endTime]
     );
     await client.query('COMMIT');
     res.status(201).json({ schedule: result.rows[0], classroom: { id: linkedClassroomId }, message: 'برنامه به کلاس مشترک دبیر و دانش‌آموز متصل شد.' });
@@ -291,8 +310,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
       const password = normalizeDigits(field(row,'رمز','رمز عبور','password','passcode'));
       if (!displayName || !username || !/^\d{8,12}$/.test(password)) continue;
       const cred = await hashPassword(password);
-      const saved = await client.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('teacher',$1,$2,$3,$4) ON CONFLICT(username) DO UPDATE SET role='teacher',display_name=EXCLUDED.display_name,password_salt=EXCLUDED.password_salt,password_hash=EXCLUDED.password_hash RETURNING id,display_name,username",
-        [displayName,username,cred.salt,cred.hash]);
+      const saved = await client.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'teacher',$2,$3,$4,$5) ON CONFLICT(school_id,username) DO UPDATE SET role='teacher',display_name=EXCLUDED.display_name,password_salt=EXCLUDED.password_salt,password_hash=EXCLUDED.password_hash RETURNING id,display_name,username",
+        [req.user.school_id,displayName,username,cred.salt,cred.hash]);
       teacherIds.set(normalizeText(displayName), saved.rows[0].id);
       teacherIds.set(normalizeText(username), saved.rows[0].id);
       teacherCount++;
@@ -300,7 +319,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
     // Existing staff accounts are authoritative: resolve schedule rows by their actual usernames
     // or exact display names without requiring a second teacher-account import.
     const existingTeachers = await client.query(
-      "SELECT id,display_name,username FROM classroom_users WHERE role IN ('teacher','educational_deputy','pastoral_deputy')"
+      "SELECT id,display_name,username FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')",
+      [req.user.school_id]
     );
     for (const teacher of existingTeachers.rows) {
       const displayKey = normalizeText(teacher.display_name);
@@ -315,8 +335,8 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
       const nationalId = normalizeNationalId(field(row,'کد ملی','کدملی','nationalId','national_id','national code'));
       const username = field(row,'نام کاربری','username') || ('stu-' + crypto.createHash('sha256').update(first+'|'+family+'|'+gradeClass+'|'+nationalId).digest('hex').slice(0,16));
       if (!first || !family || !gradeClass || !/^\d{10}$/.test(nationalId)) continue;
-      const saved = await client.query("INSERT INTO classroom_users(role,display_name,family_name,username,national_id_hash,grade_class) VALUES('student',$1,$2,$3,$4,$5) ON CONFLICT(username) DO UPDATE SET role='student',display_name=EXCLUDED.display_name,family_name=EXCLUDED.family_name,national_id_hash=EXCLUDED.national_id_hash,grade_class=EXCLUDED.grade_class RETURNING id,display_name,family_name,username,grade_class",
-        [first,family,username,nationalIdHash(nationalId),gradeClass]);
+      const saved = await client.query("INSERT INTO classroom_users(school_id,role,display_name,family_name,username,national_id_hash,grade_class) VALUES($1,'student',$2,$3,$4,$5,$6) ON CONFLICT(school_id,username) DO UPDATE SET role='student',display_name=EXCLUDED.display_name,family_name=EXCLUDED.family_name,national_id_hash=EXCLUDED.national_id_hash,grade_class=EXCLUDED.grade_class RETURNING id,display_name,family_name,username,grade_class",
+        [req.user.school_id,first,family,username,nationalIdHash(nationalId),gradeClass]);
       studentCount++;
     }
     for (const row of schedules) {
@@ -331,26 +351,26 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
         continue;
       }
       const existing = await client.query(
-        "SELECT classroom_id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 FOR UPDATE",
-        [day,period,gradeClass]
+        "SELECT classroom_id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 FOR UPDATE",
+        [req.user.school_id,day,period,gradeClass]
       );
       let classroomId = existing.rows[0]?.classroom_id || null;
       if (classroomId) {
         await client.query(
-          "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4",
-          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,classroomId]
+          "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
+          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,classroomId,req.user.school_id]
         );
       } else {
         const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
         const room = await client.query(
-          "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id",
-          [subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
+          "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+          [req.user.school_id,subject || ('کلاس '+gradeClass),gradeClass,teacherId,roomCode,req.user.id]
         );
         classroomId = room.rows[0].id;
       }
       await client.query(
-        "INSERT INTO school_schedule(day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time",
-        [day,period,gradeClass,subject,teacherId,classroomId,startTime,endTime]
+        "INSERT INTO school_schedule(school_id,day_of_week,period,grade_class,subject,teacher_user_id,classroom_id,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(school_id,day_of_week,period,grade_class) DO UPDATE SET subject=EXCLUDED.subject,teacher_user_id=EXCLUDED.teacher_user_id,classroom_id=EXCLUDED.classroom_id,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time",
+        [req.user.school_id,day,period,gradeClass,subject,teacherId,classroomId,startTime,endTime]
       );
       scheduleCount++;
     }
@@ -381,8 +401,8 @@ app.post('/api/teachers', auth, allow('manager'), async (req, res, next) => {
     const numericPassword = normalizeDigits(password);
     if (!displayName || !username || !/^\d{8,12}$/.test(numericPassword)) return res.status(400).json({ error: 'نام، نام کاربری و رمز عددی ۸ تا ۱۲ رقمی لازم است.' });
     const cred = await hashPassword(numericPassword);
-    const result = await pool.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('teacher',$1,$2,$3,$4) RETURNING id,display_name,username",
-      [displayName, username, cred.salt, cred.hash]);
+    const result = await pool.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'teacher',$2,$3,$4,$5) RETURNING id,display_name,username",
+      [req.user.school_id,displayName, username, cred.salt, cred.hash]);
     res.status(201).json({ teacher: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
@@ -394,8 +414,8 @@ app.post('/api/students', auth, allow('manager'), async (req, res, next) => {
     if (!firstName || !familyName || !username || !gradeClass || !/^\d{10}$/.test(nationalId))
       return res.status(400).json({ error: 'نام، نام خانوادگی، نام کاربری، کلاس و کد ملی ۱۰ رقمی لازم است.' });
     const displayName = firstName + ' ' + familyName;
-    const result = await pool.query("INSERT INTO classroom_users(role,display_name,family_name,username,national_id_hash,grade_class) VALUES('student',$1,$2,$3,$4,$5) RETURNING id,display_name,family_name,username,grade_class",
-      [firstName, familyName, username, nationalIdHash(nationalId), gradeClass]);
+    const result = await pool.query("INSERT INTO classroom_users(school_id,role,display_name,family_name,username,national_id_hash,grade_class) VALUES($1,'student',$2,$3,$4,$5,$6) RETURNING id,display_name,family_name,username,grade_class",
+      [req.user.school_id,firstName, familyName, username, nationalIdHash(nationalId), gradeClass]);
     res.status(201).json({ student: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
@@ -408,14 +428,14 @@ app.post('/api/account/credentials', auth, allow('manager'), async (req, res, ne
     if (!currentPassword || !username || newPassword.length < 10 || newPassword.length > 72) {
       return res.status(400).json({ error: 'رمز فعلی، نام کاربری و رمز جدید حداقل ۱۰ نویسه‌ای الزامی است.' });
     }
-    const current = await pool.query("SELECT password_salt,password_hash FROM classroom_users WHERE id=$1 AND role='manager'", [req.user.id]);
+    const current = await pool.query("SELECT password_salt,password_hash FROM classroom_users WHERE school_id=$1 AND id=$2 AND role='manager'", [req.user.school_id, req.user.id]);
     if (!current.rowCount || !current.rows[0].password_hash ||
         !(await verifyPassword(currentPassword, current.rows[0].password_salt, current.rows[0].password_hash))) {
       return res.status(401).json({ error: 'رمز فعلی صحیح نیست.' });
     }
     const cred = await hashPassword(newPassword);
-    const saved = await pool.query("UPDATE classroom_users SET username=$1,password_salt=$2,password_hash=$3 WHERE id=$4 AND role='manager' RETURNING id,username",
-      [username,cred.salt,cred.hash,req.user.id]);
+    const saved = await pool.query("UPDATE classroom_users SET username=$1,password_salt=$2,password_hash=$3 WHERE school_id=$4 AND id=$5 AND role='manager' RETURNING id,username",
+      [username,cred.salt,cred.hash,req.user.school_id,req.user.id]);
     res.json({ ok: true, account: saved.rows[0], message: 'اطلاعات ورود به‌روزرسانی شد. نشست فعلی تا زمان خروج فعال می‌ماند.' });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً استفاده شده است.' }); next(e); }
 });
@@ -432,14 +452,14 @@ app.post('/api/staff', auth, allow('manager'), async (req, res, next) => {
     }
     const cred = await hashPassword(password);
     const result = await pool.query(
-      'INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING id,role,display_name,username',
-      [role,displayName,username,cred.salt,cred.hash]);
+      'INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,role,display_name,username',
+      [req.user.school_id,role,displayName,username,cred.salt,cred.hash]);
     res.status(201).json({ staff: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
 
-app.get('/api/teachers', auth, allow('manager','educational_deputy'), async (_req, res, next) => {
-  try { const result = await pool.query("SELECT id,display_name,username,role FROM classroom_users WHERE role IN ('teacher','educational_deputy','pastoral_deputy') ORDER BY display_name"); res.json({ teachers: result.rows }); }
+app.get('/api/teachers', auth, allow('manager','educational_deputy'), async (req, res, next) => {
+  try { const result = await pool.query("SELECT id,display_name,username,role FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy') ORDER BY display_name", [req.user.school_id]); res.json({ teachers: result.rows }); }
   catch (e) { next(e); }
 });
 
@@ -449,15 +469,15 @@ app.post('/api/classes', auth, allow('manager'), async (req, res, next) => {
     const day = dayAliases(req.body?.day), period = Number(req.body?.period);
     if (!title || !gradeClass || !Number.isSafeInteger(teacherId) || teacherId < 1 || !day || !Number.isInteger(period) || period < 1 || period > 12)
       return res.status(400).json({ error: 'عنوان، پایه/کلاس، دبیر، روز و زنگ الزامی است.' });
-    const teacher = await pool.query("SELECT id FROM classroom_users WHERE id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [teacherId]);
+    const teacher = await pool.query("SELECT id FROM classroom_users WHERE school_id=$1 AND id=$2 AND role IN ('teacher','educational_deputy','pastoral_deputy')", [req.user.school_id, teacherId]);
     if (!teacher.rowCount) return res.status(400).json({ error: 'دبیر انتخاب‌شده معتبر نیست.' });
-    const scheduled = await pool.query("SELECT id FROM school_schedule WHERE day_of_week=$1 AND period=$2 AND grade_class=$3 AND teacher_user_id=$4", [day,period,gradeClass,teacherId]);
+    const scheduled = await pool.query("SELECT id FROM school_schedule WHERE school_id=$1 AND day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [req.user.school_id,day,period,gradeClass,teacherId]);
     if (!scheduled.rowCount) return res.status(400).json({ error: 'در فایل برنامه، این دبیر برای این کلاس و زنگ ثبت نشده است.' });
     const roomCode = crypto.randomBytes(5).toString('hex').toUpperCase();
     const result = await pool.query(
-      "INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id,title,grade_class,teacher_user_id,room_code,status,created_at",
-      [title, gradeClass, teacherId, roomCode, req.user.id]);
-    await pool.query("UPDATE school_schedule SET classroom_id=$1 WHERE day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [result.rows[0].id,day,period,gradeClass,teacherId]);
+      "INSERT INTO classrooms(school_id,title,grade_class,teacher_user_id,room_code,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,title,grade_class,teacher_user_id,room_code,status,created_at",
+      [req.user.school_id,title, gradeClass, teacherId, roomCode, req.user.id]);
+    await pool.query("UPDATE school_schedule SET classroom_id=$1 WHERE school_id=$6 AND day_of_week=$2 AND period=$3 AND grade_class=$4 AND teacher_user_id=$5", [result.rows[0].id,day,period,gradeClass,teacherId,req.user.school_id]);
     res.status(201).json({ classroom: { ...result.rows[0], day, period } });
   } catch (e) { next(e); }
 });
@@ -466,11 +486,11 @@ app.get('/api/classes', auth, async (req, res, next) => {
   try {
     let result;
     if (['manager','educational_deputy','executive_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id ORDER BY c.created_at DESC');
+      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 ORDER BY c.created_at DESC', [req.user.school_id]);
     } else if (['teacher','pastoral_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.teacher_user_id=$1 ORDER BY c.created_at DESC', [req.user.id]);
+      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.teacher_user_id=$2 ORDER BY c.created_at DESC', [req.user.school_id, req.user.id]);
     } else {
-      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.grade_class=$1 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.grade_class || '']);
+      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.school_id, req.user.grade_class || '']);
     }
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
@@ -479,8 +499,8 @@ app.get('/api/classes', auth, async (req, res, next) => {
 app.get('/api/classes/:id/access', auth, async (req, res, next) => {
   try {
     const result = await pool.query(
-      "SELECT c.id,c.room_code,c.grade_class,c.status,c.ends_at,c.teacher_user_id FROM classrooms c WHERE c.id=$1",
-      [req.params.id]);
+      "SELECT c.id,c.room_code,c.grade_class,c.status,c.ends_at,c.teacher_user_id FROM classrooms c WHERE c.school_id=$1 AND c.id=$2",
+      [req.user.school_id, req.params.id]);
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس پیدا نشد.' });
     const room = result.rows[0];
     const manager = ['manager','educational_deputy'].includes(req.user.role);
@@ -497,15 +517,15 @@ app.post('/api/classes/:id/start', auth, allow('manager','educational_deputy','t
     // Management can start any classroom for support; teachers remain restricted
     // to their assigned room and the currently scheduled lesson period.
     if (['teacher','pastoral_deputy'].includes(req.user.role)) {
-      const scheduled = await pool.query("SELECT id FROM school_schedule WHERE classroom_id=$1 AND teacher_user_id=$2 AND day_of_week=$3 AND start_time <= (now() AT TIME ZONE 'Asia/Tehran')::time AND end_time > (now() AT TIME ZONE 'Asia/Tehran')::time LIMIT 1",
-        [req.params.id, req.user.id, dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date()))]);
+      const scheduled = await pool.query("SELECT id FROM school_schedule WHERE school_id=$4 AND classroom_id=$1 AND teacher_user_id=$2 AND day_of_week=$3 AND start_time <= (now() AT TIME ZONE 'Asia/Tehran')::time AND end_time > (now() AT TIME ZONE 'Asia/Tehran')::time LIMIT 1",
+        [req.params.id, req.user.id, dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date())), req.user.school_id]);
       if (!scheduled.rowCount) return res.status(403).json({ error: 'این زنگ طبق برنامه روزانه هنوز فعال نیست.' });
     }
     const result = ['manager','educational_deputy'].includes(req.user.role)
-      ? await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id])
-      : await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND teacher_user_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.id]);
+      ? await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND school_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.school_id])
+      : await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND school_id=$3 AND teacher_user_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.id, req.user.school_id]);
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس برای این حساب پیدا نشد یا قبلاً شروع شده است.' });
-    await pool.query("INSERT INTO classroom_events(classroom_id,actor_user_id,event_type) VALUES($1,$2,'class-started')", [req.params.id, req.user.id]);
+    await pool.query("INSERT INTO classroom_events(school_id,classroom_id,actor_user_id,event_type) VALUES($1,$2,$3,'class-started')", [req.user.school_id, req.params.id, req.user.id]);
     res.json({ classroom: result.rows[0] });
   } catch (e) { next(e); }
 });
@@ -513,12 +533,12 @@ app.post('/api/classes/:id/start', auth, allow('manager','educational_deputy','t
 app.post('/api/classes/:id/end', auth, async (req, res, next) => {
   try {
     const result = ['manager','educational_deputy'].includes(req.user.role)
-      ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND status='active' RETURNING id,status,ends_at", [req.params.id])
+      ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND school_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.school_id])
       : ['teacher','pastoral_deputy'].includes(req.user.role)
-        ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND teacher_user_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.id])
+        ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND school_id=$3 AND teacher_user_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.id, req.user.school_id])
         : { rowCount: 0, rows: [] };
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس فعال برای پایان دادن پیدا نشد.' });
-    await pool.query("INSERT INTO classroom_events(classroom_id,actor_user_id,event_type) VALUES($1,$2,'class-ended')", [req.params.id, req.user.id]);
+    await pool.query("INSERT INTO classroom_events(school_id,classroom_id,actor_user_id,event_type) VALUES($1,$2,$3,'class-ended')", [req.user.school_id, req.params.id, req.user.id]);
     res.json({ classroom: result.rows[0] });
   } catch (e) { next(e); }
 });
@@ -526,8 +546,8 @@ app.post('/api/classes/:id/end', auth, async (req, res, next) => {
 app.get('/api/classes/active', auth, allow('student'), async (req, res, next) => {
   try {
     if (!req.user.grade_class) return res.status(400).json({ error: 'پایه و کلاس دانش‌آموز در حساب ثبت نشده است.' });
-    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.grade_class=$1 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
-      [req.user.grade_class]);
+    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
+      [req.user.school_id, req.user.grade_class]);
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
 });

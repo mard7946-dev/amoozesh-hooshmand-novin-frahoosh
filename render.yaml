@@ -17,6 +17,10 @@ services:
         value: require
       - key: ALLOWED_ORIGINS
         value: https://frahoosh-live-classroom.onrender.com
+      - key: DEFAULT_SCHOOL_ID
+        value: 5c8b8880-1346-445c-89d8-3f76275a7ae5
+      - key: ALLOW_DEFAULT_SCHOOL_FALLBACK
+        value: "true"
       - key: MANAGER_USERNAME
         value: school-manager
       - key: MANAGER_PASSWORD
