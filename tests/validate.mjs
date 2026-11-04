@@ -5,7 +5,6 @@ const landing = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "utf8");
 const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
 const publishWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
-const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
