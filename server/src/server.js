@@ -485,7 +485,7 @@ app.get('/api/classes', auth, async (req, res, next) => {
   try {
     let result;
     if (['manager','educational_deputy','executive_deputy'].includes(req.user.role)) {
-      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 ORDER BY c.created_at DESC');
+      result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 ORDER BY c.created_at DESC', [req.user.school_id]);
     } else if (['teacher','pastoral_deputy'].includes(req.user.role)) {
       result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.teacher_user_id=$2 ORDER BY c.created_at DESC', [req.user.school_id, req.user.id]);
     } else {
@@ -516,15 +516,15 @@ app.post('/api/classes/:id/start', auth, allow('manager','educational_deputy','t
     // Management can start any classroom for support; teachers remain restricted
     // to their assigned room and the currently scheduled lesson period.
     if (['teacher','pastoral_deputy'].includes(req.user.role)) {
-      const scheduled = await pool.query("SELECT id FROM school_schedule WHERE classroom_id=$1 AND teacher_user_id=$2 AND day_of_week=$3 AND start_time <= (now() AT TIME ZONE 'Asia/Tehran')::time AND end_time > (now() AT TIME ZONE 'Asia/Tehran')::time LIMIT 1",
-        [req.params.id, req.user.id, dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date()))]);
+      const scheduled = await pool.query("SELECT id FROM school_schedule WHERE school_id=$4 AND classroom_id=$1 AND teacher_user_id=$2 AND day_of_week=$3 AND start_time <= (now() AT TIME ZONE 'Asia/Tehran')::time AND end_time > (now() AT TIME ZONE 'Asia/Tehran')::time LIMIT 1",
+        [req.params.id, req.user.id, dayAliases(new Intl.DateTimeFormat('fa-IR', { weekday: 'long', timeZone: 'Asia/Tehran' }).format(new Date())), req.user.school_id]);
       if (!scheduled.rowCount) return res.status(403).json({ error: 'این زنگ طبق برنامه روزانه هنوز فعال نیست.' });
     }
     const result = ['manager','educational_deputy'].includes(req.user.role)
-      ? await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id])
-      : await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND teacher_user_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.id]);
+      ? await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND school_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.school_id])
+      : await pool.query("UPDATE classrooms SET status='active',starts_at=now(),ends_at=now()+interval '50 minutes',updated_at=now() WHERE id=$1 AND school_id=$3 AND teacher_user_id=$2 AND status IN ('scheduled','ended') RETURNING id,title,grade_class,room_code,status,starts_at,ends_at", [req.params.id, req.user.id, req.user.school_id]);
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس برای این حساب پیدا نشد یا قبلاً شروع شده است.' });
-    await pool.query("INSERT INTO classroom_events(classroom_id,actor_user_id,event_type) VALUES($1,$2,'class-started')", [req.params.id, req.user.id]);
+    await pool.query("INSERT INTO classroom_events(school_id,classroom_id,actor_user_id,event_type) VALUES($1,$2,$3,'class-started')", [req.user.school_id, req.params.id, req.user.id]);
     res.json({ classroom: result.rows[0] });
   } catch (e) { next(e); }
 });
@@ -532,12 +532,12 @@ app.post('/api/classes/:id/start', auth, allow('manager','educational_deputy','t
 app.post('/api/classes/:id/end', auth, async (req, res, next) => {
   try {
     const result = ['manager','educational_deputy'].includes(req.user.role)
-      ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND status='active' RETURNING id,status,ends_at", [req.params.id])
+      ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND school_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.school_id])
       : ['teacher','pastoral_deputy'].includes(req.user.role)
-        ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND teacher_user_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.id])
+        ? await pool.query("UPDATE classrooms SET status='ended',ends_at=now(),updated_at=now() WHERE id=$1 AND school_id=$3 AND teacher_user_id=$2 AND status='active' RETURNING id,status,ends_at", [req.params.id, req.user.id, req.user.school_id])
         : { rowCount: 0, rows: [] };
     if (!result.rowCount) return res.status(404).json({ error: 'کلاس فعال برای پایان دادن پیدا نشد.' });
-    await pool.query("INSERT INTO classroom_events(classroom_id,actor_user_id,event_type) VALUES($1,$2,'class-ended')", [req.params.id, req.user.id]);
+    await pool.query("INSERT INTO classroom_events(school_id,classroom_id,actor_user_id,event_type) VALUES($1,$2,$3,'class-ended')", [req.user.school_id, req.params.id, req.user.id]);
     res.json({ classroom: result.rows[0] });
   } catch (e) { next(e); }
 });
@@ -545,8 +545,8 @@ app.post('/api/classes/:id/end', auth, async (req, res, next) => {
 app.get('/api/classes/active', auth, allow('student'), async (req, res, next) => {
   try {
     if (!req.user.grade_class) return res.status(400).json({ error: 'پایه و کلاس دانش‌آموز در حساب ثبت نشده است.' });
-    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.grade_class=$1 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
-      [req.user.grade_class]);
+    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
+      [req.user.school_id, req.user.grade_class]);
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
 });
