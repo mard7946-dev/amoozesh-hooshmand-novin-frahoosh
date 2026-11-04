@@ -59,8 +59,8 @@ BEGIN
   RETURNING id INTO room_b;
 
   INSERT INTO school_schedule(day_of_week,period,grade_class,teacher_user_id,classroom_id,school_id)
-  VALUES ('saturday',1,'Grade 7 / A',teacher_a,room_a,school_a),
-         ('saturday',1,'Grade 7 / A',teacher_b,room_b,school_b);
+  VALUES ('sunday',1,'Grade 7 / A',teacher_a,room_a,school_a),
+         ('sunday',1,'Grade 7 / A',teacher_b,room_b,school_b);
 
   INSERT INTO classroom_memberships(classroom_id,student_user_id,school_id)
   VALUES (room_a,student_a,school_a);
@@ -71,7 +71,7 @@ BEGIN
   IF (SELECT count(*) FROM classrooms WHERE room_code='SHARED-CODE') <> 2 THEN
     RAISE EXCEPTION 'Same room code should be permitted in separate schools';
   END IF;
-  IF (SELECT count(*) FROM school_schedule WHERE day_of_week='saturday' AND period=1 AND grade_class='Grade 7 / A') <> 2 THEN
+  IF (SELECT count(*) FROM school_schedule WHERE day_of_week='sunday' AND period=1 AND grade_class='Grade 7 / A') <> 2 THEN
     RAISE EXCEPTION 'Same schedule slot should be permitted in separate schools';
   END IF;
 
@@ -109,7 +109,7 @@ BEGIN
 
   BEGIN
     INSERT INTO school_schedule(day_of_week,period,grade_class,teacher_user_id,classroom_id,school_id)
-    VALUES ('sunday',2,'Grade 7 / A',teacher_b,room_a,school_a);
+    VALUES ('monday',2,'Grade 7 / A',teacher_b,room_a,school_a);
     RAISE EXCEPTION 'Cross-tenant schedule references unexpectedly succeeded';
   EXCEPTION WHEN foreign_key_violation THEN
     NULL;
