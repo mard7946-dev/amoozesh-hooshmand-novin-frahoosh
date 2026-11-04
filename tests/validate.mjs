@@ -96,4 +96,5 @@ assert.ok(apiSource.includes('from("weekly_schedule_entries")'), "Weekly schedul
 assert.ok(classroomAuthorize.includes('entry.day_enabled === true'), "Disabled schedule periods must remain visible but not be enterable");
 assert.ok(classroomAuthorize.includes("isScheduleSlotActive"), "Server must enforce the active bell time window");
 assert.ok(classroomAuthorize.includes('schedule_entry_id'), "Room entry must be tied to an exact weekly schedule row");
-\nconsole.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
+
+console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
