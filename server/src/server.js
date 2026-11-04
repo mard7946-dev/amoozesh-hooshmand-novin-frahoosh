@@ -216,7 +216,7 @@ app.post('/api/auth/student-login', loginLimiter, async (req, res, next) => {
       [schoolId, firstName, familyName, gradeClass, nationalIdHash(nationalId)]);
     if (!result.rowCount) return res.status(401).json({ error: 'اطلاعات واردشده با فهرست مدرسه مطابقت ندارد.' });
     const user = result.rows[0], token = randomToken();
-    await pool.query("INSERT INTO classroom_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')", [hashToken(token), user.id]);
+    await pool.query("INSERT INTO classroom_sessions(school_id,token_hash,user_id,expires_at) VALUES($1,$2,$3,now()+interval '12 hours')", [schoolId, hashToken(token), user.id]);
     res.json({ token, expiresIn: 43200, user: { id: user.id, role: 'student', displayName: user.display_name, gradeClass: user.grade_class, schoolId: user.school_id } });
   } catch (e) { next(e); }
 });
@@ -232,10 +232,10 @@ app.get('/api/schedule/today', auth, async (req, res, next) => {
       sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND c.school_id=s.school_id AND (s.teacher_user_id=$2 OR c.teacher_user_id=$2) AND s.day_of_week=$3 ORDER BY s.period";
       params = [req.user.school_id, req.user.id, day];
     } else if (req.user.role === 'student') {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND s.grade_class=$2 AND s.day_of_week=$3 ORDER BY s.period";
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id AND u.school_id=s.school_id LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND s.grade_class=$2 AND s.day_of_week=$3 ORDER BY s.period";
       params = [req.user.school_id, req.user.grade_class, day];
     } else {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND s.day_of_week=$2 ORDER BY s.grade_class,s.period";
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id AND u.school_id=s.school_id LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND s.day_of_week=$2 ORDER BY s.grade_class,s.period";
       params = [req.user.school_id, day];
     }
     const result = await pool.query(sql, params);
@@ -266,7 +266,7 @@ app.post('/api/schedule', auth, allow('manager','educational_deputy'), async (re
       const room = await client.query("SELECT id FROM classrooms WHERE school_id=$1 AND id=$2", [req.user.school_id, linkedClassroomId]);
       if (!room.rowCount) throw Object.assign(new Error('کلاس انتخاب‌شده پیدا نشد.'), { status: 400 });
       await client.query(
-        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5 AND school_id=$5",
+        "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
         [subject || ('کلاس '+gradeClass),gradeClass,teacherId,linkedClassroomId,req.user.school_id]
       );
     } else {
@@ -318,7 +318,7 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
     // Existing staff accounts are authoritative: resolve schedule rows by their actual usernames
     // or exact display names without requiring a second teacher-account import.
     const existingTeachers = await client.query(
-      "SELECT id,display_name,username FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')"
+      "SELECT id,display_name,username FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy')",
       [req.user.school_id]
     );
     for (const teacher of existingTeachers.rows) {
@@ -356,7 +356,7 @@ app.post('/api/import/excel', auth, allow('manager'), excelUpload.single('file')
       let classroomId = existing.rows[0]?.classroom_id || null;
       if (classroomId) {
         await client.query(
-          "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4",
+          "UPDATE classrooms SET title=$1,grade_class=$2,teacher_user_id=$3,status='scheduled',starts_at=NULL,ends_at=NULL,updated_at=now() WHERE id=$4 AND school_id=$5",
           [subject || ('کلاس '+gradeClass),gradeClass,teacherId,classroomId,req.user.school_id]
         );
       } else {
@@ -489,7 +489,7 @@ app.get('/api/classes', auth, async (req, res, next) => {
     } else if (['teacher','pastoral_deputy'].includes(req.user.role)) {
       result = await pool.query('SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.teacher_user_id=$2 ORDER BY c.created_at DESC', [req.user.school_id, req.user.id]);
     } else {
-      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.school_id, req.user.grade_class || '']);
+      result = await pool.query("SELECT c.*,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' ORDER BY c.starts_at DESC", [req.user.school_id, req.user.grade_class || '']);
     }
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
@@ -545,7 +545,7 @@ app.post('/api/classes/:id/end', auth, async (req, res, next) => {
 app.get('/api/classes/active', auth, allow('student'), async (req, res, next) => {
   try {
     if (!req.user.grade_class) return res.status(400).json({ error: 'پایه و کلاس دانش‌آموز در حساب ثبت نشده است.' });
-    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
+    const result = await pool.query("SELECT c.id,c.title,c.grade_class,c.room_code,c.starts_at,c.ends_at,u.display_name AS teacher_name FROM classrooms c JOIN classroom_users u ON u.id=c.teacher_user_id AND u.school_id=c.school_id WHERE c.school_id=$1 AND c.grade_class=$2 AND c.status='active' AND c.ends_at>now() ORDER BY c.starts_at DESC",
       [req.user.school_id, req.user.grade_class]);
     res.json({ classrooms: result.rows });
   } catch (e) { next(e); }
