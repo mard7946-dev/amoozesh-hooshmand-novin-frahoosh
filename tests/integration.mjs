@@ -21,6 +21,7 @@ const server = spawn(process.execPath, ["server/src/server.js"], {
     MANAGER_PASSWORD: managerPassword,
     MANAGER_DISPLAY_NAME: "مدیر آزمایشی",
     DEFAULT_SCHOOL_ID: schoolA,
+    ALLOW_DEFAULT_SCHOOL_FALLBACK: "true",
     NATIONAL_ID_HMAC_SECRET: "e2e-secret-key-with-more-than-thirty-two-characters",
     ALLOWED_ORIGINS: ""
   },
