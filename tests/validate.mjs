@@ -70,12 +70,12 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["portal.html", portal], ["users.html", usersPage]]) {
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
 
-assert.ok(portal.includes("classroom/schedule.html"), "Teachers and students should open the weekly schedule before the room");
+assert.ok(rootPortal.includes("classroom/schedule.html"), "The deployed portal should route teachers and students through the weekly schedule before the room");
 assert.ok(classroomSchedule.includes("Asia/Tehran"), "Weekly schedule must use Iran local time");
 assert.ok(classroomSchedule.includes("data.schedule"), "Weekly schedule must render server-authorized schedule entries");
 assert.ok(classroomSchedule.includes("!lesson.id"), "Unlinked schedule slots must not expose a room-entry action");
