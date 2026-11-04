@@ -224,6 +224,30 @@ Deno.serve(async (req: Request) => {
     }
 
 
+    if (action === "list_weekly_schedule") {
+      if (!manager) return reply({ message: "فقط مدیریت می‌تواند وضعیت برنامه هفتگی را مدیریت کند." }, 403);
+      const { data, error } = await admin.from("weekly_schedule_entries")
+        .select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled,room,academic_year")
+        .eq("tenant_school_id", school).order("weekday").order("period").limit(2000);
+      if (error) throw error;
+      return reply({ ok: true, entries: data ?? [] });
+    }
+
+    if (action === "set_weekly_schedule_enabled") {
+      if (!manager) return reply({ message: "فقط مدیریت می‌تواند زنگ‌ها را فعال یا غیرفعال کند." }, 403);
+      const enabled = body.enabled === true;
+      const className = clean(body.class_name);
+      const entryId = asInt(body.entry_id);
+      let query = admin.from("weekly_schedule_entries").update({ day_enabled: enabled }).eq("tenant_school_id", school);
+      if (entryId) query = query.eq("id", entryId);
+      else if (className) query = query.eq("class_name", className);
+      else if (body.all === true) { /* all rows in this school */ }
+      else return reply({ message: "شناسه زنگ، نام کلاس یا گزینه همه کلاس‌ها الزامی است." }, 400);
+      const { data, error } = await query.select("id,day_enabled");
+      if (error) throw error;
+      return reply({ ok: true, updated: data?.length ?? 0, enabled });
+    }
+
     if (action === "import_weekly_schedule") {
       if (!manager) return reply({ message: "فقط مدیریت می‌تواند برنامه هفتگی را وارد کند." }, 403);
       const rows = boundedRows(body.rows);
@@ -305,7 +329,7 @@ Deno.serve(async (req: Request) => {
 
       const seen = new Set<string>();
       for (const row of prepared) {
-        const rowKey = [key(row.class_name), key(row.weekday), row.period].join("::");
+        const rowKey = [key(row.class_name), key(row.weekday), row.period, key(row.subject), key(row.teacher_name)].join("::");
         if (seen.has(rowKey)) return reply({ message: "برای یک کلاس، روز و شماره زنگ تکراری در فایل وجود دارد: " + row.class_name + " · " + row.weekday + " · زنگ " + row.period }, 400);
         seen.add(rowKey);
       }
@@ -319,7 +343,7 @@ Deno.serve(async (req: Request) => {
       }
       const existingBySlot = new Map<string, any>();
       for (const entry of scheduleResult.data ?? []) {
-        const k = [key(entry.class_name), key(entry.weekday), Number(entry.period)].join("::");
+        const k = [key(entry.class_name), key(entry.weekday), Number(entry.period), key(entry.subject), key(entry.teacher_name)].join("::");
         if (!existingBySlot.has(k)) existingBySlot.set(k, entry);
       }
 
@@ -350,7 +374,7 @@ Deno.serve(async (req: Request) => {
           roomsCreated++;
         }
 
-        const slotKey = [key(row.class_name), key(row.weekday), row.period].join("::");
+        const slotKey = [key(row.class_name), key(row.weekday), row.period, key(row.subject), key(row.teacher_name)].join("::");
         const scheduleEntry = {
           class_name: row.class_name,
           weekday: row.weekday,
@@ -363,7 +387,7 @@ Deno.serve(async (req: Request) => {
           online_class_id: room.id,
           start_time: row.start_time,
           end_time: row.end_time,
-          day_enabled: true,
+          day_enabled: existing?.day_enabled === true,
           tenant_school_id: school,
         };
         const existing = existingBySlot.get(slotKey);
