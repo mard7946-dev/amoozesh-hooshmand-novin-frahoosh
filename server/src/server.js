@@ -400,8 +400,8 @@ app.post('/api/teachers', auth, allow('manager'), async (req, res, next) => {
     const numericPassword = normalizeDigits(password);
     if (!displayName || !username || !/^\d{8,12}$/.test(numericPassword)) return res.status(400).json({ error: 'نام، نام کاربری و رمز عددی ۸ تا ۱۲ رقمی لازم است.' });
     const cred = await hashPassword(numericPassword);
-    const result = await pool.query("INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES('teacher',$1,$2,$3,$4) RETURNING id,display_name,username",
-      [displayName, username, cred.salt, cred.hash]);
+    const result = await pool.query("INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,'teacher',$2,$3,$4,$5) RETURNING id,display_name,username",
+      [req.user.school_id,displayName, username, cred.salt, cred.hash]);
     res.status(201).json({ teacher: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
@@ -413,8 +413,8 @@ app.post('/api/students', auth, allow('manager'), async (req, res, next) => {
     if (!firstName || !familyName || !username || !gradeClass || !/^\d{10}$/.test(nationalId))
       return res.status(400).json({ error: 'نام، نام خانوادگی، نام کاربری، کلاس و کد ملی ۱۰ رقمی لازم است.' });
     const displayName = firstName + ' ' + familyName;
-    const result = await pool.query("INSERT INTO classroom_users(role,display_name,family_name,username,national_id_hash,grade_class) VALUES('student',$1,$2,$3,$4,$5) RETURNING id,display_name,family_name,username,grade_class",
-      [firstName, familyName, username, nationalIdHash(nationalId), gradeClass]);
+    const result = await pool.query("INSERT INTO classroom_users(school_id,role,display_name,family_name,username,national_id_hash,grade_class) VALUES($1,'student',$2,$3,$4,$5,$6) RETURNING id,display_name,family_name,username,grade_class",
+      [req.user.school_id,firstName, familyName, username, nationalIdHash(nationalId), gradeClass]);
     res.status(201).json({ student: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
@@ -427,14 +427,14 @@ app.post('/api/account/credentials', auth, allow('manager'), async (req, res, ne
     if (!currentPassword || !username || newPassword.length < 10 || newPassword.length > 72) {
       return res.status(400).json({ error: 'رمز فعلی، نام کاربری و رمز جدید حداقل ۱۰ نویسه‌ای الزامی است.' });
     }
-    const current = await pool.query("SELECT password_salt,password_hash FROM classroom_users WHERE id=$1 AND role='manager'", [req.user.id]);
+    const current = await pool.query("SELECT password_salt,password_hash FROM classroom_users WHERE school_id=$1 AND id=$2 AND role='manager'", [req.user.school_id, req.user.id]);
     if (!current.rowCount || !current.rows[0].password_hash ||
         !(await verifyPassword(currentPassword, current.rows[0].password_salt, current.rows[0].password_hash))) {
       return res.status(401).json({ error: 'رمز فعلی صحیح نیست.' });
     }
     const cred = await hashPassword(newPassword);
-    const saved = await pool.query("UPDATE classroom_users SET username=$1,password_salt=$2,password_hash=$3 WHERE id=$4 AND role='manager' RETURNING id,username",
-      [username,cred.salt,cred.hash,req.user.id]);
+    const saved = await pool.query("UPDATE classroom_users SET username=$1,password_salt=$2,password_hash=$3 WHERE school_id=$4 AND id=$5 AND role='manager' RETURNING id,username",
+      [username,cred.salt,cred.hash,req.user.school_id,req.user.id]);
     res.json({ ok: true, account: saved.rows[0], message: 'اطلاعات ورود به‌روزرسانی شد. نشست فعلی تا زمان خروج فعال می‌ماند.' });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً استفاده شده است.' }); next(e); }
 });
@@ -451,14 +451,14 @@ app.post('/api/staff', auth, allow('manager'), async (req, res, next) => {
     }
     const cred = await hashPassword(password);
     const result = await pool.query(
-      'INSERT INTO classroom_users(role,display_name,username,password_salt,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING id,role,display_name,username',
-      [role,displayName,username,cred.salt,cred.hash]);
+      'INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,role,display_name,username',
+      [req.user.school_id,role,displayName,username,cred.salt,cred.hash]);
     res.status(201).json({ staff: result.rows[0] });
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً ثبت شده است.' }); next(e); }
 });
 
-app.get('/api/teachers', auth, allow('manager','educational_deputy'), async (_req, res, next) => {
-  try { const result = await pool.query("SELECT id,display_name,username,role FROM classroom_users WHERE role IN ('teacher','educational_deputy','pastoral_deputy') ORDER BY display_name"); res.json({ teachers: result.rows }); }
+app.get('/api/teachers', auth, allow('manager','educational_deputy'), async (req, res, next) => {
+  try { const result = await pool.query("SELECT id,display_name,username,role FROM classroom_users WHERE school_id=$1 AND role IN ('teacher','educational_deputy','pastoral_deputy') ORDER BY display_name", [req.user.school_id]); res.json({ teachers: result.rows }); }
   catch (e) { next(e); }
 });
 
