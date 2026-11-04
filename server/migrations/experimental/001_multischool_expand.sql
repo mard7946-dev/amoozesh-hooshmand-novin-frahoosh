@@ -79,5 +79,26 @@ ALTER TABLE classrooms
 ALTER TABLE classrooms
   ADD CONSTRAINT classrooms_creator_school_fkey
   FOREIGN KEY (created_by, school_id) REFERENCES classroom_users(id, school_id);
+ALTER TABLE school_schedule
+  ADD CONSTRAINT school_schedule_teacher_school_fkey
+  FOREIGN KEY (teacher_user_id, school_id) REFERENCES classroom_users(id, school_id);
+ALTER TABLE school_schedule
+  ADD CONSTRAINT school_schedule_classroom_school_fkey
+  FOREIGN KEY (classroom_id, school_id) REFERENCES classrooms(id, school_id);
+ALTER TABLE classroom_sessions
+  ADD CONSTRAINT classroom_sessions_user_school_fkey
+  FOREIGN KEY (user_id, school_id) REFERENCES classroom_users(id, school_id) ON DELETE CASCADE;
+ALTER TABLE classroom_memberships
+  ADD CONSTRAINT classroom_memberships_classroom_school_fkey
+  FOREIGN KEY (classroom_id, school_id) REFERENCES classrooms(id, school_id) ON DELETE CASCADE;
+ALTER TABLE classroom_memberships
+  ADD CONSTRAINT classroom_memberships_student_school_fkey
+  FOREIGN KEY (student_user_id, school_id) REFERENCES classroom_users(id, school_id) ON DELETE CASCADE;
+ALTER TABLE classroom_events
+  ADD CONSTRAINT classroom_events_classroom_school_fkey
+  FOREIGN KEY (classroom_id, school_id) REFERENCES classrooms(id, school_id) ON DELETE CASCADE;
+ALTER TABLE classroom_events
+  ADD CONSTRAINT classroom_events_actor_school_fkey
+  FOREIGN KEY (actor_user_id, school_id) REFERENCES classroom_users(id, school_id);
 
 COMMIT;
