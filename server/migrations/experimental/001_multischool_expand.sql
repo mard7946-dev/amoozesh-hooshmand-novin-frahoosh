@@ -72,7 +72,7 @@ ALTER TABLE classrooms ADD CONSTRAINT classrooms_id_school_id_key UNIQUE (id, sc
 -- Prepare tenant-scoped unique indexes during expand while retaining legacy global
 -- constraints for compatibility. The contract phase removes the global constraints.
 CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_username_uidx
-  ON classroom_users (school_id, username) WHERE username IS NOT NULL;
+  ON classroom_users (school_id, username);
 CREATE UNIQUE INDEX IF NOT EXISTS classroom_users_school_national_id_uidx
   ON classroom_users (school_id, national_id_hash) WHERE national_id_hash IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS classrooms_school_room_code_uidx
