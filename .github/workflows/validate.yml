@@ -43,8 +43,8 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check classroom authorization Edge Function
-        run: deno check supabase/functions/classroom-authorize/index.ts
+      - name: Type-check classroom authorization and management Edge Functions
+        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts
       - name: Test Tehran schedule activation boundaries
         run: deno test tests/classroom-schedule.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
