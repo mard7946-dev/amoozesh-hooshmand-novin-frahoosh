@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
     let scheduleRows: any[] = [];
     if (role === "teacher" || role === "student") {
       let scheduleQuery = admin.from("weekly_schedule_entries")
-        .select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled,tenant_school_id");
+        .select("id,class_name,weekday,period,subject,teacher_id,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled,tenant_school_id");
       scheduleQuery = scheduleQuery.eq("tenant_school_id", profile.tenant_school_id);
       if (role === "student") {
         scheduleQuery = scheduleQuery.eq("class_name", className);
@@ -97,21 +97,22 @@ Deno.serve(async (req: Request) => {
       }
       scheduleRows = scheduleData ?? [];
       if (role === "teacher") {
-        let assignedQuery = admin.from("online_classes").select("id")
-          .or("teacher.eq." + name.replace(/[(),]/g, "") + ",teacher.eq." + clean(profile.username).replace(/[(),]/g, ""));
-        assignedQuery = assignedQuery.eq("tenant_school_id", profile.tenant_school_id);
-        const { data: assignedRows, error: assignedError } = await assignedQuery.limit(300);
-        if (assignedError) {
-          console.error("classroom-authorize teacher classes lookup failed", JSON.stringify({ code: assignedError.code, message: assignedError.message }));
-          return reply({ message: "کلاس‌های اختصاص‌یافته به دبیر دریافت نشد." }, 503);
+        const { data: teacherRows, error: teacherError } = await admin.from("teachers")
+          .select("id,first_name,last_name").eq("tenant_school_id", profile.tenant_school_id).limit(1000);
+        if (teacherError) {
+          console.error("classroom-authorize teacher identity lookup failed", teacherError.message);
+          return reply({ message: "شناسه دبیر در پرونده کارکنان دریافت نشد." }, 503);
         }
-        const assignedIds = new Set((assignedRows ?? []).map((item: any) => Number(item.id)));
+        const teacherRecord = (teacherRows ?? []).find((item: any) =>
+          norm(clean(item.first_name) + " " + clean(item.last_name)) === norm(name)
+        );
+        const teacherId = Number(teacherRecord?.id ?? 0);
         const teacherUsername = norm(profile.username);
         const teacherName = norm(name);
         scheduleRows = scheduleRows.filter((entry: any) =>
+          (teacherId > 0 && Number(entry.teacher_id) === teacherId) ||
           (teacherUsername && norm(entry.teacher_username) === teacherUsername) ||
-          (teacherName && norm(entry.teacher_name) === teacherName) ||
-          assignedIds.has(Number(entry.online_class_id))
+          (teacherName && norm(entry.teacher_name) === teacherName)
         );
       }
       const classIds = [...new Set(scheduleRows.map((entry: any) => Number(entry.online_class_id)).filter((id: number) => Number.isInteger(id) && id > 0))];
