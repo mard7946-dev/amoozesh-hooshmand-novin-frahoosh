@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { Pool } from "pg";
 
 const port = Number(process.env.E2E_PORT || 8091);
 const base = `http://127.0.0.1:${port}`;
 const managerPassword = "Manager-E2E-Password-2026";
+const schoolA = "5c8b8880-1346-445c-89d8-3f76275a7ae5";
+const schoolB = "b7b8c9d0-1111-4222-8333-444455556666";
+const bootstrap = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+await bootstrap.query("CREATE TABLE IF NOT EXISTS school_tenants (id UUID PRIMARY KEY, slug TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())");
+await bootstrap.query("INSERT INTO school_tenants(id,slug,display_name) VALUES($1,$2,$3),($4,$5,$6) ON CONFLICT(id) DO NOTHING", [schoolA,"frahoosh-default","Frahoosh Test School A",schoolB,"frahoosh-school-b","Frahoosh Test School B"]);
+await bootstrap.end();
 const server = spawn(process.execPath, ["server/src/server.js"], {
   cwd: process.cwd(),
   env: {
@@ -13,6 +20,7 @@ const server = spawn(process.execPath, ["server/src/server.js"], {
     MANAGER_USERNAME: "e2e-manager",
     MANAGER_PASSWORD: managerPassword,
     MANAGER_DISPLAY_NAME: "مدیر آزمایشی",
+    DEFAULT_SCHOOL_ID: schoolA,
     NATIONAL_ID_HMAC_SECRET: "e2e-secret-key-with-more-than-thirty-two-characters",
     ALLOWED_ORIGINS: ""
   },
@@ -50,10 +58,24 @@ try {
 
   const managerLogin = await request("/api/auth/login", {
     method: "POST", expected: 200,
-    body: { username: "e2e-manager", password: managerPassword }
+    body: { username: "e2e-manager", password: managerPassword, schoolId: schoolA }
   });
   const managerToken = managerLogin.token;
   assert.equal(managerLogin.user.role, "manager");
+  assert.equal(managerLogin.user.schoolId, schoolA);
+
+  const fixturePool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+  await fixturePool.query(
+    "INSERT INTO classroom_users(school_id,role,display_name,username,password_salt,password_hash) SELECT $1,role,display_name,username,password_salt,password_hash FROM classroom_users WHERE school_id=$2 AND username=$3",
+    [schoolB,schoolA,"e2e-manager"]
+  );
+  await fixturePool.end();
+  const schoolBLogin = await request("/api/auth/login", {
+    method: "POST", expected: 200,
+    body: { username: "e2e-manager", password: managerPassword, schoolId: schoolB }
+  });
+  assert.equal(schoolBLogin.user.schoolId, schoolB);
+  const schoolBToken = schoolBLogin.token;
   assert.equal((await request("/api/auth/me", { token: managerToken })).user.username, "e2e-manager");
 
   const teacher = await request("/api/staff", {
@@ -82,6 +104,9 @@ try {
   });
   const classId = created.classroom.id;
   const roomCode = created.classroom.room_code;
+  const schoolBClasses = await request("/api/classes", { token: schoolBToken });
+  assert.equal(schoolBClasses.classrooms.length, 0, "School B must not list School A classrooms");
+  await request("/api/classes/" + encodeURIComponent(classId) + "/access", { token: schoolBToken, expected: 404 });
 
   await request("/api/classes/" + encodeURIComponent(classId) + "/access", { token: managerToken, expected: 403 });
   const started = await request("/api/classes/" + encodeURIComponent(classId) + "/start", { token: managerToken, method: "POST", expected: 200 });
@@ -94,7 +119,7 @@ try {
 
   await request("/api/auth/logout", { token: managerToken, method: "POST", expected: 200 });
   await request("/api/auth/me", { token: managerToken, expected: 401 });
-  console.log("Database integration passed: manager/teacher login, role authorization, schedule, class lifecycle, room access, and session revocation.");
+  console.log("Database integration passed: tenant-scoped duplicate usernames, cross-school room isolation, manager/teacher login, role authorization, schedule, class lifecycle, room access, and session revocation.");
 } catch (error) {
   console.error(error);
   console.error(serverOutput);
