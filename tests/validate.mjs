@@ -6,6 +6,7 @@ const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "u
 const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
 const classroomManagement = readFileSync(new URL("../classroom/management.html", import.meta.url), "utf8");
 const apiSource = readFileSync(new URL("../supabase/functions/classroom-management/index.ts", import.meta.url), "utf8");
+const classroomAuthorize = readFileSync(new URL("../supabase/functions/classroom-authorize/index.ts", import.meta.url), "utf8");
 const publishWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
@@ -91,4 +92,8 @@ assert.ok(classroomManagement.includes("import_timetable"), "Existing teacher-to
 assert.ok(apiSource.includes('action === "import_weekly_schedule"'), "Backend must persist weekly schedule entries separately");
 assert.ok(apiSource.includes('from("weekly_schedule_entries")'), "Weekly schedule importer must write the weekly schedule table");
 
-console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
+
+assert.ok(classroomAuthorize.includes('entry.day_enabled === true'), "Disabled schedule periods must remain visible but not be enterable");
+assert.ok(classroomAuthorize.includes("isScheduleSlotActive"), "Server must enforce the active bell time window");
+assert.ok(classroomAuthorize.includes('schedule_entry_id'), "Room entry must be tied to an exact weekly schedule row");
+\nconsole.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
