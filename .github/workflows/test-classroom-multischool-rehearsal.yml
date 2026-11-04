@@ -1,0 +1,83 @@
+name: Rehearse standalone classroom multischool migration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/schema.sql'
+      - 'server/migrations/experimental/**'
+      - 'server/tests/multischool-migration.test.sql'
+      - '.github/workflows/test-classroom-multischool-rehearsal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-rehearsal:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: frahoosh_rehearsal
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: rehearsal-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d frahoosh_rehearsal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGPASSWORD: rehearsal-only
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: frahoosh_rehearsal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply legacy schema to disposable database
+        run: psql -v ON_ERROR_STOP=1 -f server/schema.sql
+      - name: Seed representative legacy records
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO classroom_users(role,display_name,username)
+          VALUES ('manager','Legacy Manager','legacy-manager'),
+                 ('teacher','Legacy Teacher','legacy-teacher'),
+                 ('student','Legacy Student','legacy-student');
+          INSERT INTO classrooms(title,grade_class,teacher_user_id,room_code,created_by)
+          SELECT 'Legacy room','Grade 7 / A',t.id,'LEGACYROOM',m.id
+          FROM classroom_users t CROSS JOIN classroom_users m
+          WHERE t.username='legacy-teacher' AND m.username='legacy-manager';
+          INSERT INTO school_schedule(day_of_week,period,grade_class,teacher_user_id,classroom_id)
+          SELECT 'saturday',1,'Grade 7 / A',t.id,c.id
+          FROM classroom_users t CROSS JOIN classrooms c WHERE t.username='legacy-teacher';
+          SQL
+      - name: Capture legacy row counts
+        run: |
+          psql -v ON_ERROR_STOP=1 -Atc "SELECT 'users='||(SELECT count(*) FROM classroom_users)||';rooms='||(SELECT count(*) FROM classrooms)||';schedule='||(SELECT count(*) FROM school_schedule)"
+          psql -v ON_ERROR_STOP=1 -Atc "CREATE TEMP TABLE legacy_ids AS SELECT 'user' AS kind,id::text FROM classroom_users UNION ALL SELECT 'room',id::text FROM classrooms UNION ALL SELECT 'schedule',id::text FROM school_schedule;"
+      - name: Apply experimental expand migration
+        run: psql -v ON_ERROR_STOP=1 -f server/migrations/experimental/001_multischool_expand.sql
+      - name: Assert two-school isolation constraints and legacy preservation
+        run: psql -v ON_ERROR_STOP=1 -f server/tests/multischool-migration.test.sql
+      - name: Verify legacy tenant backfill and identifiers
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF EXISTS (SELECT 1 FROM classroom_users WHERE school_id <> '5c8b8880-1346-445c-89d8-3f76275a7ae5') THEN
+              RAISE EXCEPTION 'Legacy user tenant mismatch';
+            END IF;
+            IF EXISTS (SELECT 1 FROM classrooms WHERE school_id <> '5c8b8880-1346-445c-89d8-3f76275a7ae5') THEN
+              RAISE EXCEPTION 'Legacy room tenant mismatch';
+            END IF;
+            IF EXISTS (SELECT 1 FROM school_schedule WHERE school_id <> '5c8b8880-1346-445c-89d8-3f76275a7ae5') THEN
+              RAISE EXCEPTION 'Legacy schedule tenant mismatch';
+            END IF;
+          END $$;
+          SQL
