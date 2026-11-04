@@ -73,6 +73,13 @@ jobs:
           PGUSER: frahoosh_test
           PGDATABASE: frahoosh_migration_rehearsal
         run: psql -v ON_ERROR_STOP=1 -f server/migrations/experimental/001_multischool_expand.sql
+      - name: Apply gated contract phase in disposable database
+        env:
+          PGPASSWORD: test-password
+          PGHOST: 127.0.0.1
+          PGUSER: frahoosh_test
+          PGDATABASE: frahoosh_migration_rehearsal
+        run: psql -v ON_ERROR_STOP=1 -f server/migrations/experimental/002_multischool_contract.sql
       - name: Test multi-school coexistence and cross-school reference rejection
         env:
           PGPASSWORD: test-password
