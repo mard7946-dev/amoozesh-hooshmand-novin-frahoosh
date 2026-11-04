@@ -266,8 +266,12 @@ Deno.serve(async (req: Request) => {
       const prepared = (rows as any[]).map((raw, index) => {
         const weekday = canonicalDay(raw.weekday ?? raw.day_of_week);
         const period = Number(norm(raw.period));
-        const startTime = canonicalTime(raw.start_time);
-        const endTime = canonicalTime(raw.end_time);
+        const periodTimes: Record<number, [string, string]> = {
+          1: ["13:30", "14:20"], 2: ["14:30", "15:20"], 3: ["15:30", "16:20"],
+        };
+        const configuredTimes = periodTimes[Number(norm(raw.period))];
+        const startTime = canonicalTime(raw.start_time) || configuredTimes?.[0] || "";
+        const endTime = canonicalTime(raw.end_time) || configuredTimes?.[1] || "";
         const teacherAccount = resolveTeacher(raw);
         return {
           rowNumber: index + 2,
