@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { hasActiveSchoolMembership } from "../_shared/active-school-membership.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -28,21 +29,6 @@ function roleAllowed(actual: string, expected: string) {
   return false;
 }
 
-
-async function hasActiveSchoolMembership(admin: any, authUserId: string, schoolId: string, role: string): Promise<boolean> {
-  const { data, error } = await admin.from("school_memberships")
-    .select("role,is_active")
-    .eq("auth_user_id", authUserId)
-    .eq("school_id", schoolId)
-    .eq("is_active", true);
-  if (error) {
-    console.error("active school membership lookup failed", JSON.stringify({ code: error.code ?? null, message: error.message ?? null }));
-    throw error;
-  }
-  return (data ?? []).some((membership: any) =>
-    membership.is_active === true && norm(membership.role) === norm(role)
-  );
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -90,7 +76,7 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "این حساب مجوز ورود به بخش انتخاب‌شده را ندارد." }, 403);
     }
 
-    const membershipActive = await hasActiveSchoolMembership(admin, login.user.id, profile.tenant_school_id, profile.role);
+    const membershipActive = await hasActiveSchoolMembership(admin, login.user.id, profile.tenant_school_id, profile.role, norm);
     if (!membershipActive) return reply({ message: "عضویت این حساب در مدرسه فعال نیست یا نقش آن تأیید نشده است." }, 403);
 
     let className = "";
