@@ -90,6 +90,11 @@ assert.ok(classroomManagement.includes('value="import_weekly_schedule"'), "Manag
 assert.ok(classroomManagement.includes("normalizeExcelClock"), "Weekly schedule import must normalize Excel time cells");
 assert.ok(classroomManagement.includes("import_timetable"), "Existing teacher-to-class Excel import must remain available");
 assert.ok(apiSource.includes('action === "import_weekly_schedule"'), "Backend must persist weekly schedule entries separately");
+assert.ok(apiSource.includes('action === "list_weekly_schedule"'), "Manager must be able to list all schedule entries for approval");
+assert.ok(apiSource.includes('action === "set_weekly_schedule_enabled"'), "Manager must control individual, class-wide, and school-wide schedule activation");
+assert.ok(apiSource.includes('day_enabled: existing?.day_enabled === true'), "New schedule rows must remain disabled until the manager activates them");
+assert.ok(classroomManagement.includes('id="activation"') && classroomManagement.includes('فعال‌سازی همه کلاس‌ها'), "Manager UI must provide schedule activation controls");
+assert.ok(classroomManagement.includes('data-entry-toggle') && classroomManagement.includes('data-class-enable'), "Manager UI must allow per-slot and per-class activation");
 assert.ok(apiSource.includes('from("weekly_schedule_entries")'), "Weekly schedule importer must write the weekly schedule table");
 
 
