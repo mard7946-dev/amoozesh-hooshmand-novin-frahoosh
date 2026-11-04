@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { hasActiveSchoolMembership } from "../_shared/active-school-membership.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,21 +11,6 @@ const reply = (body: unknown, status = 200) =>
 const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\s+/g, " ").toLocaleLowerCase("fa");
-
-async function hasActiveSchoolMembership(admin: any, authUserId: string, schoolId: string, role: string): Promise<boolean> {
-  const { data, error } = await admin.from("school_memberships")
-    .select("role,is_active")
-    .eq("auth_user_id", authUserId)
-    .eq("school_id", schoolId)
-    .eq("is_active", true);
-  if (error) {
-    console.error("active school membership lookup failed", JSON.stringify({ code: error.code ?? null, message: error.message ?? null }));
-    throw error;
-  }
-  return (data ?? []).some((membership: any) =>
-    membership.is_active === true && norm(membership.role) === norm(role)
-  );
-}
 
 const allowedTypes = new Set(["fill_blank", "multiple_choice", "true_false", "short_answer", "essay"]);
 const shuffle = <T>(items: T[]) => {
@@ -68,7 +54,7 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "پروفایل مدرسه یا نقش این حساب تأیید نشد." }, 403);
     }
 
-    const membershipActive = await hasActiveSchoolMembership(admin, authData.user.id, profile.tenant_school_id, profile.role);
+    const membershipActive = await hasActiveSchoolMembership(admin, authData.user.id, profile.tenant_school_id, profile.role, norm);
     if (!membershipActive) return reply({ message: "عضویت این حساب در مدرسه فعال نیست یا نقش آن تأیید نشده است." }, 403);
 
     const role = norm(profile.role);
