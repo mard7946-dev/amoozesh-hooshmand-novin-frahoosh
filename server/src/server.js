@@ -229,7 +229,7 @@ app.get('/api/schedule/today', auth, async (req, res, next) => {
     if (!day) return res.status(400).json({ error: 'روز انتخاب‌شده معتبر نیست.' });
     let sql, params;
     if (['teacher','educational_deputy','pastoral_deputy'].includes(req.user.role)) {
-      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id WHERE s.school_id=$1 AND c.school_id=s.school_id AND (s.teacher_user_id=$2 OR c.teacher_user_id=$2) AND s.day_of_week=$3 ORDER BY s.period";
+      sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND (s.teacher_user_id=$2 OR c.teacher_user_id=$2) AND s.day_of_week=$3 ORDER BY s.period";
       params = [req.user.school_id, req.user.id, day];
     } else if (req.user.role === 'student') {
       sql = "SELECT s.id,s.day_of_week,s.period,s.grade_class,s.subject,s.start_time,s.end_time,u.display_name AS teacher_name,c.id AS classroom_id,c.title AS classroom_title,c.room_code,c.status AS classroom_status,c.starts_at,c.ends_at FROM school_schedule s JOIN classroom_users u ON u.id=s.teacher_user_id AND u.school_id=s.school_id LEFT JOIN classrooms c ON c.id=s.classroom_id AND c.school_id=s.school_id WHERE s.school_id=$1 AND s.grade_class=$2 AND s.day_of_week=$3 ORDER BY s.period";
