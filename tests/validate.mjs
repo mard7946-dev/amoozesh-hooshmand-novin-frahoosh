@@ -6,6 +6,7 @@ const classroom = readFileSync(new URL("../classroom.html", import.meta.url), "u
 const classroomBoard = readFileSync(new URL("../classroom/index.html", import.meta.url), "utf8");
 const classroomSchedule = readFileSync(new URL("../classroom/schedule.html", import.meta.url), "utf8");
 const classroomAuthorize = readFileSync(new URL("../supabase/functions/classroom-authorize/index.ts", import.meta.url), "utf8");
+const pagesWorkflow = readFileSync(new URL("../.github/workflows/publish-six-icon-portal.yml", import.meta.url), "utf8");
 const portal = readFileSync(new URL("../server/public/portal.html", import.meta.url), "utf8");
 const rootPortal = readFileSync(new URL("../portal.html", import.meta.url), "utf8");
 const server = readFileSync(new URL("../server/src/server.js", import.meta.url), "utf8");
@@ -85,4 +86,5 @@ for (const [name, html] of [["index.html", landing], ["classroom.html", classroo
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
+assert.ok(pagesWorkflow.includes("'classroom/schedule.html'") && pagesWorkflow.includes("cp classroom/schedule.html _site/classroom/schedule.html"), "Pages deployment must include the teacher/student daily schedule page");
 console.log("Static checks passed: classroom controls, portal workflows, student privacy hashing, and page script syntax.");
