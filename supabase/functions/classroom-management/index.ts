@@ -286,7 +286,7 @@ Deno.serve(async (req: Request) => {
       });
 
       const invalid = prepared.filter(row =>
-        !row.class_name || !row.weekday || !Number.isInteger(row.period) || row.period < 1 ||
+        !row.class_name || !row.weekday || !Number.isInteger(row.period) || row.period < 1 || row.period > 6 ||
         !row.subject || !row.teacher_name || !row.teacher_username ||
         !row.start_time || !row.end_time ||
         Number(row.end_time.replace(":", "")) <= Number(row.start_time.replace(":", ""))
