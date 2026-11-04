@@ -106,4 +106,6 @@ document.getElementById("importPeople").addEventListener("click",async()=>{const
 document.getElementById("importSchedule").addEventListener("click",async()=>{const b=document.getElementById("importSchedule");b.disabled=true;document.getElementById("importStatus").textContent="در حال خواندن اکسل برنامه…";try{const rows=await parseExcel(document.getElementById("scheduleExcel"));if(!rows.length)throw new Error("فایل اکسل برنامه ردیف اطلاعات ندارد.");reportImport(await api({action:"import_schedule",rows}));await loadProfiles()}catch(e){document.getElementById("importStatus").className="status error";document.getElementById("importStatus").textContent=e.message}finally{b.disabled=false}});
 
 document.getElementById('refresh').addEventListener('click',load);document.getElementById('search').addEventListener('input',render);document.getElementById('back').addEventListener('click',()=>location.href='portal.html?step=login&role=manager');load();loadProfiles();
-</script></body></html>
+</script>
+<script src="back-to-panel-menu.js" defer></script>
+</body></html>

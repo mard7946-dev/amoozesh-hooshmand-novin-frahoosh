@@ -76,4 +76,6 @@ el("tabs").addEventListener("click",e=>{let b=e.target.closest("button[data-tab]
 el("clearFilters").onclick=()=>{["classFilter","fromDate","toDate","searchFilter"].forEach(id=>el(id).value="");render()};
 el("csvBtn").onclick=()=>{let csv="\uFEFF"+[headersNow,...rowsNow].map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="frahoosh-"+tab+"-report.csv";a.click();URL.revokeObjectURL(u)};
 el("pdfBtn").onclick=()=>window.print();el("refreshBtn").onclick=load;el("backBtn").onclick=()=>location.href="portal.html?step=panel&role="+encodeURIComponent(role);load();
-</script></body></html>
+</script>
+<script src="back-to-panel-menu.js" defer></script>
+</body></html>
