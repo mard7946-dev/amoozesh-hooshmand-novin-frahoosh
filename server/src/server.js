@@ -130,7 +130,8 @@ async function auth(req, res, next) {
 const allow = (...roles) => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ error: 'اجازه انجام این کار را ندارید.' });
 const text = (value, max = 120) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 async function resolveSchoolId(requestedId, requestedSlug) {
-  const id = text(requestedId, 64), slug = text(requestedSlug, 80), fallback = text(process.env.DEFAULT_SCHOOL_ID, 64);
+  const id = text(requestedId, 64), slug = text(requestedSlug, 80);
+  const fallback = process.env.ALLOW_DEFAULT_SCHOOL_FALLBACK === 'true' ? text(process.env.DEFAULT_SCHOOL_ID, 64) : '';
   if (!id && !slug && !fallback) return null;
   const result = id ? await pool.query('SELECT id FROM school_tenants WHERE id=$1',[id]) : slug ? await pool.query('SELECT id FROM school_tenants WHERE slug=$1',[slug]) : await pool.query('SELECT id FROM school_tenants WHERE id=$1',[fallback]);
   if (!result.rowCount) return null;
