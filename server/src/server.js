@@ -179,41 +179,45 @@ app.post('/api/auth/login', loginLimiter, async (req, res, next) => {
     const username = normalizeNumerals(text(req.body?.username, 80));
     const password = typeof req.body?.password === 'string' ? normalizeNumerals(req.body.password) : '';
     if (!username || !password) return res.status(400).json({ error: 'نام کاربری و رمز عبور الزامی است.' });
-    const found = await pool.query('SELECT * FROM classroom_users WHERE username=$1', [username]);
+    const schoolId = await resolveSchoolId(req.body?.schoolId, req.body?.schoolSlug);
+    if (!schoolId) return res.status(400).json({ error: 'مدرسهٔ ورود معتبر نیست؛ شناسه یا کد مدرسه را وارد کنید.' });
+    const found = await pool.query('SELECT * FROM classroom_users WHERE school_id=$1 AND username=$2', [schoolId, username]);
     if (!found.rowCount || !found.rows[0].password_hash ||
         !(await verifyPassword(password, found.rows[0].password_salt, found.rows[0].password_hash))) {
       return res.status(401).json({ error: 'نام کاربری یا رمز عبور نادرست است.' });
     }
     const user = found.rows[0], token = randomToken();
-    await pool.query(`INSERT INTO classroom_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')`,
-      [hashToken(token), user.id]);
-    res.json({ token, expiresIn: 43200, user: { id: user.id, role: user.role, displayName: user.display_name, username: user.username, gradeClass: user.grade_class } });
+    await pool.query(`INSERT INTO classroom_sessions(school_id,token_hash,user_id,expires_at) VALUES($1,$2,$3,now()+interval '12 hours')`,
+      [schoolId, hashToken(token), user.id]);
+    res.json({ token, expiresIn: 43200, user: { id: user.id, role: user.role, displayName: user.display_name, username: user.username, gradeClass: user.grade_class, schoolId: user.school_id } });
   } catch (e) { next(e); }
 });
 
 app.get('/api/auth/me', auth, (req, res) => {
-  res.json({ user: { id: req.user.id, role: req.user.role, displayName: req.user.display_name, username: req.user.username, gradeClass: req.user.grade_class } });
+  res.json({ user: { id: req.user.id, role: req.user.role, displayName: req.user.display_name, username: req.user.username, gradeClass: req.user.grade_class, schoolId: req.user.school_id } });
 });
 
 app.post('/api/auth/logout', auth, async (req, res, next) => {
-  try { const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim(); await pool.query('DELETE FROM classroom_sessions WHERE token_hash=$1', [hashToken(token)]); res.json({ ok: true }); }
+  try { const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim(); await pool.query('DELETE FROM classroom_sessions WHERE token_hash=$1 AND school_id=$2', [hashToken(token), req.user.school_id]); res.json({ ok: true }); }
   catch (e) { next(e); }
 });
 
 
 app.post('/api/auth/student-login', loginLimiter, async (req, res, next) => {
   try {
+    const schoolId = await resolveSchoolId(req.body?.schoolId, req.body?.schoolSlug);
+    if (!schoolId) return res.status(400).json({ error: 'مدرسهٔ ورود معتبر نیست؛ شناسه یا کد مدرسه را وارد کنید.' });
     const firstName = text(req.body?.firstName), familyName = text(req.body?.familyName);
     const gradeClass = text(req.body?.gradeClass, 40), nationalId = normalizeNationalId(req.body?.nationalId);
     if (!firstName || !familyName || !gradeClass || !/^\d{10}$/.test(nationalId))
       return res.status(400).json({ error: 'نام، نام خانوادگی، کلاس و کد ملی کامل را وارد کنید.' });
     const result = await pool.query(
-      "SELECT id,display_name || ' ' || family_name AS display_name,family_name,grade_class FROM classroom_users WHERE role='student' AND lower(display_name)=lower($1) AND lower(family_name)=lower($2) AND grade_class=$3 AND national_id_hash=$4",
-      [firstName, familyName, gradeClass, nationalIdHash(nationalId)]);
+      "SELECT id,display_name || ' ' || family_name AS display_name,family_name,grade_class FROM classroom_users WHERE school_id=$1 AND role='student' AND lower(display_name)=lower($2) AND lower(family_name)=lower($3) AND grade_class=$4 AND national_id_hash=$5",
+      [schoolId, firstName, familyName, gradeClass, nationalIdHash(nationalId)]);
     if (!result.rowCount) return res.status(401).json({ error: 'اطلاعات واردشده با فهرست مدرسه مطابقت ندارد.' });
     const user = result.rows[0], token = randomToken();
     await pool.query("INSERT INTO classroom_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')", [hashToken(token), user.id]);
-    res.json({ token, expiresIn: 43200, user: { id: user.id, role: 'student', displayName: user.display_name, gradeClass: user.grade_class } });
+    res.json({ token, expiresIn: 43200, user: { id: user.id, role: 'student', displayName: user.display_name, gradeClass: user.grade_class, schoolId: user.school_id } });
   } catch (e) { next(e); }
 });
 
