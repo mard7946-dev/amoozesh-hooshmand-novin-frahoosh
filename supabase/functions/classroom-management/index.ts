@@ -558,6 +558,85 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "نوع درخواست ثبت‌نام معتبر نیست." }, 400);
     }
 
+    if (action === "student_activity_admin") {
+      if (!schoolManager) return reply({ message: "فقط مدیر مدرسه مجاز به مدیریت فعالیت‌ها و بررسی درخواست‌ها است." }, 403);
+      const operation = clean(body.operation || "list");
+
+      if (operation === "list") {
+        const [programsResult, councilResult, basijResult, mayorResult, registrationsResult] = await Promise.all([
+          admin.from("activity_programs").select("id,title,category,event_date,active,amount,settings")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(500),
+          admin.from("student_council").select("id,student_id,student_name,election_year,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("basij_registration").select("id,student_id,student_name,registration_date,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("school_mayor").select("id,student_id,student_name,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("activity_registrations").select("id,activity_id,student_id,participation_type,team_members,competition_type,payment_status,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(2000),
+        ]);
+        for (const result of [programsResult, councilResult, basijResult, mayorResult, registrationsResult]) {
+          if (result.error) throw result.error;
+        }
+        const programs = programsResult.data ?? [];
+        const programMap = new Map(programs.map((x: any) => [Number(x.id), x]));
+        const registrations = (registrationsResult.data ?? []).map((x: any) => ({
+          ...x, activity_title: programMap.get(Number(x.activity_id))?.title ?? "فعالیت ثبت‌شده",
+        }));
+        return reply({
+          ok: true, programs, council: councilResult.data ?? [], basij: basijResult.data ?? [],
+          mayor: mayorResult.data ?? [], registrations,
+        });
+      }
+
+      if (operation === "create_program") {
+        const title = clean(body.title).slice(0, 160), category = clean(body.category).slice(0, 80);
+        const eventDate = clean(body.event_date).slice(0, 40), description = clean(body.description).slice(0, 2000);
+        const amount = body.amount === "" || body.amount == null ? 0 : Number(body.amount);
+        if (!title || !category || !Number.isFinite(amount) || amount < 0 || amount > 1000000000) {
+          return reply({ message: "عنوان، دسته‌بندی و مبلغ معتبر برای برنامه وارد کنید." }, 400);
+        }
+        const { data, error } = await admin.from("activity_programs").insert({
+          title, category, event_date: eventDate || null, amount,
+          settings: { description }, active: body.active !== false, tenant_school_id: school,
+        }).select("id,title,category,event_date,amount,active,settings").single();
+        if (error) throw error;
+        return reply({ ok: true, program: data });
+      }
+
+      if (operation === "set_program_active") {
+        const programId = asInt(body.program_id);
+        if (!programId || typeof body.active !== "boolean") return reply({ message: "برنامه یا وضعیت فعال‌سازی معتبر نیست." }, 400);
+        const { data, error } = await admin.from("activity_programs").update({ active: body.active })
+          .eq("tenant_school_id", school).eq("id", programId)
+          .select("id,title,active").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ message: "برنامه موردنظر پیدا نشد." }, 404);
+        return reply({ ok: true, program: data });
+      }
+
+      if (operation === "review") {
+        const tableByType: Record<string, string> = {
+          council: "student_council", basij: "basij_registration",
+          mayor: "school_mayor", activity: "activity_registrations",
+        };
+        const registrationType = clean(body.registration_type), recordId = asInt(body.record_id);
+        const nextStatus = clean(body.status);
+        const table = tableByType[registrationType];
+        if (!table || !recordId || !["approved", "rejected"].includes(nextStatus)) {
+          return reply({ message: "نوع درخواست، شناسه یا نتیجه بررسی معتبر نیست." }, 400);
+        }
+        const { data, error } = await admin.from(table).update({ status: nextStatus })
+          .eq("tenant_school_id", school).eq("id", recordId).eq("status", "pending")
+          .select("id,status").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ message: "این درخواست قبلاً بررسی شده یا پیدا نشد." }, 409);
+        return reply({ ok: true, registration: data });
+      }
+
+      return reply({ message: "عملیات مدیریت فعالیت‌ها معتبر نیست." }, 400);
+    }
+
     if (action === "student_academic_summary") {
       if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
       const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")
