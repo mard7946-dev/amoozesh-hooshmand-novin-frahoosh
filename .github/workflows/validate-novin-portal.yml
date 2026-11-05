@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'classroom/schedule.html'
       - 'student-module.html'
       - 'student-activities.html'
       - 'supabase/functions/classroom-management/index.ts'
@@ -47,6 +48,7 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'classroom/schedule.html'
       - 'supabase/functions/school-bulletin/index.ts'
       - 'supabase/migrations/20261105110000_platform_school_drafts.sql'
       - 'tests/validate-commercial-platform.mjs'
