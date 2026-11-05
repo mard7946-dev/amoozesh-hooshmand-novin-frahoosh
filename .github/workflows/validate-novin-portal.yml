@@ -47,6 +47,9 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'supabase/functions/school-bulletin/index.ts'
+      - 'supabase/migrations/20261105110000_platform_school_drafts.sql'
+      - 'tests/validate-commercial-platform.mjs'
       - 'student-module.html'
       - 'student-activities.html'
       - 'supabase/functions/classroom-management/index.ts'
