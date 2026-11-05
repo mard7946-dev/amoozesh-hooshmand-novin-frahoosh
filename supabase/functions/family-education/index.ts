@@ -7,7 +7,11 @@ const cors = {
 };
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json; charset=utf-8" } });
-const clean = (v: unknown) => String(v ?? "").trim();
+const clean = (v: unknown) => String(v ?? "").replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "").trim();
+const norm = (v: unknown) => clean(v)
+  .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+  .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+  .replace(/\\s+/g, " ").toLocaleLowerCase("fa");
 const managerRoles = ["manager", "مدیر", "مدیریت", "principal", "administrator", "admin"];
 const counselorRoles = ["counselor", "advisor", "مشاور"];
 
@@ -54,15 +58,53 @@ Deno.serve(async (req: Request) => {
   const deputyRole = isDeputy || membershipRoles.some((r: string) => ["deputy", "executive", "educational", "cultural", "معاون"].some(x => r.includes(x)));
   let assignedClassNames: string[] = [];
   if (teacherRole) {
-    let teacherQuery = db.from("teachers").select("id").eq("tenant_school_id", school);
-    if (clean(profile.national_code)) teacherQuery = teacherQuery.eq("national_code", clean(profile.national_code));
-    else return reply({ message: "کد ملی حساب دبیر برای اتصال امن به کلاس‌ها ثبت نشده است." }, 403);
-    const { data: teacherRow, error: teacherError } = await teacherQuery.limit(1).maybeSingle();
-    if (teacherError || !teacherRow) return reply({ message: "پرونده همکار دبیر پیدا نشد." }, 403);
+    let teacherRow: { id: number } | null = null;
+    let teacherLookupError: any = null;
+    if (clean(profile.national_code)) {
+      const { data, error } = await db.from("teachers").select("id")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code))
+        .limit(2);
+      teacherLookupError = error;
+      if (!error && data?.length === 1) teacherRow = data[0] as { id: number };
+      else if (!error && (data?.length ?? 0) > 1) {
+        return reply({ message: "پرونده دبیر با کد ملی تکراری است؛ مدیر باید اطلاعات همکار را اصلاح کند." }, 409);
+      }
+    } else {
+      // Match the same verified staff identity used by classroom authorization.
+      // A unique full-name match is required; ambiguous names never grant access.
+      const { data: teacherRows, error } = await db.from("teachers")
+        .select("id,first_name,last_name").eq("tenant_school_id", school).limit(2000);
+      teacherLookupError = error;
+      if (!error) {
+        const identity = norm(profile.display_name || profile.username);
+        const matches = (teacherRows ?? []).filter((row: any) =>
+          norm([row.first_name, row.last_name].filter(Boolean).join(" ")) === identity
+        );
+        if (matches.length === 1) teacherRow = matches[0] as { id: number };
+        else if (matches.length > 1) {
+          return reply({ message: "چند پرونده همکار با نام یکسان پیدا شد؛ مدیر باید اتصال حساب دبیر را مشخص کند." }, 409);
+        }
+      }
+    }
+    if (teacherLookupError) return reply({ message: "بررسی پرونده دبیر انجام نشد." }, 500);
+    if (!teacherRow) return reply({ message: "پرونده دبیر به حساب کاربری متصل نیست؛ مدیر باید نام و مشخصات پرونده همکار را بررسی کند." }, 403);
     const { data: assignments, error: assignmentError } = await db.from("teacher_classes")
       .select("class_name").eq("tenant_school_id", school).eq("teacher_id", teacherRow.id).eq("active", 1).limit(500);
     if (assignmentError) return reply({ message: "کلاس‌های دبیر دریافت نشد." }, 500);
     assignedClassNames = [...new Set((assignments ?? []).map((x: any) => clean(x.class_name)).filter(Boolean))];
+    if (!assignedClassNames.length) {
+      const { data: scheduleRows, error: scheduleError } = await db.from("weekly_schedule_entries")
+        .select("class_name,teacher_id,teacher_name,teacher_username")
+        .eq("tenant_school_id", school).limit(2000);
+      if (scheduleError) return reply({ message: "برنامه هفتگی دبیر دریافت نشد." }, 500);
+      const username = norm(profile.username);
+      const fullName = norm(profile.display_name || profile.username);
+      assignedClassNames = [...new Set((scheduleRows ?? []).filter((row: any) =>
+        (username && norm(row.teacher_username) === username) ||
+        (Number(row.teacher_id) === Number(teacherRow!.id)) ||
+        (fullName && norm(row.teacher_name) === fullName)
+      ).map((row: any) => clean(row.class_name)).filter(Boolean))];
+    }
   }
 
   const input = await req.json().catch(() => ({}));
