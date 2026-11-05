@@ -242,8 +242,8 @@ Deno.serve(async (req: Request) => {
       for (const studentId of [...new Set((data ?? []).map((x: any) => Number(x.student_id)))]) {
         let historyQuery = admin.from("discipline_records").select("id,record_type")
           .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
-          .eq("actor_username",clean(profile.username)).order("id",{ascending:true}).limit(2000);
-        if (teacher) historyQuery = historyQuery.eq("teacher_id",teacherId).eq("subject",subject);
+          .eq("actor_username",clean(profile.username)).is("deleted_at",null).order("id",{ascending:true}).limit(2000);
+        if (teacher) historyQuery = historyQuery.eq("subject",subject);
         const { data: history, error: historyError } = await historyQuery;
         if (historyError) throw historyError;
         const types = teacher
@@ -279,10 +279,10 @@ Deno.serve(async (req: Request) => {
     if (action === "discipline_summary") {
       if (!teacher && !deputy && !manager) return reply({ message: "مجوز مشاهده سوابق را ندارید." }, 403);
       let q = admin.from("discipline_records").select("id,student_id,teacher_id,title,record_type,class_name,subject,actor_role,actor_username,incident_date")
-        .eq("tenant_school_id", school).order("incident_date", { ascending: false }).limit(2000);
+        .eq("tenant_school_id", school).is("deleted_at",null).order("incident_date", { ascending: false }).limit(2000);
       if (teacher && !manager) {
         const { data: t } = await admin.from("teachers").select("id").eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle();
-        q = q.eq("actor_role","teacher").eq("teacher_id",t?.id ?? -1);
+        q = q.eq("actor_role","teacher").eq("actor_username",clean(profile.username));
       } else if (deputy && !manager) q = q.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
       const { data, error } = await q;
       if (error) throw error;
@@ -303,7 +303,76 @@ Deno.serve(async (req: Request) => {
           : -Math.floor(item.discipline_count/3);
         grouped.set(key,item);
       }
-      return reply({ ok: true, rows: [...grouped.values()] });
+      const records = (data ?? []).map((x: any) => ({...x, student_name:names.get(Number(x.student_id)) ?? "دانش‌آموز"}));
+      let proposalsQuery = admin.from("discipline_score_proposals")
+        .select("id,student_id,actor_role,subject,discipline_count,praise_count,proposed_delta,target_score,status,source_record_ids,created_at,reviewed_at,reviewed_by,review_note")
+        .eq("tenant_school_id",school).order("created_at",{ascending:false}).limit(500);
+      if (teacher && !manager) proposalsQuery = proposalsQuery.eq("actor_role","teacher").eq("teacher_id", (await admin.from("teachers").select("id").eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle()).data?.id ?? -1);
+      else if (deputy && !manager) proposalsQuery = proposalsQuery.eq("actor_role","deputy").eq("reviewed_by", clean(profile.username));
+      const {data: proposals,error: proposalsError}=await proposalsQuery;
+      if(proposalsError) throw proposalsError;
+      const proposalStudentIds=[...new Set((proposals??[]).map((x:any)=>Number(x.student_id)).filter(Boolean))];
+      const {data: proposalStudents,error: proposalStudentsError}=proposalStudentIds.length
+        ? await admin.from("students").select("id,first_name,last_name").eq("tenant_school_id",school).in("id",proposalStudentIds)
+        : {data:[],error:null};
+      if(proposalStudentsError) throw proposalStudentsError;
+      const proposalNames=new Map((proposalStudents??[]).map((x:any)=>[Number(x.id),clean(x.first_name)+" "+clean(x.last_name)]));
+      return reply({ ok: true, rows: [...grouped.values()], records,
+        proposals:(proposals??[]).map((x:any)=>({...x,student_name:proposalNames.get(Number(x.student_id))??"دانش‌آموز"})) });
+    }
+
+    if (action === "discipline_update" || action === "discipline_delete") {
+      if (!teacher && !deputy && !manager) return reply({message:"مجوز ویرایش سوابق را ندارید."},403);
+      const recordId=asInt(body.record_id);
+      if(!recordId) return reply({message:"شناسه سابقه معتبر نیست."},400);
+      const {data:record,error:recordError}=await admin.from("discipline_records").select("*")
+        .eq("id",recordId).eq("tenant_school_id",school).is("deleted_at",null).maybeSingle();
+      if(recordError) throw recordError;
+      if(!record) return reply({message:"سابقه پیدا نشد یا قبلاً حذف شده است."},404);
+      const ownsRecord=manager || (teacher && record.actor_role==="teacher" && record.actor_username===clean(profile.username))
+        || (deputy && record.actor_role==="deputy" && record.actor_username===clean(profile.username));
+      if(!ownsRecord) return reply({message:"فقط ثبت‌کننده یا مدیریت مجاز به تغییر این سابقه است."},403);
+      const {data:used,error:usedError}=await admin.from("discipline_score_proposals").select("id")
+        .eq("tenant_school_id",school).contains("source_record_ids",[recordId]).limit(1);
+      if(usedError) throw usedError;
+      if(used?.length) return reply({message:"این سابقه مبنای پیشنهاد امتیاز شده و برای حفظ سوابق قابل ویرایش یا حذف نیست."},409);
+      if(action==="discipline_delete") {
+        const {data:updated,error}=await admin.from("discipline_records").update({deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()})
+          .eq("id",recordId).eq("tenant_school_id",school).select("*").single();
+        if(error) throw error;
+        const {error:auditError}=await admin.from("discipline_record_audit").insert({tenant_school_id:school,record_id:recordId,action:"delete",
+          actor_username:clean(profile.username),actor_role:teacher?"teacher":"deputy",before_data:record,after_data:updated});
+        if(auditError) throw auditError;
+        return reply({ok:true,deleted:true});
+      }
+      const title=clean(body.title),description=clean(body.description),recordType=clean(body.record_type);
+      const className=clean(body.class_name),subject=teacher?clean(body.subject):"";
+      if(!title||!className||!["discipline","praise"].includes(recordType)) return reply({message:"عنوان، کلاس و نوع سابقه الزامی است."},400);
+      if(teacher && !await assertTeacherClass(className)) return reply({message:"برای این کلاس مجوز ثبت ندارید."},403);
+      const {data:student,error:studentError}=await admin.from("students").select("id").eq("id",record.student_id)
+        .eq("tenant_school_id",school).eq("class_name",className).maybeSingle();
+      if(studentError) throw studentError;
+      if(!student) return reply({message:"دانش‌آموز در کلاس انتخاب‌شده نیست."},400);
+      const {data:updated,error}=await admin.from("discipline_records").update({title,description,note:description,record_type:recordType,
+        class_name:className,subject,incident_date:clean(body.incident_date),updated_at:new Date().toISOString()})
+        .eq("id",recordId).eq("tenant_school_id",school).select("*").single();
+      if(error) throw error;
+      const {error:auditError}=await admin.from("discipline_record_audit").insert({tenant_school_id:school,record_id:recordId,action:"update",
+        actor_username:clean(profile.username),actor_role:teacher?"teacher":"deputy",before_data:record,after_data:updated});
+      if(auditError) throw auditError;
+      return reply({ok:true,record:updated});
+    }
+
+    if (action === "discipline_review") {
+      if(!manager) return reply({message:"فقط مدیریت مجاز به بررسی پیشنهاد امتیاز است."},403);
+      const proposalId=asInt(body.proposal_id), status=clean(body.status);
+      if(!proposalId||!["approved","rejected"].includes(status)) return reply({message:"وضعیت بررسی معتبر نیست."},400);
+      const {data,error}=await admin.from("discipline_score_proposals").update({status,reviewed_at:new Date().toISOString(),
+        reviewed_by:clean(profile.username),review_note:clean(body.review_note)})
+        .eq("id",proposalId).eq("tenant_school_id",school).eq("status","pending").select("id,status").maybeSingle();
+      if(error) throw error;
+      if(!data) return reply({message:"پیشنهاد پیدا نشد یا قبلاً بررسی شده است."},409);
+      return reply({ok:true,proposal:data});
     }
 
     if (action === "list_weekly_schedule") {
