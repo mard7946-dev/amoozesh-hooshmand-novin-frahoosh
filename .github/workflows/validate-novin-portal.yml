@@ -16,6 +16,9 @@ on:
       - 'tests/validate-commercial-platform.mjs'
       - 'settings.html'
       - 'reports.html'
+      - 'messages.html'
+      - 'supabase/functions/frahoosh-messaging/**'
+      - 'tests/messaging-attachment.test.ts'
       - 'parent-management.html'
       - 'counseling.html'
       - 'exam-center.html'
@@ -67,6 +70,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Type-check messaging Edge Function and attachment guard
+        run: deno check supabase/functions/frahoosh-messaging/index.ts supabase/functions/frahoosh-messaging/attachment.ts
+      - name: Test messaging attachment size validation
+        run: deno test tests/messaging-attachment.test.ts
       - name: Type-check platform management Edge Function
         run: deno check supabase/functions/platform-management/index.ts
       - name: Type-check school portal login Edge Function
