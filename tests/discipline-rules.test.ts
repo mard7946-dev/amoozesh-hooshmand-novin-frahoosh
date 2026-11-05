@@ -54,7 +54,7 @@ Deno.test("old completed batches are not proposed again when only a later record
 Deno.test("praise and discipline thresholds are counted independently", () => {
   const batches = buildDisciplineScoreBatches(
     [{id:1,record_type:"discipline"},{id:2,record_type:"praise"},{id:3,record_type:"discipline"},{id:4,record_type:"praise"},{id:5,record_type:"discipline"}],
-    [5],
+    [4,5],
     "teacher",
   );
   equal(batches.map(x => [x.sourceRecordIds,x.targetScore,x.delta]), [
