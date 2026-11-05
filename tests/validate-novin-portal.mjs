@@ -198,3 +198,10 @@ assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub
 assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
 assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
 console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");
+
+const previewPortal = readFileSync("portal.html", "utf8");
+assert.ok(!previewPortal.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/parent-meetings.html"), "Preview navigation must not send deputy referrals to the legacy main-branch page");
+assert.ok(previewPortal.includes("صفحه عملیاتی ارجاعات معاونت هنوز در این نسخه آماده نیست"), "Unavailable deputy referrals must fail locally with an explicit notice");
+const previewBuild = readFileSync("scripts/build-cloudflare-pages-preview.sh", "utf8");
+assert.ok(previewBuild.includes('_site/build-info.json') && previewBuild.includes('CF_PAGES_COMMIT_SHA') && previewBuild.includes('built_at'), "Cloudflare preview build must generate non-sensitive release metadata");
+console.log("Cloudflare preview checks passed: same-origin navigation and generated build metadata.");
