@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
         // Legacy accounts may have no national code in either account_settings
         // or teachers. Allow only a unique exact full-name match with a
         // matching active teacher_classes assignment; never use name alone.
-        const identityName = norm(callerName).replace(/\\s+/g, " ");
+        const identityName = norm(callerName);
         if (identityName) {
           const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
             .select("id,first_name,last_name,national_code")
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
           if (teacherRowsError) throw teacherRowsError;
           const matches = (teacherRows ?? []).filter((row: any) =>
             !clean(row.national_code) &&
-            norm(`${clean(row.first_name)} ${clean(row.last_name)}`).replace(/\\s+/g, " ") === identityName
+            norm(`${clean(row.first_name)} ${clean(row.last_name)}`) === identityName
           );
           if (matches.length === 1) {
             const candidateId = matches[0].id;
