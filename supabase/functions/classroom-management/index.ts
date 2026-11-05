@@ -238,6 +238,10 @@ Deno.serve(async (req: Request) => {
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("discipline_records").insert(inserts).select("id,record_type,student_id");
       if (error) throw error;
+      const auditRows=(data??[]).map((row:any)=>({tenant_school_id:school,record_id:row.id,action:"insert",
+        actor_username:clean(profile.username),actor_role:actorRole,
+        after_data:{...inserts.find((x:any)=>Number(x.student_id)===Number(row.student_id)),id:row.id}}));
+      if(auditRows.length){const {error:auditError}=await admin.from("discipline_record_audit").insert(auditRows);if(auditError) throw auditError;}
       let proposalsCreated = 0;
       for (const studentId of [...new Set((data ?? []).map((x: any) => Number(x.student_id)))]) {
         let historyQuery = admin.from("discipline_records").select("id,record_type")
