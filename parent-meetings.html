@@ -54,4 +54,5 @@ $('submit').onclick=async()=>{try{const student_id=Number($('studentId').value),
 $('requests').onclick=async ev=>{const send=ev.target.closest('button[data-send]');if(send){try{const id=Number(send.dataset.send),field=document.querySelector('[data-message="'+id+'"]'),body=field.value.trim();if(!body)throw Error('متن پیام را بنویسید.');await call('send_message',{id,body});field.value='';await loadChat(id);say('پیام ارسال شد.')}catch(e){say(e.message,true)}return}const b=ev.target.closest('button[data-action]');if(!b)return;try{const id=Number(b.dataset.id),a=b.dataset.action;let extra={id,action:a};if(a.startsWith('reject_')){const reason=prompt('علت رد درخواست را وارد کنید:');if(!reason||!reason.trim())return;extra.reason=reason.trim()}if(a==='respond_yes'||a==='respond_no'){let note='';if(a==='respond_no'){note=prompt('علت رد درخواست را وارد کنید (الزامی):')||'';if(!note.trim())return}else{note=prompt('توضیح پاسخ (اختیاری):')||''}extra.action='respond';extra.response=a==='respond_yes'?'approved':'rejected';extra.note=note.trim()}await call(extra.action,extra);say('وضعیت درخواست ثبت شد.');await load()}catch(e){say(e.message,true)}};
 $('reload').onclick=load;$('back').onclick=()=>location.href='portal.html?step=login&role='+encodeURIComponent(role);
 load();
-</script></body></html>
+</script><script src="panel-navigation.js"></script>
+</body></html>

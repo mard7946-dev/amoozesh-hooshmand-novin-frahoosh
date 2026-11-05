@@ -87,4 +87,5 @@ function showProfile(p){
 async function load(){if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const [d,assignmentMap]=await Promise.all([api({action:'list_profiles'}),loadTeacherAssignments()]);profiles=(Array.isArray(d.profiles)?d.profiles:[]).map(p=>p.category==='teacher'?{...p,assigned_classes:assignmentMap.get(Number(p.id))||p.assigned_classes||[]}:p);schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus('پرونده‌ها و تخصیص دبیران مستقیماً از پایگاه داده دریافت شد.')}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
 $('search').addEventListener('input',render);$('refresh').addEventListener('click',load);$('backLevel').addEventListener('click',()=>{selectedClass='';$('search').value='';render()});$('back').addEventListener('click',()=>location.href='portal.html?step=login&role=manager');
 load();
-</script></body></html>
+</script><script src="panel-navigation.js"></script>
+</body></html>
