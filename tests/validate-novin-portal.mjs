@@ -228,3 +228,8 @@ assert.ok(studentActivitiesScripts.length > 0, "Manager activity page must conta
 for (const source of studentActivitiesScripts) assert.doesNotThrow(() => new Function(source), "Manager activity page script must have valid JavaScript syntax");
 assert.ok(publishWorkflow.includes("'student-activities.html'") && publishWorkflow.includes("student-module.html student-activities.html"), "GitHub Pages artifact must publish the manager activity page");
 console.log("Student activity checks passed: applications, manager review, active programs, and Pages publication.");
+
+
+const bulletinApi = readFileSync("supabase/functions/school-bulletin/index.ts", "utf8");
+assert.ok(bulletinApi.includes('roles:["manager","educational"]') && bulletinApi.includes('roles:["manager","cultural"]') && bulletinApi.includes('roles:["manager","executive"]'), "Bulletin boards must be restricted to the matching deputy role");
+assert.ok(!bulletinApi.includes('roles:["manager","deputy","educational"]') && !bulletinApi.includes('roles:["manager","deputy","cultural"]') && !bulletinApi.includes('roles:["manager","deputy","executive"]'), "Generic deputy role must not bypass board-specific bulletin permissions");
