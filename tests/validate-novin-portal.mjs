@@ -233,3 +233,8 @@ console.log("Student activity checks passed: applications, manager review, activ
 const bulletinApi = readFileSync("supabase/functions/school-bulletin/index.ts", "utf8");
 assert.ok(bulletinApi.includes('roles:["manager","educational"]') && bulletinApi.includes('roles:["manager","cultural"]') && bulletinApi.includes('roles:["manager","executive"]'), "Bulletin boards must be restricted to the matching deputy role");
 assert.ok(!bulletinApi.includes('roles:["manager","deputy","educational"]') && !bulletinApi.includes('roles:["manager","deputy","cultural"]') && !bulletinApi.includes('roles:["manager","deputy","executive"]'), "Generic deputy role must not bypass board-specific bulletin permissions");
+
+
+const studentSchedulePage = readFileSync("classroom/schedule.html", "utf8");
+assert.ok(html.includes("matchedTab[1]==='classes'&&['teacher','student'].includes(classroomRole)"), "Teacher and student weekly schedule selections must open the schedule page");
+assert.ok(studentSchedulePage.includes("classroom-authorize") && studentSchedulePage.includes("['teacher','student'].includes(String(profile.role||'').toLowerCase())"), "Weekly schedule page must authorize teacher and student accounts");
