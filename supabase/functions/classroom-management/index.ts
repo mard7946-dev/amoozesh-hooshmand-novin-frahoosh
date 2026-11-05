@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
       studentClassName = clean(studentProfile.class_name);
     }
     const assertTeacherClass = async (className: string) => {
-      if (schoolManager) return true;
+      if (manager) return true;
       if (!className) return false;
       const { data, error } = await admin.from("online_classes").select("id")
         .eq("tenant_school_id", school).eq("class_name", className).in("teacher", teacherNames).limit(1);
