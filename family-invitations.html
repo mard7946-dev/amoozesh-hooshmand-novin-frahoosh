@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دعوت از اولیا | فراهوش نوین</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;color:#172033;background:#f3f6fb}*{box-sizing:border-box}body{margin:0;padding:18px}.wrap{max-width:920px;margin:auto}.card{background:#fff;border:1px solid #dce3ed;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 4px 16px #15243b0a}h2,h3{margin-top:0}label{display:block;font-size:14px;margin:10px 0}input,select,textarea{display:block;width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;margin-top:6px;font:inherit;background:#fff}button{border:0;border-radius:9px;padding:11px 18px;background:#176b45;color:white;font:inherit;cursor:pointer;margin:8px 0}button:disabled{opacity:.5}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.muted{color:#64748b;font-size:13px}.status{padding:10px;border-radius:8px;background:#eef4fa}.item{border-top:1px solid #e2e8f0;padding:12px 0}.bad{color:#b42318}.good{color:#137547}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+</style></head>
+<body><main class="wrap">
+<div class="top"><h2>دعوت از اولیا</h2><button id="back" type="button">بازگشت به پنل</button></div>
+<p class="muted">دعوت‌نامه ابتدا برای بررسی مدیر مدرسه ثبت می‌شود. پس از تأیید مدیر، در پنل اولیای مربوط نمایش داده خواهد شد.</p>
+<div id="message" class="status" role="status">در حال دریافت کلاس‌ها…</div>
+<section class="card"><h3>ثبت دعوت‌نامه</h3>
+<form id="inviteForm">
+<div class="grid">
+<label id="audienceWrap">مخاطبان<select id="audience"><option value="class">اولیای یک کلاس</option><option value="all">تمام اولیای مدرسه</option><option value="student">ولی یک دانش‌آموز</option></select></label>
+<label id="classWrap">کلاس<select id="className" required><option value="">در حال دریافت…</option></select></label>
+<label id="studentWrap" hidden>دانش‌آموز<select id="studentId"><option value="">انتخاب دانش‌آموز</option></select></label>
+<label>عنوان دعوت‌نامه<input id="title" maxlength="160" required placeholder="موضوع جلسه"></label>
+<label>روز برگزاری<select id="weekday" required><option value="">انتخاب روز</option><option>شنبه</option><option>یکشنبه</option><option>دوشنبه</option><option>سه‌شنبه</option><option>چهارشنبه</option><option>پنجشنبه</option><option>جمعه</option></select></label>
+<label>تاریخ شمسی<input id="date" required inputmode="numeric" placeholder="۱۴۰۵/۰۹/۱۵" pattern="[0-9۰-۹]{4}[/.-][0-9۰-۹]{1,2}[/.-][0-9۰-۹]{1,2}"></label>
+<label>ساعت<input id="time" type="time"></label>
+<label>محل برگزاری<input id="venue" maxlength="300" placeholder="مثلاً دفتر مدرسه"></label>
+</div>
+<label>توضیحات<textarea id="description" rows="4" maxlength="3000" placeholder="علت دعوت و توضیحات لازم"></textarea></label>
+<button id="submit" type="submit">ارسال برای تأیید مدیر</button>
+</form></section>
+<section class="card"><h3>دعوت‌نامه‌های ثبت‌شده من</h3><div id="history" class="muted">در حال دریافت…</div></section>
+</main>
+<script>
+const endpoint='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/family-education';
+const key='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=(sessionStorage.getItem('frahoosh_novin_role')||'').toLowerCase();
+const $=id=>document.getElementById(id);let students=[];
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function msg(t,bad=false){$('message').textContent=t;$('message').className='status '+(bad?'bad':'good');}
+async function call(payload){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok||!x.ok)throw Error(x.message||'درخواست انجام نشد');return x;}
+function updateAudience(){const a=$('audience').value;$('classWrap').hidden=a==='all';$('className').required=a!=='all';$('studentWrap').hidden=a!=='student';$('studentId').required=a==='student';}
+function updateStudents(){const c=$('className').value;const list=students.filter(x=>!c||x.class_name===c);$('studentId').innerHTML='<option value="">انتخاب دانش‌آموز</option>'+list.map(x=>'<option value="'+x.id+'">'+esc((x.first_name||'')+' '+(x.last_name||'')+' · '+(x.class_name||''))+'</option>').join('');}
+function renderHistory(rows){$('history').innerHTML=rows.length?rows.map(x=>'<article class="item"><b>'+esc(x.title)+'</b><p>'+esc(x.student_name||'')+' · '+esc(x.event_weekday||'')+' '+esc(x.event_date_shamsi||'')+' · '+esc(x.event_time||'')+'</p><p>وضعیت بررسی مدیر: <b>'+({pending:'در انتظار تأیید مدیر',approved:'تأیید شده و منتشرشده',rejected:'رد شده'}[x.approval_status]||esc(x.approval_status))+'</b></p>'+(x.manager_note?'<p>توضیح مدیر: '+esc(x.manager_note)+'</p>':'')+'</article>').join(''):'هنوز دعوت‌نامه‌ای ثبت نکرده‌اید.';}
+async function load(){if(!token)throw Error('نشست ورود معتبر نیست؛ دوباره وارد پنل شوید.');const [targets,history]=await Promise.all([call({action:'list_targets'}),call({action:'list'})]);students=targets.students||[];$('className').innerHTML='<option value="">انتخاب کلاس</option>'+(targets.classes||[]).map(c=>'<option>'+esc(c)+'</option>').join('');if(role==='teacher'){$('audience').innerHTML='<option value="class">اولیای یک کلاس</option><option value="student">ولی یک دانش‌آموز</option>';}updateAudience();updateStudents();renderHistory(history.invitations||[]);msg('کلاس‌ها و سوابق دعوت‌نامه دریافت شد.');}
+$('audience').addEventListener('change',updateAudience);$('className').addEventListener('change',updateStudents);
+$('inviteForm').addEventListener('submit',async ev=>{ev.preventDefault();const a=$('audience').value;if(a!=='all'&&!$('className').value){msg('کلاس را انتخاب کنید.',true);return;}if(a==='student'&&!$('studentId').value){msg('دانش‌آموز را انتخاب کنید.',true);return;}const b=$('submit');b.disabled=true;try{const x=await call({action:'create',audience:a,class_name:a==='all'?'':$('className').value,student_id:a==='student'?Number($('studentId').value):null,title:$('title').value.trim(),description:$('description').value.trim(),event_weekday:$('weekday').value,event_date_shamsi:$('date').value.trim(),event_time:$('time').value,venue:$('venue').value.trim()});msg('دعوت‌نامه برای '+x.count+' ولی ثبت شد و در انتظار تأیید مدیر است.');$('inviteForm').reset();updateAudience();updateStudents();const h=await call({action:'list'});renderHistory(h.invitations||[]);}catch(e){msg(e.message,true);}finally{b.disabled=false;}});
+$('back').onclick=()=>location.href='portal.html?step=login&role='+encodeURIComponent(role);
+load().catch(e=>msg(e.message,true));
+</script></body></html>
