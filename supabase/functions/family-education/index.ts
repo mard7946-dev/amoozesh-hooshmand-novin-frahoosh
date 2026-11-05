@@ -60,6 +60,8 @@ Deno.serve(async (req: Request) => {
   if (teacherRole) {
     let teacherRow: { id: number } | null = null;
     let teacherLookupError: any = null;
+    // Prefer the exact national-code link, then safely fall back to a unique full-name match.
+    // A non-matching national_code must not prevent a verified, unambiguous staff match.
     if (clean(profile.national_code)) {
       const { data, error } = await db.from("teachers").select("id")
         .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code))
@@ -69,9 +71,8 @@ Deno.serve(async (req: Request) => {
       else if (!error && (data?.length ?? 0) > 1) {
         return reply({ message: "پرونده دبیر با کد ملی تکراری است؛ مدیر باید اطلاعات همکار را اصلاح کند." }, 409);
       }
-    } else {
-      // Match the same verified staff identity used by classroom authorization.
-      // A unique full-name match is required; ambiguous names never grant access.
+    }
+    if (!teacherLookupError && !teacherRow) {
       const { data: teacherRows, error } = await db.from("teachers")
         .select("id,first_name,last_name").eq("tenant_school_id", school).limit(2000);
       teacherLookupError = error;
