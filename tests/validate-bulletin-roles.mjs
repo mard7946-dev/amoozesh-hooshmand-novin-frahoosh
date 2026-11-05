@@ -29,4 +29,6 @@ assert.match(
   "اطلاعیه معاون باید برای تأیید مدیر ارسال شود",
 );
 
+assert.doesNotMatch(source, /roles:\["manager","deputy",/ , "Generic deputy role must not bypass board-specific bulletin permissions");
+
 console.log("School bulletin role authorization checks passed.");
