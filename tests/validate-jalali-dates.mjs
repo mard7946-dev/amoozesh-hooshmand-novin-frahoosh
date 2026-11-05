@@ -36,6 +36,11 @@ for (const file of ['family-invitations.html','parent-meetings.html','finance.ht
   const html = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
   assert.match(html, /jalali-date\.js/, file + ' must load shared date picker');
 }
+const reports = readFileSync(new URL('../reports.html', import.meta.url), 'utf8');
+assert.equal((reports.match(/data-jalali-date/g) || []).length, 2, 'both report date filters must use the Jalali picker');
+const invitations = readFileSync(new URL('../family-invitations.html', import.meta.url), 'utf8');
+assert.match(invitations, /data-jalali-date/);
+assert.match(invitations, /data-digital-time/);
 const picker = readFileSync(new URL('../jalali-date.js', import.meta.url), 'utf8');
 assert.match(picker, /data-jalali-date/);
 assert.match(picker, /data-digital-time/);
