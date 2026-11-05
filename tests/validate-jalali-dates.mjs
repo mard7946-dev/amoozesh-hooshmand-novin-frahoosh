@@ -34,11 +34,11 @@ assert.match(classroom, /toISODate\(\$\('discDate'\)\.value\)/);
 
 for (const file of ['family-invitations.html','parent-meetings.html','finance.html','reports.html','counseling.html','bulletin.html','parent-management.html']) {
   const html = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-  assert.match(html, /jalali-date\\.js/, file + ' must load shared date picker');
+  assert.match(html, /jalali-date\.js/, file + ' must load shared date picker');
 }
 const picker = readFileSync(new URL('../jalali-date.js', import.meta.url), 'utf8');
 assert.match(picker, /data-jalali-date/);
 assert.match(picker, /data-digital-time/);
 assert.match(picker, /تقویم شمسی/);
-assert.match(picker, /firstDay=\\(first\\.getUTCDay\\(\\)\\+1\\)%7/);
+assert.match(picker, /firstDay=\(first\.getUTCDay\(\)\+1\)%7/);
 console.log('Jalali date and picker validation passed.');
