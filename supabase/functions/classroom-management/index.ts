@@ -384,6 +384,307 @@ Deno.serve(async (req: Request) => {
       return reply({ok:true,record:updated});
     }
 
+    if (action === "teacher_class_report") {
+      if (!teacher) return reply({ message: "این گزارش فقط برای حساب دبیر قابل مشاهده است." }, 403);
+      const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (teacherError) throw teacherError;
+      if (!teacherRow?.id) return reply({ message: "پرونده دبیر برای این حساب پیدا نشد." }, 404);
+      const teacherId = teacherRow.id;
+      const [classesResult, attendanceResult, gradesResult, disciplineResult, assignmentsResult] = await Promise.all([
+        admin.from("teacher_classes").select("class_name,subject,grade")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("active", 1)
+          .order("class_name").limit(300),
+        admin.from("attendance").select("id,class_name,subject,date,attendance_date,status,approval_status")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).order("id", { ascending: false }).limit(2000),
+        admin.from("student_grades").select("id,class_name,subject,score,term,grade_date_shamsi")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("manager_released", 1)
+          .order("id", { ascending: false }).limit(2000),
+        admin.from("discipline_records").select("id,class_name,subject,record_type,status,incident_date")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("actor_role", "teacher")
+          .is("deleted_at", null).order("id", { ascending: false }).limit(2000),
+        admin.from("assignments").select("id,class_name,subject,title,status,due_date,created_at")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId)
+          .order("id", { ascending: false }).limit(1000),
+      ]);
+      for (const result of [classesResult, attendanceResult, gradesResult, disciplineResult, assignmentsResult]) {
+        if (result.error) throw result.error;
+      }
+      return reply({
+        ok: true, classes: classesResult.data ?? [], attendance: attendanceResult.data ?? [],
+        published_grades: gradesResult.data ?? [], discipline: disciplineResult.data ?? [],
+        assignments: assignmentsResult.data ?? [],
+      });
+    }
+
+    if (action === "student_module_summary") {
+      if (!studentRole) return reply({ message: "این بخش فقط برای حساب دانش‌آموز قابل مشاهده است." }, 403);
+      const moduleName = clean(body.module);
+      const { data: student, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (studentError) throw studentError;
+      if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
+
+      if (moduleName === "غیبت") {
+        const { data, error } = await admin.from("attendance")
+          .select("id,date,attendance_date,status,description,subject,approval_status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(500);
+        if (error) throw error;
+        return reply({ ok: true, student, attendance: data ?? [] });
+      }
+
+      if (moduleName === "انضباط") {
+        const { data, error } = await admin.from("discipline_records")
+          .select("id,title,description,record_type,incident_date,status,subject,actor_role")
+          .eq("tenant_school_id", school).eq("student_id", student.id).is("deleted_at", null)
+          .order("incident_date", { ascending: false }).limit(500);
+        if (error) throw error;
+        return reply({ ok: true, student, discipline: data ?? [] });
+      }
+
+      if (moduleName === "تکلیف") {
+        const columns = "id,student_id,title,description,status,created_at,due_date,subject,class_name";
+        const [classAssignments, personalAssignments] = await Promise.all([
+          admin.from("assignments").select(columns).eq("tenant_school_id", school)
+            .eq("class_name", studentClassName).order("id", { ascending: false }).limit(500),
+          admin.from("assignments").select(columns).eq("tenant_school_id", school)
+            .eq("student_id", student.id).order("id", { ascending: false }).limit(500),
+        ]);
+        if (classAssignments.error) throw classAssignments.error;
+        if (personalAssignments.error) throw personalAssignments.error;
+        const unique = new Map<number, any>();
+        for (const item of [...(classAssignments.data ?? []), ...(personalAssignments.data ?? [])]) {
+          if (item.student_id == null || Number(item.student_id) === Number(student.id)) unique.set(Number(item.id), item);
+        }
+        const assignmentIds = [...unique.keys()];
+        const { data: submissions, error: submissionsError } = assignmentIds.length
+          ? await admin.from("assignment_submissions").select("assignment_id,status,submitted_at")
+              .eq("tenant_school_id", school).eq("student_id", student.id)
+              .in("assignment_id", assignmentIds).limit(500)
+          : { data: [], error: null };
+        if (submissionsError) throw submissionsError;
+        const submissionMap = new Map((submissions ?? []).map((item: any) => [Number(item.assignment_id), item]));
+        const assignments = [...unique.values()].map((item: any) => {
+          const submission = submissionMap.get(Number(item.id));
+          return { ...item, submission_status: submission?.status ?? "not_done", submitted_at: submission?.submitted_at ?? null };
+        });
+        return reply({ ok: true, student, assignments });
+      }
+
+      return reply({ message: "نوع بخش دانش‌آموز معتبر نیست." }, 400);
+    }
+
+    if (action === "student_activity_portal") {
+      if (!studentRole) return reply({ message: "ثبت‌نام فعالیت‌ها فقط برای حساب دانش‌آموز مجاز است." }, 403);
+      const { data: student, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (studentError) throw studentError;
+      if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
+      const operation = clean(body.operation || "list");
+
+      if (operation === "list") {
+        const [programsResult, councilResult, basijResult, mayorResult, registrationsResult] = await Promise.all([
+          admin.from("activity_programs").select("id,title,category,event_date,amount,settings")
+            .eq("tenant_school_id", school).eq("active", true).order("id", { ascending: false }).limit(300),
+          admin.from("student_council").select("id,election_year,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("basij_registration").select("id,status,registration_date,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("school_mayor").select("id,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("activity_registrations").select("id,activity_id,participation_type,team_members,competition_type,payment_status,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(300),
+        ]);
+        for (const result of [programsResult, councilResult, basijResult, mayorResult, registrationsResult]) {
+          if (result.error) throw result.error;
+        }
+        const programIds = [...new Set((registrationsResult.data ?? []).map((x: any) => Number(x.activity_id)).filter(Boolean))];
+        const { data: registeredPrograms, error: registeredProgramsError } = programIds.length
+          ? await admin.from("activity_programs").select("id,title,category").eq("tenant_school_id", school).in("id", programIds)
+          : { data: [], error: null };
+        if (registeredProgramsError) throw registeredProgramsError;
+        const programMap = new Map((registeredPrograms ?? []).map((x: any) => [Number(x.id), x]));
+        const registrations = (registrationsResult.data ?? []).map((x: any) => ({
+          ...x, activity_title: programMap.get(Number(x.activity_id))?.title ?? "فعالیت ثبت‌شده",
+        }));
+        return reply({
+          ok: true, student, programs: programsResult.data ?? [],
+          council: councilResult.data ?? [], basij: basijResult.data ?? [],
+          mayor: mayorResult.data ?? [], registrations,
+        });
+      }
+
+      if (operation !== "register") return reply({ message: "عملیات فعالیت دانش‌آموز معتبر نیست." }, 400);
+      const registrationType = clean(body.registration_type);
+      const studentName = clean(student.first_name) + " " + clean(student.last_name);
+      const rejectDuplicate = (existing: any) => !!existing && clean(existing.status).toLowerCase() !== "rejected";
+
+      if (registrationType === "council") {
+        const electionYear = clean(body.election_year).slice(0, 20);
+        if (!electionYear) return reply({ message: "سال تحصیلی انتخابات را وارد کنید." }, 400);
+        const { data: existing, error: existingError } = await admin.from("student_council").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id).eq("election_year", electionYear)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "برای این سال تحصیلی قبلاً درخواست شورای دانش‌آموزی ثبت شده است." }, 409);
+        const { data, error } = await admin.from("student_council").insert({
+          student_id: student.id, student_name: studentName, election_year: electionYear,
+          status: "pending", tenant_school_id: school,
+        }).select("id,election_year,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "basij") {
+        const { data: existing, error: existingError } = await admin.from("basij_registration").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "درخواست عضویت بسیج دانش‌آموزی قبلاً ثبت شده است." }, 409);
+        const { data, error } = await admin.from("basij_registration").insert({
+          student_id: student.id, student_name: studentName,
+          registration_date: clean(body.registration_date) || new Date().toISOString().slice(0, 10),
+          status: "pending", tenant_school_id: school,
+        }).select("id,status,registration_date,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "mayor") {
+        const { data: existing, error: existingError } = await admin.from("school_mayor").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "درخواست شهردار مدرسه قبلاً ثبت شده است." }, 409);
+        const { data, error } = await admin.from("school_mayor").insert({
+          student_id: student.id, student_name: studentName, status: "pending", tenant_school_id: school,
+        }).select("id,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "activity") {
+        const activityId = asInt(body.activity_id);
+        if (!activityId) return reply({ message: "برنامه فعال را انتخاب کنید." }, 400);
+        const { data: program, error: programError } = await admin.from("activity_programs")
+          .select("id,title,category").eq("tenant_school_id", school).eq("id", activityId).eq("active", true).maybeSingle();
+        if (programError) throw programError;
+        if (!program) return reply({ message: "این برنامه فعال نیست یا در مدرسه شما وجود ندارد." }, 404);
+        const { data: existing, error: existingError } = await admin.from("activity_registrations").select("id,status")
+          .eq("tenant_school_id", school).eq("activity_id", activityId).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "برای این برنامه قبلاً ثبت‌نام کرده‌اید." }, 409);
+        const participationType = clean(body.participation_type) === "گروهی" ? "گروهی" : "فردی";
+        const { data, error } = await admin.from("activity_registrations").insert({
+          activity_id: activityId, student_id: student.id, participation_type: participationType,
+          team_members: clean(body.team_members).slice(0, 1000), competition_type: clean(program.category),
+          status: "pending", tenant_school_id: school,
+        }).select("id,activity_id,participation_type,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: { ...data, activity_title: program.title } });
+      }
+
+      return reply({ message: "نوع درخواست ثبت‌نام معتبر نیست." }, 400);
+    }
+
+    if (action === "student_activity_admin") {
+      if (!schoolManager) return reply({ message: "فقط مدیر مدرسه مجاز به مدیریت فعالیت‌ها و بررسی درخواست‌ها است." }, 403);
+      const operation = clean(body.operation || "list");
+
+      if (operation === "list") {
+        const [programsResult, councilResult, basijResult, mayorResult, registrationsResult] = await Promise.all([
+          admin.from("activity_programs").select("id,title,category,event_date,active,amount,settings")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(500),
+          admin.from("student_council").select("id,student_id,student_name,election_year,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("basij_registration").select("id,student_id,student_name,registration_date,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("school_mayor").select("id,student_id,student_name,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000),
+          admin.from("activity_registrations").select("id,activity_id,student_id,participation_type,team_members,competition_type,payment_status,status,created_at")
+            .eq("tenant_school_id", school).order("id", { ascending: false }).limit(2000),
+        ]);
+        for (const result of [programsResult, councilResult, basijResult, mayorResult, registrationsResult]) {
+          if (result.error) throw result.error;
+        }
+        const programs = programsResult.data ?? [];
+        const councilRows = councilResult.data ?? [], basijRows = basijResult.data ?? [];
+        const mayorRows = mayorResult.data ?? [], rawRegistrations = registrationsResult.data ?? [];
+        const studentIds = [...new Set([...councilRows, ...basijRows, ...mayorRows, ...rawRegistrations]
+          .map((x: any) => Number(x.student_id)).filter((x: number) => Number.isInteger(x) && x > 0))];
+        const { data: studentRows, error: studentsError } = studentIds.length
+          ? await admin.from("students").select("id,first_name,last_name,class_name")
+              .eq("tenant_school_id", school).in("id", studentIds)
+          : { data: [], error: null };
+        if (studentsError) throw studentsError;
+        const studentMap = new Map((studentRows ?? []).map((x: any) => [Number(x.id), x]));
+        const withStudent = (rows: any[]) => rows.map((x: any) => {
+          const student = studentMap.get(Number(x.student_id));
+          return { ...x, student_name: x.student_name || (student ? clean(student.first_name) + " " + clean(student.last_name) : "دانش‌آموز"),
+            class_name: student?.class_name ?? "" };
+        });
+        const programMap = new Map(programs.map((x: any) => [Number(x.id), x]));
+        const registrations = withStudent(rawRegistrations).map((x: any) => ({
+          ...x, activity_title: programMap.get(Number(x.activity_id))?.title ?? "فعالیت ثبت‌شده",
+        }));
+        return reply({
+          ok: true, programs, council: withStudent(councilRows), basij: withStudent(basijRows),
+          mayor: withStudent(mayorRows), registrations,
+        });
+      }
+
+      if (operation === "create_program") {
+        const title = clean(body.title).slice(0, 160), category = clean(body.category).slice(0, 80);
+        const eventDate = clean(body.event_date).slice(0, 40), description = clean(body.description).slice(0, 2000);
+        const amount = body.amount === "" || body.amount == null ? 0 : Number(body.amount);
+        if (!title || !category || !Number.isFinite(amount) || amount < 0 || amount > 1000000000) {
+          return reply({ message: "عنوان، دسته‌بندی و مبلغ معتبر برای برنامه وارد کنید." }, 400);
+        }
+        const { data, error } = await admin.from("activity_programs").insert({
+          title, category, event_date: eventDate || null, amount,
+          settings: { description }, active: body.active !== false, tenant_school_id: school,
+        }).select("id,title,category,event_date,amount,active,settings").single();
+        if (error) throw error;
+        return reply({ ok: true, program: data });
+      }
+
+      if (operation === "set_program_active") {
+        const programId = asInt(body.program_id);
+        if (!programId || typeof body.active !== "boolean") return reply({ message: "برنامه یا وضعیت فعال‌سازی معتبر نیست." }, 400);
+        const { data, error } = await admin.from("activity_programs").update({ active: body.active })
+          .eq("tenant_school_id", school).eq("id", programId)
+          .select("id,title,active").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ message: "برنامه موردنظر پیدا نشد." }, 404);
+        return reply({ ok: true, program: data });
+      }
+
+      if (operation === "review") {
+        const tableByType: Record<string, string> = {
+          council: "student_council", basij: "basij_registration",
+          mayor: "school_mayor", activity: "activity_registrations",
+        };
+        const registrationType = clean(body.registration_type), recordId = asInt(body.record_id);
+        const nextStatus = clean(body.status);
+        const table = tableByType[registrationType];
+        if (!table || !recordId || !["approved", "rejected"].includes(nextStatus)) {
+          return reply({ message: "نوع درخواست، شناسه یا نتیجه بررسی معتبر نیست." }, 400);
+        }
+        const { data, error } = await admin.from(table).update({ status: nextStatus })
+          .eq("tenant_school_id", school).eq("id", recordId).eq("status", "pending")
+          .select("id,status").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ message: "این درخواست قبلاً بررسی شده یا پیدا نشد." }, 409);
+        return reply({ ok: true, registration: data });
+      }
+
+      return reply({ message: "عملیات مدیریت فعالیت‌ها معتبر نیست." }, 400);
+    }
+
     if (action === "student_academic_summary") {
       if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
       const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")

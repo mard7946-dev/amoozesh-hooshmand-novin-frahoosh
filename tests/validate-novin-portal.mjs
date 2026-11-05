@@ -198,3 +198,72 @@ assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub
 assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
 assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
 console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");
+
+assert.ok(!html.includes("raw.githack.com"), "Authenticated portal navigation must stay same-origin so sessionStorage is preserved");
+assert.ok(html.includes("location.href='parent-meetings.html?v=20261031-meetings-3'"), "All meeting navigation must use the current same-origin page");
+
+const studentModulePage = readFileSync("student-module.html", "utf8");
+const studentModuleApi = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+assert.ok(studentModulePage.includes("student_module_summary") && studentModulePage.includes("student_academic_summary"), "Student panel must load its own read-only module data and published grades");
+assert.ok(["غیبت", "انضباط", "تکلیف"].every(moduleName => studentModulePage.includes(moduleName)), "Student panel must expose attendance, discipline, and homework views");
+assert.ok(studentModuleApi.includes('action === "student_module_summary"') && studentModuleApi.includes("if (!studentRole)"), "Student module API must enforce student-only access");
+assert.ok(studentModuleApi.includes('.eq("tenant_school_id", school).eq("student_id", student.id)'), "Student module queries must be scoped to the authenticated student's own record and school");
+assert.ok(studentModuleApi.includes('admin.from("assignment_submissions")') && studentModuleApi.includes('Number(item.student_id) === Number(student.id)'), "Homework status must be joined only to the current student's submissions");
+const studentModuleScripts = [...studentModulePage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(studentModuleScripts.length > 0, "Student module page must contain its application script");
+for (const source of studentModuleScripts) assert.doesNotThrow(() => new Function(source), "Student module script must have valid JavaScript syntax");
+console.log("Student module checks passed: private attendance, discipline, homework, published grades, and JavaScript syntax.");
+
+
+const studentActivitiesPage = readFileSync("student-activities.html", "utf8");
+assert.ok(html.includes("student-activities.html") && html.includes("فعالیت‌های دانش‌آموزی"), "Manager portal must route to student activity administration");
+assert.ok(studentModulePage.includes("فعالیت‌های مدرسه") && studentModulePage.includes("همیار و شهردار مدرسه"), "Student menu modules must be recognized by the student page");
+assert.ok(studentActivitiesPage.includes("student_activity_admin") && studentActivitiesPage.includes("create_program"), "Manager activity page must create and load real activity programs");
+assert.ok(studentActivitiesPage.includes("data-review-type") && studentActivitiesPage.includes("set_program_active"), "Manager activity page must review applications and control program activation");
+assert.ok(studentModuleApi.includes('action === "student_activity_portal"') && studentModuleApi.includes('action === "student_activity_admin"'), "Backend must expose student submission and manager review actions");
+assert.ok(studentModuleApi.includes('admin.from("student_council")') && studentModuleApi.includes('admin.from("basij_registration")') && studentModuleApi.includes('admin.from("school_mayor")') && studentModuleApi.includes('admin.from("activity_registrations")'), "Student applications must use the school's actual registration tables");
+assert.ok(studentModuleApi.includes('.eq("status", "pending")') && studentModuleApi.includes("if (!schoolManager)"), "Only the school manager may review pending activity applications");
+const studentActivitiesScripts = [...studentActivitiesPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(studentActivitiesScripts.length > 0, "Manager activity page must contain its application script");
+for (const source of studentActivitiesScripts) assert.doesNotThrow(() => new Function(source), "Manager activity page script must have valid JavaScript syntax");
+assert.ok(publishWorkflow.includes("'student-activities.html'") && publishWorkflow.includes("student-module.html student-activities.html"), "GitHub Pages artifact must publish the manager activity page");
+console.log("Student activity checks passed: applications, manager review, active programs, and Pages publication.");
+
+
+const bulletinApi = readFileSync("supabase/functions/school-bulletin/index.ts", "utf8");
+assert.ok(bulletinApi.includes('roles:["manager","educational"]') && bulletinApi.includes('roles:["manager","cultural"]') && bulletinApi.includes('roles:["manager","executive"]'), "Bulletin boards must be restricted to the matching deputy role");
+assert.ok(!bulletinApi.includes('roles:["manager","deputy","educational"]') && !bulletinApi.includes('roles:["manager","deputy","cultural"]') && !bulletinApi.includes('roles:["manager","deputy","executive"]'), "Generic deputy role must not bypass board-specific bulletin permissions");
+
+
+const studentSchedulePage = readFileSync("classroom/schedule.html", "utf8");
+assert.ok(html.includes("matchedTab[1]==='classes'&&['teacher','student'].includes(classroomRole)"), "Teacher and student weekly schedule selections must open the schedule page");
+assert.ok(studentSchedulePage.includes("classroom-authorize") && studentSchedulePage.includes("['teacher','student'].includes(String(profile.role||'').toLowerCase())"), "Weekly schedule page must authorize teacher and student accounts");
+
+
+const usersPage = readFileSync("users.html", "utf8");
+const usersApi = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(html.includes("location.href='users.html'") && !html.includes("پیش‌نمایش غیرفعال"), "Manager portal must expose the operational user-management page");
+assert.ok(usersPage.includes("admin-manage-users") && usersApi.includes("auth.getUser") && usersApi.includes("school_memberships"), "User management must use the authenticated, school-scoped server API");
+
+
+const messagesPage = readFileSync("messages.html", "utf8");
+const messagingApi = readFileSync("supabase/functions/frahoosh-messaging/index.ts", "utf8");
+assert.ok(messagesPage.includes("frahoosh-messaging") && messagesPage.includes("ارسال برای بررسی"), "Messaging panel must expose the real send workflow");
+assert.ok(messagingApi.includes("/auth/v1/user") && messagingApi.includes("school_memberships") && messagingApi.includes("tenant_school_id"), "Messaging API must authenticate users and scope messages to an active school membership");
+assert.ok(messagingApi.includes("isAttachmentBase64WithinLimit") && messagingApi.includes("MAX_ATTACHMENT_BYTES"), "Messaging API must reject oversized attachments before decoding");
+
+
+assert.ok(html.includes("sessionStorage.getItem('frahoosh_novin_access_token')") && html.includes("step==='panel'&&portalAuthToken&&portalAuthUserRole===initial.id"), "Portal must restore an authenticated session when returning from a subpanel");
+assert.ok(html.includes("sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);sessionStorage.setItem('frahoosh_novin_role','student')"), "Student self-service routes must persist the access token before navigation");
+
+
+const teacherReportsPage = readFileSync("teacher-reports.html", "utf8");
+assert.ok(html.includes("name==='گزارش عملکرد کلاس'") && html.includes("teacher-reports.html"), "Teacher class performance must open its dedicated report page");
+assert.ok(teacherReportsPage.includes("teacher_class_report"), "Teacher report page must call the scoped reporting action");
+assert.ok(studentModuleApi.includes('action === "teacher_class_report"') && studentModuleApi.includes("if (!teacher)"), "Teacher report API must reject non-teacher roles");
+assert.ok(studentModuleApi.includes('.eq("tenant_school_id", school).eq("teacher_id", teacherId)'), "Teacher report queries must be scoped to the authenticated teacher and school");
+const teacherReportScripts = [...teacherReportsPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(teacherReportScripts.length > 0, "Teacher report page must contain its application script");
+for (const source of teacherReportScripts) assert.doesNotThrow(() => new Function(source), "Teacher report page script must have valid JavaScript syntax");
+assert.ok(publishWorkflow.includes("'teacher-reports.html'") && publishWorkflow.includes("student-activities.html teacher-reports.html"), "GitHub Pages artifact must publish the teacher report page");
+console.log("Teacher report checks passed: teacher-scoped summaries and Pages publication.");

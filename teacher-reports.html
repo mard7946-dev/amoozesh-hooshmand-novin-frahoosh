@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10213b">
+<title>گزارش عملکرد کلاس · فراهوش نوین</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fb;--card:#fff;--ink:#17243b;--muted:#607087;--line:#dce4ef;--blue:#1d4ed8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,"Segoe UI",sans-serif;padding:18px;line-height:1.8}main{max-width:1150px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 5px 20px #13294b0b}.muted{color:var(--muted);font-size:13px}.link{display:inline-block;text-decoration:none;background:#e8eef8;color:#23395d;padding:8px 13px;border-radius:10px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:15px}.metric{background:white;border:1px solid var(--line);border-radius:14px;padding:14px}.metric strong{display:block;font-size:24px;color:var(--blue)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:right;padding:10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}th{background:#f7f9fc}.notice{padding:10px 14px;border-radius:10px;background:#e8eef8;color:#20395f;margin-top:12px}.error{background:#fee2e2;color:#991b1b}@media(max-width:600px){body{padding:10px}.card{padding:12px}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="muted">فراهوش نوین · پنل دبیر</div><h1>گزارش عملکرد کلاس</h1><p class="muted">گزارش فقط از کلاس‌ها و درس‌های تخصیص‌یافته به حساب دبیر تهیه می‌شود.</p></div><a class="link" href="portal.html?step=panel&role=teacher">بازگشت به پنل دبیر</a></header>
+<div id="notice" class="notice" role="status">در حال دریافت گزارش…</div>
+<section id="metrics" class="metrics"></section>
+<section class="card"><h2>خلاصه عملکرد به تفکیک کلاس و درس</h2><div id="classSummary" class="table-wrap"></div></section>
+<section class="card"><h2>آخرین ثبت‌های حضور و غیاب</h2><div id="attendanceList" class="table-wrap"></div></section>
+<section class="card"><h2>نمره‌های منتشرشده</h2><div id="gradeList" class="table-wrap"></div></section>
+<section class="card"><h2>سوابق انضباطی و تشویقی ثبت‌شده توسط دبیر</h2><div id="disciplineList" class="table-wrap"></div></section>
+<section class="card"><h2>تکالیف ثبت‌شده</h2><div id="assignmentList" class="table-wrap"></div></section>
+</main>
+<script>
+const API_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management';
+const API_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=sessionStorage.getItem('frahoosh_novin_role')||'';
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dateFa=v=>{if(!v)return '—';const d=new Date(String(v).slice(0,10)+'T12:00:00');return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)};
+function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('error',error)}
+async function api(){
+ const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':API_KEY,'Authorization':'Bearer '+token},body:JSON.stringify({action:'teacher_class_report',active_role:'teacher'})});
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(d.message||'گزارش دریافت نشد.');
+ return d;
+}
+function table(target,headers,rows,empty){
+ if(!rows.length){$(target).innerHTML='<p class="muted">'+esc(empty)+'</p>';return}
+ $(target).innerHTML='<table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+function render(data){
+ const classes=data.classes||[],attendance=data.attendance||[],grades=data.published_grades||[],discipline=data.discipline||[],assignments=data.assignments||[];
+ const metrics=[['کلاس و درس',classes.length],['ثبت حضور و غیاب',attendance.length],['نمره منتشرشده',grades.length],['تکلیف ثبت‌شده',assignments.length],['ثبت انضباطی و تشویقی',discipline.length]];
+ $('metrics').innerHTML=metrics.map(x=>'<div class="metric"><span class="muted">'+esc(x[0])+'</span><strong>'+Number(x[1]).toLocaleString('fa-IR')+'</strong></div>').join('');
+ const key=x=>String(x.class_name||'')+'::'+String(x.subject||'');
+ const summaries=classes.map(c=>{
+  const k=key(c),a=attendance.filter(x=>key(x)===k),g=grades.filter(x=>key(x)===k),d=discipline.filter(x=>key(x)===k),h=assignments.filter(x=>key(x)===k);
+  const absent=a.filter(x=>['absent','غایب'].includes(String(x.status||'').toLowerCase())).length;
+  const late=a.filter(x=>['late','تاخیر','تأخیر'].includes(String(x.status||'').toLowerCase())).length;
+  const scores=g.map(x=>Number(x.score)).filter(Number.isFinite),avg=scores.length?scores.reduce((sum,x)=>sum+x,0)/scores.length:null;
+  return [c.class_name,c.subject,c.grade,a.length,absent,late,g.length,avg===null?'—':avg.toFixed(2),d.length,h.length];
+ });
+ table('classSummary',['کلاس','درس','پایه','حضور و غیاب','غیبت','تأخیر','نمره منتشرشده','میانگین نمره','انضباط/تشویق','تکلیف'],summaries,'کلاس فعالی برای این حساب دبیر تخصیص داده نشده است.');
+ table('attendanceList',['تاریخ','کلاس','درس','وضعیت','وضعیت تأیید'],attendance.slice(0,100).map(x=>[dateFa(x.attendance_date||x.date),x.class_name,x.subject,x.status,x.approval_status]),'ثبت حضور و غیابی وجود ندارد.');
+ table('gradeList',['تاریخ','کلاس','درس','نوبت','نمره'],grades.slice(0,100).map(x=>[dateFa(x.grade_date_shamsi),x.class_name,x.subject,x.term,x.score]),'نمره منتشرشده‌ای وجود ندارد.');
+ table('disciplineList',['تاریخ','کلاس','درس','نوع','وضعیت'],discipline.slice(0,100).map(x=>[dateFa(x.incident_date),x.class_name,x.subject,x.record_type==='praise'?'تشویق':'انضباط',x.status]),'مورد انضباطی یا تشویقی ثبت نشده است.');
+ table('assignmentList',['تاریخ ثبت','کلاس','درس','عنوان','مهلت','وضعیت'],assignments.slice(0,100).map(x=>[dateFa(x.created_at),x.class_name,x.subject,x.title,dateFa(x.due_date),x.status]),'تکلیفی ثبت نشده است.');
+}
+if(!token||role!=='teacher')notice('برای مشاهده گزارش، از پنل دبیر وارد شوید.',true);
+else api().then(data=>{render(data);notice('گزارش کلاس‌ها و درس‌های تخصیص‌یافته دریافت شد.')}).catch(error=>notice(error.message,true));
+</script>
+</body>
+</html>

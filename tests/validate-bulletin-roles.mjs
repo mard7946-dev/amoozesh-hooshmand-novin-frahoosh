@@ -5,17 +5,17 @@ const source = readFileSync("supabase/functions/school-bulletin/index.ts", "utf8
 
 assert.match(
   source,
-  /educational:\{title:"تابلوی آموزشی",icon:"📚",roles:\["manager","deputy","educational"\]\}/,
+  /educational:\{title:"تابلوی آموزشی",icon:"📚",roles:\["manager","educational"\]\}/,
   "معاون باید مجوز ثبت در تابلوی آموزشی را داشته باشد",
 );
 assert.match(
   source,
-  /cultural:\{title:"تابلوی پرورشی، فرهنگی و ورزشی",icon:"🏅",roles:\["manager","deputy","cultural"\]\}/,
+  /cultural:\{title:"تابلوی پرورشی، فرهنگی و ورزشی",icon:"🏅",roles:\["manager","cultural"\]\}/,
   "معاون باید مجوز ثبت در تابلوی فرهنگی را داشته باشد",
 );
 assert.match(
   source,
-  /administrative:\{title:"تابلوی امور اداری",icon:"🗂️",roles:\["manager","deputy","executive"\]\}/,
+  /administrative:\{title:"تابلوی امور اداری",icon:"🗂️",roles:\["manager","executive"\]\}/,
   "معاون باید مجوز ثبت در تابلوی اداری را داشته باشد",
 );
 assert.match(
@@ -28,5 +28,7 @@ assert.match(
   /status:manager\?"published":"pending_manager"/,
   "اطلاعیه معاون باید برای تأیید مدیر ارسال شود",
 );
+
+assert.doesNotMatch(source, /roles:\["manager","deputy",/ , "Generic deputy role must not bypass board-specific bulletin permissions");
 
 console.log("School bulletin role authorization checks passed.");

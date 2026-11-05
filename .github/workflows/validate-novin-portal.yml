@@ -5,10 +5,22 @@ on:
   push:
     branches: [main]
     paths:
+      - '**/*.html'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
+      - 'users.html'
+      - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
+      - 'classroom/schedule.html'
+      - 'student-module.html'
+      - 'student-activities.html'
+      - 'supabase/functions/classroom-management/index.ts'
       - 'platform-admin.html'
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
+      - 'supabase/functions/school-bulletin/index.ts'
+      - 'supabase/migrations/20261105110000_platform_school_drafts.sql'
       - 'supabase/functions/school-portal-login/index.ts'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
       - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
@@ -16,6 +28,11 @@ on:
       - 'tests/validate-commercial-platform.mjs'
       - 'settings.html'
       - 'reports.html'
+      - 'student-module.html'
+      - 'supabase/functions/classroom-management/index.ts'
+      - 'messages.html'
+      - 'supabase/functions/frahoosh-messaging/**'
+      - 'tests/messaging-attachment.test.ts'
       - 'parent-management.html'
       - 'counseling.html'
       - 'exam-center.html'
@@ -36,7 +53,23 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - '**/*.html'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
+      - 'users.html'
+      - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
+      - 'classroom/schedule.html'
+      - 'supabase/functions/school-bulletin/index.ts'
+      - 'supabase/migrations/20261105110000_platform_school_drafts.sql'
+      - 'tests/validate-commercial-platform.mjs'
+      - 'student-module.html'
+      - 'student-activities.html'
+      - 'supabase/functions/classroom-management/index.ts'
+      - 'messages.html'
+      - 'supabase/functions/frahoosh-messaging/**'
+      - 'tests/messaging-attachment.test.ts'
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
@@ -45,7 +78,6 @@ on:
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
       - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
       - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
-      - 'tests/validate-commercial-platform.mjs'
       - '.github/workflows/validate-novin-portal.yml'
   workflow_dispatch:
 
@@ -67,7 +99,22 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check platform management Edge Function
-        run: deno check supabase/functions/platform-management/index.ts
-      - name: Type-check school portal login Edge Function
-        run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check all school and platform Edge Functions
+        run: >-
+          deno check
+          supabase/functions/admin-manage-users/index.ts
+          supabase/functions/assessment-center/index.ts
+          supabase/functions/classroom-authorize/index.ts
+          supabase/functions/classroom-login/index.ts
+          supabase/functions/classroom-management/index.ts
+          supabase/functions/family-education/index.ts
+          supabase/functions/frahoosh-messaging/index.ts
+          supabase/functions/parent-management/index.ts
+          supabase/functions/parent-meetings/index.ts
+          supabase/functions/platform-management/index.ts
+          supabase/functions/school-bulletin/index.ts
+          supabase/functions/school-portal-login/index.ts
+          supabase/functions/school-reports/index.ts
+          supabase/functions/school-settings/index.ts
+      - name: Run shared schedule, discipline, and messaging tests
+        run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts tests/messaging-attachment.test.ts

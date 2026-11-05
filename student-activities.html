@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10213b">
+<title>مدیریت فعالیت‌های دانش‌آموزی · فراهوش نوین</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fb;--card:#fff;--ink:#17243b;--muted:#607087;--line:#dce4ef;--blue:#1d4ed8;--green:#15803d;--red:#b91c1c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,"Segoe UI",sans-serif;padding:18px;line-height:1.8}main{max-width:1180px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px;box-shadow:0 5px 20px #13294b0b}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:5px;margin:10px 0}input,select,textarea{font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);width:100%}textarea{min-height:80px}button,.link{font:inherit;border:0;border-radius:10px;padding:9px 13px;background:var(--blue);color:white;cursor:pointer;text-decoration:none}button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8eef8;color:#23395d}.approve{background:var(--green)}.reject{background:var(--red)}.actions{display:flex;gap:7px;flex-wrap:wrap}.pill{display:inline-block;border-radius:999px;padding:2px 9px;background:#e8eef8;color:#314767;font-size:12px}.pill.pending{background:#fff4d8;color:#805500}.pill.approved{background:#dcfce7;color:#166534}.pill.rejected{background:#fee2e2;color:#991b1b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:right;padding:10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}th{background:#f7f9fc}.program{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}.notice{padding:10px 14px;border-radius:10px;background:#e8eef8;color:#20395f;margin-top:12px}.error{background:#fee2e2;color:#991b1b}@media(max-width:600px){body{padding:10px}.card{padding:13px}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="muted">فراهوش نوین · پنل مدیریت مدرسه</div><h1>مدیریت فعالیت‌های دانش‌آموزی</h1><p class="muted">تعریف برنامه‌های فعال و بررسی درخواست‌های شورای دانش‌آموزی، بسیج، شهردار مدرسه، مسابقات و جشنواره‌ها</p></div><a class="link secondary" href="portal.html?step=panel&role=manager">بازگشت به پنل مدیریت</a></header>
+<div id="notice" class="notice" role="status">در حال بررسی نشست مدیریت…</div>
+<section class="card">
+<h2>تعریف برنامه جدید</h2>
+<form id="programForm">
+<div class="grid">
+<label class="field">عنوان برنامه<input id="title" maxlength="160" required placeholder="مثلاً جشنواره علمی مدرسه"></label>
+<label class="field">دسته‌بندی<select id="category" required><option value="مسابقه">مسابقه</option><option value="جشنواره">جشنواره</option><option value="همیار مدرسه">همیار مدرسه</option><option value="فعالیت فرهنگی">فعالیت فرهنگی</option><option value="فعالیت ورزشی">فعالیت ورزشی</option></select></label>
+<label class="field">تاریخ برگزاری (شمسی)<input id="eventDate" maxlength="40" placeholder="۱۴۰۵/۰۹/۱۵"></label>
+<label class="field">مبلغ اعلام‌شده (تومان)<input id="amount" type="number" min="0" max="1000000000" value="0"></label>
+</div>
+<label class="field">توضیحات برنامه<textarea id="description" maxlength="2000" placeholder="شرایط و توضیحات ثبت‌نام"></textarea></label>
+<label><input id="active" type="checkbox" checked style="width:auto"> برنامه پس از ثبت برای دانش‌آموزان فعال باشد</label>
+<p><button id="createProgram" type="submit">ثبت برنامه</button></p>
+</form>
+</section>
+<section class="card"><h2>برنامه‌های تعریف‌شده</h2><div id="programList" class="muted">در حال دریافت…</div></section>
+<section class="card"><h2>درخواست‌های شورای دانش‌آموزی</h2><div id="councilList" class="table-wrap"></div></section>
+<section class="card"><h2>درخواست‌های بسیج دانش‌آموزی</h2><div id="basijList" class="table-wrap"></div></section>
+<section class="card"><h2>درخواست‌های شهردار مدرسه</h2><div id="mayorList" class="table-wrap"></div></section>
+<section class="card"><h2>درخواست‌های مسابقات، جشنواره‌ها و همیار مدرسه</h2><div id="activityList" class="table-wrap"></div></section>
+</main>
+<script>
+const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
+const API_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=sessionStorage.getItem('frahoosh_novin_role')||'';
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const statusText=value=>({pending:'در انتظار بررسی',approved:'تأییدشده',rejected:'ردشده'}[String(value||'').toLowerCase()]||value||'—');
+const dateText=value=>{if(!value)return '—';const d=new Date(String(value).slice(0,10)+'T12:00:00');return Number.isNaN(d.getTime())?esc(value):new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)};
+function notice(message,isError=false){$('notice').textContent=message;$('notice').classList.toggle('error',isError)}
+async function api(payload){
+ const response=await fetch(SUPABASE_URL+'/functions/v1/classroom-management',{method:'POST',headers:{'Content-Type':'application/json','apikey':API_KEY,'Authorization':'Bearer '+token},body:JSON.stringify({...payload,active_role:'manager'})});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.message||'عملیات انجام نشد.');
+ return data;
+}
+function pill(status){const s=String(status||'').toLowerCase();return '<span class="pill '+esc(s)+'">'+esc(statusText(s))+'</span>'}
+function renderPrograms(programs){
+ if(!programs.length){$('programList').innerHTML='<p class="muted">هنوز برنامه‌ای تعریف نشده است.</p>';return}
+ $('programList').innerHTML=programs.map(p=>'<div class="program"><div><strong>'+esc(p.title)+'</strong><div class="muted">'+esc(p.category)+' · '+dateText(p.event_date)+' · '+Number(p.amount||0).toLocaleString('fa-IR')+' تومان</div><div class="muted">'+esc(p.settings?.description||'')+'</div><span class="pill">'+(p.active?'فعال برای ثبت‌نام':'غیرفعال')+'</span></div><button class="secondary" data-toggle-program="'+Number(p.id)+'" data-active="'+String(!!p.active)+'">'+(p.active?'غیرفعال‌کردن':'فعال‌کردن')+'</button></div>').join('');
+}
+function renderApplications(target,rows,type,columns){
+ if(!rows.length){$(target).innerHTML='<p class="muted">درخواستی ثبت نشده است.</p>';return}
+ const head=columns.map(x=>'<th>'+esc(x.label)+'</th>').join('');
+ const body=rows.map(row=>'<tr>'+columns.map(x=>'<td>'+esc(x.format?x.format(row[x.key],row):row[x.key])+'</td>').join('')+'<td>'+pill(row.status)+'</td><td>'+(row.status==='pending'?'<div class="actions"><button class="approve" data-review-type="'+type+'" data-id="'+Number(row.id)+'" data-status="approved">تأیید</button><button class="reject" data-review-type="'+type+'" data-id="'+Number(row.id)+'" data-status="rejected">رد</button></div>':'—')+'</td></tr>').join('');
+ $(target).innerHTML='<table><thead><tr>'+head+'<th>وضعیت</th><th>اقدام</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+async function load(){
+ const data=await api({action:'student_activity_admin',operation:'list'});
+ renderPrograms(data.programs||[]);
+ renderApplications('councilList',data.council||[],'council',[{key:'student_name',label:'دانش‌آموز'},{key:'class_name',label:'کلاس'},{key:'election_year',label:'سال تحصیلی'},{key:'created_at',label:'تاریخ ثبت',format:dateText}]);
+ renderApplications('basijList',data.basij||[],'basij',[{key:'student_name',label:'دانش‌آموز'},{key:'class_name',label:'کلاس'},{key:'registration_date',label:'تاریخ درخواست',format:dateText}]);
+ renderApplications('mayorList',data.mayor||[],'mayor',[{key:'student_name',label:'دانش‌آموز'},{key:'class_name',label:'کلاس'},{key:'created_at',label:'تاریخ ثبت',format:dateText}]);
+ renderApplications('activityList',data.registrations||[],'activity',[{key:'student_name',label:'دانش‌آموز'},{key:'class_name',label:'کلاس'},{key:'activity_title',label:'برنامه'},{key:'participation_type',label:'نوع مشارکت'},{key:'team_members',label:'هم‌گروهی‌ها'},{key:'created_at',label:'تاریخ ثبت',format:dateText}]);
+}
+$('programForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const button=$('createProgram');button.disabled=true;
+ try{
+  await api({action:'student_activity_admin',operation:'create_program',title:$('title').value.trim(),category:$('category').value,event_date:$('eventDate').value.trim(),amount:Number($('amount').value||0),description:$('description').value.trim(),active:$('active').checked});
+  $('programForm').reset();$('active').checked=true;$('amount').value='0';
+  notice('برنامه ثبت شد.');await load();
+ }catch(error){notice(error.message,true)}finally{button.disabled=false}
+});
+document.addEventListener('click',async event=>{
+ const toggle=event.target.closest('[data-toggle-program]');
+ const review=event.target.closest('[data-review-type]');
+ if(!toggle&&!review)return;
+ const button=toggle||review;button.disabled=true;
+ try{
+  if(toggle){
+   const active=toggle.dataset.active!=='true';
+   await api({action:'student_activity_admin',operation:'set_program_active',program_id:Number(toggle.dataset.toggleProgram),active});
+   notice(active?'برنامه برای ثبت‌نام فعال شد.':'برنامه غیرفعال شد.');
+  }else{
+   const status=review.dataset.status;
+   if(status==='rejected'&&!confirm('درخواست دانش‌آموز رد شود؟')){button.disabled=false;return}
+   await api({action:'student_activity_admin',operation:'review',registration_type:review.dataset.reviewType,record_id:Number(review.dataset.id),status});
+   notice(status==='approved'?'درخواست تأیید شد.':'درخواست رد شد.');
+  }
+  await load();
+ }catch(error){notice(error.message,true);button.disabled=false}
+});
+if(!token||role!=='manager'){
+ notice('برای ورود به این بخش باید از پنل مدیر مدرسه وارد شوید.',true);
+ $('programForm').querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);
+}else{
+ load().then(()=>notice('اطلاعات برنامه‌ها و درخواست‌های مدرسه دریافت شد.')).catch(error=>notice(error.message,true));
+}
+</script>
+</body>
+</html>

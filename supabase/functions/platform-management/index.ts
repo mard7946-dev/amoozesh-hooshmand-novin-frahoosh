@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     const action = clean(body?.action, 40);
 
     if (action === "overview") {
-      const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult] = await Promise.all([
+      const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, draftsResult] = await Promise.all([
         admin.from("schools")
           .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500),
@@ -77,8 +77,9 @@ Deno.serve(async (req: Request) => {
         admin.from("platform_audit_logs")
           .select("id,actor_auth_user_id,action,school_id,details,created_at")
           .order("created_at", { ascending: false }).limit(50),
+        admin.from("platform_school_drafts").select("id,slot_no,school_name,updated_at").order("slot_no", { ascending: true }),
       ]);
-      const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult].find(x => x.error);
+      const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, draftsResult].find(x => x.error);
       if (failed) return reply({ message: "دریافت اطلاعات مدیریت کل ناموفق بود." }, 500);
 
       const schools = schoolsResult.data ?? [];
@@ -112,7 +113,29 @@ Deno.serve(async (req: Request) => {
         })),
         plans,
         audit: auditResult.data ?? [],
+        drafts: draftsResult.data ?? [],
       });
+    }
+
+    if (action === "save_school_draft") {
+      const slotNo = Number(body?.slot_no);
+      const schoolName = clean(body?.school_name, 180);
+      if (!Number.isInteger(slotNo) || slotNo < 1 || slotNo > 4) {
+        return reply({ message: "جایگاه مدرسه معتبر نیست." }, 400);
+      }
+      if (schoolName.length === 1) {
+        return reply({ message: "نام مدرسه باید حداقل دو نویسه باشد." }, 400);
+      }
+      const { data, error } = await admin.from("platform_school_drafts")
+        .update({ school_name: schoolName || null, updated_at: new Date().toISOString() })
+        .eq("slot_no", slotNo)
+        .select("id,slot_no,school_name,updated_at")
+        .single();
+      if (error || !data) {
+        console.error("platform school draft save failed", error?.message ?? "missing draft slot");
+        return reply({ message: "ذخیره نام مدرسه انجام نشد." }, 500);
+      }
+      return reply({ success: true, draft: data });
     }
 
     if (action === "create_school") {
