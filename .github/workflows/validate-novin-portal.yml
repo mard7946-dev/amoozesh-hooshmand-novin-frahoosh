@@ -16,7 +16,7 @@ on:
       - 'tests/validate-commercial-platform.mjs'
       - 'settings.html'
       - 'reports.html'
-      - 'messages.html'
+      - 'student-module.html'\n      - 'supabase/functions/classroom-management/index.ts'\n      - 'messages.html'
       - 'supabase/functions/frahoosh-messaging/**'
       - 'tests/messaging-attachment.test.ts'
       - 'parent-management.html'
