@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'student-module.html'
+      - 'student-activities.html'
+      - 'supabase/functions/classroom-management/index.ts'
       - 'platform-admin.html'
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
