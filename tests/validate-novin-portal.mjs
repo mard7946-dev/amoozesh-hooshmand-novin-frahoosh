@@ -238,3 +238,9 @@ assert.ok(!bulletinApi.includes('roles:["manager","deputy","educational"]') && !
 const studentSchedulePage = readFileSync("classroom/schedule.html", "utf8");
 assert.ok(html.includes("matchedTab[1]==='classes'&&['teacher','student'].includes(classroomRole)"), "Teacher and student weekly schedule selections must open the schedule page");
 assert.ok(studentSchedulePage.includes("classroom-authorize") && studentSchedulePage.includes("['teacher','student'].includes(String(profile.role||'').toLowerCase())"), "Weekly schedule page must authorize teacher and student accounts");
+
+
+const usersPage = readFileSync("users.html", "utf8");
+const usersApi = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(html.includes("location.href='users.html'") && !html.includes("پیش‌نمایش غیرفعال"), "Manager portal must expose the operational user-management page");
+assert.ok(usersPage.includes("admin-manage-users") && usersApi.includes("auth.getUser") && usersApi.includes("school_memberships"), "User management must use the authenticated, school-scoped server API");
