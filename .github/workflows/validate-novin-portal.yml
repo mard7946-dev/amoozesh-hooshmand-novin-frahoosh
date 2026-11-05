@@ -45,6 +45,12 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'student-module.html'
+      - 'student-activities.html'
+      - 'supabase/functions/classroom-management/index.ts'
+      - 'messages.html'
+      - 'supabase/functions/frahoosh-messaging/**'
+      - 'tests/messaging-attachment.test.ts'
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
