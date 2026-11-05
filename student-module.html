@@ -22,38 +22,74 @@
 </main>
 <script>
 const modules={
-'غیبت':'نمایش وضعیت حضور و غیبت خود دانش‌آموز؛ این صفحه برای ثبت یا تغییر غیبت نیست.',
-'نمره':'نمایش نمره‌های ثبت‌شده برای حساب دانش‌آموز، بدون امکان تغییر نمره.',
-'انضباط':'نمایش موارد انضباطی مرتبط با خود دانش‌آموز، بدون نمایش اطلاعات دیگران.',
-'تکلیف':'نمایش تکالیف اختصاص‌یافته به کلاس دانش‌آموز و وضعیت انجام آن‌ها.'
+ 'غیبت':'نمایش سوابق حضور و غیاب ثبت‌شده برای خود دانش‌آموز.',
+ 'نمره':'نمایش نمره‌های منتشرشده و تعدیلات مصوب؛ بدون امکان تغییر نمره.',
+ 'انضباط':'نمایش سوابق انضباطی و تشویقی مرتبط با خود دانش‌آموز.',
+ 'تکلیف':'نمایش تکالیف کلاس و وضعیت انجام آن‌ها؛ این بخش فقط برای مشاهده است.'
 };
 const params=new URLSearchParams(location.search);
 const selected=params.get('module')||'';
-document.getElementById('moduleTitle').textContent=modules[selected]?selected:'بخش نامعتبر';
-document.getElementById('moduleDescription').textContent=modules[selected]||'بخش انتخاب‌شده معتبر نیست؛ به منوی پنل برگردید.';
-document.getElementById('back').onclick=()=>location.href='portal.html?step=panel&role=student';
-if(!modules[selected])document.getElementById('status').textContent='بخش انتخاب‌شده معتبر نیست.';
-if(selected==='نمره'){
- const token=sessionStorage.getItem('frahoosh_novin_access_token');
- const role=sessionStorage.getItem('frahoosh_novin_role')||'';
- const apiUrl='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management';
- const apiKey='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
- const box=document.getElementById('status'),out=document.getElementById('gradeResults');
- const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- (async()=>{
-  if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
-  box.textContent='در حال دریافت نمره‌های منتشرشده و تعدیلات تأییدشده…';
-  try{
-   const res=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json','apikey':apiKey,'Authorization':'Bearer '+token},body:JSON.stringify({action:'student_academic_summary'})});
-   const data=await res.json().catch(()=>({}));
-   if(!res.ok)throw new Error(data.message||'دریافت نمره‌ها ناموفق بود.');
-   box.textContent='اطلاعات تحصیلی '+esc(data.student?.first_name)+' '+esc(data.student?.last_name)+' · کلاس '+esc(data.student?.class_name);
-   const rows=data.grades||[],adjustments=data.adjustments||[],continuous=data.continuous||[];
-   out.innerHTML='<h2>نمره‌های منتشرشده</h2>'+(rows.length?'<table><thead><tr><th>درس</th><th>نوع ارزیابی</th><th>عنوان</th><th>نمره</th><th>ضریب</th><th>نوبت</th><th>تاریخ</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.assessment_type)+'</td><td>'+esc(x.assessment_title)+'</td><td>'+esc(x.score)+'</td><td>'+esc(x.coefficient)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.grade_date_shamsi)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">هنوز نمره‌ای برای نمایش منتشر نشده است.</p>');
-   out.innerHTML+='<h2>نمره مستمر نهایی پس از تعدیلات مصوب</h2>'+(continuous.length?'<table><thead><tr><th>درس</th><th>نوبت</th><th>میانگین پایه</th><th>تعدیل</th><th>نمره نهایی از ۲۰</th></tr></thead><tbody>'+continuous.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.base_score)+'</td><td>'+esc(x.adjustment)+'</td><td>'+esc(x.final_score)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">برای محاسبه مستمر، نمره منتشرشده‌ای وجود ندارد.</p>');
-   out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+(adjustments.filter(x=>x.target_score==='discipline').length?'<table><thead><tr><th>میزان تعدیل</th><th>تاریخ اعمال</th></tr></thead><tbody>'+adjustments.filter(x=>x.target_score==='discipline').map(x=>'<tr><td>'+esc(x.delta)+'</td><td>'+esc(x.applied_at)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">تعدیل انضباطی مصوبی ثبت نشده است.</p>');
-  }catch(e){box.textContent=e.message}
- })();
+const $=id=>document.getElementById(id);
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=sessionStorage.getItem('frahoosh_novin_role')||'';
+const apiUrl='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management';
+const apiKey='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function formatShamsi(value){
+ if(!value)return '—';
+ const raw=String(value).slice(0,10);
+ const date=new Date(raw+'T12:00:00');
+ if(Number.isNaN(date.getTime()))return esc(value);
+ return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 }
+function showTable(title,headers,rows,empty){
+ const out=$('gradeResults');
+ out.innerHTML+='<h2>'+esc(title)+'</h2>';
+ if(!rows.length){out.innerHTML+='<p class="muted">'+esc(empty)+'</p>';return;}
+ out.innerHTML+='<table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+
+ rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+function statusLabel(value){
+ const labels={present:'حاضر',absent:'غایب',late:'تأخیر',excused:'موجه',done:'انجام‌شده',incomplete:'ناقص',not_done:'انجام‌نشده',pending:'ثبت‌شده؛ در انتظار بررسی',approved:'تأییدشده',rejected:'ردشده',active:'فعال',published:'منتشرشده'};
+ return labels[String(value||'').toLowerCase()]||value||'—';
+}
+async function request(payload){
+ const response=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json','apikey':apiKey,'Authorization':'Bearer '+token},body:JSON.stringify({...payload,active_role:'student'})});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.message||'دریافت اطلاعات ناموفق بود.');
+ return data;
+}
+function renderGrades(data){
+ const rows=data.grades||[],adjustments=data.adjustments||[],continuous=data.continuous||[];
+ showTable('نمره‌های منتشرشده',['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ'],rows.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi]),'هنوز نمره‌ای برای نمایش منتشر نشده است.');
+ showTable('نمره مستمر نهایی پس از تعدیلات مصوب',['درس','نوبت','میانگین پایه','تعدیل','نمره نهایی از ۲۰'],continuous.map(x=>[x.subject,x.term,x.base_score,x.adjustment,x.final_score]),'برای محاسبه مستمر، نمره منتشرشده‌ای وجود ندارد.');
+ const discipline=adjustments.filter(x=>x.target_score==='discipline');
+ $('gradeResults').innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>';
+ showTable('جزئیات تعدیلات انضباطی',['میزان تعدیل','تاریخ اعمال'],discipline.map(x=>[x.delta,formatShamsi(x.applied_at)]),'تعدیل انضباطی مصوبی ثبت نشده است.');
+}
+function renderModule(data){
+ if(selected==='غیبت'){
+  showTable('سوابق حضور و غیاب',['تاریخ','وضعیت','درس','توضیح','وضعیت تأیید'],(data.attendance||[]).map(x=>[formatShamsi(x.attendance_date||x.date),statusLabel(x.status),x.subject,x.description,statusLabel(x.approval_status)]),'سابقه حضور و غیابی برای این حساب ثبت نشده است.');
+ }else if(selected==='انضباط'){
+  showTable('سوابق انضباطی و تشویقی',['تاریخ','نوع','عنوان','درس','توضیحات','وضعیت'],(data.discipline||[]).map(x=>[formatShamsi(x.incident_date),x.record_type==='praise'?'تشویق':'انضباط',x.title,x.subject,x.description,statusLabel(x.status)]),'سابقه انضباطی یا تشویقی برای این حساب ثبت نشده است.');
+ }else if(selected==='تکلیف'){
+  showTable('تکالیف اختصاص‌یافته',['درس','عنوان تکلیف','شرح','مهلت','وضعیت انجام','تاریخ ارسال'],(data.assignments||[]).map(x=>[x.subject,x.title,x.description,formatShamsi(x.due_date),statusLabel(x.submission_status),formatShamsi(x.submitted_at)]),'تکلیفی برای کلاس یا حساب شما ثبت نشده است.');
+ }
+}
+async function main(){
+ $('moduleTitle').textContent=modules[selected]?selected:'بخش نامعتبر';
+ $('moduleDescription').textContent=modules[selected]||'بخش انتخاب‌شده معتبر نیست؛ به منوی پنل برگردید.';
+ $('back').onclick=()=>location.href='portal.html?step=panel&role=student';
+ if(!modules[selected]){$('status').textContent='بخش انتخاب‌شده معتبر نیست.';return;}
+ if(!token||role!=='student'){$('status').textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return;}
+ $('status').textContent='در حال دریافت اطلاعات ثبت‌شده برای حساب شما…';
+ try{
+  const data=selected==='نمره'?await request({action:'student_academic_summary'}):await request({action:'student_module_summary',module:selected});
+  const student=data.student||{};
+  $('status').textContent='اطلاعات '+(student.first_name||'')+' '+(student.last_name||'')+' · کلاس '+(student.class_name||'ثبت نشده');
+  if(selected==='نمره')renderGrades(data);else renderModule(data);
+ }catch(error){$('status').textContent=error.message;}
+}
+main();
 </script>
 </body></html>
