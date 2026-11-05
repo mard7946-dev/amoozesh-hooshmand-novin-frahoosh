@@ -44,9 +44,9 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check classroom authorization and management Edge Functions
-        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts
+        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-management/discipline-rules.ts
       - name: Test Tehran schedule activation boundaries
-        run: deno test tests/classroom-schedule.test.ts
+        run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
         env:
           DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
