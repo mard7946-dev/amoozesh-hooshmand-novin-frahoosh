@@ -109,10 +109,10 @@
         function choose(y,m,d){input.value=y+'/'+pad(m)+'/'+pad(d);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));backdrop.remove();}
         backdrop.onclick=e=>{if(e.target===backdrop)backdrop.remove();};backdrop.appendChild(panel);document.body.appendChild(backdrop);draw();
       }
-      open.addEventListener('click',show);input.addEventListener('click',show);input.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
+      open.addEventListener('click',show);input.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
     });
     root.querySelectorAll('input[data-digital-time]:not([data-digital-time-ready])').forEach(input=>{
-      input.dataset.digitalTimeReady='1';input.type='text';input.readOnly=true;input.inputMode='none';input.lang='en';input.autocomplete='off';input.placeholder='انتخاب ساعت (۲۴ ساعته)';input.setAttribute('aria-haspopup','dialog');
+      input.dataset.digitalTimeReady='1';input.type='text';input.readOnly=false;input.inputMode='text';input.lang='en';input.autocomplete='off';input.pattern='(?:[01][0-9]|2[0-3]):[0-5][0-9]';input.maxLength=5;input.placeholder='مثلاً ۱۴:۳۰';input.setAttribute('aria-haspopup','dialog');input.addEventListener('input',()=>{const value=digits(input.value).trim();input.setCustomValidity(value&&!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value)?'ساعت را به شکل ۱۴:۳۰ وارد کنید.':'');});input.addEventListener('blur',()=>{input.value=digits(input.value).trim();});
       const wrap=document.createElement('span');wrap.className='frahoosh-date-wrap frahoosh-time-wrap';input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);
       const open=document.createElement('button');open.type='button';open.className='frahoosh-date-button';open.textContent='🕒 انتخاب ساعت';open.setAttribute('aria-label','انتخاب ساعت دیجیتال');wrap.appendChild(open);
       function show(){
