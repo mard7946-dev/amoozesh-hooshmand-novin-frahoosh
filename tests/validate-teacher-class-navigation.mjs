@@ -1,0 +1,17 @@
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const portal=readFileSync(new URL('../server/public/portal.html',import.meta.url),'utf8');
+const modulePage=readFileSync(new URL('../server/public/module.html',import.meta.url),'utf8');
+const server=readFileSync(new URL('../server/src/server.js',import.meta.url),'utf8');
+assert.ok(portal.includes("sessionStorage.setItem('frahoosh_token',token)"),'Login must persist the active session for same-origin module navigation');
+assert.ok(portal.includes("const savedToken=sessionStorage.getItem('frahoosh_token')")&&portal.includes("api('/auth/me')"),'Portal must restore and validate the session when returning from a module');
+assert.ok(portal.includes("sessionStorage.removeItem('frahoosh_token')"),'Logout must clear the persisted session');
+assert.ok(modulePage.includes('id="classSelect"')&&modulePage.includes('id="studentList"'),'Teacher module page must provide class and student selectors');
+assert.ok(modulePage.includes("api('/auth/me')")&&modulePage.includes("role=session.user?.role||'user'"),'Module role and class access must be derived from the authenticated session, not URL parameters');
+assert.ok(modulePage.includes("api('/teacher/classes')")&&modulePage.includes("api('/teacher/students?gradeClass='"),'Module page must load assigned classes and the selected class roster');
+assert.ok(modulePage.includes("location.href='/portal.html?section='"),'Both module back buttons must return to the authenticated portal route');
+assert.ok(server.includes("app.get('/api/teacher/classes', auth, allow('teacher','educational_deputy','pastoral_deputy'"),'Class list API must require an authenticated teaching role');
+assert.ok(server.includes("app.get('/api/teacher/students', auth, allow('teacher','educational_deputy','pastoral_deputy'"),'Roster API must require an authenticated teaching role');
+assert.ok(server.includes('WHERE teacher_user_id=$1 AND grade_class=$2 LIMIT 1'),'Roster API must verify the class is assigned to the signed-in teacher');
+assert.ok(server.includes("WHERE role='student' AND grade_class=$1"),'Roster API must restrict results to students in the selected class');
+console.log('Teacher class selection, assigned-class roster authorization, and return-to-panel session restoration checks passed.');
