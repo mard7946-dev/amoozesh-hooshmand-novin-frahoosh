@@ -238,46 +238,7 @@ Deno.serve(async (req: Request) => {
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("discipline_records").insert(inserts).select("id,record_type,student_id");
       if (error) throw error;
-      const insertedIds = new Set((data ?? []).map((x: any) => Number(x.id)));
-      const proposalRows: any[] = [];
-      for (const studentId of [...new Set(inserts.map((x: any) => Number(x.student_id)))]) {
-        let history = admin.from("discipline_records").select("id,record_type")
-          .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
-          .order("id",{ascending:true}).limit(2000);
-        if (teacher) history = history.eq("teacher_id",teacherId).eq("subject",subject);
-        else history = history.eq("actor_username",clean(profile.username));
-        const { data: records, error: historyError } = await history;
-        if (historyError) throw historyError;
-        const disciplineIds = (records ?? []).filter((x: any) => x.record_type !== "praise").map((x: any) => Number(x.id));
-        const praiseIds = (records ?? []).filter((x: any) => x.record_type === "praise").map((x: any) => Number(x.id));
-        const targets = teacher
-          ? [{ ids: disciplineIds, size: 3, target: "continuous", delta: -1 },
-             { ids: praiseIds, size: 2, target: "continuous", delta: 1 }]
-          : [{ ids: disciplineIds, size: 3, target: "discipline", delta: -1 }];
-        for (const target of targets) {
-          for (let offset=0; offset+target.size<=target.ids.length; offset+=target.size) {
-            const sourceIds = target.ids.slice(offset,offset+target.size);
-            if (!sourceIds.some((id: number) => insertedIds.has(id))) continue;
-            const { data: existing, error: existingError } = await admin.from("discipline_score_proposals")
-              .select("id,source_record_ids").eq("tenant_school_id",school).eq("student_id",studentId)
-              .eq("actor_role",actorRole).eq("target_score",target.target).eq("subject",teacher?subject:"");
-            if (existingError) throw existingError;
-            const duplicate = (existing ?? []).some((p: any) =>
-              Array.isArray(p.source_record_ids) && p.source_record_ids.length===sourceIds.length &&
-              sourceIds.every((id: number)=>p.source_record_ids.includes(id)));
-            if (!duplicate) proposalRows.push({ tenant_school_id:school, student_id:studentId,
-              actor_role:actorRole, teacher_id:teacherId, subject:teacher?subject:"",
-              discipline_count:target.target==="discipline"?target.size:(target.delta<0?target.size:0),
-              praise_count:target.delta>0?target.size:0, proposed_delta:target.delta,
-              target_score:target.target, source_record_ids:sourceIds });
-          }
-        }
-      }
-      if (proposalRows.length) {
-        const { error: proposalError } = await admin.from("discipline_score_proposals").insert(proposalRows);
-        if (proposalError) throw proposalError;
-      }
-      return reply({ ok: true, saved: data?.length ?? inserts.length, proposals_created: proposalRows.length,
+      return reply({ ok: true, saved: data?.length ?? inserts.length,
         praise: (data ?? []).filter((x: any) => x.record_type === "praise").length,
         discipline: (data ?? []).filter((x: any) => x.record_type !== "praise").length });
     }
