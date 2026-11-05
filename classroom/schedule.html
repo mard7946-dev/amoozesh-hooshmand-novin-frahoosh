@@ -21,7 +21,8 @@
 <script>
 const SUPABASE_URL='https://gtmmllcxhdejwjjnyzrh.supabase.co';
 const SUPABASE_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
-const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';\nconst activeRole=sessionStorage.getItem('frahoosh_novin_role')||new URLSearchParams(location.search).get('role')||'';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const activeRole=sessionStorage.getItem('frahoosh_novin_role')||new URLSearchParams(location.search).get('role')||'';
 const days=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 let profile=null,schedule=[],selectedDay='';
 const $=id=>document.getElementById(id);
