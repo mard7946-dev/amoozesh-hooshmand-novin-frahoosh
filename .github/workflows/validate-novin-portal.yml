@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'users.html'
+      - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
       - 'classroom/schedule.html'
       - 'student-module.html'
@@ -47,6 +49,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'users.html'
+      - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
       - 'classroom/schedule.html'
       - 'supabase/functions/school-bulletin/index.ts'
@@ -97,3 +101,5 @@ jobs:
         run: deno check supabase/functions/school-portal-login/index.ts
       - name: Type-check school bulletin Edge Function
         run: deno check supabase/functions/school-bulletin/index.ts
+      - name: Type-check user management Edge Function
+        run: deno check supabase/functions/admin-manage-users/index.ts
