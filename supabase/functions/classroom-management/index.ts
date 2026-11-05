@@ -238,7 +238,40 @@ Deno.serve(async (req: Request) => {
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("discipline_records").insert(inserts).select("id,record_type,student_id");
       if (error) throw error;
-      return reply({ ok: true, saved: data?.length ?? inserts.length,
+      let proposalsCreated = 0;
+      for (const studentId of [...new Set((data ?? []).map((x: any) => Number(x.student_id)))]) {
+        let historyQuery = admin.from("discipline_records").select("id,record_type")
+          .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
+          .eq("actor_username",clean(profile.username)).order("id",{ascending:true}).limit(2000);
+        if (teacher) historyQuery = historyQuery.eq("teacher_id",teacherId).eq("subject",subject);
+        const { data: history, error: historyError } = await historyQuery;
+        if (historyError) throw historyError;
+        const types = teacher
+          ? [{type:"discipline",size:3,target:"continuous",delta:-1},{type:"praise",size:2,target:"continuous",delta:1}]
+          : [{type:"discipline",size:3,target:"discipline",delta:-1}];
+        for (const rule of types) {
+          const ids = (history ?? []).filter((x:any)=>rule.type==="praise" ? x.record_type==="praise" : x.record_type!=="praise").map((x:any)=>Number(x.id));
+          for (let offset=0; offset+rule.size<=ids.length; offset+=rule.size) {
+            const sourceIds=ids.slice(offset,offset+rule.size);
+            if (!sourceIds.some((id:number)=>(data ?? []).some((x:any)=>Number(x.id)===id))) continue;
+            let existsQuery=admin.from("discipline_score_proposals").select("id,source_record_ids")
+              .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
+              .eq("target_score",rule.target).eq("subject",teacher?subject:"");
+            const {data:existing,error:existingError}=await existsQuery;
+            if(existingError) throw existingError;
+            if((existing??[]).some((p:any)=>Array.isArray(p.source_record_ids)&&p.source_record_ids.length===sourceIds.length&&sourceIds.every((id:number)=>p.source_record_ids.includes(id)))) continue;
+            const {error:proposalError}=await admin.from("discipline_score_proposals").insert({
+              tenant_school_id:school,student_id:studentId,actor_role:actorRole,teacher_id:teacherId,
+              subject:teacher?subject:"",discipline_count:rule.delta<0?rule.size:0,
+              praise_count:rule.delta>0?rule.size:0,proposed_delta:rule.delta,target_score:rule.target,
+              source_record_ids:sourceIds
+            });
+            if(proposalError) throw proposalError;
+            proposalsCreated++;
+          }
+        }
+      }
+      return reply({ ok: true, saved: data?.length ?? inserts.length, proposals_created:proposalsCreated,
         praise: (data ?? []).filter((x: any) => x.record_type === "praise").length,
         discipline: (data ?? []).filter((x: any) => x.record_type !== "praise").length });
     }
