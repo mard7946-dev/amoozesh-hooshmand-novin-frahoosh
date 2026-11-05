@@ -69,6 +69,16 @@ Deno.serve(async (req: Request) => {
   const action = clean(input.action || "list");
   const actorName = clean(profile.display_name || profile.username || "کاربر");
 
+  if (action === "list_targets") {
+    if (!isManager && !isCounselor && !teacherRole && !deputyRole) return reply({ message: "دسترسی مجاز نیست." }, 403);
+    const { data: students, error } = await db.from("students")
+      .select("id,first_name,last_name,class_name").eq("tenant_school_id", school).limit(5000);
+    if (error) return reply({ message: "فهرست کلاس‌ها دریافت نشد." }, 500);
+    const allowed = teacherRole ? (students ?? []).filter((x: any) => assignedClassNames.includes(clean(x.class_name))) : (students ?? []);
+    const classes = [...new Set(allowed.map((x: any) => clean(x.class_name)).filter(Boolean))].sort();
+    return reply({ ok: true, classes, students: allowed, role: teacherRole ? "teacher" : deputyRole ? "deputy" : role });
+  }
+
   if (action === "create") {
     if (!isManager && !isCounselor && !teacherRole && !deputyRole) return reply({ message: "برای ثبت دعوت‌نامه مجوز ندارید." }, 403);
     const requestedAudience = clean(input.audience);
