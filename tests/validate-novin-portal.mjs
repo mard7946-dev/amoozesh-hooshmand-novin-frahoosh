@@ -209,7 +209,7 @@ assert.ok(["غیبت", "انضباط", "تکلیف"].every(moduleName => student
 assert.ok(studentModuleApi.includes('action === "student_module_summary"') && studentModuleApi.includes("if (!studentRole)"), "Student module API must enforce student-only access");
 assert.ok(studentModuleApi.includes('.eq("tenant_school_id", school).eq("student_id", student.id)'), "Student module queries must be scoped to the authenticated student's own record and school");
 assert.ok(studentModuleApi.includes('admin.from("assignment_submissions")') && studentModuleApi.includes('Number(item.student_id) === Number(student.id)'), "Homework status must be joined only to the current student's submissions");
-const studentModuleScripts = [...studentModulePage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const studentModuleScripts = [...studentModulePage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 assert.ok(studentModuleScripts.length > 0, "Student module page must contain its application script");
 for (const source of studentModuleScripts) assert.doesNotThrow(() => new Function(source), "Student module script must have valid JavaScript syntax");
 console.log("Student module checks passed: private attendance, discipline, homework, published grades, and JavaScript syntax.");
