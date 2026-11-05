@@ -213,3 +213,18 @@ const studentModuleScripts = [...studentModulePage.matchAll(/<script(?:\s[^>]*)?
 assert.ok(studentModuleScripts.length > 0, "Student module page must contain its application script");
 for (const source of studentModuleScripts) assert.doesNotThrow(() => new Function(source), "Student module script must have valid JavaScript syntax");
 console.log("Student module checks passed: private attendance, discipline, homework, published grades, and JavaScript syntax.");
+
+
+const studentActivitiesPage = readFileSync("student-activities.html", "utf8");
+assert.ok(html.includes("student-activities.html") && html.includes("فعالیت‌های دانش‌آموزی"), "Manager portal must route to student activity administration");
+assert.ok(studentModulePage.includes("فعالیت‌های مدرسه") && studentModulePage.includes("همیار و شهردار مدرسه"), "Student menu modules must be recognized by the student page");
+assert.ok(studentActivitiesPage.includes("student_activity_admin") && studentActivitiesPage.includes("create_program"), "Manager activity page must create and load real activity programs");
+assert.ok(studentActivitiesPage.includes("data-review-type") && studentActivitiesPage.includes("set_program_active"), "Manager activity page must review applications and control program activation");
+assert.ok(studentModuleApi.includes('action === "student_activity_portal"') && studentModuleApi.includes('action === "student_activity_admin"'), "Backend must expose student submission and manager review actions");
+assert.ok(studentModuleApi.includes('admin.from("student_council")') && studentModuleApi.includes('admin.from("basij_registration")') && studentModuleApi.includes('admin.from("school_mayor")') && studentModuleApi.includes('admin.from("activity_registrations")'), "Student applications must use the school's actual registration tables");
+assert.ok(studentModuleApi.includes('.eq("status", "pending")') && studentModuleApi.includes("if (!schoolManager)"), "Only the school manager may review pending activity applications");
+const studentActivitiesScripts = [...studentActivitiesPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(studentActivitiesScripts.length > 0, "Manager activity page must contain its application script");
+for (const source of studentActivitiesScripts) assert.doesNotThrow(() => new Function(source), "Manager activity page script must have valid JavaScript syntax");
+assert.ok(publishWorkflow.includes("'student-activities.html'") && publishWorkflow.includes("student-module.html student-activities.html"), "GitHub Pages artifact must publish the manager activity page");
+console.log("Student activity checks passed: applications, manager review, active programs, and Pages publication.");
