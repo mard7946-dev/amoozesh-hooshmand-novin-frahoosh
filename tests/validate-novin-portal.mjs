@@ -255,3 +255,15 @@ assert.ok(messagingApi.includes("isAttachmentBase64WithinLimit") && messagingApi
 
 assert.ok(html.includes("sessionStorage.getItem('frahoosh_novin_access_token')") && html.includes("step==='panel'&&portalAuthToken&&portalAuthUserRole===initial.id"), "Portal must restore an authenticated session when returning from a subpanel");
 assert.ok(html.includes("sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);sessionStorage.setItem('frahoosh_novin_role','student')"), "Student self-service routes must persist the access token before navigation");
+
+
+const teacherReportsPage = readFileSync("teacher-reports.html", "utf8");
+assert.ok(html.includes("name==='گزارش عملکرد کلاس'") && html.includes("teacher-reports.html"), "Teacher class performance must open its dedicated report page");
+assert.ok(teacherReportsPage.includes("teacher_class_report"), "Teacher report page must call the scoped reporting action");
+assert.ok(studentModuleApi.includes('action === "teacher_class_report"') && studentModuleApi.includes("if (!teacher)"), "Teacher report API must reject non-teacher roles");
+assert.ok(studentModuleApi.includes('.eq("tenant_school_id", school).eq("teacher_id", teacherId)'), "Teacher report queries must be scoped to the authenticated teacher and school");
+const teacherReportScripts = [...teacherReportsPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(teacherReportScripts.length > 0, "Teacher report page must contain its application script");
+for (const source of teacherReportScripts) assert.doesNotThrow(() => new Function(source), "Teacher report page script must have valid JavaScript syntax");
+assert.ok(publishWorkflow.includes("'teacher-reports.html'") && publishWorkflow.includes("student-activities.html teacher-reports.html"), "GitHub Pages artifact must publish the teacher report page");
+console.log("Teacher report checks passed: teacher-scoped summaries and Pages publication.");
