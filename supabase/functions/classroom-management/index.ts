@@ -311,8 +311,8 @@ Deno.serve(async (req: Request) => {
       let proposalsQuery = admin.from("discipline_score_proposals")
         .select("id,student_id,actor_role,subject,discipline_count,praise_count,proposed_delta,target_score,status,source_record_ids,created_at,reviewed_at,reviewed_by,review_note")
         .eq("tenant_school_id",school).order("created_at",{ascending:false}).limit(500);
-      if (teacher && !manager) proposalsQuery = proposalsQuery.eq("actor_role","teacher").eq("teacher_id", (await admin.from("teachers").select("id").eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle()).data?.id ?? -1);
-      else if (deputy && !manager) proposalsQuery = proposalsQuery.eq("actor_role","deputy").eq("reviewed_by", clean(profile.username));
+      if (teacher && !manager) proposalsQuery = proposalsQuery.eq("actor_role","teacher").eq("actor_username",clean(profile.username));
+      else if (deputy && !manager) proposalsQuery = proposalsQuery.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
       const {data: proposals,error: proposalsError}=await proposalsQuery;
       if(proposalsError) throw proposalsError;
       const proposalStudentIds=[...new Set((proposals??[]).map((x:any)=>Number(x.student_id)).filter(Boolean))];
