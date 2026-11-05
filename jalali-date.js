@@ -92,7 +92,7 @@
         const panel=document.createElement('section');panel.className='frahoosh-calendar';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','تقویم شمسی');
         let viewY=jy,viewM=jm;
         function draw(){
-          const first=jalaliToUtc(viewY,viewM,1),firstDay=first.getUTCDay();
+          const first=jalaliToUtc(viewY,viewM,1),firstDay=(first.getUTCDay()+1)%7;
           const next=viewM===12?jalaliToUtc(viewY+1,1,1):jalaliToUtc(viewY,viewM+1,1);
           const count=Math.round((next-first)/86400000);
           const cells=weekdays.map(x=>'<span>'+x+'</span>').join('')+Array.from({length:firstDay},()=>'<span></span>').join('')+Array.from({length:count},(_,i)=>'<button type="button" data-day="'+(i+1)+'" aria-pressed="'+(viewY===jy&&viewM===jm&&i+1===jd)+'">'+fa(i+1)+'</button>').join('');
