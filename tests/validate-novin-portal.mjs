@@ -248,6 +248,6 @@ assert.ok(usersPage.includes("admin-manage-users") && usersApi.includes("auth.ge
 
 const messagesPage = readFileSync("messages.html", "utf8");
 const messagingApi = readFileSync("supabase/functions/frahoosh-messaging/index.ts", "utf8");
-assert.ok(messagesPage.includes("frahoosh-messaging") && messagesPage.includes("ارسال پیام"), "Messaging panel must expose the real send workflow");
+assert.ok(messagesPage.includes("frahoosh-messaging") && messagesPage.includes("ارسال برای بررسی"), "Messaging panel must expose the real send workflow");
 assert.ok(messagingApi.includes("auth.getUser") && messagingApi.includes("school_memberships") && messagingApi.includes("tenant_school_id"), "Messaging API must authenticate users and scope messages to an active school membership");
 assert.ok(messagingApi.includes("isAttachmentBase64WithinLimit") && messagingApi.includes("MAX_ATTACHMENT_BYTES"), "Messaging API must reject oversized attachments before decoding");
