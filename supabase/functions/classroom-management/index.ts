@@ -384,6 +384,39 @@ Deno.serve(async (req: Request) => {
       return reply({ok:true,record:updated});
     }
 
+    if (action === "teacher_class_report") {
+      if (!teacher) return reply({ message: "این گزارش فقط برای حساب دبیر قابل مشاهده است." }, 403);
+      const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (teacherError) throw teacherError;
+      if (!teacherRow?.id) return reply({ message: "پرونده دبیر برای این حساب پیدا نشد." }, 404);
+      const teacherId = teacherRow.id;
+      const [classesResult, attendanceResult, gradesResult, disciplineResult, assignmentsResult] = await Promise.all([
+        admin.from("teacher_classes").select("class_name,subject,grade")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("active", 1)
+          .order("class_name").limit(300),
+        admin.from("attendance").select("id,class_name,subject,date,attendance_date,status,approval_status")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).order("id", { ascending: false }).limit(2000),
+        admin.from("student_grades").select("id,class_name,subject,score,term,grade_date_shamsi")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("manager_released", 1)
+          .order("id", { ascending: false }).limit(2000),
+        admin.from("discipline_records").select("id,class_name,subject,record_type,status,incident_date")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId).eq("actor_role", "teacher")
+          .is("deleted_at", null).order("id", { ascending: false }).limit(2000),
+        admin.from("assignments").select("id,class_name,subject,title,status,due_date,created_at")
+          .eq("tenant_school_id", school).eq("teacher_id", teacherId)
+          .order("id", { ascending: false }).limit(1000),
+      ]);
+      for (const result of [classesResult, attendanceResult, gradesResult, disciplineResult, assignmentsResult]) {
+        if (result.error) throw result.error;
+      }
+      return reply({
+        ok: true, classes: classesResult.data ?? [], attendance: attendanceResult.data ?? [],
+        published_grades: gradesResult.data ?? [], discipline: disciplineResult.data ?? [],
+        assignments: assignmentsResult.data ?? [],
+      });
+    }
+
     if (action === "student_module_summary") {
       if (!studentRole) return reply({ message: "این بخش فقط برای حساب دانش‌آموز قابل مشاهده است." }, 403);
       const moduleName = clean(body.module);
