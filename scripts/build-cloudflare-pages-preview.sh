@@ -27,3 +27,18 @@ PY
 mkdir -p _site/classroom
 cp classroom/index.html classroom/schedule.html classroom/management.html _site/classroom/
 touch _site/.nojekyll
+# Publish non-sensitive metadata for the exact preview build.
+python3 - <<'PY'
+import json, os
+from datetime import datetime, timezone
+commit = os.environ.get("CF_PAGES_COMMIT_SHA") or os.environ.get("GITHUB_SHA") or ""
+build_id = os.environ.get("CF_PAGES_BUILD_ID") or commit[:8] or "preview"
+metadata = {
+    "build": build_id,
+    "commit": commit[:12] if commit else "",
+    "built_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+}
+with open("_site/build-info.json", "w", encoding="utf-8") as output:
+    json.dump(metadata, output, ensure_ascii=False)
+PY
+
