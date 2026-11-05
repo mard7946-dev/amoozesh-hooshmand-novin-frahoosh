@@ -212,4 +212,5 @@ assert.ok(classroomFunction.includes('if (teacher && !manager) {') && classroomF
 assert.ok(!classroomFunction.includes('.in("teacher", teacherNames)'), "Teacher authorization must not depend on matching display-name strings");
 const classroomPage = readFileSync("classroom/management.html", "utf8");
 assert.ok(classroomPage.includes("api('list_teacher_assignments')") && classroomPage.includes("role==='teacher'?teacherAssignments:classes"), "Every teacher registration selector must be populated from the authenticated teacher's assigned classes");
+assert.ok(classroomPage.includes("async function bindTeacherRosterSelectors()") && classroomPage.includes("select.onchange=async()=>") && classroomPage.includes("await bindTeacherRosterSelectors()"), "Teacher roster must load automatically after selecting a class and on initial panel load");
 console.log("Cloudflare preview checks passed: same-origin navigation and generated build metadata.");
