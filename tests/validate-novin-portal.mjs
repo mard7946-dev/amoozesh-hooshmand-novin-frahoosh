@@ -201,3 +201,15 @@ console.log("About and finance deployment checks passed: home route, creator/yea
 
 assert.ok(!html.includes("raw.githack.com"), "Authenticated portal navigation must stay same-origin so sessionStorage is preserved");
 assert.ok(html.includes("location.href='parent-meetings.html?v=20261031-meetings-3'"), "All meeting navigation must use the current same-origin page");
+
+const studentModulePage = readFileSync("student-module.html", "utf8");
+const studentModuleApi = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+assert.ok(studentModulePage.includes("student_module_summary") && studentModulePage.includes("student_academic_summary"), "Student panel must load its own read-only module data and published grades");
+assert.ok(["غیبت", "انضباط", "تکلیف"].every(moduleName => studentModulePage.includes(moduleName)), "Student panel must expose attendance, discipline, and homework views");
+assert.ok(studentModuleApi.includes('action === "student_module_summary"') && studentModuleApi.includes("if (!studentRole)"), "Student module API must enforce student-only access");
+assert.ok(studentModuleApi.includes('.eq("tenant_school_id", school).eq("student_id", student.id)'), "Student module queries must be scoped to the authenticated student's own record and school");
+assert.ok(studentModuleApi.includes('admin.from("assignment_submissions")') && studentModuleApi.includes('Number(item.student_id) === Number(student.id)'), "Homework status must be joined only to the current student's submissions");
+const studentModuleScripts = [...studentModulePage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(studentModuleScripts.length > 0, "Student module page must contain its application script");
+for (const source of studentModuleScripts) assert.doesNotThrow(() => new Function(source), "Student module script must have valid JavaScript syntax");
+console.log("Student module checks passed: private attendance, discipline, homework, published grades, and JavaScript syntax.");
