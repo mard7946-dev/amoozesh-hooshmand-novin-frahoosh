@@ -23,7 +23,7 @@ function roleAllowed(actual: string, expected: string) {
   const student = ["student", "دانش آموز", "دانش‌آموز"];
   const parent = ["parent", "guardian", "ولی", "والد", "والدین", "سرپرست"];
   const counselor = ["counselor", "advisor", "cultural", "مشاور", "مشاوره", "پرورشی"];
-  const deputy = ["executive", "educational", "deputy", "executive_deputy", "educational_deputy", "معاون اجرایی", "معاون آموزشی", "معاونت"];
+  const deputy = ["executive", "educational", "deputy", "executive_deputy", "educational_deputy", "cultural", "معاون اجرایی", "معاون آموزشی", "معاونت"];
   if (e === "manager") return manager.includes(a);
   if (e === "deputy") return deputy.includes(a);
   if (e === "teacher") return teacher.includes(a);
@@ -100,9 +100,19 @@ Deno.serve(async (req: Request) => {
       }));
       return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست؛ با مدیر سامانه تماس بگیرید." }, 403);
     }
-    if (!roleAllowed(profile.role, expectedRole)) {
+    const { data: memberships, error: membershipError } = await admin.from("school_memberships")
+      .select("role").eq("school_id", profile.tenant_school_id).eq("auth_user_id", login.user.id).eq("is_active", true);
+    if (membershipError) {
+      console.error("school portal membership lookup failed", membershipError.message);
+      return reply({ message: "بررسی سمت‌های فعال حساب انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
+    }
+    const membershipRoles = new Set((memberships ?? []).map((item: any) => normalize(item.role)));
+    if (!roleAllowed(profile.role, expectedRole) && !membershipRoles.has(normalize(expectedRole))) {
       return reply({ message: "این حساب مجوز ورود به بخش انتخاب‌شده را ندارد." }, 403);
     }
+    const availableRoles: string[] = [];
+    if (roleAllowed(profile.role, "deputy")) availableRoles.push("deputy");
+    if (roleAllowed(profile.role, "teacher") || membershipRoles.has("teacher")) availableRoles.push("teacher");
 
     const { data: school, error: schoolError } = await admin.from("schools")
       .select("id,name,school_code,status")
@@ -165,6 +175,7 @@ Deno.serve(async (req: Request) => {
         class_name: className,
         school_id: school.id,
         school_name: clean(school.name),
+        available_roles: availableRoles,
       },
     });
   } catch (error) {
