@@ -13,6 +13,12 @@ const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳�
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
 const rolesManager = ["manager", "مدیر", "مدیریت", "executive", "educational", "deputy", "معاون", "معاون اجرایی", "معاون آموزشی"];
 const isManager = (role: string) => rolesManager.some(r => norm(role).includes(norm(r)));
+// Deputies may manage their own operational records; only the school manager may approve official score adjustments.
+const isSchoolManager = (role: string) => {
+  const value = norm(role);
+  return ["manager", "school_manager", "مدیر", "مدیر مدرسه", "مدیریت", "مدیریت مدرسه"].some(r => value === norm(r))
+    || value.startsWith(norm("مدیر "));
+};
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
@@ -53,6 +59,7 @@ Deno.serve(async (req: Request) => {
     const role = requestedRole === "teacher" && hasTeacherMembership ? "teacher" : mainRole;
     if (requestedRole === "teacher" && role !== "teacher") return reply({ message: "عضویت فعال دبیر برای این حساب تأیید نشد." }, 403);
     const manager = isManager(role);
+    const schoolManager = isSchoolManager(role);
     const teacher = isTeacher(role);
     const deputy = isDeputy(role);
     const studentRole = ["student", "دانش آموز", "دانش‌آموز"].includes(role);
@@ -73,6 +80,19 @@ Deno.serve(async (req: Request) => {
       if (!className) return false;
       const { data, error } = await admin.from("online_classes").select("id")
         .eq("tenant_school_id", school).eq("class_name", className).in("teacher", teacherNames).limit(1);
+      if (error) throw error;
+      return !!data?.length;
+    };
+    const assertTeacherSubject = async (className: string, subject: string) => {
+      if (schoolManager) return true;
+      if (!teacher || !className || !subject) return false;
+      const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (teacherError) throw teacherError;
+      if (!teacherRow?.id) return false;
+      const { data, error } = await admin.from("teacher_classes").select("id")
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRow.id)
+        .eq("class_name", className).eq("subject", subject).eq("active", 1).limit(1);
       if (error) throw error;
       return !!data?.length;
     };
@@ -217,7 +237,8 @@ Deno.serve(async (req: Request) => {
       if (!teacher && !deputy && !manager) return reply({ message: "مجوز ثبت انضباط و تشویق ندارید." }, 403);
       const rows = boundedRows(body.rows), className = clean(body.class_name), subject = clean(body.subject);
       if (!rows || !rows.length || !className || (teacher && !subject)) return reply({ message: "کلاس، درس دبیر یا فهرست موارد ناقص است." }, 400);
-      if (teacher && !await assertTeacherClass(className)) return reply({ message: "ثبت مورد برای این کلاس مجاز نیست." }, 403);
+      if (teacher && (!await assertTeacherClass(className) || !await assertTeacherSubject(className, subject)))
+        return reply({ message: "این درس در برنامه تدریس فعال شما برای کلاس انتخاب‌شده ثبت نشده است." }, 403);
       const { data: roster, error: rosterError } = await admin.from("students").select("id").eq("tenant_school_id", school).eq("class_name", className);
       if (rosterError) throw rosterError;
       const allowed = new Set((roster ?? []).map((x: any) => Number(x.id)));
@@ -285,10 +306,11 @@ Deno.serve(async (req: Request) => {
       if (!teacher && !deputy && !manager) return reply({ message: "مجوز مشاهده سوابق را ندارید." }, 403);
       let q = admin.from("discipline_records").select("id,student_id,teacher_id,title,record_type,class_name,subject,actor_role,actor_username,incident_date")
         .eq("tenant_school_id", school).is("deleted_at",null).order("incident_date", { ascending: false }).limit(2000);
-      if (teacher && !manager) {
-        const { data: t } = await admin.from("teachers").select("id").eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle();
+      if (teacher) {
         q = q.eq("actor_role","teacher").eq("actor_username",clean(profile.username));
-      } else if (deputy && !manager) q = q.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
+      } else if (deputy && !schoolManager) {
+        q = q.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
+      }
       const { data, error } = await q;
       if (error) throw error;
       const ids = [...new Set((data ?? []).map((x: any) => Number(x.student_id)).filter(Boolean))];
@@ -312,8 +334,8 @@ Deno.serve(async (req: Request) => {
       let proposalsQuery = admin.from("discipline_score_proposals")
         .select("id,student_id,actor_role,subject,discipline_count,praise_count,proposed_delta,target_score,status,source_record_ids,created_at,reviewed_at,reviewed_by,review_note")
         .eq("tenant_school_id",school).order("created_at",{ascending:false}).limit(500);
-      if (teacher && !manager) proposalsQuery = proposalsQuery.eq("actor_role","teacher").eq("actor_username",clean(profile.username));
-      else if (deputy && !manager) proposalsQuery = proposalsQuery.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
+      if (teacher) proposalsQuery = proposalsQuery.eq("actor_role","teacher").eq("actor_username",clean(profile.username));
+      else if (deputy && !schoolManager) proposalsQuery = proposalsQuery.eq("actor_role","deputy").eq("actor_username",clean(profile.username));
       const {data: proposals,error: proposalsError}=await proposalsQuery;
       if(proposalsError) throw proposalsError;
       const proposalStudentIds=[...new Set((proposals??[]).map((x:any)=>Number(x.student_id)).filter(Boolean))];
@@ -334,7 +356,7 @@ Deno.serve(async (req: Request) => {
         .eq("id",recordId).eq("tenant_school_id",school).is("deleted_at",null).maybeSingle();
       if(recordError) throw recordError;
       if(!record) return reply({message:"سابقه پیدا نشد یا قبلاً حذف شده است."},404);
-      const ownsRecord=manager || (teacher && record.actor_role==="teacher" && record.actor_username===clean(profile.username))
+      const ownsRecord=schoolManager || (teacher && record.actor_role==="teacher" && record.actor_username===clean(profile.username))
         || (deputy && record.actor_role==="deputy" && record.actor_username===clean(profile.username));
       if(!ownsRecord) return reply({message:"فقط ثبت‌کننده یا مدیریت مجاز به تغییر این سابقه است."},403);
       const {data:used,error:usedError}=await admin.from("discipline_score_proposals").select("id")
@@ -352,8 +374,9 @@ Deno.serve(async (req: Request) => {
       }
       const title=clean(body.title),description=clean(body.description),recordType=clean(body.record_type);
       const className=clean(body.class_name),subject=teacher?clean(body.subject):"";
-      if(!title||!className||!["discipline","praise"].includes(recordType)) return reply({message:"عنوان، کلاس و نوع سابقه الزامی است."},400);
-      if(teacher && !await assertTeacherClass(className)) return reply({message:"برای این کلاس مجوز ثبت ندارید."},403);
+      if(!title||!className||!["discipline","praise"].includes(recordType)||(teacher&&!subject)) return reply({message:"عنوان، کلاس، درس دبیر و نوع سابقه الزامی است."},400);
+      if(teacher && (!await assertTeacherClass(className) || !await assertTeacherSubject(className, subject)))
+        return reply({message:"این درس در برنامه تدریس فعال شما برای کلاس انتخاب‌شده ثبت نشده است."},403);
       const {data:student,error:studentError}=await admin.from("students").select("id").eq("id",record.student_id)
         .eq("tenant_school_id",school).eq("class_name",className).maybeSingle();
       if(studentError) throw studentError;
@@ -399,7 +422,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "discipline_review") {
-      if(!manager) return reply({message:"فقط مدیریت مجاز به بررسی پیشنهاد امتیاز است."},403);
+      if(!schoolManager) return reply({message:"فقط مدیر مدرسه مجاز به تأیید یا رد پیشنهاد امتیاز است."},403);
       const proposalId=asInt(body.proposal_id), status=clean(body.status);
       if(!proposalId||!["approved","rejected"].includes(status)) return reply({message:"وضعیت بررسی معتبر نیست."},400);
       if(status==="approved"){
