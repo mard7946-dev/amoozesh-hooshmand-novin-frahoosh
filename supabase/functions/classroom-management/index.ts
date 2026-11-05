@@ -264,14 +264,14 @@ Deno.serve(async (req: Request) => {
             const {data:existing,error:existingError}=await existsQuery;
             if(existingError) throw existingError;
             if((existing??[]).some((p:any)=>Array.isArray(p.source_record_ids)&&p.source_record_ids.length===sourceIds.length&&sourceIds.every((id:number)=>p.source_record_ids.includes(id)))) continue;
-            const {error:proposalError}=await admin.from("discipline_score_proposals").insert({
+            const {data:proposalData,error:proposalError}=await admin.from("discipline_score_proposals").upsert({
               tenant_school_id:school,student_id:studentId,actor_role:actorRole,actor_username:clean(profile.username),teacher_id:teacherId,
               subject:teacher?subject:"",discipline_count:rule.delta<0?rule.size:0,
               praise_count:rule.delta>0?rule.size:0,proposed_delta:rule.delta,target_score:rule.target,
               source_record_ids:sourceIds
-            });
+            },{onConflict:"tenant_school_id,student_id,actor_role,target_score,subject,source_record_ids",ignoreDuplicates:true}).select("id");
             if(proposalError) throw proposalError;
-            proposalsCreated++;
+            proposalsCreated+=proposalData?.length??0;
           }
         }
       }
