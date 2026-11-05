@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
     paths:
+      - '**/*.html'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
       - 'users.html'
       - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
@@ -49,6 +53,10 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - '**/*.html'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
       - 'users.html'
       - 'supabase/functions/admin-manage-users/index.ts'
       - 'portal.html'
@@ -101,5 +109,22 @@ jobs:
         run: deno check supabase/functions/school-portal-login/index.ts
       - name: Type-check school bulletin Edge Function
         run: deno check supabase/functions/school-bulletin/index.ts
-      - name: Type-check user management Edge Function
-        run: deno check supabase/functions/admin-manage-users/index.ts
+      - name: Type-check all school and platform Edge Functions
+        run: >-
+          deno check
+          supabase/functions/admin-manage-users/index.ts
+          supabase/functions/assessment-center/index.ts
+          supabase/functions/classroom-authorize/index.ts
+          supabase/functions/classroom-login/index.ts
+          supabase/functions/classroom-management/index.ts
+          supabase/functions/family-education/index.ts
+          supabase/functions/frahoosh-messaging/index.ts
+          supabase/functions/parent-management/index.ts
+          supabase/functions/parent-meetings/index.ts
+          supabase/functions/platform-management/index.ts
+          supabase/functions/school-bulletin/index.ts
+          supabase/functions/school-portal-login/index.ts
+          supabase/functions/school-reports/index.ts
+          supabase/functions/school-settings/index.ts
+      - name: Run shared schedule, discipline, and messaging tests
+        run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts tests/messaging-attachment.test.ts
