@@ -14,7 +14,11 @@ const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳�
 const rolesManager = ["manager", "مدیر", "مدیریت", "executive", "educational", "deputy", "معاون", "معاون اجرایی", "معاون آموزشی"];
 const isManager = (role: string) => rolesManager.some(r => norm(role).includes(norm(r)));
 // Deputies may manage their own operational records; only the school manager may approve official score adjustments.
-const isSchoolManager = (role: string) => ["manager", "school_manager", "مدیر", "مدیریت"].some(r => norm(role) === norm(r) || norm(role).includes(norm(r)));
+const isSchoolManager = (role: string) => {
+  const value = norm(role);
+  return ["manager", "school_manager", "مدیر", "مدیر مدرسه", "مدیریت", "مدیریت مدرسه"].some(r => value === norm(r))
+    || value.startsWith(norm("مدیر "));
+};
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
