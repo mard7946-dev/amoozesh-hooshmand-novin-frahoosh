@@ -7,11 +7,11 @@ const cors = {
 };
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json; charset=utf-8" } });
-const clean = (v: unknown) => String(v ?? "").replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "").trim();
+const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v)
   .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-  .replace(/\\s+/g, " ").toLocaleLowerCase("fa");
+  .replace(/\s+/g, " ").toLocaleLowerCase("fa");
 const managerRoles = ["manager", "مدیر", "مدیریت", "principal", "administrator", "admin"];
 const counselorRoles = ["counselor", "advisor", "مشاور"];
 
@@ -145,7 +145,7 @@ Deno.serve(async (req: Request) => {
     if (!title || !date || !weekday) {
       return reply({ message: "موضوع، روز و تاریخ دعوت‌نامه الزامی است." }, 400);
     }
-    if (!/^[0-9۰-۹]{4}[\\/.-][0-9۰-۹]{1,2}[\\/.-][0-9۰-۹]{1,2}$/.test(date)) {
+    if (!/^[0-9۰-۹]{4}[\/.-][0-9۰-۹]{1,2}[\/.-][0-9۰-۹]{1,2}$/.test(date)) {
       return reply({ message: "تاریخ را به صورت شمسی مانند ۱۴۰۵/۰۹/۱۵ وارد کنید." }, 400);
     }
 
