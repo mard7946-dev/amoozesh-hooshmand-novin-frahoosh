@@ -30,12 +30,13 @@ Deno.serve(async(req:Request)=>{
  if(membershipErr||!membership)return reply({message:"عضویت فعال شما در این مدرسه تأیید نشد."},403);
  const body=await req.json().catch(()=>({}));if(clean(body.action||"get",20)!=="get")return reply({message:"عملیات درخواستی پشتیبانی نمی‌شود."},400);
  try{
-  const [school,students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines]=await Promise.all([
+  const [school,students,attendance,grades,studentGrades,gradeAdjustments,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines]=await Promise.all([
    admin.from("schools").select("id,name,school_code").eq("id",schoolId).maybeSingle(),
    fetchRows(admin,"students","id,first_name,last_name,grade,class_name,student_code",schoolId),
    fetchRows(admin,"attendance","id,student_id,date,attendance_date,status,description,teacher_id,subject,class_name,approval_status,approved_at,approved_by",schoolId),
    fetchRows(admin,"grades","id,student_id,teacher_id,subject,exam_name,score,description,created_at,grade_type,term,max_score,grade_date,title,assessment_date,school_year,class_name",schoolId),
    fetchRows(admin,"student_grades","id,student_id,teacher_id,subject,class_name,assessment_type,assessment_title,score,coefficient,grade_date,grade_date_shamsi,description,term,created_at,updated_at,manager_released",schoolId),
+   fetchRows(admin,"student_grade_adjustments","id,student_id,target_score,subject,term,delta,actor_role,applied_at",schoolId),
    fetchRows(admin,"discipline_records","id,student_id,teacher_id,title,description,priority,status,created_at,item_id,deduction,actor_username,actor_role,note,incident_date",schoolId),
    fetchRows(admin,"teachers","id,first_name,last_name,subject,employment_status",schoolId),
    fetchRows(admin,"teacher_classes","id,teacher_id,teacher_name,subject,grade,class_name,active",schoolId),
@@ -54,6 +55,6 @@ Deno.serve(async(req:Request)=>{
    managerRoles.has(role)?fetchRows(admin,"finance_voucher_lines","id,voucher_id,line_no,account_code,account_title,debit,credit,student_id,student_name,parent_name,description",schoolId):Promise.resolve([])
   ]);
   if(!school.data)return reply({message:"اطلاعات مدرسه پیدا نشد."},404);
-  return reply({school:school.data,permissions:{finance:managerRoles.has(role)},students,attendance,grades,studentGrades,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines});
+  return reply({school:school.data,permissions:{finance:managerRoles.has(role)},students,attendance,grades,studentGrades,gradeAdjustments,discipline,teachers,teacherClasses,competitions,activityPrograms,activityRegistrations,culturalRegistrations,artCompetitions,sportCompetitions,culturalCompetitions,studentCouncil,executiveRequests,transportRequests,certificateRequests,financeVouchers,financeLines});
  }catch(e){return reply({message:e instanceof Error?e.message:"دریافت گزارش‌ها ناموفق بود."},500)}
 });

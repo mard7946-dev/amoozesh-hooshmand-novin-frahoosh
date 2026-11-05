@@ -7,7 +7,7 @@
 <title>پنل دانش‌آموز · فراهوش</title>
 <style>
 :root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0}
-*{box-sizing:border-box}body{margin:0;padding:18px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:850px;margin:auto}.panel{margin-top:20px;background:#0e1b32dd;border:1px solid #263958;border-radius:18px;padding:22px}.muted{color:var(--muted);line-height:1.9}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--mint)}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:#203451;color:var(--text);padding:11px 15px}h1{font-size:clamp(22px,4vw,30px)}.empty{margin-top:18px;padding:16px;border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;line-height:1.9}
+*{box-sizing:border-box}body{margin:0;padding:18px;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:850px;margin:auto}.panel{margin-top:20px;background:#0e1b32dd;border:1px solid #263958;border-radius:18px;padding:22px}.muted{color:var(--muted);line-height:1.9}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--mint)}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:#203451;color:var(--text);padding:11px 15px}h1{font-size:clamp(22px,4vw,30px)}table{width:100%;border-collapse:collapse;margin-top:12px;background:#11213a}th,td{padding:10px;border-bottom:1px solid #304461;text-align:right;font-size:13px}.empty{margin-top:18px;padding:16px;border:1px solid #8a7040;background:#382c17;color:#ffebbd;border-radius:12px;line-height:1.9}
 </style>
 </head>
 <body><main>
@@ -17,7 +17,7 @@
 <h1 id="moduleTitle">در حال بارگذاری…</h1>
 <p id="moduleDescription" class="muted"></p>
 <div class="empty" id="status">این صفحه فقط بخش انتخاب‌شده را نمایش می‌دهد. اتصال امن به اطلاعات شخصی دانش‌آموز در مرحلهٔ بعدی انجام می‌شود؛ تا آن زمان هیچ دادهٔ آزمایشی یا ساختگی نمایش داده نمی‌شود.</div>
-<p><button id="back" type="button">بازگشت به منوی دانش‌آموز</button></p>
+<div id="gradeResults"></div><p><button id="back" type="button">بازگشت به منوی دانش‌آموز</button></p>
 </section>
 </main>
 <script>
@@ -33,5 +33,27 @@ document.getElementById('moduleTitle').textContent=modules[selected]?selected:'�
 document.getElementById('moduleDescription').textContent=modules[selected]||'بخش انتخاب‌شده معتبر نیست؛ به منوی پنل برگردید.';
 document.getElementById('back').onclick=()=>location.href='portal.html?step=panel&role=student';
 if(!modules[selected])document.getElementById('status').textContent='بخش انتخاب‌شده معتبر نیست.';
+if(selected==='نمره'){
+ const token=sessionStorage.getItem('frahoosh_novin_access_token');
+ const role=sessionStorage.getItem('frahoosh_novin_role')||'';
+ const apiUrl='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management';
+ const apiKey='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+ const box=document.getElementById('status'),out=document.getElementById('gradeResults');
+ const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ (async()=>{
+  if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
+  box.textContent='در حال دریافت نمره‌های منتشرشده و تعدیلات تأییدشده…';
+  try{
+   const res=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json','apikey':apiKey,'Authorization':'Bearer '+token},body:JSON.stringify({action:'student_academic_summary'})});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw new Error(data.message||'دریافت نمره‌ها ناموفق بود.');
+   box.textContent='اطلاعات تحصیلی '+esc(data.student?.first_name)+' '+esc(data.student?.last_name)+' · کلاس '+esc(data.student?.class_name);
+   const rows=data.grades||[],adjustments=data.adjustments||[],continuous=data.continuous||[];
+   out.innerHTML='<h2>نمره‌های منتشرشده</h2>'+(rows.length?'<table><thead><tr><th>درس</th><th>نوع ارزیابی</th><th>عنوان</th><th>نمره</th><th>ضریب</th><th>نوبت</th><th>تاریخ</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.assessment_type)+'</td><td>'+esc(x.assessment_title)+'</td><td>'+esc(x.score)+'</td><td>'+esc(x.coefficient)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.grade_date_shamsi)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">هنوز نمره‌ای برای نمایش منتشر نشده است.</p>');
+   out.innerHTML+='<h2>نمره مستمر نهایی پس از تعدیلات مصوب</h2>'+(continuous.length?'<table><thead><tr><th>درس</th><th>نوبت</th><th>میانگین پایه</th><th>تعدیل</th><th>نمره نهایی از ۲۰</th></tr></thead><tbody>'+continuous.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.base_score)+'</td><td>'+esc(x.adjustment)+'</td><td>'+esc(x.final_score)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">برای محاسبه مستمر، نمره منتشرشده‌ای وجود ندارد.</p>');
+   out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+(adjustments.filter(x=>x.target_score==='discipline').length?'<table><thead><tr><th>میزان تعدیل</th><th>تاریخ اعمال</th></tr></thead><tbody>'+adjustments.filter(x=>x.target_score==='discipline').map(x=>'<tr><td>'+esc(x.delta)+'</td><td>'+esc(x.applied_at)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">تعدیل انضباطی مصوبی ثبت نشده است.</p>');
+  }catch(e){box.textContent=e.message}
+ })();
+}
 </script>
 </body></html>

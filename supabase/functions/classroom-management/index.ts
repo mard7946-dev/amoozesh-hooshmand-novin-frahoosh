@@ -368,16 +368,53 @@ Deno.serve(async (req: Request) => {
       return reply({ok:true,record:updated});
     }
 
+    if (action === "student_academic_summary") {
+      if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
+      const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle();
+      if(studentError) throw studentError;
+      if(!student) return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
+      const [gradesResult,adjustmentsResult]=await Promise.all([
+        admin.from("student_grades").select("id,subject,assessment_type,assessment_title,score,coefficient,grade_date_shamsi,term")
+          .eq("tenant_school_id",school).eq("student_id",student.id).eq("manager_released",1).order("id",{ascending:false}).limit(1000),
+        admin.from("student_grade_adjustments").select("id,target_score,subject,term,delta,actor_role,applied_at")
+          .eq("tenant_school_id",school).eq("student_id",student.id).order("applied_at",{ascending:false}).limit(500)
+      ]);
+      if(gradesResult.error) throw gradesResult.error;
+      if(adjustmentsResult.error) throw adjustmentsResult.error;
+      const grades=gradesResult.data??[],adjustments=adjustmentsResult.data??[];
+      const groups=new Map<string,any>();
+      for(const g of grades){
+        const key=clean(g.subject);
+        const item=groups.get(key)??{subject:clean(g.subject),term:"مجموع نوبت‌های منتشرشده",weighted:0,weight:0};
+        const w=Math.max(0,Number(g.coefficient)||1);item.weighted+=Number(g.score||0)*w;item.weight+=w;groups.set(key,item);
+      }
+      const continuous=[...groups.values()].map(g=>{
+        const delta=adjustments.filter(a=>a.target_score==="continuous"&&a.subject===g.subject).reduce((n,a)=>n+Number(a.delta||0),0);
+        const base=g.weight?g.weighted/g.weight:0;
+        return {...g,base_score:Number(base.toFixed(2)),adjustment:Number(delta.toFixed(2)),final_score:Number(Math.max(0,Math.min(20,base+delta)).toFixed(2))};
+      });
+      const disciplineDelta=adjustments.filter(a=>a.target_score==="discipline").reduce((n,a)=>n+Number(a.delta||0),0);
+      return reply({ok:true,student,grades,adjustments,continuous,discipline_adjustment:Number(disciplineDelta.toFixed(2))});
+    }
+
     if (action === "discipline_review") {
       if(!manager) return reply({message:"فقط مدیریت مجاز به بررسی پیشنهاد امتیاز است."},403);
       const proposalId=asInt(body.proposal_id), status=clean(body.status);
       if(!proposalId||!["approved","rejected"].includes(status)) return reply({message:"وضعیت بررسی معتبر نیست."},400);
-      const {data,error}=await admin.from("discipline_score_proposals").update({status,reviewed_at:new Date().toISOString(),
+      if(status==="approved"){
+        const {data,error}=await admin.rpc("approve_discipline_score_proposal",{
+          p_proposal_id:proposalId,p_school_id:school,p_reviewer:clean(profile.username)
+        });
+        if(error) throw error;
+        return reply({ok:true,proposal:data,applied:true});
+      }
+      const {data,error}=await admin.from("discipline_score_proposals").update({status:"rejected",reviewed_at:new Date().toISOString(),
         reviewed_by:clean(profile.username),review_note:clean(body.review_note)})
         .eq("id",proposalId).eq("tenant_school_id",school).eq("status","pending").select("id,status").maybeSingle();
       if(error) throw error;
       if(!data) return reply({message:"پیشنهاد پیدا نشد یا قبلاً بررسی شده است."},409);
-      return reply({ok:true,proposal:data});
+      return reply({ok:true,proposal:data,applied:false});
     }
 
     if (action === "list_weekly_schedule") {
