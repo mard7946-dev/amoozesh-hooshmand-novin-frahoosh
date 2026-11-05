@@ -443,6 +443,121 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "نوع بخش دانش‌آموز معتبر نیست." }, 400);
     }
 
+    if (action === "student_activity_portal") {
+      if (!studentRole) return reply({ message: "ثبت‌نام فعالیت‌ها فقط برای حساب دانش‌آموز مجاز است." }, 403);
+      const { data: student, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (studentError) throw studentError;
+      if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
+      const operation = clean(body.operation || "list");
+
+      if (operation === "list") {
+        const [programsResult, councilResult, basijResult, mayorResult, registrationsResult] = await Promise.all([
+          admin.from("activity_programs").select("id,title,category,event_date,amount,settings")
+            .eq("tenant_school_id", school).eq("active", true).order("id", { ascending: false }).limit(300),
+          admin.from("student_council").select("id,election_year,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("basij_registration").select("id,status,registration_date,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("school_mayor").select("id,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(20),
+          admin.from("activity_registrations").select("id,activity_id,participation_type,team_members,competition_type,payment_status,status,created_at")
+            .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(300),
+        ]);
+        for (const result of [programsResult, councilResult, basijResult, mayorResult, registrationsResult]) {
+          if (result.error) throw result.error;
+        }
+        const programIds = [...new Set((registrationsResult.data ?? []).map((x: any) => Number(x.activity_id)).filter(Boolean))];
+        const { data: registeredPrograms, error: registeredProgramsError } = programIds.length
+          ? await admin.from("activity_programs").select("id,title,category").eq("tenant_school_id", school).in("id", programIds)
+          : { data: [], error: null };
+        if (registeredProgramsError) throw registeredProgramsError;
+        const programMap = new Map((registeredPrograms ?? []).map((x: any) => [Number(x.id), x]));
+        const registrations = (registrationsResult.data ?? []).map((x: any) => ({
+          ...x, activity_title: programMap.get(Number(x.activity_id))?.title ?? "فعالیت ثبت‌شده",
+        }));
+        return reply({
+          ok: true, student, programs: programsResult.data ?? [],
+          council: councilResult.data ?? [], basij: basijResult.data ?? [],
+          mayor: mayorResult.data ?? [], registrations,
+        });
+      }
+
+      if (operation !== "register") return reply({ message: "عملیات فعالیت دانش‌آموز معتبر نیست." }, 400);
+      const registrationType = clean(body.registration_type);
+      const studentName = clean(student.first_name) + " " + clean(student.last_name);
+      const rejectDuplicate = (existing: any) => !!existing && clean(existing.status).toLowerCase() !== "rejected";
+
+      if (registrationType === "council") {
+        const electionYear = clean(body.election_year).slice(0, 20);
+        if (!electionYear) return reply({ message: "سال تحصیلی انتخابات را وارد کنید." }, 400);
+        const { data: existing, error: existingError } = await admin.from("student_council").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id).eq("election_year", electionYear)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "برای این سال تحصیلی قبلاً درخواست شورای دانش‌آموزی ثبت شده است." }, 409);
+        const { data, error } = await admin.from("student_council").insert({
+          student_id: student.id, student_name: studentName, election_year: electionYear,
+          status: "pending", tenant_school_id: school,
+        }).select("id,election_year,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "basij") {
+        const { data: existing, error: existingError } = await admin.from("basij_registration").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "درخواست عضویت بسیج دانش‌آموزی قبلاً ثبت شده است." }, 409);
+        const { data, error } = await admin.from("basij_registration").insert({
+          student_id: student.id, student_name: studentName,
+          registration_date: clean(body.registration_date) || new Date().toISOString().slice(0, 10),
+          status: "pending", tenant_school_id: school,
+        }).select("id,status,registration_date,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "mayor") {
+        const { data: existing, error: existingError } = await admin.from("school_mayor").select("id,status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "درخواست شهردار مدرسه قبلاً ثبت شده است." }, 409);
+        const { data, error } = await admin.from("school_mayor").insert({
+          student_id: student.id, student_name: studentName, status: "pending", tenant_school_id: school,
+        }).select("id,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: data });
+      }
+
+      if (registrationType === "activity") {
+        const activityId = asInt(body.activity_id);
+        if (!activityId) return reply({ message: "برنامه فعال را انتخاب کنید." }, 400);
+        const { data: program, error: programError } = await admin.from("activity_programs")
+          .select("id,title,category").eq("tenant_school_id", school).eq("id", activityId).eq("active", true).maybeSingle();
+        if (programError) throw programError;
+        if (!program) return reply({ message: "این برنامه فعال نیست یا در مدرسه شما وجود ندارد." }, 404);
+        const { data: existing, error: existingError } = await admin.from("activity_registrations").select("id,status")
+          .eq("tenant_school_id", school).eq("activity_id", activityId).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1).maybeSingle();
+        if (existingError) throw existingError;
+        if (rejectDuplicate(existing)) return reply({ message: "برای این برنامه قبلاً ثبت‌نام کرده‌اید." }, 409);
+        const participationType = clean(body.participation_type) === "گروهی" ? "گروهی" : "فردی";
+        const { data, error } = await admin.from("activity_registrations").insert({
+          activity_id: activityId, student_id: student.id, participation_type: participationType,
+          team_members: clean(body.team_members).slice(0, 1000), competition_type: clean(program.category),
+          status: "pending", tenant_school_id: school,
+        }).select("id,activity_id,participation_type,status,created_at").single();
+        if (error) throw error;
+        return reply({ ok: true, registration: { ...data, activity_title: program.title } });
+      }
+
+      return reply({ message: "نوع درخواست ثبت‌نام معتبر نیست." }, 400);
+    }
+
     if (action === "student_academic_summary") {
       if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
       const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")
