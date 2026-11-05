@@ -16,14 +16,11 @@ create table if not exists public.student_grade_adjustments (
 create index if not exists student_grade_adjustments_student_idx
  on public.student_grade_adjustments(tenant_school_id,student_id,target_score,subject,term);
 alter table public.student_grade_adjustments enable row level security;
-revoke all on public.student_grade_adjustments from anon,authenticated;
-grant select on public.student_grade_adjustments to authenticated;
+-- This ledger is read through authenticated Edge Functions only. Those functions
+-- apply the parent/student/manager and school-tenant filters before returning rows.
+revoke all on public.student_grade_adjustments from anon, authenticated;
 drop policy if exists student_grade_adjustments_school_read on public.student_grade_adjustments;
-create policy student_grade_adjustments_school_read on public.student_grade_adjustments
- for select to authenticated using (
-  tenant_school_id=private.frahoosh_current_school_id()
-  and private.frahoosh_school_access_active(tenant_school_id)
- );
+grant all on public.student_grade_adjustments to service_role;
 
 create or replace function public.approve_discipline_score_proposal(
  p_proposal_id bigint,
