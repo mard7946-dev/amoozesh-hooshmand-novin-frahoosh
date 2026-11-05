@@ -57,5 +57,62 @@
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     }).format(date);
   }
-  global.FrahooshJalali = Object.freeze({ digits, toISODate, toISODateTime, fromISODate, formatDateTime });
+  const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const weekdays = ['ش','ی','د','س','چ','پ','ج'];
+  const fa = value => String(value).replace(/\\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+  function jalaliToUtc(jy,jm,jd) {
+    const center=Date.UTC(jy+621,2,21);
+    for(let offset=-2;offset<=370;offset++){const date=new Date(center+offset*86400000),p=jalaliParts(date);if(p.y===jy&&p.m===jm&&p.d===jd)return date;}
+    throw new Error('تاریخ شمسی معتبر نیست.');
+  }
+  function attachPickers(root=document) {
+    if(!document.getElementById('frahoosh-picker-style')){
+      const style=document.createElement('style');style.id='frahoosh-picker-style';style.textContent=`
+      .frahoosh-date-wrap{display:flex;gap:6px;align-items:center}.frahoosh-date-wrap input{flex:1;min-width:0}
+      .frahoosh-date-button{border:1px solid #94a3b8;border-radius:8px;padding:9px 12px;background:#f8fafc;color:#172033;font:inherit;cursor:pointer;white-space:nowrap}
+      .frahoosh-calendar-backdrop{position:fixed;inset:0;background:#0f172a88;z-index:99999;display:grid;place-items:center;padding:12px}
+      .frahoosh-calendar{width:min(340px,100%);background:#fff;color:#172033;border-radius:16px;padding:14px;box-shadow:0 16px 50px #0004;font:14px Tahoma,Arial,sans-serif}
+      .frahoosh-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+      .frahoosh-calendar button{font:inherit;cursor:pointer;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#172033;padding:7px 10px}
+      .frahoosh-calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+      .frahoosh-calendar-grid span{padding:8px 0;color:#64748b}.frahoosh-calendar-grid button{padding:9px 0}
+      .frahoosh-calendar-grid button[aria-pressed=true]{background:#166534;color:white;border-color:#166534}
+      .frahoosh-calendar-foot{display:flex;justify-content:space-between;gap:8px;margin-top:12px}
+      input[data-digital-time]{font-variant-numeric:tabular-nums;direction:ltr;text-align:center;min-height:42px}
+      `;document.head.appendChild(style);
+    }
+    root.querySelectorAll('input[data-jalali-date]:not([data-jalali-ready])').forEach(input=>{
+      input.dataset.jalaliReady='1';input.readOnly=true;input.autocomplete='off';input.setAttribute('aria-haspopup','dialog');
+      const wrap=document.createElement('span');wrap.className='frahoosh-date-wrap';input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);
+      const open=document.createElement('button');open.type='button';open.className='frahoosh-date-button';open.textContent='📅 انتخاب تاریخ';open.setAttribute('aria-label','انتخاب تاریخ شمسی');wrap.appendChild(open);
+      function show(){
+        let jy,jm,jd;const match=digits(input.value).match(/^(\\d{4})[\\/.-](\\d{1,2})[\\/.-](\\d{1,2})$/);
+        if(match){jy=+match[1];jm=+match[2];jd=+match[3];}else{const p=jalaliParts(new Date());jy=p.y;jm=p.m;jd=p.d;}
+        const backdrop=document.createElement('div');backdrop.className='frahoosh-calendar-backdrop';
+        const panel=document.createElement('section');panel.className='frahoosh-calendar';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','تقویم شمسی');
+        let viewY=jy,viewM=jm;
+        function draw(){
+          const first=jalaliToUtc(viewY,viewM,1),firstDay=first.getUTCDay();
+          const next=viewM===12?jalaliToUtc(viewY+1,1,1):jalaliToUtc(viewY,viewM+1,1);
+          const count=Math.round((next-first)/86400000);
+          const cells=weekdays.map(x=>'<span>'+x+'</span>').join('')+Array.from({length:firstDay},()=>'<span></span>').join('')+Array.from({length:count},(_,i)=>'<button type="button" data-day="'+(i+1)+'" aria-pressed="'+(viewY===jy&&viewM===jm&&i+1===jd)+'">'+fa(i+1)+'</button>').join('');
+          panel.innerHTML='<div class="frahoosh-calendar-head"><button type="button" data-prev aria-label="ماه قبل">‹</button><strong>'+monthNames[viewM-1]+' '+fa(viewY)+'</strong><button type="button" data-next aria-label="ماه بعد">›</button></div><div class="frahoosh-calendar-grid">'+cells+'</div><div class="frahoosh-calendar-foot"><button type="button" data-today>امروز</button><button type="button" data-close>انصراف</button></div>';
+          panel.querySelector('[data-prev]').onclick=()=>{if(--viewM<1){viewM=12;viewY--;}draw();};
+          panel.querySelector('[data-next]').onclick=()=>{if(++viewM>12){viewM=1;viewY++;}draw();};
+          panel.querySelector('[data-today]').onclick=()=>{const p=jalaliParts(new Date());choose(p.y,p.m,p.d);};
+          panel.querySelector('[data-close]').onclick=()=>backdrop.remove();
+          panel.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>choose(viewY,viewM,Number(b.dataset.day)));
+        }
+        function choose(y,m,d){input.value=y+'/'+pad(m)+'/'+pad(d);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));backdrop.remove();}
+        backdrop.onclick=e=>{if(e.target===backdrop)backdrop.remove();};backdrop.appendChild(panel);document.body.appendChild(backdrop);draw();
+      }
+      open.addEventListener('click',show);input.addEventListener('click',show);input.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
+    });
+    root.querySelectorAll('input[data-digital-time]:not([data-digital-time-ready])').forEach(input=>{input.dataset.digitalTimeReady='1';input.type='time';input.step='60';input.inputMode='numeric';input.lang='fa-IR';input.placeholder='ساعت و دقیقه';});
+  }
+  if(typeof document!=='undefined'){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>attachPickers());
+    else attachPickers();
+  }
+  global.FrahooshJalali = Object.freeze({ digits, toISODate, toISODateTime, fromISODate, formatDateTime, attachPickers });
 })(window);
