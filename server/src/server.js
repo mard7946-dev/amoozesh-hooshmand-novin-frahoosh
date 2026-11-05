@@ -181,6 +181,36 @@ app.get('/api/auth/me', auth, (req, res) => {
   res.json({ user: { id: req.user.id, role: req.user.role, displayName: req.user.display_name, username: req.user.username, gradeClass: req.user.grade_class } });
 });
 
+// Teachers and deputies can only browse classes explicitly assigned to their account.
+app.get('/api/teacher/classes', auth, allow('teacher','educational_deputy','pastoral_deputy'), async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      "SELECT grade_class, array_agg(DISTINCT subject ORDER BY subject) FILTER (WHERE subject <> '') AS subjects, array_agg(DISTINCT day_of_week ORDER BY day_of_week) AS days FROM school_schedule WHERE teacher_user_id=$1 GROUP BY grade_class ORDER BY grade_class",
+      [req.user.id]
+    );
+    res.set('Cache-Control', 'no-store');
+    res.json({ classes: result.rows });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/teacher/students', auth, allow('teacher','educational_deputy','pastoral_deputy'), async (req, res, next) => {
+  try {
+    const gradeClass = text(req.query.gradeClass, 40);
+    if (!gradeClass) return res.status(400).json({ error: 'کلاس را انتخاب کنید.' });
+    const assigned = await pool.query(
+      'SELECT 1 FROM school_schedule WHERE teacher_user_id=$1 AND grade_class=$2 LIMIT 1',
+      [req.user.id, gradeClass]
+    );
+    if (!assigned.rowCount) return res.status(403).json({ error: 'این کلاس در برنامه شما ثبت نشده است.' });
+    const result = await pool.query(
+      "SELECT id,display_name,family_name,grade_class FROM classroom_users WHERE role='student' AND grade_class=$1 ORDER BY display_name,family_name",
+      [gradeClass]
+    );
+    res.set('Cache-Control', 'no-store');
+    res.json({ students: result.rows });
+  } catch (e) { next(e); }
+});
+
 app.post('/api/auth/logout', auth, async (req, res, next) => {
   try { const token = req.headers.authorization.replace(/^Bearer\s+/i, '').trim(); await pool.query('DELETE FROM classroom_sessions WHERE token_hash=$1', [hashToken(token)]); res.json({ ok: true }); }
   catch (e) { next(e); }
