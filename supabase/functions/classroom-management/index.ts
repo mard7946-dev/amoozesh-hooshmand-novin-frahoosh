@@ -579,13 +579,28 @@ Deno.serve(async (req: Request) => {
           if (result.error) throw result.error;
         }
         const programs = programsResult.data ?? [];
+        const councilRows = councilResult.data ?? [], basijRows = basijResult.data ?? [];
+        const mayorRows = mayorResult.data ?? [], rawRegistrations = registrationsResult.data ?? [];
+        const studentIds = [...new Set([...councilRows, ...basijRows, ...mayorRows, ...rawRegistrations]
+          .map((x: any) => Number(x.student_id)).filter((x: number) => Number.isInteger(x) && x > 0))];
+        const { data: studentRows, error: studentsError } = studentIds.length
+          ? await admin.from("students").select("id,first_name,last_name,class_name")
+              .eq("tenant_school_id", school).in("id", studentIds)
+          : { data: [], error: null };
+        if (studentsError) throw studentsError;
+        const studentMap = new Map((studentRows ?? []).map((x: any) => [Number(x.id), x]));
+        const withStudent = (rows: any[]) => rows.map((x: any) => {
+          const student = studentMap.get(Number(x.student_id));
+          return { ...x, student_name: x.student_name || (student ? clean(student.first_name) + " " + clean(student.last_name) : "دانش‌آموز"),
+            class_name: student?.class_name ?? "" };
+        });
         const programMap = new Map(programs.map((x: any) => [Number(x.id), x]));
-        const registrations = (registrationsResult.data ?? []).map((x: any) => ({
+        const registrations = withStudent(rawRegistrations).map((x: any) => ({
           ...x, activity_title: programMap.get(Number(x.activity_id))?.title ?? "فعالیت ثبت‌شده",
         }));
         return reply({
-          ok: true, programs, council: councilResult.data ?? [], basij: basijResult.data ?? [],
-          mayor: mayorResult.data ?? [], registrations,
+          ok: true, programs, council: withStudent(councilRows), basij: withStudent(basijRows),
+          mayor: withStudent(mayorRows), registrations,
         });
       }
 
