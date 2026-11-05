@@ -82,3 +82,11 @@ assert.ok(publish.includes("'platform-admin.html'"), "Changes to platform-admin.
 assert.ok(publish.includes("platform-admin.html"), "Pages artifact must include the platform admin page");
 
 console.log("Commercial platform checks passed: privileged API, audited SQL RPCs, school/subscription UI, secret-free browser code, and deployment packaging.");
+
+
+const draftsMigration = readFileSync("supabase/migrations/20261105110000_platform_school_drafts.sql", "utf8");
+for (const marker of ["platform_school_drafts", "generate_series(1, 4)", "enable row level security", "revoke all on table", "grant all on table public.platform_school_drafts to service_role"]) {
+  assert.ok(draftsMigration.includes(marker), "Platform school draft migration missing marker: " + marker);
+}
+assert.ok(fn.includes('action === "save_school_draft"') && fn.includes('from("platform_school_drafts")'), "Platform API must persist the four school-name drafts");
+assert.ok(page.includes("schoolDrafts") && page.includes("save_school_draft"), "Platform admin page must manage school-name draft slots");
