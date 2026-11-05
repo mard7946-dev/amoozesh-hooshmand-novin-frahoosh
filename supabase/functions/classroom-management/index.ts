@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildDisciplineScoreBatches, isSchoolManagerRole } from "./discipline-rules.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -13,12 +14,7 @@ const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳�
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
 const rolesManager = ["manager", "مدیر", "مدیریت", "executive", "educational", "deputy", "معاون", "معاون اجرایی", "معاون آموزشی"];
 const isManager = (role: string) => rolesManager.some(r => norm(role).includes(norm(r)));
-// Deputies may manage their own operational records; only the school manager may approve official score adjustments.
-const isSchoolManager = (role: string) => {
-  const value = norm(role);
-  return ["manager", "school_manager", "مدیر", "مدیر مدرسه", "مدیریت", "مدیریت مدرسه"].some(r => value === norm(r))
-    || value.startsWith(norm("مدیر "));
-};
+
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
@@ -59,7 +55,7 @@ Deno.serve(async (req: Request) => {
     const role = requestedRole === "teacher" && hasTeacherMembership ? "teacher" : mainRole;
     if (requestedRole === "teacher" && role !== "teacher") return reply({ message: "عضویت فعال دبیر برای این حساب تأیید نشد." }, 403);
     const manager = isManager(role);
-    const schoolManager = isSchoolManager(role);
+    const schoolManager = isSchoolManagerRole(role);
     const teacher = isTeacher(role);
     const deputy = isDeputy(role);
     const studentRole = ["student", "دانش آموز", "دانش‌آموز"].includes(role);
@@ -272,29 +268,26 @@ Deno.serve(async (req: Request) => {
         if (teacher) historyQuery = historyQuery.eq("subject",subject);
         const { data: history, error: historyError } = await historyQuery;
         if (historyError) throw historyError;
-        const types = teacher
-          ? [{type:"discipline",size:3,target:"continuous",delta:-1},{type:"praise",size:2,target:"continuous",delta:1}]
-          : [{type:"discipline",size:3,target:"discipline",delta:-1}];
-        for (const rule of types) {
-          const ids = (history ?? []).filter((x:any)=>rule.type==="praise" ? x.record_type==="praise" : x.record_type!=="praise").map((x:any)=>Number(x.id));
-          for (let offset=0; offset+rule.size<=ids.length; offset+=rule.size) {
-            const sourceIds=ids.slice(offset,offset+rule.size);
-            if (!sourceIds.some((id:number)=>(data ?? []).some((x:any)=>Number(x.id)===id))) continue;
-            let existsQuery=admin.from("discipline_score_proposals").select("id,source_record_ids")
-              .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
-              .eq("target_score",rule.target).eq("subject",teacher?subject:"");
-            const {data:existing,error:existingError}=await existsQuery;
-            if(existingError) throw existingError;
-            if((existing??[]).some((p:any)=>Array.isArray(p.source_record_ids)&&p.source_record_ids.length===sourceIds.length&&sourceIds.every((id:number)=>p.source_record_ids.includes(id)))) continue;
-            const {data:proposalData,error:proposalError}=await admin.from("discipline_score_proposals").upsert({
-              tenant_school_id:school,student_id:studentId,actor_role:actorRole,actor_username:clean(profile.username),teacher_id:teacherId,
-              subject:teacher?subject:"",discipline_count:rule.delta<0?rule.size:0,
-              praise_count:rule.delta>0?rule.size:0,proposed_delta:rule.delta,target_score:rule.target,
-              source_record_ids:sourceIds
-            },{onConflict:"tenant_school_id,student_id,actor_role,target_score,subject,source_record_ids",ignoreDuplicates:true}).select("id");
-            if(proposalError) throw proposalError;
-            proposalsCreated+=proposalData?.length??0;
-          }
+        const batches = buildDisciplineScoreBatches(
+          history ?? [],
+          (data ?? []).map((record: any) => Number(record.id)),
+          teacher ? "teacher" : "deputy",
+        );
+        for (const batch of batches) {
+          let existsQuery=admin.from("discipline_score_proposals").select("id,source_record_ids")
+            .eq("tenant_school_id",school).eq("student_id",studentId).eq("actor_role",actorRole)
+            .eq("target_score",batch.targetScore).eq("subject",teacher?subject:"");
+          const {data:existing,error:existingError}=await existsQuery;
+          if(existingError) throw existingError;
+          if((existing??[]).some((p:any)=>Array.isArray(p.source_record_ids)&&p.source_record_ids.length===batch.sourceRecordIds.length&&batch.sourceRecordIds.every((id:number)=>p.source_record_ids.includes(id)))) continue;
+          const {data:proposalData,error:proposalError}=await admin.from("discipline_score_proposals").upsert({
+            tenant_school_id:school,student_id:studentId,actor_role:actorRole,actor_username:clean(profile.username),teacher_id:teacherId,
+            subject:teacher?subject:"",discipline_count:batch.disciplineCount,
+            praise_count:batch.praiseCount,proposed_delta:batch.delta,target_score:batch.targetScore,
+            source_record_ids:batch.sourceRecordIds
+          },{onConflict:"tenant_school_id,student_id,actor_role,target_score,subject,source_record_ids",ignoreDuplicates:true}).select("id");
+          if(proposalError) throw proposalError;
+          proposalsCreated+=proposalData?.length??0;
         }
       }
       return reply({ ok: true, saved: data?.length ?? inserts.length, proposals_created:proposalsCreated,
