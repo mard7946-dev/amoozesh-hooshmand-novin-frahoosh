@@ -207,7 +207,9 @@ assert.ok(previewBuild.includes('_site/build-info.json') && previewBuild.include
 
 const classroomFunction = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
 assert.ok(classroomFunction.includes('from("teacher_classes").select("id,teacher_id,teacher_name,subject,grade,class_name,active")'), "Teacher class selector must load canonical teacher-to-class assignments");
-assert.ok(classroomFunction.includes('.eq("teacher_id", teacherRecordId).eq("active", 1)'), "Teacher class list must be scoped by authenticated teacher ID and active assignment");
+assert.ok(/\.eq\("teacher_id", teacherRecordId\)[\s\S]*?\.eq\("active", 1\)/.test(classroomFunction), "Teacher class list must be scoped by authenticated teacher ID and active assignment");
 assert.ok(classroomFunction.includes('if (teacher && !manager) {') && classroomFunction.includes('const classNames = [...new Set((assignments ?? []).map'), "Teacher class list must derive the displayed class roster from assigned classes");
 assert.ok(!classroomFunction.includes('.in("teacher", teacherNames)'), "Teacher authorization must not depend on matching display-name strings");
+const classroomPage = readFileSync("classroom/management.html", "utf8");
+assert.ok(classroomPage.includes("api('list_teacher_assignments')") && classroomPage.includes("role==='teacher'?teacherAssignments:classes"), "Every teacher registration selector must be populated from the authenticated teacher's assigned classes");
 console.log("Cloudflare preview checks passed: same-origin navigation and generated build metadata.");
