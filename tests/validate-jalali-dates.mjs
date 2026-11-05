@@ -45,6 +45,8 @@ const picker = readFileSync(new URL('../jalali-date.js', import.meta.url), 'utf8
 assert.match(picker, /data-jalali-date/);
 assert.match(picker, /data-digital-time/);
 assert.match(picker, /input\.type='text'/, 'time inputs must not invoke the native analog time dial');
+assert.match(picker, /input\.readOnly=false/, 'digital time entry must remain editable and required fields must validate');
+assert.match(picker, /input\.pattern=/, 'digital time entry must validate 24-hour HH:mm values');
 assert.doesNotMatch(picker, /input\.type='time'/, 'native time controls can open an analog clock on mobile');
 assert.match(picker, /data-hour/, 'digital picker must expose a numeric hour selector');
 assert.match(picker, /data-minute/, 'digital picker must expose a numeric minute selector');
