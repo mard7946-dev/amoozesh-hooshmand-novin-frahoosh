@@ -9,12 +9,12 @@ create table if not exists public.platform_school_drafts (
 );
 
 insert into public.platform_school_drafts (slot_no)
-select slot_no
-from generate_series(1, 4) as slot_no
+select slots.slot_no
+from generate_series(1, 4) as slots(slot_no)
 where not exists (
   select 1
   from public.platform_school_drafts existing
-  where existing.slot_no = slot_no
+  where existing.slot_no = slots.slot_no
 );
 
 alter table public.platform_school_drafts enable row level security;
