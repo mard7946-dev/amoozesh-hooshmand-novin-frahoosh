@@ -60,6 +60,7 @@
   const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
   const weekdays = ['ش','ی','د','س','چ','پ','ج'];
   const fa = value => String(value).replace(/\\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+  function todayJalali(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:tehran,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=t=>Number(p.find(x=>x.type===t)?.value||0);return jalaliParts(new Date(Date.UTC(get('year'),get('month')-1,get('day'))));}
   function jalaliToUtc(jy,jm,jd) {
     const center=Date.UTC(jy+621,2,21);
     for(let offset=-2;offset<=370;offset++){const date=new Date(center+offset*86400000),p=jalaliParts(date);if(p.y===jy&&p.m===jm&&p.d===jd)return date;}
@@ -87,7 +88,7 @@
       const open=document.createElement('button');open.type='button';open.className='frahoosh-date-button';open.textContent='📅 انتخاب تاریخ';open.setAttribute('aria-label','انتخاب تاریخ شمسی');wrap.appendChild(open);
       function show(){
         let jy,jm,jd;const match=digits(input.value).match(/^(\\d{4})[\\/.-](\\d{1,2})[\\/.-](\\d{1,2})$/);
-        if(match){jy=+match[1];jm=+match[2];jd=+match[3];}else{const p=jalaliParts(new Date());jy=p.y;jm=p.m;jd=p.d;}
+        if(match){jy=+match[1];jm=+match[2];jd=+match[3];}else{const p=todayJalali();jy=p.y;jm=p.m;jd=p.d;}
         const backdrop=document.createElement('div');backdrop.className='frahoosh-calendar-backdrop';
         const panel=document.createElement('section');panel.className='frahoosh-calendar';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','تقویم شمسی');
         let viewY=jy,viewM=jm;
@@ -99,7 +100,7 @@
           panel.innerHTML='<div class="frahoosh-calendar-head"><button type="button" data-prev aria-label="ماه قبل">‹</button><strong>'+monthNames[viewM-1]+' '+fa(viewY)+'</strong><button type="button" data-next aria-label="ماه بعد">›</button></div><div class="frahoosh-calendar-grid">'+cells+'</div><div class="frahoosh-calendar-foot"><button type="button" data-today>امروز</button><button type="button" data-close>انصراف</button></div>';
           panel.querySelector('[data-prev]').onclick=()=>{if(--viewM<1){viewM=12;viewY--;}draw();};
           panel.querySelector('[data-next]').onclick=()=>{if(++viewM>12){viewM=1;viewY++;}draw();};
-          panel.querySelector('[data-today]').onclick=()=>{const p=jalaliParts(new Date());choose(p.y,p.m,p.d);};
+          panel.querySelector('[data-today]').onclick=()=>{const p=todayJalali();choose(p.y,p.m,p.d);};
           panel.querySelector('[data-close]').onclick=()=>backdrop.remove();
           panel.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>choose(viewY,viewM,Number(b.dataset.day)));
         }
