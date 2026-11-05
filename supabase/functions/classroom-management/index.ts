@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
     if (requestedRole === "teacher" && role !== "teacher") return reply({ message: "عضویت فعال دبیر برای این حساب تأیید نشد." }, 403);
     const manager = isManager(role);
     const teacher = isTeacher(role);
+    const deputy = isDeputy(role);
     const studentRole = ["student", "دانش آموز", "دانش‌آموز"].includes(role);
     if (!manager && !teacher && !deputy && !studentRole) return reply({ message: "این نقش مجوز دسترسی به اطلاعات کلاس را ندارد." }, 403);
     if (!profile.tenant_school_id) return reply({ message: "شناسه مدرسه برای این حساب ثبت نشده است." }, 403);
