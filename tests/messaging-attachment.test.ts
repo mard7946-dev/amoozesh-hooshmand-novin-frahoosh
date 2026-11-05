@@ -7,6 +7,7 @@ function assertEqual(actual: boolean, expected: boolean, label: string) {
 Deno.test("accepts base64 payloads within the decoded byte limit", () => {
   assertEqual(isAttachmentBase64WithinLimit("AAAA", 3), true, "3-byte payload");
   assertEqual(isAttachmentBase64WithinLimit("AAAAAA==", 4), true, "4-byte payload");
+  assertEqual(isAttachmentBase64WithinLimit("AA AA", 3), true, "whitespace in payload");
 });
 
 Deno.test("rejects oversized and empty payloads before decoding", () => {
