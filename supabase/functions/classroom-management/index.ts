@@ -215,7 +215,7 @@ Deno.serve(async (req: Request) => {
     if (action === "discipline") {
       if (!teacher && !deputy && !manager) return reply({ message: "مجوز ثبت انضباط و تشویق ندارید." }, 403);
       const rows = boundedRows(body.rows), className = clean(body.class_name), subject = clean(body.subject);
-      if (!rows || !rows.length || !className) return reply({ message: "کلاس یا فهرست موارد ناقص است." }, 400);
+      if (!rows || !rows.length || !className || (teacher && !subject)) return reply({ message: "کلاس، درس دبیر یا فهرست موارد ناقص است." }, 400);
       if (teacher && !await assertTeacherClass(className)) return reply({ message: "ثبت مورد برای این کلاس مجاز نیست." }, 403);
       const { data: roster, error: rosterError } = await admin.from("students").select("id").eq("tenant_school_id", school).eq("class_name", className);
       if (rosterError) throw rosterError;
@@ -225,7 +225,7 @@ Deno.serve(async (req: Request) => {
         const { data: teacherRow } = await admin.from("teachers").select("id").eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
         teacherId = teacherRow?.id ?? null;
       }
-      const actorRole = teacher ? "teacher" : "deputy";
+      const actorRole = teacher ? "teacher" : deputy ? "deputy" : "manager";
       const inserts = rows.map((raw: any) => {
         const studentId = asInt(raw.student_id), title = clean(raw.title);
         return { student_id: studentId, teacher_id: teacherId, title,
@@ -236,11 +236,11 @@ Deno.serve(async (req: Request) => {
           incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school };
       }).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
-      const { data, error } = await admin.from("discipline_records").insert(inserts).select("id,record_type,student_id");
+      const { data, error } = await admin.from("discipline_records").insert(inserts).select("*");
       if (error) throw error;
       const auditRows=(data??[]).map((row:any)=>({tenant_school_id:school,record_id:row.id,action:"insert",
         actor_username:clean(profile.username),actor_role:actorRole,
-        after_data:{...inserts.find((x:any)=>Number(x.student_id)===Number(row.student_id)),id:row.id}}));
+        after_data:row}));
       if(auditRows.length){const {error:auditError}=await admin.from("discipline_record_audit").insert(auditRows);if(auditError) throw auditError;}
       let proposalsCreated = 0;
       for (const studentId of [...new Set((data ?? []).map((x: any) => Number(x.student_id)))]) {
@@ -345,7 +345,7 @@ Deno.serve(async (req: Request) => {
           .eq("id",recordId).eq("tenant_school_id",school).select("*").single();
         if(error) throw error;
         const {error:auditError}=await admin.from("discipline_record_audit").insert({tenant_school_id:school,record_id:recordId,action:"delete",
-          actor_username:clean(profile.username),actor_role:teacher?"teacher":"deputy",before_data:record,after_data:updated});
+          actor_username:clean(profile.username),actor_role:teacher?"teacher":deputy?"deputy":"manager",before_data:record,after_data:updated});
         if(auditError) throw auditError;
         return reply({ok:true,deleted:true});
       }
@@ -362,7 +362,7 @@ Deno.serve(async (req: Request) => {
         .eq("id",recordId).eq("tenant_school_id",school).select("*").single();
       if(error) throw error;
       const {error:auditError}=await admin.from("discipline_record_audit").insert({tenant_school_id:school,record_id:recordId,action:"update",
-        actor_username:clean(profile.username),actor_role:teacher?"teacher":"deputy",before_data:record,after_data:updated});
+        actor_username:clean(profile.username),actor_role:teacher?"teacher":deputy?"deputy":"manager",before_data:record,after_data:updated});
       if(auditError) throw auditError;
       return reply({ok:true,record:updated});
     }
