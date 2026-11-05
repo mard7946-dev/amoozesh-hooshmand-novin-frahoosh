@@ -63,6 +63,7 @@ Deno.serve(async (req: Request) => {
     if (!profile.tenant_school_id) return reply({ message: "شناسه مدرسه برای این حساب ثبت نشده است." }, 403);
     const school = profile.tenant_school_id;
     const callerName = clean(profile.display_name) || clean(profile.username);
+    const teacherNames = [...new Set([callerName, clean(profile.username)].filter(Boolean))];
     // Teacher-to-class ownership is keyed by teachers.id in teacher_classes.
     // Do not infer ownership from display-name text in online_classes.teacher.
     let teacherRecordId: number | null = null;
@@ -115,47 +116,26 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "list_classes") {
-      if (teacher && !manager) {
-        if (!teacherRecordId) return reply({ ok: true, classes: [] });
-        const { data: assignments, error: assignmentError } = await admin.from("teacher_classes")
-          .select("id,teacher_id,teacher_name,subject,grade,class_name,active")
-          .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId).eq("active", 1)
-          .order("class_name", { ascending: true });
-        if (assignmentError) throw assignmentError;
-        const classNames = [...new Set((assignments ?? []).map((row: any) => clean(row.class_name)).filter(Boolean))];
-        let scheduleRows: any[] = [];
-        if (classNames.length) {
-          const { data, error } = await admin.from("online_classes")
-            .select("id,title,subject,teacher,grade,class_name,start_time,end_time,day_of_week,status,tenant_school_id")
-            .eq("tenant_school_id", school).in("class_name", classNames).limit(500);
-          if (error) throw error;
-          scheduleRows = data ?? [];
-        }
-        const result: any[] = [];
-        for (const assignment of assignments ?? []) {
-          const matches = scheduleRows.filter((row: any) =>
-            clean(row.class_name) === clean(assignment.class_name) &&
-            norm(row.subject || row.lesson) === norm(assignment.subject));
-          if (matches.length) {
-            for (const row of matches) result.push({ ...row, teacher: assignment.teacher_name || callerName, grade: row.grade || assignment.grade });
-          } else {
-            result.push({
-              id: assignment.id, title: assignment.subject, subject: assignment.subject,
-              teacher: assignment.teacher_name || callerName, grade: assignment.grade,
-              class_name: assignment.class_name, start_time: "", end_time: "",
-              day_of_week: "", status: "تخصیص‌یافته", tenant_school_id: school,
-            });
-          }
-        }
-        return reply({ ok: true, classes: result });
-      }
       let q = admin.from("online_classes")
         .select("id,title,subject,teacher,grade,class_name,start_time,end_time,day_of_week,status,tenant_school_id")
         .eq("tenant_school_id", school).order("id", { ascending: false });
       if (studentRole) q = q.eq("class_name", studentClassName);
+      else if (teacher && !manager) q = q.in("teacher", teacherNames);
       const { data, error } = await q.limit(500);
       if (error) throw error;
       return reply({ ok: true, classes: data ?? [] });
+    }
+
+    // Separate operational class selector. The online-class schedule/room listing above
+    // deliberately keeps its existing source and behavior.
+    if (action === "list_teacher_assignments") {
+      if (!teacher || !teacherRecordId) return reply({ message: "حساب دبیر به پرونده همکار متصل نیست." }, 403);
+      const { data, error } = await admin.from("teacher_classes")
+        .select("id,teacher_id,teacher_name,subject,grade,class_name,active")
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId).eq("active", 1)
+        .order("class_name", { ascending: true });
+      if (error) throw error;
+      return reply({ ok: true, assignments: data ?? [] });
     }
 
     if (action === "set_class_day") {
