@@ -251,3 +251,7 @@ const messagingApi = readFileSync("supabase/functions/frahoosh-messaging/index.t
 assert.ok(messagesPage.includes("frahoosh-messaging") && messagesPage.includes("ارسال برای بررسی"), "Messaging panel must expose the real send workflow");
 assert.ok(messagingApi.includes("auth.getUser") && messagingApi.includes("school_memberships") && messagingApi.includes("tenant_school_id"), "Messaging API must authenticate users and scope messages to an active school membership");
 assert.ok(messagingApi.includes("isAttachmentBase64WithinLimit") && messagingApi.includes("MAX_ATTACHMENT_BYTES"), "Messaging API must reject oversized attachments before decoding");
+
+
+assert.ok(html.includes("sessionStorage.getItem('frahoosh_novin_access_token')") && html.includes("step==='panel'&&portalAuthToken&&portalAuthUserRole===initial.id"), "Portal must restore an authenticated session when returning from a subpanel");
+assert.ok(html.includes("sessionStorage.setItem('frahoosh_novin_access_token',portalAuthToken);sessionStorage.setItem('frahoosh_novin_role','student')"), "Student self-service routes must persist the access token before navigation");
