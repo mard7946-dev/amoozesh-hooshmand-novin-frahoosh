@@ -82,7 +82,7 @@ function renderModule(data){
 }
 function renderActivities(data){
  const out=$('gradeResults'),programs=data.programs||[],registrations=data.registrations||[];
- const findRegistration=id=>registrations.find(x=>Number(x.activity_id)===Number(id)&&String(x.status||'').toLowerCase()!=='rejected');
+ const findRegistration=id=>{const latest=registrations.find(x=>Number(x.activity_id)===Number(id));return latest&&String(latest.status||'').toLowerCase()!=='rejected'?latest:undefined;};
  const statusText=x=>x?'<span class="tag">'+esc(statusLabel(x.status))+'</span>':'';
  const button=(type,label,extra='')=>'<button type="button" data-register="'+esc(type)+'" '+extra+'>'+esc(label)+'</button>';
  const card=(title,description,existing,action)=>'<article class="panel"><h3>'+esc(title)+'</h3><p class="muted">'+esc(description)+'</p>'+(existing?'<p>'+statusText(existing)+'</p>':action)+'</article>';
@@ -90,7 +90,9 @@ function renderActivities(data){
  const electionYear=currentYear+'-'+String(Number(currentYear)+1).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
  let html='<p class="muted">درخواست‌ها با وضعیت «در انتظار بررسی» ثبت می‌شوند و نتیجه پس از بررسی مدرسه در همین صفحه نمایش داده می‌شود.</p>';
  if(selected==='فعالیت‌های مدرسه'){
-  const council=(data.council||[]).find(x=>String(x.status||'').toLowerCase()!=='rejected'),basij=(data.basij||[]).find(x=>String(x.status||'').toLowerCase()!=='rejected');
+  const councilRecord=(data.council||[]).find(x=>x.election_year===electionYear),basijRecord=(data.basij||[])[0];
+  const council=councilRecord&&String(councilRecord.status||'').toLowerCase()!=='rejected'?councilRecord:undefined;
+  const basij=basijRecord&&String(basijRecord.status||'').toLowerCase()!=='rejected'?basijRecord:undefined;
   html+=card('شورای دانش‌آموزی','درخواست نامزدی یا عضویت در شورای دانش‌آموزی برای سال تحصیلی انتخاب‌شده.',council,council?'':('<label>سال تحصیلی انتخابات <input id="electionYear" value="'+esc(electionYear)+'" maxlength="20"></label>'+button('council','ثبت درخواست شورا')));
   html+=card('بسیج دانش‌آموزی','ثبت درخواست عضویت و ارسال آن برای بررسی مسئول مربوطه.',basij,button('basij','ثبت درخواست عضویت'));
   const visiblePrograms=programs.filter(p=>!String(p.category||'').includes('همیار'));
@@ -102,7 +104,8 @@ function renderActivities(data){
    html+=card(p.title,(p.category||'فعالیت مدرسه')+(p.event_date?' · تاریخ: '+formatShamsi(p.event_date):'')+(Number(p.amount)>0?' · مبلغ اعلام‌شده: '+Number(p.amount).toLocaleString('fa-IR'):'') ,existing,action);
   }
  }else{
-  const mayor=(data.mayor||[]).find(x=>String(x.status||'').toLowerCase()!=='rejected');
+  const mayorRecord=(data.mayor||[])[0];
+  const mayor=mayorRecord&&String(mayorRecord.status||'').toLowerCase()!=='rejected'?mayorRecord:undefined;
   html+=card('شهردار مدرسه','ثبت درخواست داوطلبی برای مسئولیت شهردار مدرسه.',mayor,button('mayor','ثبت درخواست شهردار مدرسه'));
   const helperPrograms=programs.filter(p=>String(p.category||'').includes('همیار')||String(p.title||'').includes('همیار'));
   html+='<h2>برنامه‌های همیار مدرسه</h2>';
