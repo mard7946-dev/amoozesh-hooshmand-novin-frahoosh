@@ -385,12 +385,12 @@ Deno.serve(async (req: Request) => {
       const grades=gradesResult.data??[],adjustments=adjustmentsResult.data??[];
       const groups=new Map<string,any>();
       for(const g of grades){
-        const key=[clean(g.subject),clean(g.term)].join("|");
-        const item=groups.get(key)??{subject:clean(g.subject),term:clean(g.term),weighted:0,weight:0};
+        const key=clean(g.subject);
+        const item=groups.get(key)??{subject:clean(g.subject),term:"مجموع نوبت‌های منتشرشده",weighted:0,weight:0};
         const w=Math.max(0,Number(g.coefficient)||1);item.weighted+=Number(g.score||0)*w;item.weight+=w;groups.set(key,item);
       }
       const continuous=[...groups.values()].map(g=>{
-        const delta=adjustments.filter(a=>a.target_score==="continuous"&&a.subject===g.subject&&a.term===g.term).reduce((n,a)=>n+Number(a.delta||0),0);
+        const delta=adjustments.filter(a=>a.target_score==="continuous"&&a.subject===g.subject).reduce((n,a)=>n+Number(a.delta||0),0);
         const base=g.weight?g.weighted/g.weight:0;
         return {...g,base_score:Number(base.toFixed(2)),adjustment:Number(delta.toFixed(2)),final_score:Number(Math.max(0,Math.min(20,base+delta)).toFixed(2))};
       });
