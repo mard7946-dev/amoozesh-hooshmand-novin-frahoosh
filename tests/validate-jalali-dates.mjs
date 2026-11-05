@@ -25,10 +25,20 @@ assert.match(bulletin, /timeZone:'Asia\/Tehran'/, 'bulletin dates must use Tehra
 assert.match(bulletin, /-210\*60\*1000/, 'bulletin date-time inputs must be converted from Tehran time to UTC');
 
 const exam = readFileSync(new URL('../exam-center.html', import.meta.url), 'utf8');
-assert.match(exam, /toISODateTime\(f\.get\('starts_at'\)\)/);
-assert.match(exam, /toISODateTime\(f\.get\('ends_at'\)\)/);
+assert.match(exam, /toISODateTime\(\$\('startsDate'\)\.value\+.*startsTime/);
+assert.match(exam, /toISODateTime\(\$\('endsDate'\)\.value\+.*endsTime/);
 const classroom = readFileSync(new URL('../classroom/management.html', import.meta.url), 'utf8');
 assert.match(classroom, /toISODate\(\$\('attDate'\)\.value\)/);
 assert.match(classroom, /toISODate\(\$\('hwDue'\)\.value\)/);
 assert.match(classroom, /toISODate\(\$\('discDate'\)\.value\)/);
-console.log('Jalali date validation passed.');
+
+for (const file of ['family-invitations.html','parent-meetings.html','finance.html','reports.html','counseling.html','bulletin.html','parent-management.html']) {
+  const html = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+  assert.match(html, /jalali-date\\.js/, file + ' must load shared date picker');
+}
+const picker = readFileSync(new URL('../jalali-date.js', import.meta.url), 'utf8');
+assert.match(picker, /data-jalali-date/);
+assert.match(picker, /data-digital-time/);
+assert.match(picker, /تقویم شمسی/);
+assert.match(picker, /firstDay=\\(first\\.getUTCDay\\(\\)\\+1\\)%7/);
+console.log('Jalali date and picker validation passed.');
