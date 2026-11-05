@@ -2,7 +2,7 @@ name: Validate classroom prototype
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/teacher-class-selector-and-panel-return]
   pull_request:
     branches: [main]
   workflow_dispatch:
