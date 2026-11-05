@@ -261,7 +261,7 @@ Deno.serve(async (req: Request) => {
             if(existingError) throw existingError;
             if((existing??[]).some((p:any)=>Array.isArray(p.source_record_ids)&&p.source_record_ids.length===sourceIds.length&&sourceIds.every((id:number)=>p.source_record_ids.includes(id)))) continue;
             const {error:proposalError}=await admin.from("discipline_score_proposals").insert({
-              tenant_school_id:school,student_id:studentId,actor_role:actorRole,teacher_id:teacherId,
+              tenant_school_id:school,student_id:studentId,actor_role:actorRole,actor_username:clean(profile.username),teacher_id:teacherId,
               subject:teacher?subject:"",discipline_count:rule.delta<0?rule.size:0,
               praise_count:rule.delta>0?rule.size:0,proposed_delta:rule.delta,target_score:rule.target,
               source_record_ids:sourceIds
