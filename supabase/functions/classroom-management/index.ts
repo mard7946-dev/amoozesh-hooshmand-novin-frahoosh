@@ -384,6 +384,65 @@ Deno.serve(async (req: Request) => {
       return reply({ok:true,record:updated});
     }
 
+    if (action === "student_module_summary") {
+      if (!studentRole) return reply({ message: "این بخش فقط برای حساب دانش‌آموز قابل مشاهده است." }, 403);
+      const moduleName = clean(body.module);
+      const { data: student, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (studentError) throw studentError;
+      if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
+
+      if (moduleName === "غیبت") {
+        const { data, error } = await admin.from("attendance")
+          .select("id,date,attendance_date,status,description,subject,approval_status")
+          .eq("tenant_school_id", school).eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(500);
+        if (error) throw error;
+        return reply({ ok: true, student, attendance: data ?? [] });
+      }
+
+      if (moduleName === "انضباط") {
+        const { data, error } = await admin.from("discipline_records")
+          .select("id,title,description,record_type,incident_date,status,subject,actor_role")
+          .eq("tenant_school_id", school).eq("student_id", student.id).is("deleted_at", null)
+          .order("incident_date", { ascending: false }).limit(500);
+        if (error) throw error;
+        return reply({ ok: true, student, discipline: data ?? [] });
+      }
+
+      if (moduleName === "تکلیف") {
+        const columns = "id,student_id,title,description,status,created_at,due_date,subject,class_name";
+        const [classAssignments, personalAssignments] = await Promise.all([
+          admin.from("assignments").select(columns).eq("tenant_school_id", school)
+            .eq("class_name", studentClassName).order("id", { ascending: false }).limit(500),
+          admin.from("assignments").select(columns).eq("tenant_school_id", school)
+            .eq("student_id", student.id).order("id", { ascending: false }).limit(500),
+        ]);
+        if (classAssignments.error) throw classAssignments.error;
+        if (personalAssignments.error) throw personalAssignments.error;
+        const unique = new Map<number, any>();
+        for (const item of [...(classAssignments.data ?? []), ...(personalAssignments.data ?? [])]) {
+          if (item.student_id == null || Number(item.student_id) === Number(student.id)) unique.set(Number(item.id), item);
+        }
+        const assignmentIds = [...unique.keys()];
+        const { data: submissions, error: submissionsError } = assignmentIds.length
+          ? await admin.from("assignment_submissions").select("assignment_id,status,submitted_at")
+              .eq("tenant_school_id", school).eq("student_id", student.id)
+              .in("assignment_id", assignmentIds).limit(500)
+          : { data: [], error: null };
+        if (submissionsError) throw submissionsError;
+        const submissionMap = new Map((submissions ?? []).map((item: any) => [Number(item.assignment_id), item]));
+        const assignments = [...unique.values()].map((item: any) => {
+          const submission = submissionMap.get(Number(item.id));
+          return { ...item, submission_status: submission?.status ?? "not_done", submitted_at: submission?.submitted_at ?? null };
+        });
+        return reply({ ok: true, student, assignments });
+      }
+
+      return reply({ message: "نوع بخش دانش‌آموز معتبر نیست." }, 400);
+    }
+
     if (action === "student_academic_summary") {
       if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
       const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")
