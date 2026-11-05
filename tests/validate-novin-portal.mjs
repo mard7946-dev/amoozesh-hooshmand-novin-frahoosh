@@ -198,3 +198,6 @@ assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub
 assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
 assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
 console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");
+
+assert.ok(!rootPortal.includes("raw.githack.com"), "Authenticated portal navigation must stay same-origin so sessionStorage is preserved");
+assert.ok(rootPortal.includes("location.href='parent-meetings.html?v=20261031-meetings-3'"), "All meeting navigation must use the current same-origin page");
