@@ -80,6 +80,8 @@
       .frahoosh-calendar-grid button[aria-pressed=true]{background:#166534;color:white;border-color:#166534}
       .frahoosh-calendar-foot{display:flex;justify-content:space-between;gap:8px;margin-top:12px}
       input[data-digital-time]{font-variant-numeric:tabular-nums;direction:ltr;text-align:center;min-height:42px}
+      .frahoosh-time-wrap input{flex:1;min-width:0}.frahoosh-time-picker{width:min(360px,100%)}
+      .frahoosh-time-fields{display:flex;align-items:end;justify-content:center;gap:12px}.frahoosh-time-fields label{display:grid;gap:6px;font-weight:600}.frahoosh-time-fields select{min-width:86px;padding:12px;border:1px solid #94a3b8;border-radius:9px;background:#fff;color:#172033;font:20px Tahoma,Arial,sans-serif;text-align:center}.frahoosh-time-fields>span{font-size:24px;padding-bottom:10px}.frahoosh-time-preview{font: bold 32px/1.5 Tahoma,Arial,sans-serif;direction:ltr;text-align:center;margin:4px 0 14px;font-variant-numeric:tabular-nums}.frahoosh-time-error{color:#b42318;min-height:20px}
       `;document.head.appendChild(style);
     }
     root.querySelectorAll('input[data-jalali-date]:not([data-jalali-ready])').forEach(input=>{
@@ -109,7 +111,26 @@
       }
       open.addEventListener('click',show);input.addEventListener('click',show);input.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
     });
-    root.querySelectorAll('input[data-digital-time]:not([data-digital-time-ready])').forEach(input=>{input.dataset.digitalTimeReady='1';input.type='time';input.step='60';input.inputMode='numeric';input.lang='fa-IR';input.placeholder='ساعت و دقیقه';});
+    root.querySelectorAll('input[data-digital-time]:not([data-digital-time-ready])').forEach(input=>{
+      input.dataset.digitalTimeReady='1';input.type='text';input.readOnly=true;input.inputMode='none';input.lang='en';input.autocomplete='off';input.placeholder='انتخاب ساعت (۲۴ ساعته)';input.setAttribute('aria-haspopup','dialog');
+      const wrap=document.createElement('span');wrap.className='frahoosh-date-wrap frahoosh-time-wrap';input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);
+      const open=document.createElement('button');open.type='button';open.className='frahoosh-date-button';open.textContent='🕒 انتخاب ساعت';open.setAttribute('aria-label','انتخاب ساعت دیجیتال');wrap.appendChild(open);
+      function show(){
+        const current=digits(input.value).match(/^(\\d{1,2}):(\\d{2})$/);let hour=current?Number(current[1]):'',minute=current?Number(current[2]):'';
+        const backdrop=document.createElement('div');backdrop.className='frahoosh-calendar-backdrop';
+        const panel=document.createElement('section');panel.className='frahoosh-calendar frahoosh-time-picker';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','انتخاب ساعت دیجیتال');
+        const options=(max,selected)=>'<option value="">--</option>'+Array.from({length:max+1},(_,i)=>'<option value="'+pad(i)+'" '+(selected===i?'selected':'')+'>'+fa(pad(i))+'</option>').join('');
+        panel.innerHTML='<h3>انتخاب ساعت دیجیتال</h3><p class="frahoosh-time-preview" data-preview>--:--</p><div class="frahoosh-time-fields"><label>ساعت (۰۰ تا ۲۳)<select data-hour dir="ltr">'+options(23,hour===''?-1:hour)+'</select></label><span>:</span><label>دقیقه (۰۰ تا ۵۹)<select data-minute dir="ltr">'+options(59,minute===''?-1:minute)+'</select></label></div><p class="frahoosh-time-error" data-error aria-live="polite"></p><div class="frahoosh-calendar-foot"><button type="button" data-clear>پاک کردن</button><button type="button" data-close>انصراف</button><button type="button" data-confirm>ثبت ساعت</button></div>';
+        const hourSelect=panel.querySelector('[data-hour]'),minuteSelect=panel.querySelector('[data-minute]'),preview=panel.querySelector('[data-preview]'),error=panel.querySelector('[data-error]');
+        function refresh(){preview.textContent=hourSelect.value&&minuteSelect.value?hourSelect.value+':'+minuteSelect.value:'--:--';error.textContent='';}
+        hourSelect.addEventListener('change',refresh);minuteSelect.addEventListener('change',refresh);refresh();
+        panel.querySelector('[data-close]').onclick=()=>backdrop.remove();
+        panel.querySelector('[data-clear]').onclick=()=>{input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));backdrop.remove();};
+        panel.querySelector('[data-confirm]').onclick=()=>{if(!hourSelect.value||!minuteSelect.value){error.textContent='لطفاً ساعت و دقیقه را انتخاب کنید.';return;}input.value=hourSelect.value+':'+minuteSelect.value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));backdrop.remove();};
+        backdrop.onclick=e=>{if(e.target===backdrop)backdrop.remove();};backdrop.appendChild(panel);document.body.appendChild(backdrop);
+      }
+      open.addEventListener('click',show);input.addEventListener('click',show);
+    });
   }
   if(typeof document!=='undefined'){
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>attachPickers());
