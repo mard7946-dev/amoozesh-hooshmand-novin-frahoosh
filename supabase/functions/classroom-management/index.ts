@@ -64,6 +64,44 @@ Deno.serve(async (req: Request) => {
     const school = profile.tenant_school_id;
     const callerName = clean(profile.display_name) || clean(profile.username);
     const teacherNames = [...new Set([callerName, clean(profile.username)].filter(Boolean))];
+    // Teacher-to-class ownership is keyed by teachers.id in teacher_classes.
+    // Do not infer ownership from display-name text in online_classes.teacher.
+    let teacherRecordId: number | null = null;
+    if (teacher) {
+      const accountNationalCode = clean(profile.national_code);
+      if (accountNationalCode) {
+        const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
+          .eq("tenant_school_id", school).eq("national_code", accountNationalCode).limit(1).maybeSingle();
+        if (teacherError) throw teacherError;
+        teacherRecordId = teacherRow?.id ?? null;
+      } else {
+        // Legacy accounts may have no national code in either account_settings
+        // or teachers. Allow only a unique exact full-name match with a
+        // matching active teacher_classes assignment; never use name alone.
+        const identityName = norm(callerName).replace(/\\s+/g, " ");
+        if (identityName) {
+          const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
+            .select("id,first_name,last_name,national_code")
+            .eq("tenant_school_id", school);
+          if (teacherRowsError) throw teacherRowsError;
+          const matches = (teacherRows ?? []).filter((row: any) =>
+            !clean(row.national_code) &&
+            norm(`${clean(row.first_name)} ${clean(row.last_name)}`).replace(/\\s+/g, " ") === identityName
+          );
+          if (matches.length === 1) {
+            const candidateId = matches[0].id;
+            const { data: linkedRows, error: linkedError } = await admin.from("teacher_classes")
+              .select("id,teacher_name").eq("tenant_school_id", school)
+              .eq("teacher_id", candidateId).eq("active", 1);
+            if (linkedError) throw linkedError;
+            const hasMatchingAssignment = (linkedRows ?? []).some((row: any) =>
+              teacherNames.some(name => norm(row.teacher_name) === norm(name))
+            );
+            if (hasMatchingAssignment) teacherRecordId = candidateId;
+          }
+        }
+      }
+    }
     let studentClassName = "";
     if (studentRole) {
       const { data: studentProfile, error: studentError } = await admin.from("students").select("class_name")
@@ -73,21 +111,18 @@ Deno.serve(async (req: Request) => {
     }
     const assertTeacherClass = async (className: string) => {
       if (manager) return true;
-      if (!className) return false;
-      const { data, error } = await admin.from("online_classes").select("id")
-        .eq("tenant_school_id", school).eq("class_name", className).in("teacher", teacherNames).limit(1);
+      if (!teacher || !teacherRecordId || !className) return false;
+      const { data, error } = await admin.from("teacher_classes").select("id")
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId)
+        .eq("class_name", className).eq("active", 1).limit(1);
       if (error) throw error;
       return !!data?.length;
     };
     const assertTeacherSubject = async (className: string, subject: string) => {
       if (schoolManager) return true;
-      if (!teacher || !className || !subject) return false;
-      const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
-        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
-      if (teacherError) throw teacherError;
-      if (!teacherRow?.id) return false;
+      if (!teacher || !teacherRecordId || !className || !subject) return false;
       const { data, error } = await admin.from("teacher_classes").select("id")
-        .eq("tenant_school_id", school).eq("teacher_id", teacherRow.id)
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId)
         .eq("class_name", className).eq("subject", subject).eq("active", 1).limit(1);
       if (error) throw error;
       return !!data?.length;
@@ -110,12 +145,26 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "list_classes") {
-      let q = admin.from("online_classes").select("id,title,subject,teacher,grade,class_name,start_time,end_time,day_of_week,status,tenant_school_id").eq("tenant_school_id", school).order("id", { ascending: false });
+      let q = admin.from("online_classes")
+        .select("id,title,subject,teacher,grade,class_name,start_time,end_time,day_of_week,status,tenant_school_id")
+        .eq("tenant_school_id", school).order("id", { ascending: false });
       if (studentRole) q = q.eq("class_name", studentClassName);
       else if (teacher && !manager) q = q.in("teacher", teacherNames);
       const { data, error } = await q.limit(500);
       if (error) throw error;
       return reply({ ok: true, classes: data ?? [] });
+    }
+
+    // Separate operational class selector. The online-class schedule/room listing above
+    // deliberately keeps its existing source and behavior.
+    if (action === "list_teacher_assignments") {
+      if (!teacher || !teacherRecordId) return reply({ message: "حساب دبیر به پرونده همکار متصل نیست." }, 403);
+      const { data, error } = await admin.from("teacher_classes")
+        .select("id,teacher_id,teacher_name,subject,grade,class_name,active")
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId).eq("active", 1)
+        .order("class_name", { ascending: true });
+      if (error) throw error;
+      return reply({ ok: true, assignments: data ?? [] });
     }
 
     if (action === "set_class_day") {
