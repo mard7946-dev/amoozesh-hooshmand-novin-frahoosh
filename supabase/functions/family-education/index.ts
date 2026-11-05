@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
   if (authError || !authData.user) return reply({ message: "نشست ورود معتبر نیست." }, 401);
 
   const { data: profile, error: profileError } = await db.from("account_settings")
-    .select("username,display_name,role,tenant_school_id,auth_user_id")
+    .select("username,display_name,role,national_code,tenant_school_id,auth_user_id")
     .eq("auth_user_id", authData.user.id).maybeSingle();
   if (profileError || !profile?.tenant_school_id) return reply({ message: "پروفایل مدرسه پیدا نشد." }, 403);
 
@@ -44,16 +44,33 @@ Deno.serve(async (req: Request) => {
   const school = profile.tenant_school_id;
   const isManager = managerRoles.includes(role);
   const isCounselor = counselorRoles.includes(role);
+  const isTeacher = ["teacher", "دبیر", "معلم"].some(x => role.includes(x));
+  const isDeputy = ["deputy", "executive", "educational", "cultural", "معاون"].some(x => role.includes(x));
   const { data: membership, error: membershipError } = await db.from("school_memberships")
-    .select("id").eq("auth_user_id", authData.user.id).eq("school_id", school).eq("is_active", true).maybeSingle();
-  if (membershipError || !membership) return reply({ message: "عضویت فعال مدرسه تأیید نشد." }, 403);
+    .select("id,role").eq("auth_user_id", authData.user.id).eq("school_id", school).eq("is_active", true).limit(20);
+  if (membershipError || !membership?.length) return reply({ message: "عضویت فعال مدرسه تأیید نشد." }, 403);
+  const membershipRoles = membership.map((m: any) => clean(m.role).toLowerCase());
+  const teacherRole = isTeacher || membershipRoles.some((r: string) => ["teacher", "دبیر", "معلم"].some(x => r.includes(x)));
+  const deputyRole = isDeputy || membershipRoles.some((r: string) => ["deputy", "executive", "educational", "cultural", "معاون"].some(x => r.includes(x)));
+  let assignedClassNames: string[] = [];
+  if (teacherRole) {
+    let teacherQuery = db.from("teachers").select("id").eq("tenant_school_id", school);
+    if (clean(profile.national_code)) teacherQuery = teacherQuery.eq("national_code", clean(profile.national_code));
+    else return reply({ message: "کد ملی حساب دبیر برای اتصال امن به کلاس‌ها ثبت نشده است." }, 403);
+    const { data: teacherRow, error: teacherError } = await teacherQuery.limit(1).maybeSingle();
+    if (teacherError || !teacherRow) return reply({ message: "پرونده همکار دبیر پیدا نشد." }, 403);
+    const { data: assignments, error: assignmentError } = await db.from("teacher_classes")
+      .select("class_name").eq("tenant_school_id", school).eq("teacher_id", teacherRow.id).eq("active", 1).limit(500);
+    if (assignmentError) return reply({ message: "کلاس‌های دبیر دریافت نشد." }, 500);
+    assignedClassNames = [...new Set((assignments ?? []).map((x: any) => clean(x.class_name)).filter(Boolean))];
+  }
 
   const input = await req.json().catch(() => ({}));
   const action = clean(input.action || "list");
   const actorName = clean(profile.display_name || profile.username || "کاربر");
 
   if (action === "create") {
-    if (!isManager && !isCounselor) return reply({ message: "فقط مشاور یا مدیر می‌تواند دعوت‌نامه ایجاد کند." }, 403);
+    if (!isManager && !isCounselor && !teacherRole && !deputyRole) return reply({ message: "برای ثبت دعوت‌نامه مجوز ندارید." }, 403);
     const requestedAudience = clean(input.audience);
     const studentId = Number(input.student_id);
     const hasStudent = Number.isInteger(studentId) && studentId > 0;
@@ -68,6 +85,8 @@ Deno.serve(async (req: Request) => {
     if (!["all", "class", "student"].includes(audience)) {
       return reply({ message: "نوع گیرنده معتبر نیست." }, 400);
     }
+    if (teacherRole && audience === "all") return reply({ message: "دبیر فقط می‌تواند از اولیای کلاس‌های خودش دعوت کند." }, 403);
+    if (teacherRole && audience === "class" && !assignedClassNames.includes(className)) return reply({ message: "این کلاس در برنامه تدریس شما نیست." }, 403);
     if (audience === "student" && !hasStudent) return reply({ message: "دانش‌آموز انتخاب‌شده معتبر نیست." }, 400);
     if (audience === "class" && !className) return reply({ message: "برای ارسال کلاسی، کلاس را انتخاب کنید." }, 400);
     if (!title || !date || !weekday) {
@@ -84,6 +103,13 @@ Deno.serve(async (req: Request) => {
       const { data: student, error: studentError } = await db.from("students")
         .select("id,first_name,last_name").eq("tenant_school_id", school).eq("id", studentId).maybeSingle();
       if (studentError || !student) return reply({ message: "دانش‌آموز پیدا نشد." }, 404);
+      if (teacherRole) {
+        const { data: studentClass, error: studentClassError } = await db.from("students")
+          .select("class_name").eq("tenant_school_id", school).eq("id", studentId).maybeSingle();
+        if (studentClassError || !studentClass || !assignedClassNames.includes(clean(studentClass.class_name))) {
+          return reply({ message: "این دانش‌آموز در کلاس‌های شما قرار ندارد." }, 403);
+        }
+      }
       studentRecord = student;
       studentName = [student.first_name, student.last_name].filter(Boolean).join(" ");
       const { data: links, error: linksError } = await db.from("parent_children")
@@ -163,8 +189,9 @@ Deno.serve(async (req: Request) => {
       .select("id,invitation_batch_id,student_id,student_name,parent_username,title,description,event_weekday,event_date_shamsi,event_time,venue,status,approval_status,manager_note,parent_note,invited_by_name,invited_at,responded_at,manager_reviewed_at")
       .eq("tenant_school_id", school).order("id", { ascending: false }).limit(1000);
     if (!isManager && !isCounselor) {
-      if (role !== "parent") return reply({ message: "دسترسی مجاز نیست." }, 403);
-      query = query.eq("parent_username", profile.username).eq("approval_status", "approved");
+      if (role === "parent") query = query.eq("parent_username", profile.username).eq("approval_status", "approved");
+      else if (teacherRole || deputyRole) query = query.eq("invited_by", authData.user.id);
+      else return reply({ message: "دسترسی مجاز نیست." }, 403);
     }
     const { data, error } = await query;
     if (error) return reply({ message: "دریافت دعوت‌نامه‌ها ناموفق بود." }, 500);
