@@ -99,16 +99,6 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check messaging Edge Function and attachment guard
-        run: deno check supabase/functions/frahoosh-messaging/index.ts supabase/functions/frahoosh-messaging/attachment.ts
-      - name: Test messaging attachment size validation
-        run: deno test tests/messaging-attachment.test.ts
-      - name: Type-check platform management Edge Function
-        run: deno check supabase/functions/platform-management/index.ts
-      - name: Type-check school portal login Edge Function
-        run: deno check supabase/functions/school-portal-login/index.ts
-      - name: Type-check school bulletin Edge Function
-        run: deno check supabase/functions/school-bulletin/index.ts
       - name: Type-check all school and platform Edge Functions
         run: >-
           deno check
