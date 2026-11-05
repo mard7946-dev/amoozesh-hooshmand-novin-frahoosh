@@ -204,4 +204,10 @@ assert.ok(!previewPortal.includes("raw.githack.com/mard7946-dev/amoozesh-hooshma
 assert.ok(previewPortal.includes("صفحه عملیاتی ارجاعات معاونت هنوز در این نسخه آماده نیست"), "Unavailable deputy referrals must fail locally with an explicit notice");
 const previewBuild = readFileSync("scripts/build-cloudflare-pages-preview.sh", "utf8");
 assert.ok(previewBuild.includes('_site/build-info.json') && previewBuild.includes('CF_PAGES_COMMIT_SHA') && previewBuild.includes('built_at'), "Cloudflare preview build must generate non-sensitive release metadata");
+
+const classroomFunction = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+assert.ok(classroomFunction.includes('from("teacher_classes").select("id,teacher_id,teacher_name,subject,grade,class_name,active")'), "Teacher class selector must load canonical teacher-to-class assignments");
+assert.ok(classroomFunction.includes('.eq("teacher_id", teacherRecordId).eq("active", 1)'), "Teacher class list must be scoped by authenticated teacher ID and active assignment");
+assert.ok(classroomFunction.includes('if (teacher && !manager) {') && classroomFunction.includes('const classNames = [...new Set((assignments ?? []).map'), "Teacher class list must derive the displayed class roster from assigned classes");
+assert.ok(!classroomFunction.includes('.in("teacher", teacherNames)'), "Teacher authorization must not depend on matching display-name strings");
 console.log("Cloudflare preview checks passed: same-origin navigation and generated build metadata.");
