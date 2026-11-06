@@ -9,7 +9,7 @@ assert.ok(portal.includes("sessionStorage.removeItem('frahoosh_token')"),'Logout
 assert.ok(modulePage.includes('id="classSelect"')&&modulePage.includes('id="studentList"'),'Teacher module page must provide class and student selectors');
 assert.ok(modulePage.includes("api('/auth/me')")&&modulePage.includes("role=session.user?.role||'user'"),'Module role and class access must be derived from the authenticated session, not URL parameters');
 assert.ok(modulePage.includes("api('/teacher/classes')")&&modulePage.includes("api('/teacher/students?gradeClass='"),'Module page must load assigned classes and the selected class roster');
-assert.ok(modulePage.includes("location.href='/portal.html?section='"),'Both module back buttons must return to the authenticated portal route');
+assert.ok(modulePage.includes("location.href='/portal.html?section='"),'Both server module back buttons must return to the authenticated portal route');
 assert.ok(server.includes("app.get('/api/teacher/classes', auth, allow('teacher','educational_deputy','pastoral_deputy'"),'Class list API must require an authenticated teaching role');
 assert.ok(server.includes("app.get('/api/teacher/students', auth, allow('teacher','educational_deputy','pastoral_deputy'"),'Roster API must require an authenticated teaching role');
 assert.ok(server.includes('WHERE teacher_user_id=$1 AND grade_class=$2 LIMIT 1'),'Roster API must verify the class is assigned to the signed-in teacher');
