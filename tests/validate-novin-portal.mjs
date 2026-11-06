@@ -87,6 +87,16 @@ for (const source of reportScripts) assert.doesNotThrow(() => new Function(sourc
 console.log("Reports checks passed: protected API, attendance/grades/discipline, exports, read-only behavior, and JavaScript syntax.");
 
 
+const financePage = readFileSync("finance.html", "utf8");
+const bulletinPage = readFileSync("bulletin.html", "utf8");
+const userAdminPage = readFileSync("users.html", "utf8");
+const counselingPage = readFileSync("counseling.html", "utf8");
+const examPage = readFileSync("exam-center.html", "utf8");
+assert.ok(financePage.includes("portal.html?step=panel&role=manager"), "Finance back button must return to the manager panel");
+assert.ok(bulletinPage.includes("portal.html?step=panel&role="), "Bulletin back button must preserve the signed-in role");
+assert.ok(userAdminPage.includes("portal.html?step=panel&role=manager"), "User administration back button must return to the manager panel");
+assert.ok(counselingPage.includes("portal.html?step=panel&role="), "Counseling back button must preserve the signed-in role");
+assert.ok(examPage.includes("portal.html?step=panel&role="), "Exam center back button must preserve the signed-in role");
 const parentPage = readFileSync("parent-management.html", "utf8");
 const parentFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
 assert.ok(html.includes("const parentTabs={") && html.includes("'درخواست انجمن اولیا و مربیان':'associations'"), "Parent menu entries must route to their matching operational tabs");
