@@ -30,6 +30,11 @@ assert.equal(
   JSON.stringify([["علوم", "ایازیان"], ["مطالعات", "کریمی"]]),
   "parallel lessons in one cell must be split into separate rows"
 );
+assert.equal(
+  JSON.stringify(result.rows.filter(row => row.class_name === "۷/۱" && row.period === 3).map(row => [row.start_time, row.end_time])),
+  JSON.stringify([["15:30", "15:55"], ["15:55", "16:20"]]),
+  "parallel lessons must occupy consecutive non-overlapping segments of the bell"
+);
 assert.equal(result.rows.find(row => row.teacher === "کلهر").weekday, "یکشنبه");
 assert.equal(result.rows.find(row => row.teacher === "کلهر").period, 3);
 
