@@ -32,6 +32,8 @@ const schedulePage = readFileSync("classroom/schedule.html", "utf8");
 assert.ok(schedulePage.includes("active_role:activeRole"), "Weekly schedule requests must carry the selected role");
 const classroomPage = readFileSync("classroom/index.html", "utf8");
 assert.ok(classroomPage.includes("active_role:activeRole") && classroomPage.includes("schedule_entry_id:scheduleEntryId"), "Room authorization must carry selected role and exact schedule entry");
+assert.ok(schedulePage.includes("../portal.html?step=panel&role="), "Weekly schedule back button must return to the selected user's portal panel");
+assert.ok(classroomPage.includes("../portal.html?step=panel&role="), "Leaving an online class must return to the user panel without clearing the authenticated session");
 const classroomManagementPage = readFileSync("classroom/management.html", "utf8");
 assert.ok(classroomManagementPage.includes("active_role:role"), "Classroom management requests must carry the selected role");
 
