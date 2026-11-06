@@ -625,7 +625,15 @@ Deno.serve(async (req: Request) => {
       const newRoomByKey = new Map<string, any>();
       for (const row of prepared) {
         const k = roomKey(row.class_name, row.subject, row.teacher_username);
-        if (roomByKey.has(k) || newRoomByKey.has(k)) continue;
+        const currentRoom = roomByKey.get(k);
+        if (currentRoom) {
+          if (clean(currentRoom.teacher) !== row.teacher_name) {
+            roomUpdates.set(Number(currentRoom.id), { teacher: row.teacher_name });
+            roomByKey.set(k, { ...currentRoom, teacher: row.teacher_name });
+          }
+          continue;
+        }
+        if (newRoomByKey.has(k)) continue;
         const existing = existingBySlot.get(teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username));
         let linkedRoom = existing?.online_class_id ? roomById.get(Number(existing.online_class_id)) : null;
         if (linkedRoom) {
