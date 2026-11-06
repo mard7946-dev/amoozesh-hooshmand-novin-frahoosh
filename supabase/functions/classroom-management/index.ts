@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildDisciplineScoreBatches, isSchoolManagerRole } from "./discipline-rules.ts";
+import { activeTeacherAccounts, resolveTeacherAccount } from "./teacher-identity.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -539,27 +540,8 @@ Deno.serve(async (req: Request) => {
 
       // A few school staff hold both a deputy post and an explicitly active teacher membership.
       // Resolve against active memberships, not only the primary account_settings.role.
-      const teacherMembershipIds = new Set((membershipsResult.data ?? [])
-        .filter((membership: any) => isTeacher(clean(membership.role)))
-        .map((membership: any) => clean(membership.auth_user_id)));
-      const teacherAccounts = (accountsResult.data ?? []).filter((account: any) =>
-        isTeacher(clean(account.role)) || teacherMembershipIds.has(clean(account.auth_user_id))
-      );
-      const resolveTeacher = (row: any) => {
-        const requested = clean(row.teacher_username);
-        if (requested) return teacherAccounts.find((account: any) => key(account.username) === key(requested)) ?? null;
-        const teacherKey = key(row.teacher ?? row.teacher_name);
-        if (!teacherKey) return null;
-        const matches = teacherAccounts.filter((account: any) => {
-          const displayKey = key(account.display_name);
-          const usernameKey = key(account.username);
-          const nameParts = norm(account.display_name).split(/\\s+/).filter(Boolean);
-          const lastNameKey = key(nameParts[nameParts.length - 1] || "");
-          return displayKey === teacherKey || usernameKey === teacherKey || displayKey.endsWith(teacherKey) ||
-            lastNameKey === teacherKey || (teacherKey.length >= 4 && lastNameKey.startsWith(teacherKey));
-        });
-        return matches.length === 1 ? matches[0] : null;
-      };
+      const teacherAccounts = activeTeacherAccounts(accountsResult.data ?? [], membershipsResult.data ?? []);
+      const resolveTeacher = (row: any) => resolveTeacherAccount(row, teacherAccounts);
 
       const classNameByKey = new Map<string, string>();
       for (const entry of [...(scheduleResult.data ?? []), ...(roomsResult.data ?? [])]) {
