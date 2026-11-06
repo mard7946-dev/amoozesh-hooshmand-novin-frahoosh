@@ -38,15 +38,15 @@ jobs:
         working-directory: server
         run: npm install --package-lock=false
       - name: Validate page structure and JavaScript syntax
-        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs
+        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs
       - name: Set up Deno for classroom authorization checks
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
       - name: Type-check classroom authorization and management Edge Functions
-        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-management/discipline-rules.ts
+        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts
       - name: Test Tehran schedule activation boundaries
-        run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts
+        run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts tests/teacher-identity.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
         env:
           DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
