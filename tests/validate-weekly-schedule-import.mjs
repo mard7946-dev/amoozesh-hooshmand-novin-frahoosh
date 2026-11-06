@@ -32,4 +32,15 @@ assert.deepEqual(
 );
 assert.equal(result.rows.find(row => row.teacher === "کلهر").weekday, "یکشنبه");
 assert.equal(result.rows.find(row => row.teacher === "کلهر").period, 3);
-console.log("Weekly schedule matrix import checks passed.");
+
+const management = readFileSync("classroom/management.html", "utf8");
+assert.ok(management.includes('id="managerClassAdmin"'), "class creation and class-level schedule tools must be grouped as manager controls");
+assert.ok(management.includes("$('managerClassAdmin').hidden=role==='teacher'"), "teacher must not see class creation, class listing administration, or per-class schedule selector");
+assert.ok(management.includes("$('teacherSchedulePanel').hidden=role!=='teacher'"), "daily/weekly schedule view must be reserved for teacher role");
+assert.ok(management.includes("window.frahooshParseWeeklyScheduleMatrix?.(matrix)"), "Excel upload must detect the wide-format schedule workbook");
+assert.ok(management.includes("for(const sheetName of wb.SheetNames)"), "Excel upload must search all sheets, including when the first sheet is only instructions");
+for (const match of management.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)) {
+  if (match[1].trim()) assert.doesNotThrow(() => new Function(match[1]), "classroom management inline script must be syntactically valid");
+}
+
+console.log("Weekly schedule matrix import and teacher-view checks passed.");
