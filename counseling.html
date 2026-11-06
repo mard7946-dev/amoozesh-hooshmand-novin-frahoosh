@@ -217,7 +217,7 @@ $('studentSearch').addEventListener('input',drawStudents);
 $('changeStudent').onclick=()=>{$('workspace').classList.add('hidden');selected=null;$('studentSearch').focus();window.scrollTo({top:0,behavior:'smooth'});};
 $('refresh').onclick=async()=>{try{students=await api('students');drawStudents();if(selected)await chooseStudent(selected.id);else notice('فهرست دانش‌آموزان تازه شد.','ok');}catch(e){notice('تازه‌سازی ناموفق بود: '+e.message,'error');}};
 $('print').onclick=()=>window.print();
-$('back').onclick=()=>location.href='portal.html';
+$('back').onclick=()=>location.href='portal.html?step=panel&role='+encodeURIComponent(sessionStorage.getItem('frahoosh_novin_role')||'counselor');
 $('familyInviteShortcut').onclick=()=>{openModule('family');$('familyPanel').scrollIntoView({behavior:'smooth',block:'start'});};
 (async()=>{
  $('who').textContent='در حال آماده‌سازی نشست ورود…';
