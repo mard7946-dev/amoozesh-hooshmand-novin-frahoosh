@@ -514,6 +514,11 @@ Deno.serve(async (req: Request) => {
 
       const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
       const key = (value: unknown) => norm(value).replace(/\\s+/g, "");
+      // Treat legacy spellings of dictation/composition as one subject when matching imported rows.
+      const subjectKey = (value: unknown) => {
+        const normalized = key(value).replace(/[\\s/\\-]/g, "").replace(/ء/g, "");
+        return ["املاوانشا", "املاانشا"].includes(normalized) ? "املاانشا" : normalized;
+      };
       const canonicalDay = (value: unknown) => days.find(day => key(day) === key(value)) ?? "";
       const canonicalTime = (value: unknown) => {
         const match = norm(value).match(/^(\\d{1,2}):(\\d{2})(?::\\d{2})?$/);
@@ -588,7 +593,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const teacherSlotKey = (className: unknown, weekday: unknown, period: unknown, subject: unknown, teacherUsername: unknown) =>
-        [key(className), key(weekday), Number(period), key(subject), key(teacherUsername)].join("::");
+        [key(className), key(weekday), Number(period), subjectKey(subject), key(teacherUsername)].join("::");
       const seen = new Set<string>();
       for (const row of prepared) {
         const rowKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
@@ -597,7 +602,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const roomKey = (className: unknown, subject: unknown, teacherUsername: unknown) =>
-        [key(className), key(subject), key(teacherUsername)].join("::");
+        [key(className), subjectKey(subject), key(teacherUsername)].join("::");
       const roomByKey = new Map<string, any>();
       for (const room of roomsResult.data ?? []) {
         const account = resolveTeacher({ teacher: room.teacher });
@@ -797,7 +802,13 @@ Deno.serve(async (req: Request) => {
 
     return reply({ message: "عملیات درخواستی پشتیبانی نمی‌شود." }, 400);
   } catch (error) {
-    console.error("classroom-management error", String(error));
-    return reply({ message: "عملیات انجام نشد. ساختار داده‌ها و دسترسی پایگاه داده را بررسی کنید.", detail: String((error as any)?.message ?? error).slice(0, 240) }, 500);
+    const detail = error && typeof error === "object"
+      ? String((error as any).message ?? (error as any).details ?? (error as any).hint ?? JSON.stringify(error))
+      : String(error);
+    console.error("classroom-management error", detail);
+    const message = detail.includes("این بازه زمانی با برنامه زنگ دیگری")
+      ? "تداخل ساعت در برنامه هفتگی پیدا شد. ردیف‌های هم‌کلاس یا دبیر را بررسی کنید."
+      : "عملیات انجام نشد. جزئیات خطا برای بررسی ثبت شد.";
+    return reply({ message, detail: detail.slice(0, 400) }, 500);
   }
 });
