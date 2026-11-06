@@ -513,15 +513,15 @@ Deno.serve(async (req: Request) => {
       if (!rows || rows.length < 1) return reply({ message: "فایل برنامه هفتگی خالی یا بیش از ۱۰۰۰ ردیف است." }, 400);
 
       const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
-      const key = (value: unknown) => norm(value).replace(/\\s+/g, "");
+      const key = (value: unknown) => norm(value).replace(/\s+/g, "");
       // Treat legacy spellings of dictation/composition as one subject when matching imported rows.
       const subjectKey = (value: unknown) => {
-        const normalized = key(value).replace(/[\\s/\\-]/g, "").replace(/ء/g, "");
+        const normalized = key(value).replace(/[\s/\-]/g, "").replace(/ء/g, "");
         return ["املاوانشا", "املاانشا"].includes(normalized) ? "املاانشا" : normalized;
       };
       const canonicalDay = (value: unknown) => days.find(day => key(day) === key(value)) ?? "";
       const canonicalTime = (value: unknown) => {
-        const match = norm(value).match(/^(\\d{1,2}):(\\d{2})(?::\\d{2})?$/);
+        const match = norm(value).match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
         if (!match) return "";
         const hour = Number(match[1]), minute = Number(match[2]);
         if (hour > 23 || minute > 59) return "";
