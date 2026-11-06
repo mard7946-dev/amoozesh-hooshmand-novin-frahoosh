@@ -31,7 +31,7 @@ const params=new URLSearchParams(location.search);
 const selected=params.get('module')||'';
 document.getElementById('moduleTitle').textContent=modules[selected]?selected:'بخش نامعتبر';
 document.getElementById('moduleDescription').textContent=modules[selected]||'بخش انتخاب‌شده معتبر نیست؛ به منوی پنل برگردید.';
-document.getElementById('back').onclick=()=>location.href='portal.html?step=panel&role=student';
+document.getElementById('back').onclick=()=>window.frahooshReturnToPanel('student');
 if(!modules[selected])document.getElementById('status').textContent='بخش انتخاب‌شده معتبر نیست.';
 if(selected==='نمره'){
  const token=sessionStorage.getItem('frahoosh_novin_access_token');
@@ -56,4 +56,4 @@ if(selected==='نمره'){
  })();
 }
 </script>
-</body></html>
+<script src="panel-return.js?v=20261106-return"></script></body></html>
