@@ -82,3 +82,9 @@ assert.ok(publish.includes("'platform-admin.html'"), "Changes to platform-admin.
 assert.ok(publish.includes("platform-admin.html"), "Pages artifact must include the platform admin page");
 
 console.log("Commercial platform checks passed: privileged API, audited SQL RPCs, school/subscription UI, secret-free browser code, and deployment packaging.");
+
+const schoolPortalLogin = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
+assert.ok(schoolPortalLogin.includes('.eq("is_active", true)'), "School portal login must query only active school memberships");
+assert.ok(schoolPortalLogin.includes("if (!memberships?.length)"), "School portal login must reject accounts without an active school membership");
+assert.ok(schoolPortalLogin.indexOf("if (!memberships?.length)") < schoolPortalLogin.indexOf("const membershipRoles"), "Active membership must be enforced before role authorization");
+console.log("School portal authentication checks passed: active school membership is mandatory before issuing a portal session.");
