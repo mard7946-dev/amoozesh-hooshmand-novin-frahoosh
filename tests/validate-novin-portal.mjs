@@ -216,3 +216,15 @@ assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub
 assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
 assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
 console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");
+
+
+const teacherClassroomPage = readFileSync("classroom/management.html", "utf8");
+assert.ok(teacherClassroomPage.includes('id="teacherDailyButton"') && teacherClassroomPage.includes('id="teacherWeeklyButton"'), "Teacher class home must expose separate daily and weekly schedule actions");
+assert.ok(teacherClassroomPage.includes("classroom-authorize") && teacherClassroomPage.includes("active_role:'teacher'"), "Teacher schedule must be loaded from the authenticated classroom authorization endpoint");
+assert.ok(teacherClassroomPage.includes("entry.is_active===true") && teacherClassroomPage.includes("entry.day_enabled!==true"), "Daily entry must be enabled only when server authorization confirms the active time slot and management activation");
+assert.ok(teacherClassroomPage.includes("schedule_entry_id") && teacherClassroomPage.includes("room_id"), "Daily entry must pass the exact room and schedule entry to classroom authorization");
+assert.ok(teacherClassroomPage.includes("function renderTeacherWeekly()") && teacherClassroomPage.includes("teacherWeekdays.map(day=>"), "Weekly view must display the full school week by weekday");
+const teacherPageScripts = [...teacherClassroomPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(teacherPageScripts.length > 0, "Teacher classroom page must contain its operational script");
+for (const source of teacherPageScripts) assert.doesNotThrow(() => new Function(source), "Teacher classroom page script must have valid JavaScript syntax");
+console.log("Teacher classroom schedule checks passed: daily/weekly views, server-authorized active slots, exact room routing, and JavaScript syntax.");
