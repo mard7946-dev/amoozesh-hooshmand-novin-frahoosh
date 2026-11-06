@@ -88,3 +88,9 @@ assert.ok(schoolPortalLogin.includes('.eq("is_active", true)'), "School portal l
 assert.ok(schoolPortalLogin.includes("if (!memberships?.length)"), "School portal login must reject accounts without an active school membership");
 assert.ok(schoolPortalLogin.indexOf("if (!memberships?.length)") < schoolPortalLogin.indexOf("const membershipRoles"), "Active membership must be enforced before role authorization");
 console.log("School portal authentication checks passed: active school membership is mandatory before issuing a portal session.");
+
+const rosterPolicyMigration = readFileSync("supabase/migrations/20261106193946_scope_student_roster_read_to_teacher_schedule_20261106.sql", "utf8");
+assert.ok(rosterPolicyMigration.includes('DROP POLICY IF EXISTS "staff students select"') && rosterPolicyMigration.includes('DROP POLICY IF EXISTS "students staff read"'), "Broad all-staff student roster policies must be removed");
+assert.ok(rosterPolicyMigration.includes("public.weekly_schedule_entries") && rosterPolicyMigration.includes("w.teacher_username") && rosterPolicyMigration.includes("private.frahoosh_current_school_id()"), "Teacher student visibility must be derived from the authenticated teacher's school-scoped weekly schedule");
+assert.ok(rosterPolicyMigration.includes("students_teacher_assigned_read") && rosterPolicyMigration.includes("students_management_read"), "Student roster read access must distinguish assigned teachers from school management");
+console.log("Student roster RLS checks passed: teachers are limited to students in their assigned weekly schedule.");
