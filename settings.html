@@ -139,11 +139,11 @@ document.getElementById("serverForm").onsubmit=async event=>{
 };
 document.getElementById("provider").onchange=updateProviderFields;
 document.getElementById("resetServer").onclick=resetServer;
-document.getElementById("back").onclick=()=>location.href="portal.html?step=panel&role=manager";
+document.getElementById("back").onclick=()=>window.frahooshReturnToPanel("manager");
 (async()=>{
  if(!token||role!=="manager"){message("دسترسی مدیر تأیید نشد. لطفاً از پنل مدیریت خارج شوید و دوباره وارد شوید.",true);document.getElementById("schoolCard").classList.add("hidden");document.getElementById("serverCard").classList.add("hidden");return;}
  try{await load();}catch(e){message(e.message,true);document.getElementById("schoolCard").classList.add("hidden");document.getElementById("serverCard").classList.add("hidden");}
 })();
 </script>
-</body>
+<script src="panel-return.js?v=20261106-return"></script></body>
 </html>
