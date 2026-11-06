@@ -106,6 +106,9 @@ Deno.serve(async (req: Request) => {
       console.error("school portal membership lookup failed", membershipError.message);
       return reply({ message: "بررسی سمت‌های فعال حساب انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
     }
+    if (!memberships?.length) {
+      return reply({ message: "عضویت فعال این حساب در مدرسه تأیید نشد." }, 403);
+    }
     const membershipRoles = new Set((memberships ?? []).map((item: any) => normalize(item.role)));
     if (!roleAllowed(profile.role, expectedRole) && !membershipRoles.has(normalize(expectedRole))) {
       return reply({ message: "این حساب مجوز ورود به بخش انتخاب‌شده را ندارد." }, 403);
