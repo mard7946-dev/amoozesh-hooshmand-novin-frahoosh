@@ -51,8 +51,8 @@ assert.match(picker, /دقیقه/, 'digital control must expose a minute value')
 assert.match(picker, /frahoosh-time-arrow/, 'hour and minute must have explicit up/down arrow buttons');
 assert.match(picker, /input\.type='hidden'/);
 assert.doesNotMatch(picker, /input\.type='time'/, 'native time controls can open an analog clock on mobile');
-assert.match(picker, /input\.min='0'/);
-assert.match(picker, /input\.max=String\(max\)/);
+assert.match(picker, /number\.min='0'/);
+assert.match(picker, /number\.max=String\(max\)/);
 assert.match(picker, /انتخاب ساعت دیجیتال|ساعت/);
 assert.match(picker, /firstDay=\(first\.getUTCDay\(\)\+1\)%7/);
 console.log('Jalali date and picker validation passed.');
