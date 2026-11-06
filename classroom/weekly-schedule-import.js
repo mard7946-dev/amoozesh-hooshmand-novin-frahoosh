@@ -57,14 +57,21 @@
           skipped.push({ row: rowIndex + 1, class_name: className, weekday: column.weekday, period: column.period, value: String(cell) });
           continue;
         }
-        for (const pair of pairs) {
+        const slotTimes = { 1: ["13:30", "14:20"], 2: ["14:30", "15:20"], 3: ["15:30", "16:20"] }[column.period] || ["", ""];
+        const toMinutes = value => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+        const toClock = value => String(Math.floor(value / 60)).padStart(2, "0") + ":" + String(value % 60).padStart(2, "0");
+        const slotStart = toMinutes(slotTimes[0]), slotEnd = toMinutes(slotTimes[1]);
+        for (const [pairIndex, pair] of pairs.entries()) {
           if (!pair.subject || !pair.teacher) {
             skipped.push({ row: rowIndex + 1, class_name: className, weekday: column.weekday, period: column.period, value: String(cell) });
             continue;
           }
-          const times = { 1: ["13:30", "14:20"], 2: ["14:30", "15:20"], 3: ["15:30", "16:20"] }[column.period] || ["", ""];
+          // Parallel subjects inside one class bell share the bell in equal consecutive segments.
+          // This prevents same-class time collisions while preserving the original bell boundary.
+          const start = slotStart + Math.floor((slotEnd - slotStart) * pairIndex / pairs.length);
+          const end = slotStart + Math.floor((slotEnd - slotStart) * (pairIndex + 1) / pairs.length);
           rows.push({ class_name: className, weekday: column.weekday, period: column.period, subject: pair.subject, teacher: pair.teacher,
-            grade: gradeFor(className), start_time: times[0], end_time: times[1], academic_year: academicYear });
+            grade: gradeFor(className), start_time: toClock(start), end_time: toClock(end), academic_year: academicYear });
         }
       }
     }
