@@ -10,6 +10,10 @@ const reply = (body: unknown, status = 200) =>
 const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
+const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+const canonicalWeekday = (value: unknown) => weekdays.find(day =>
+  norm(day).replace(/\s+/g, "") === norm(value).replace(/\s+/g, "")
+) ?? String(value ?? "").trim();
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -159,7 +163,7 @@ Deno.serve(async (req: Request) => {
       const explicitlyDisabled = ["inactive", "غیرفعال", "لغو", "لغوشده", "cancelled", "canceled", "disabled"].includes(status);
       const startTime = clean(entry.start_time) || clean(room?.start_time);
       const endTime = clean(entry.end_time) || clean(room?.end_time);
-      const weekday = clean(entry.weekday);
+      const weekday = canonicalWeekday(entry.weekday);
       const period = Number(entry.period);
       const active = Boolean(room && entry.day_enabled === true && !explicitlyDisabled && isScheduleSlotActive(weekday, startTime, endTime, clock));
       return [{
