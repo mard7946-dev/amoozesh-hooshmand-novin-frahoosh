@@ -193,11 +193,11 @@ Deno.serve(async (req: Request) => {
         if (!requestedEntryId || !matchingEntry) return reply({ message: "برای ورود، زنگ باید از برنامه روزانه خودتان انتخاب شود." }, 403);
         if (!matchingEntry.is_active) return reply({ message: "این زنگ هنوز توسط مدیریت فعال نشده است." }, 403);
         return reply({ ok: true, profile: {
-          username: clean(profile.username), display_name: name, role, main_role, main_role: clean(profile.role), active_role: role === "teacher" ? "teacher" : role, class_name: className, active_role: role === "teacher" ? "teacher" : requestedRole || role,
+          username: clean(profile.username), display_name: name, role, main_role: clean(profile.role), class_name: className, active_role: role === "teacher" ? "teacher" : requestedRole || role,
         }, room: { ...room, schedule_entry_id: requestedEntryId } });
       }
       return reply({ ok: true, profile: {
-        username: clean(profile.username), display_name: name, role: clean(profile.role), class_name: className,
+        username: clean(profile.username), display_name: name, role, main_role: clean(profile.role), active_role: role === "teacher" ? "teacher" : role, class_name: className,
       }, room });
     }
     return reply({ ok: true, profile: {
