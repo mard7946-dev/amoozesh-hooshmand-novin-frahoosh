@@ -123,16 +123,33 @@ document.getElementById("recoverPassword").onclick=()=>{document.getElementById(
 document.getElementById("changeRole").onclick=()=>go("home");
 document.getElementById("home").onclick=()=>go("home");
 const initial=roles.find(x=>x.id===roleId);
-if(step==='home'||!initial){
- showStep('home');
-}else{
- // لینک‌های شش‌آیکونه دست‌نخورده می‌مانند؛ ورود به پنل فقط پس از احراز هویت انجام می‌شود.
- // ورود به کلاس آنلاین و برنامه هفتگی از نشست تأییدشده همین صفحه، با SSO انجام می‌شود.
+const panelRoleAliases={manager:'manager',deputy:'deputy',educational_deputy:'deputy',executive_deputy:'deputy',pastoral_deputy:'deputy',teacher:'teacher',parent:'parent',student:'student',counselor:'counselor',advisor:'counselor'};
+async function restorePanelOrShowEntry(){
+ if(step==='panel'){
+  const savedToken=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+  const savedRole=sessionStorage.getItem('frahoosh_novin_role')||'';
+  const panelRole=panelRoleAliases[savedRole]||roleId;
+  if(savedToken&&roles.some(x=>x.id===panelRole)){
+   try{
+    const response=await fetch(supabaseUrl+'/auth/v1/user',{headers:{apikey:supabaseAnonKey,'Authorization':'Bearer '+savedToken}});
+    const user=await response.json().catch(()=>({}));
+    if(!response.ok||!user.id)throw new Error('نشست ورود معتبر نیست.');
+    portalAuthToken=savedToken;
+    openAuthenticatedPanel(panelRole,savedRole||panelRole,user.user_metadata?.school_name||'مدرسه شما');
+    return;
+   }catch(error){
+    sessionStorage.removeItem('frahoosh_novin_access_token');
+    sessionStorage.removeItem('frahoosh_novin_role');
+   }
+  }
+ }
+ if(step==='home'||!initial){showStep('home');return;}
  render(initial.id);
  showStep('login');
  document.getElementById('loginTitle').textContent='ورود به پنل '+selectedRole.title+' فراهوش';
- document.getElementById('loginDescription').textContent='پس از ورود موفق، از بخش کلاس آنلاین یا برنامه هفتگی استفاده کنید؛ برای ورود به کلاس دوباره نام کاربری و رمز نمی‌خواهید.';
+ document.getElementById('loginDescription').textContent='پس از ورود موفق، از بخش کلاس آنلاین یا برنامه هفتگی استفاده کنید؛ برای ورود به کلاس دوباره نام کاربری نمی‌خواهید.';
 }
+restorePanelOrShowEntry();
 
 
 function updatePersianDateClock(){
