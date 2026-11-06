@@ -522,29 +522,50 @@ Deno.serve(async (req: Request) => {
         return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
       };
 
-      const [accountsResult, roomsResult, scheduleResult] = await Promise.all([
-        admin.from("account_settings").select("username,display_name,role")
+      const [accountsResult, membershipsResult, roomsResult, scheduleResult] = await Promise.all([
+        admin.from("account_settings").select("username,display_name,role,auth_user_id")
           .eq("tenant_school_id", school).limit(1000),
+        admin.from("school_memberships").select("auth_user_id,role")
+          .eq("school_id", school).eq("is_active", true).limit(2000),
         admin.from("online_classes").select("id,title,subject,lesson,teacher,class_name,grade,status")
           .eq("tenant_school_id", school).limit(1000),
         admin.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,teacher_username,online_class_id,start_time,end_time,day_enabled")
           .eq("tenant_school_id", school).limit(2000),
       ]);
       if (accountsResult.error) throw accountsResult.error;
+      if (membershipsResult.error) throw membershipsResult.error;
       if (roomsResult.error) throw roomsResult.error;
       if (scheduleResult.error) throw scheduleResult.error;
 
-      const teacherAccounts = (accountsResult.data ?? []).filter((account: any) => isTeacher(clean(account.role)));
+      // A few school staff hold both a deputy post and an explicitly active teacher membership.
+      // Resolve against active memberships, not only the primary account_settings.role.
+      const teacherMembershipIds = new Set((membershipsResult.data ?? [])
+        .filter((membership: any) => isTeacher(clean(membership.role)))
+        .map((membership: any) => clean(membership.auth_user_id)));
+      const teacherAccounts = (accountsResult.data ?? []).filter((account: any) =>
+        isTeacher(clean(account.role)) || teacherMembershipIds.has(clean(account.auth_user_id))
+      );
       const resolveTeacher = (row: any) => {
         const requested = clean(row.teacher_username);
         if (requested) return teacherAccounts.find((account: any) => key(account.username) === key(requested)) ?? null;
-        const teacherKey = key(row.teacher);
-        const matches = teacherAccounts.filter((account: any) =>
-          key(account.display_name) === teacherKey || key(account.username) === teacherKey
-        );
+        const teacherKey = key(row.teacher ?? row.teacher_name);
+        if (!teacherKey) return null;
+        const matches = teacherAccounts.filter((account: any) => {
+          const displayKey = key(account.display_name);
+          const usernameKey = key(account.username);
+          const nameParts = norm(account.display_name).split(/\\s+/).filter(Boolean);
+          const lastNameKey = key(nameParts[nameParts.length - 1] || "");
+          return displayKey === teacherKey || usernameKey === teacherKey || displayKey.endsWith(teacherKey) ||
+            lastNameKey === teacherKey || (teacherKey.length >= 4 && lastNameKey.startsWith(teacherKey));
+        });
         return matches.length === 1 ? matches[0] : null;
       };
 
+      const classNameByKey = new Map<string, string>();
+      for (const entry of [...(scheduleResult.data ?? []), ...(roomsResult.data ?? [])]) {
+        const className = clean(entry.class_name);
+        if (className && !classNameByKey.has(key(className))) classNameByKey.set(key(className), className);
+      }
       const prepared = (rows as any[]).map((raw, index) => {
         const weekday = canonicalDay(raw.weekday ?? raw.day_of_week);
         const period = Number(norm(raw.period));
@@ -556,12 +577,12 @@ Deno.serve(async (req: Request) => {
         const endTime = canonicalTime(raw.end_time) || configuredTimes?.[1] || "";
         const teacherAccount = resolveTeacher(raw);
         return {
-          rowNumber: index + 2,
-          class_name: clean(raw.class_name),
+          rowNumber: Number(raw.source_row) || index + 2,
+          class_name: classNameByKey.get(key(raw.class_name)) || clean(raw.class_name),
           weekday,
           period,
           subject: clean(raw.subject),
-          teacher_name: clean(raw.teacher_name || raw.teacher),
+          teacher_name: clean(teacherAccount?.display_name) || clean(raw.teacher_name || raw.teacher),
           teacher_username: clean(teacherAccount?.username),
           grade: clean(raw.grade),
           room: clean(raw.room),
@@ -579,35 +600,44 @@ Deno.serve(async (req: Request) => {
       );
       if (invalid.length) {
         const rowNumbers = invalid.slice(0, 12).map(row => row.rowNumber).join("، ");
+        const unresolvedTeachers = [...new Set(invalid.filter(row => !row.teacher_username).map(row => row.teacher_name))].slice(0, 12).join("، ");
         return reply({
-          message: "ردیف‌های " + rowNumbers + " ناقص یا نامعتبرند. کلاس، روز، شماره زنگ، درس، دبیر دارای حساب فعال، ساعت شروع و پایان را بررسی کنید.",
+          message: "ردیف‌های " + rowNumbers + " ناقص یا نامعتبرند. کلاس، روز، شماره زنگ، درس و ساعت را بررسی کنید." +
+            (unresolvedTeachers ? " حساب دبیر فعال یا تطبیق نام پیدا نشد: " + unresolvedTeachers : ""),
           invalid_rows: invalid.length,
+          unresolved_teachers: unresolvedTeachers ? unresolvedTeachers.split("، ") : [],
         }, 400);
       }
 
+      const teacherSlotKey = (className: unknown, weekday: unknown, period: unknown, subject: unknown, teacherUsername: unknown) =>
+        [key(className), key(weekday), Number(period), key(subject), key(teacherUsername)].join("::");
       const seen = new Set<string>();
       for (const row of prepared) {
-        const rowKey = [key(row.class_name), key(row.weekday), row.period, key(row.subject), key(row.teacher_name)].join("::");
-        if (seen.has(rowKey)) return reply({ message: "برای یک کلاس، روز و شماره زنگ تکراری در فایل وجود دارد: " + row.class_name + " · " + row.weekday + " · زنگ " + row.period }, 400);
+        const rowKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
+        if (seen.has(rowKey)) return reply({ message: "برای یک کلاس، روز، زنگ و دبیر یکسان ردیف تکراری وجود دارد: " + row.class_name + " · " + row.weekday + " · زنگ " + row.period }, 400);
         seen.add(rowKey);
       }
 
-      const roomKey = (className: unknown, subject: unknown, teacher: unknown) =>
-        [key(className), key(subject), key(teacher)].join("::");
+      const roomKey = (className: unknown, subject: unknown, teacherUsername: unknown) =>
+        [key(className), key(subject), key(teacherUsername)].join("::");
       const roomByKey = new Map<string, any>();
       for (const room of roomsResult.data ?? []) {
-        const k = roomKey(room.class_name, room.subject || room.lesson || room.title, room.teacher);
+        const account = resolveTeacher({ teacher: room.teacher });
+        const teacherUsername = account?.username || room.teacher;
+        const k = roomKey(room.class_name, room.subject || room.lesson || room.title, teacherUsername);
         if (!roomByKey.has(k)) roomByKey.set(k, room);
       }
       const existingBySlot = new Map<string, any>();
       for (const entry of scheduleResult.data ?? []) {
-        const k = [key(entry.class_name), key(entry.weekday), Number(entry.period), key(entry.subject), key(entry.teacher_name)].join("::");
+        const account = resolveTeacher({ teacher: entry.teacher_name });
+        const teacherUsername = entry.teacher_username || account?.username || entry.teacher_name;
+        const k = teacherSlotKey(entry.class_name, entry.weekday, entry.period, entry.subject, teacherUsername);
         if (!existingBySlot.has(k)) existingBySlot.set(k, entry);
       }
 
       let inserted = 0, updated = 0, roomsCreated = 0;
       for (const row of prepared) {
-        const k = roomKey(row.class_name, row.subject, row.teacher_name);
+        const k = roomKey(row.class_name, row.subject, row.teacher_username);
         let room = roomByKey.get(k);
         if (!room) {
           const { data, error } = await admin.from("online_classes").insert({
@@ -630,9 +660,15 @@ Deno.serve(async (req: Request) => {
           room = data;
           roomByKey.set(k, room);
           roomsCreated++;
+        } else if (clean(room.teacher) !== row.teacher_name) {
+          const { error } = await admin.from("online_classes").update({ teacher: row.teacher_name })
+            .eq("id", room.id).eq("tenant_school_id", school);
+          if (error) throw error;
+          room = { ...room, teacher: row.teacher_name };
+          roomByKey.set(k, room);
         }
 
-        const slotKey = [key(row.class_name), key(row.weekday), row.period, key(row.subject), key(row.teacher_name)].join("::");
+        const slotKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
         const existing = existingBySlot.get(slotKey);
         const scheduleEntry = {
           class_name: row.class_name,
