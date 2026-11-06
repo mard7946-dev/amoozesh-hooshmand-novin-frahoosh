@@ -705,7 +705,7 @@ Deno.serve(async (req: Request) => {
 
       const existingCount = scheduleRows.filter(row => !!row.id).length;
       const { data: savedRows, error: saveError } = await admin.from("weekly_schedule_entries")
-        .upsert(scheduleRows, { onConflict: "id" }).select("id");
+        .upsert(scheduleRows, { onConflict: "id", defaultToNull: false }).select("id");
       if (saveError) throw saveError;
       return reply({
         ok: true, saved: savedRows?.length ?? scheduleRows.length,
