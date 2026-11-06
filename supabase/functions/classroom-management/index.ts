@@ -513,10 +513,10 @@ Deno.serve(async (req: Request) => {
       if (!rows || rows.length < 1) return reply({ message: "فایل برنامه هفتگی خالی یا بیش از ۱۰۰۰ ردیف است." }, 400);
 
       const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
-      const key = (value: unknown) => norm(value).replace(/\s+/g, "");
+      const key = (value: unknown) => norm(value).replace(/\\s+/g, "");
       const canonicalDay = (value: unknown) => days.find(day => key(day) === key(value)) ?? "";
       const canonicalTime = (value: unknown) => {
-        const match = norm(value).match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        const match = norm(value).match(/^(\\d{1,2}):(\\d{2})(?::\\d{2})?$/);
         if (!match) return "";
         const hour = Number(match[1]), minute = Number(match[2]);
         if (hour > 23 || minute > 59) return "";
@@ -538,25 +538,21 @@ Deno.serve(async (req: Request) => {
       if (roomsResult.error) throw roomsResult.error;
       if (scheduleResult.error) throw scheduleResult.error;
 
-      // A few school staff hold both a deputy post and an explicitly active teacher membership.
-      // Resolve against active memberships, not only the primary account_settings.role.
       const teacherAccounts = activeTeacherAccounts(accountsResult.data ?? [], membershipsResult.data ?? []);
       const resolveTeacher = (row: any) => resolveTeacherAccount(row, teacherAccounts);
-
       const classNameByKey = new Map<string, string>();
       for (const entry of [...(scheduleResult.data ?? []), ...(roomsResult.data ?? [])]) {
         const className = clean(entry.class_name);
         if (className && !classNameByKey.has(key(className))) classNameByKey.set(key(className), className);
       }
+
       const prepared = (rows as any[]).map((raw, index) => {
         const weekday = canonicalDay(raw.weekday ?? raw.day_of_week);
         const period = Number(norm(raw.period));
         const periodTimes: Record<number, [string, string]> = {
           1: ["13:30", "14:20"], 2: ["14:30", "15:20"], 3: ["15:30", "16:20"],
         };
-        const configuredTimes = periodTimes[Number(norm(raw.period))];
-        const startTime = canonicalTime(raw.start_time) || configuredTimes?.[0] || "";
-        const endTime = canonicalTime(raw.end_time) || configuredTimes?.[1] || "";
+        const configuredTimes = periodTimes[period];
         const teacherAccount = resolveTeacher(raw);
         return {
           rowNumber: Number(raw.source_row) || index + 2,
@@ -569,8 +565,8 @@ Deno.serve(async (req: Request) => {
           grade: clean(raw.grade),
           room: clean(raw.room),
           academic_year: clean(raw.academic_year),
-          start_time: startTime,
-          end_time: endTime,
+          start_time: canonicalTime(raw.start_time) || configuredTimes?.[0] || "",
+          end_time: canonicalTime(raw.end_time) || configuredTimes?.[1] || "",
         };
       });
 
@@ -609,107 +605,100 @@ Deno.serve(async (req: Request) => {
         const k = roomKey(room.class_name, room.subject || room.lesson || room.title, teacherUsername);
         if (!roomByKey.has(k)) roomByKey.set(k, room);
       }
+
       const existingBySlot = new Map<string, any>();
+      const roomById = new Map<number, any>();
+      for (const room of roomsResult.data ?? []) roomById.set(Number(room.id), room);
       for (const entry of scheduleResult.data ?? []) {
         const account = resolveTeacher({ teacher: entry.teacher_name });
         const teacherUsername = entry.teacher_username || account?.username || entry.teacher_name;
         const k = teacherSlotKey(entry.class_name, entry.weekday, entry.period, entry.subject, teacherUsername);
         if (!existingBySlot.has(k)) existingBySlot.set(k, entry);
-        // Older import stored the parallel 8/1 Saturday bell as one combined subject.
-        // Reuse that row for the first half (science); the second half is inserted separately.
         if (key(entry.class_name) === key("۸/۱") && key(entry.weekday) === key("شنبه") &&
             Number(entry.period) === 2 && key(entry.subject) === key("علوم / مطالعات")) {
           existingBySlot.set(teacherSlotKey(entry.class_name, entry.weekday, entry.period, "علوم", teacherUsername), entry);
         }
       }
 
-      let inserted = 0, updated = 0, roomsCreated = 0;
+      // Resolve or create each class/subject/teacher room once, not once per timetable row.
+      const roomUpdates = new Map<number, Record<string, unknown>>();
+      const newRoomByKey = new Map<string, any>();
       for (const row of prepared) {
         const k = roomKey(row.class_name, row.subject, row.teacher_username);
-        const slotKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
-        const existing = existingBySlot.get(slotKey);
-        let room = roomByKey.get(k);
-        if (!room && existing?.online_class_id) {
-          const linkedRoom = (roomsResult.data ?? []).find((item: any) => Number(item.id) === Number(existing.online_class_id));
-          if (linkedRoom) {
-            room = linkedRoom;
-            if (key(room.subject || room.lesson || room.title) !== key(row.subject)) {
-              const patch = {
-                title: row.subject + " · " + row.class_name,
-                subject: row.subject,
-                lesson: row.subject,
-                teacher: row.teacher_name,
-                grade: row.grade,
-                start_time: row.start_time,
-                end_time: row.end_time,
-                day_of_week: row.weekday,
-              };
-              const { error } = await admin.from("online_classes").update(patch)
-                .eq("id", room.id).eq("tenant_school_id", school);
-              if (error) throw error;
-              room = { ...room, ...patch };
-            }
-            roomByKey.set(k, room);
+        if (roomByKey.has(k) || newRoomByKey.has(k)) continue;
+        const existing = existingBySlot.get(teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username));
+        let linkedRoom = existing?.online_class_id ? roomById.get(Number(existing.online_class_id)) : null;
+        if (linkedRoom) {
+          const patch: Record<string, unknown> = {};
+          if (key(linkedRoom.subject || linkedRoom.lesson || linkedRoom.title) !== key(row.subject)) {
+            Object.assign(patch, {
+              title: row.subject + " · " + row.class_name, subject: row.subject, lesson: row.subject,
+              teacher: row.teacher_name, grade: row.grade, start_time: row.start_time,
+              end_time: row.end_time, day_of_week: row.weekday,
+            });
+          } else if (clean(linkedRoom.teacher) !== row.teacher_name) {
+            patch.teacher = row.teacher_name;
           }
-        }
-        if (!room) {
-          const { data, error } = await admin.from("online_classes").insert({
-            title: row.subject + " · " + row.class_name,
-            class_name: row.class_name,
-            subject: row.subject,
-            lesson: row.subject,
-            teacher: row.teacher_name,
-            grade: row.grade,
-            start_time: row.start_time,
-            end_time: row.end_time,
-            day_of_week: row.weekday,
-            status: "برنامه‌ریزی‌شده",
-            tenant_school_id: school,
-            activated_by: callerName,
-            auto_activate: false,
-            auto_close: false,
-          }).select("id,title,subject,lesson,teacher,class_name,grade,status").single();
-          if (error) throw error;
-          room = data;
-          roomByKey.set(k, room);
-          roomsCreated++;
-        } else if (clean(room.teacher) !== row.teacher_name) {
-          const { error } = await admin.from("online_classes").update({ teacher: row.teacher_name })
-            .eq("id", room.id).eq("tenant_school_id", school);
-          if (error) throw error;
-          room = { ...room, teacher: row.teacher_name };
-          roomByKey.set(k, room);
-        }
-
-        const scheduleEntry = {
-          class_name: row.class_name,
-          weekday: row.weekday,
-          period: row.period,
-          subject: row.subject,
-          teacher_name: row.teacher_name,
-          teacher_username: row.teacher_username,
-          room: row.room || null,
-          academic_year: row.academic_year || null,
-          online_class_id: room.id,
-          start_time: row.start_time,
-          end_time: row.end_time,
-          day_enabled: existing?.day_enabled === true,
-          tenant_school_id: school,
-        };
-        if (existing) {
-          const { error } = await admin.from("weekly_schedule_entries").update(scheduleEntry)
-            .eq("id", existing.id).eq("tenant_school_id", school);
-          if (error) throw error;
-          updated++;
-          existingBySlot.set(slotKey, { ...scheduleEntry, id: existing.id });
+          if (Object.keys(patch).length) roomUpdates.set(Number(linkedRoom.id), patch);
+          linkedRoom = { ...linkedRoom, ...patch };
+          roomByKey.set(k, linkedRoom);
         } else {
-          const { data, error } = await admin.from("weekly_schedule_entries").insert(scheduleEntry).select("id").single();
-          if (error) throw error;
-          existingBySlot.set(slotKey, { ...scheduleEntry, id: data.id });
-          inserted++;
+          newRoomByKey.set(k, {
+            title: row.subject + " · " + row.class_name,
+            class_name: row.class_name, subject: row.subject, lesson: row.subject,
+            teacher: row.teacher_name, grade: row.grade,
+            start_time: row.start_time, end_time: row.end_time, day_of_week: row.weekday,
+            status: "برنامه‌ریزی‌شده", tenant_school_id: school, activated_by: callerName,
+            auto_activate: false, auto_close: false,
+          });
         }
       }
-      return reply({ ok: true, saved: inserted + updated, inserted, updated, rooms_created: roomsCreated });
+
+      // Keep room mutations bounded: one bulk insert plus updates only for reused legacy rooms.
+      if (newRoomByKey.size) {
+        const { data, error } = await admin.from("online_classes")
+          .insert([...newRoomByKey.values()])
+          .select("id,title,subject,lesson,teacher,class_name,grade,status");
+        if (error) throw error;
+        for (const room of data ?? []) {
+          const account = resolveTeacher({ teacher: room.teacher });
+          const k = roomKey(room.class_name, room.subject || room.lesson || room.title, account?.username || room.teacher);
+          roomByKey.set(k, room);
+        }
+      }
+      if (roomUpdates.size) {
+        const results = await Promise.all([...roomUpdates.entries()].map(([id, patch]) =>
+          admin.from("online_classes").update(patch).eq("id", id).eq("tenant_school_id", school)
+        ));
+        const failed = results.find(result => result.error);
+        if (failed?.error) throw failed.error;
+      }
+
+      const scheduleRows = prepared.map(row => {
+        const k = roomKey(row.class_name, row.subject, row.teacher_username);
+        const room = roomByKey.get(k);
+        if (!room?.id) throw new Error("کلاس آنلاین مرتبط برای " + row.class_name + " · " + row.subject + " ساخته یا پیدا نشد.");
+        const slotKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
+        const existing = existingBySlot.get(slotKey);
+        return {
+          ...(existing?.id ? { id: existing.id } : {}),
+          class_name: row.class_name, weekday: row.weekday, period: row.period,
+          subject: row.subject, teacher_name: row.teacher_name, teacher_username: row.teacher_username,
+          room: row.room || null, academic_year: row.academic_year || null,
+          online_class_id: room.id, start_time: row.start_time, end_time: row.end_time,
+          day_enabled: existing?.day_enabled === true, tenant_school_id: school,
+        };
+      });
+
+      const existingCount = scheduleRows.filter(row => !!row.id).length;
+      const { data: savedRows, error: saveError } = await admin.from("weekly_schedule_entries")
+        .upsert(scheduleRows, { onConflict: "id" }).select("id");
+      if (saveError) throw saveError;
+      return reply({
+        ok: true, saved: savedRows?.length ?? scheduleRows.length,
+        inserted: scheduleRows.length - existingCount, updated: existingCount,
+        rooms_created: newRoomByKey.size,
+      });
     }
 
     if (action === "import_timetable") {
