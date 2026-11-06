@@ -31,7 +31,8 @@ on:
       - 'classroom.html'
       - 'classroom/index.html'
       - 'classroom/schedule.html'
-      - 'classroom/management.html'\n      - 'classroom/weekly-schedule-import.js'
+      - 'classroom/management.html'
+      - 'classroom/weekly-schedule-import.js'
       - '.github/workflows/publish-six-icon-portal.yml'
   workflow_dispatch:
 
