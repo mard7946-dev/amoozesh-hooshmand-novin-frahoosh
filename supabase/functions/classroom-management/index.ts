@@ -615,12 +615,43 @@ Deno.serve(async (req: Request) => {
         const teacherUsername = entry.teacher_username || account?.username || entry.teacher_name;
         const k = teacherSlotKey(entry.class_name, entry.weekday, entry.period, entry.subject, teacherUsername);
         if (!existingBySlot.has(k)) existingBySlot.set(k, entry);
+        // Older import stored the parallel 8/1 Saturday bell as one combined subject.
+        // Reuse that row for the first half (science); the second half is inserted separately.
+        if (key(entry.class_name) === key("۸/۱") && key(entry.weekday) === key("شنبه") &&
+            Number(entry.period) === 2 && key(entry.subject) === key("علوم / مطالعات")) {
+          existingBySlot.set(teacherSlotKey(entry.class_name, entry.weekday, entry.period, "علوم", teacherUsername), entry);
+        }
       }
 
       let inserted = 0, updated = 0, roomsCreated = 0;
       for (const row of prepared) {
         const k = roomKey(row.class_name, row.subject, row.teacher_username);
+        const slotKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
+        const existing = existingBySlot.get(slotKey);
         let room = roomByKey.get(k);
+        if (!room && existing?.online_class_id) {
+          const linkedRoom = (roomsResult.data ?? []).find((item: any) => Number(item.id) === Number(existing.online_class_id));
+          if (linkedRoom) {
+            room = linkedRoom;
+            if (key(room.subject || room.lesson || room.title) !== key(row.subject)) {
+              const patch = {
+                title: row.subject + " · " + row.class_name,
+                subject: row.subject,
+                lesson: row.subject,
+                teacher: row.teacher_name,
+                grade: row.grade,
+                start_time: row.start_time,
+                end_time: row.end_time,
+                day_of_week: row.weekday,
+              };
+              const { error } = await admin.from("online_classes").update(patch)
+                .eq("id", room.id).eq("tenant_school_id", school);
+              if (error) throw error;
+              room = { ...room, ...patch };
+            }
+            roomByKey.set(k, room);
+          }
+        }
         if (!room) {
           const { data, error } = await admin.from("online_classes").insert({
             title: row.subject + " · " + row.class_name,
@@ -650,8 +681,6 @@ Deno.serve(async (req: Request) => {
           roomByKey.set(k, room);
         }
 
-        const slotKey = teacherSlotKey(row.class_name, row.weekday, row.period, row.subject, row.teacher_username);
-        const existing = existingBySlot.get(slotKey);
         const scheduleEntry = {
           class_name: row.class_name,
           weekday: row.weekday,
@@ -672,6 +701,7 @@ Deno.serve(async (req: Request) => {
             .eq("id", existing.id).eq("tenant_school_id", school);
           if (error) throw error;
           updated++;
+          existingBySlot.set(slotKey, { ...scheduleEntry, id: existing.id });
         } else {
           const { data, error } = await admin.from("weekly_schedule_entries").insert(scheduleEntry).select("id").single();
           if (error) throw error;
