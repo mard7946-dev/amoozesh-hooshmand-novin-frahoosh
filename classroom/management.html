@@ -56,8 +56,12 @@ if(requestedTab&&validTabs.includes(requestedTab)){
   const targetTab=document.querySelector('[data-tab="'+requestedTab+'"]');
   if(targetTab&&!targetTab.hidden){
     targetTab.click();
-    document.querySelectorAll('[data-tab]').forEach(button=>{if(button.dataset.tab!==requestedTab)button.hidden=true;});
-    document.querySelectorAll('.section').forEach(section=>{section.hidden=section.id!==requestedTab;});
+    // مدیر باید به همه امکانات مدیریت کلاس، از جمله ورود اکسل و فعال‌سازی برنامه هفتگی دسترسی داشته باشد.
+    // محدودسازی تب‌ها فقط برای ورود مستقیم نقش‌های غیرمدیر حفظ می‌شود.
+    if(role!=='manager'){
+      document.querySelectorAll('[data-tab]').forEach(button=>{if(button.dataset.tab!==requestedTab)button.hidden=true;});
+      document.querySelectorAll('.section').forEach(section=>{section.hidden=section.id!==requestedTab;});
+    }
     const heading=document.querySelector('#'+requestedTab+' h2');
     if(heading)document.title='فراهوش · '+heading.textContent;
     $('back').textContent='بازگشت به منوی پنل';
