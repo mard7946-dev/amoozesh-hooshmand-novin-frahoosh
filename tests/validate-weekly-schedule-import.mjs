@@ -25,9 +25,9 @@ assert.equal(result.rows[0].period, 1);
 assert.equal(result.rows[0].class_name, "۷/۱");
 assert.equal(result.rows[0].grade, "هفتم");
 assert.equal(result.rows[0].academic_year, "1406-1405");
-assert.deepEqual(
-  result.rows.filter(row => row.class_name === "۷/۱" && row.period === 3).map(row => [row.subject, row.teacher]),
-  [["علوم", "ایازیان"], ["مطالعات", "کریمی"]],
+assert.equal(
+  JSON.stringify(result.rows.filter(row => row.class_name === "۷/۱" && row.period === 3).map(row => [row.subject, row.teacher])),
+  JSON.stringify([["علوم", "ایازیان"], ["مطالعات", "کریمی"]]),
   "parallel lessons in one cell must be split into separate rows"
 );
 assert.equal(result.rows.find(row => row.teacher === "کلهر").weekday, "یکشنبه");
