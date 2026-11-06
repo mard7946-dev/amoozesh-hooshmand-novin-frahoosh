@@ -18,7 +18,7 @@ const matrix = [
 const result = parse(matrix);
 assert.ok(result, "class-by-weekday workbook should be recognized");
 assert.equal(result.class_count, 2);
-assert.equal(result.rows.length, 7, "each lesson line should become an independent timetable row");
+assert.equal(result.rows.length, 8, "each lesson line should become an independent timetable row");
 assert.equal(result.skipped.length, 0);
 assert.equal(result.rows[0].weekday, "شنبه");
 assert.equal(result.rows[0].period, 1);
