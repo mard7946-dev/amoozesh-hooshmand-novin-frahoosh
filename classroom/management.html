@@ -156,11 +156,12 @@ $('scheduleClass').onchange=renderWeeklySchedule;
 const teacherWeekdays=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 let teacherScheduleEntries=[];
 const normalizeDigits=value=>String(value??'').replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-function currentTehranWeekday(){return new Intl.DateTimeFormat('fa-IR',{weekday:'long',timeZone:'Asia/Tehran'}).format(new Date()).replace(/\u200c/g,'').trim()}
+function dayKey(value){return String(value||'').replace(/[\u200c\u200f\u202a-\u202e\s]/g,'').trim()}
+function currentTehranWeekday(){const value=new Intl.DateTimeFormat('fa-IR',{weekday:'long',timeZone:'Asia/Tehran'}).format(new Date());return teacherWeekdays.find(day=>dayKey(day)===dayKey(value))||value.trim()}
 function teacherScheduleSort(a,b){return Number(a.period||99)-Number(b.period||99)||String(a.start_time||'').localeCompare(String(b.start_time||''))}
 function renderTeacherDaily(){
  const day=$('teacherDaySelect').value;
- const rows=teacherScheduleEntries.filter(x=>x.weekday===day||x.day_of_week===day).sort(teacherScheduleSort);
+ const rows=teacherScheduleEntries.filter(x=>dayKey(x.weekday)===dayKey(day)||dayKey(x.day_of_week)===dayKey(day)).sort(teacherScheduleSort);
  const target=$('teacherDailySchedule');
  if(!rows.length){target.innerHTML='<div class="message">برای '+esc(day)+' کلاسی در برنامه شما ثبت نشده است.</div>';return}
  target.innerHTML=rows.map(entry=>{
@@ -183,7 +184,7 @@ function renderTeacherDaily(){
 function renderTeacherWeekly(){
  const target=$('teacherWeeklySchedule');
  target.innerHTML=teacherWeekdays.map(day=>{
-  const rows=teacherScheduleEntries.filter(x=>x.weekday===day||x.day_of_week===day).sort(teacherScheduleSort);
+  const rows=teacherScheduleEntries.filter(x=>dayKey(x.weekday)===dayKey(day)||dayKey(x.day_of_week)===dayKey(day)).sort(teacherScheduleSort);
   return '<section class="panel" style="margin:10px 0"><h3>'+day+'</h3>'+(rows.length?'<table><thead><tr><th>زنگ</th><th>ساعت</th><th>کلاس</th><th>درس</th><th>دبیر</th><th>پایه</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc('زنگ '+normalizeDigits(x.period||''))+'</td><td>'+esc(x.start_time||'—')+' تا '+esc(x.end_time||'—')+'</td><td>'+esc(x.class_name||'—')+'</td><td>'+esc(x.subject||x.title||'—')+'</td><td>'+esc(x.teacher||x.teacher_name||'—')+'</td><td>'+esc(x.grade||'—')+'</td></tr>').join('')+'</tbody></table>':'<p class="small">کلاسی ثبت نشده است.</p>')+'</section>';
  }).join('');
 }
