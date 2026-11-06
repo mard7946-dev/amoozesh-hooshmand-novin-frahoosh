@@ -174,7 +174,7 @@ $('nextQuestion').onclick=()=>{if(questionIndex<liveQuestions.length-1){question
 async function submitExam(auto=false){if(!liveAttempt)return;if(!auto&&!confirm('پس از تحویل، امکان ویرایش پاسخ‌ها وجود ندارد. آزمون تحویل شود؟'))return;try{if(globalTimer)clearInterval(globalTimer);if(questionTimer)clearInterval(questionTimer);clearGroupTimers();const d=await call({action:'submit_exam',attempt_id:liveAttempt.id,answers:liveQuestions.map(q=>({question_id:q.id,answer:liveAnswers[q.id]||''}))});$('takingArea').classList.add('hidden');notice(d.message+' نمره خودکار: '+d.score+' از '+d.max_score,'ok');liveAttempt=null;await bootstrap();}catch(e){notice(e.message,'error');}}
 $('submitExam').onclick=()=>submitExam(false);
 $('refresh').onclick=bootstrap;
-$('back').onclick=()=>{location.href='portal.html';};
+$('back').onclick=()=>{location.href='portal.html?step=panel&role='+encodeURIComponent(sessionStorage.getItem('frahoosh_novin_role')||'teacher');};
 bootstrap();
 </script>
 </body></html>
