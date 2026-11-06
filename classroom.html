@@ -71,8 +71,8 @@ document.getElementById('share').addEventListener('click',()=>message(selectedRo
 document.getElementById('hand').addEventListener('click',e=>{if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}const b=e.currentTarget;const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));b.textContent=on?'✋ درخواست ثبت شد':'✋ درخواست صحبت';message(on?'درخواست صحبت در همین صفحه ثبت شد؛ هنوز به سایر شرکت‌کنندگان ارسال نمی‌شود.':'درخواست صحبت لغو شد.');});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.getElementById('boardState').textContent='ابزار انتخاب‌شده: '+b.textContent;}));
 document.getElementById('clearBoard').addEventListener('click',()=>{if(!selectedRoom){message('ابتدا یک اتاق مجاز انتخاب کنید.');return;}boardContent.replaceChildren();document.getElementById('boardState').textContent='محتوای محلی تخته پاک شد';});
-function leave(){if(confirm('از کلاس خارج می‌شوید؟')){location.href='portal.html?step=panel&role='+encodeURIComponent(sessionStorage.getItem('frahoosh_novin_role')||'teacher');}}
+function leave(){if(confirm('از کلاس خارج می‌شوید؟')){window.frahooshReturnToPanel('teacher');}}
 document.getElementById('leave').addEventListener('click',leave);document.getElementById('leaveTop').addEventListener('click',leave);
 boot();
 </script>
-</body></html>
+<script src="panel-return.js?v=20261106-return"></script></body></html>
