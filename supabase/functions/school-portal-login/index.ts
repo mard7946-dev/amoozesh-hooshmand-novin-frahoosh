@@ -79,9 +79,15 @@ Deno.serve(async (req: Request) => {
     const loginResponse = await fetch(url + "/functions/v1/login-by-username", {
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": anonKey },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, role: expectedRole, school_code: schoolCode, action, new_password: body?.new_password }),
     });
     const login = await loginResponse.json().catch(() => ({}));
+    if (loginResponse.status === 428 && login.must_change_password) {
+      return reply({ must_change_password: true, message: login.message || "برای نخستین ورود، ابتدا باید رمز عبور اولیه را تغییر دهید." }, 428);
+    }
+    if (loginResponse.ok && login.password_changed === true && action === "change_parent_initial_password") {
+      return reply({ password_changed: true, message: login.message || "رمز عبور با موفقیت تغییر کرد." });
+    }
     if (!loginResponse.ok || !login.session?.access_token || !login.user?.id) {
       return reply({ message: login.message || "نام کاربری یا رمز عبور صحیح نیست." }, 401);
     }
