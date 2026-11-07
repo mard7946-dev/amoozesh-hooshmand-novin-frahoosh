@@ -10,6 +10,12 @@ on:
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
+      - 'supabase/functions/login-by-username/index.ts'
+      - 'supabase/functions/admin-manage-users/index.ts'
+      - 'supabase/functions/parent-management/index.ts'
+      - 'supabase/functions/parent-meetings/index.ts'
+      - 'supabase/functions/family-education/index.ts'
+      - 'supabase/migrations/20261107133000_enforce_parent_first_login_password_change.sql'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
       - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
       - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
@@ -40,6 +46,12 @@ on:
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
+      - 'supabase/functions/login-by-username/index.ts'
+      - 'supabase/functions/admin-manage-users/index.ts'
+      - 'supabase/functions/parent-management/index.ts'
+      - 'supabase/functions/parent-meetings/index.ts'
+      - 'supabase/functions/family-education/index.ts'
+      - 'supabase/migrations/20261107133000_enforce_parent_first_login_password_change.sql'
       - 'tests/validate-novin-portal.mjs'
       - 'index.html'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
@@ -71,3 +83,12 @@ jobs:
         run: deno check supabase/functions/platform-management/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check username login Edge Function
+        run: deno check supabase/functions/login-by-username/index.ts
+      - name: Type-check parent account management Edge Function
+        run: deno check supabase/functions/admin-manage-users/index.ts
+      - name: Type-check parent panel Edge Functions
+        run: |
+          deno check supabase/functions/parent-management/index.ts
+          deno check supabase/functions/parent-meetings/index.ts
+          deno check supabase/functions/family-education/index.ts
