@@ -304,10 +304,34 @@ Deno.serve(async (req: Request) => {
   const targetId = clean(body.auth_user_id);
   if (!targetId || targetId === auth.user.id) return reply({ message: "حساب هدف نامعتبر است." }, 400);
   const { data: target, error: targetError } = await admin.from("account_settings")
-    .select("auth_user_id,role,tenant_school_id,username").eq("auth_user_id", targetId).maybeSingle();
+    .select("auth_user_id,role,tenant_school_id,username,national_code").eq("auth_user_id", targetId).maybeSingle();
   if (targetError || !target) return reply({ message: "کاربر هدف پیدا نشد." }, 404);
   if (clean(target.tenant_school_id) !== schoolId) return reply({ message: "امکان تغییر کاربران مدرسه دیگر وجود ندارد." }, 403);
   if (managerRoles.includes(clean(target.role).toLowerCase())) return reply({ message: "تغییر یا غیرفعال‌سازی حساب مدیریتی از این بخش مجاز نیست." }, 403);
+
+  if (action === "reset_parent_password") {
+    if (clean(target.role).toLowerCase() !== "parent") return reply({ message: "بازنشانی این رمز فقط برای حساب ولی مجاز است." }, 403);
+    const initialPassword = clean(target.national_code).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    if (!/^\d{10}$/.test(initialPassword) || clean(target.username) !== initialPassword) {
+      return reply({ message: "کد ملی حساب ولی معتبر نیست؛ بازنشانی خودکار انجام نشد." }, 409);
+    }
+    const { data: targetAuth, error: targetAuthError } = await admin.auth.admin.getUserById(targetId);
+    if (targetAuthError || !targetAuth.user) return reply({ message: "حساب احراز هویت ولی پیدا نشد." }, 404);
+    const nextAppMetadata = {
+      ...(targetAuth.user.app_metadata ?? {}),
+      must_change_password: true,
+      password_reset_at: new Date().toISOString(),
+    };
+    const { error: resetError } = await admin.auth.admin.updateUserById(targetId, {
+      password: initialPassword,
+      app_metadata: nextAppMetadata,
+    });
+    if (resetError) {
+      console.error("admin parent password reset failed", resetError.message);
+      return reply({ message: "بازنشانی رمز ولی انجام نشد." }, 500);
+    }
+    return reply({ success: true, message: "رمز اولیه ولی به کد ملی بازنشانی شد؛ تغییر آن در ورود بعدی اجباری است." });
+  }
 
   if (action === "set_role") {
     const role = clean(body.role);
