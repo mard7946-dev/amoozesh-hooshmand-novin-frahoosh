@@ -18,7 +18,7 @@
 <p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
 <div class="upload-row">
 <div class="upload-box"><strong>قالب اکسل اولیا</strong><p>ستون‌های ضروری: کد ملی ولی، نام ولی، کد ملی دانش‌آموز. ستون «نسبت با دانش‌آموز» را با «پدر»، «مادر» یا «سرپرست» تکمیل کنید. شماره تماس ولی نیز وارد شود. اگر نسبت مشخص نشده باشد، «سرپرست» ثبت می‌شود. کد ملی دانش‌آموز باید دقیقاً در پرونده همان مدرسه موجود باشد. ستون‌های کد ملی را در اکسل روی حالت «متن» بگذارید تا صفر ابتدای کد حذف نشود.</p><button class="btn" id="parentTemplate">دریافت نمونه قالب اکسل اولیا</button></div>
-<div class="upload-box"><strong>بارگذاری فایل تکمیل‌شده</strong><input id="parentExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importParents">ساخت حساب‌ها و اتصال خودکار فرزندان</button></div><small>حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری. حساب‌های موجود به‌روزرسانی و فرزندان جدید به آن‌ها اضافه می‌شوند؛ رمز حساب‌های قبلی تغییر نمی‌کند.</small></div>
+<div class="upload-box"><strong>بارگذاری فایل تکمیل‌شده</strong><input id="parentExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importParents">ساخت حساب‌ها و اتصال خودکار فرزندان</button></div><small>حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری. برای حساب جدید، نام کاربری و رمز اولیه هر دو کد ملی ولی است و تغییر رمز در نخستین ورود اجباری خواهد بود. رمز حساب‌های قبلی تغییر نمی‌کند.</small></div>
 </div>
 <div id="parentImportStatus" class="status" role="status" aria-live="polite">پس از بارگذاری، نتیجه هر ولی و ردیف‌های نامعتبر نمایش داده می‌شود.</div>
 <div class="table-wrap" id="parentImportResults"></div>
@@ -73,7 +73,7 @@ function renderParentImport(data){
  status.textContent="ردیف‌ها: "+data.total+" · ردیف‌های موفق: "+succeededRows+" · ردیف‌های ناموفق: "+failedRows+" · حساب‌های ایجادشده: "+(data.results||[]).filter(x=>x.success&&x.created).length;
  wrap.replaceChildren();
  const table=document.createElement("table"),head=document.createElement("thead"),hr=document.createElement("tr");
- ["وضعیت","ردیف‌های اکسل","نام کاربری ولی","رمز اولیه (فقط حساب جدید)","فرزندان متصل و نسبت / توضیح"].forEach(v=>hr.append(el("th","",v)));
+ ["وضعیت","ردیف‌های اکسل","نام کاربری ولی","رمز اولیه (کد ملی ولی)","فرزندان متصل و نسبت / توضیح"].forEach(v=>hr.append(el("th","",v)));
  head.append(hr);const body=document.createElement("tbody");
  for(const item of data.results||[]){
   const tr=document.createElement("tr"),children=(item.linked_students||[]).map(x=>x.name+" ("+({father:"پدر",mother:"مادر",guardian:"سرپرست"}[x.relationship_type]||"سرپرست")+")").join("، ");
