@@ -183,26 +183,38 @@ Deno.serve(async (req: Request) => {
       studentName = "اولیای کلاس " + className;
     }
 
-    let parentQuery = db.from("account_settings")
-      .select("username,auth_user_id").eq("tenant_school_id", school).eq("role", "parent").limit(2000);
-    if (audience !== "all") {
-      if (!usernames.length) return reply({ message: "برای این مخاطب هیچ حساب ولی متصل‌شده‌ای پیدا نشد." }, 409);
-      parentQuery = parentQuery.in("username", usernames);
+    // Invitations are addressed to the parent identity recorded in parent_children.
+    // A parent does not need an existing Auth account at invitation-creation time:
+    // parent_user_id remains null until the matching parent account is provisioned.
+    if (audience === "all") {
+      const { data: allLinks, error: allLinksError } = await db.from("parent_children")
+        .select("parent_username").eq("tenant_school_id", school).limit(10000);
+      if (allLinksError) return reply({ message: "فهرست ارتباط اولیا و دانش‌آموزان دریافت نشد." }, 500);
+      usernames = [...new Set((allLinks ?? []).map((row) => clean(row.parent_username)).filter(Boolean))];
+      studentName = "همه اولیای مدرسه";
     }
-    const { data: parents, error: parentsError } = await parentQuery;
-    if (parentsError) return reply({ message: "حساب‌های اولیا دریافت نشد." }, 500);
-    const authUserIds = [...new Set((parents ?? []).map((row) => clean(row.auth_user_id)).filter(Boolean))];
-    if (!authUserIds.length) return reply({ message: "هیچ حساب ولی معتبری برای دریافت دعوت‌نامه پیدا نشد." }, 409);
-    const { data: memberships, error: membershipsError } = await db.from("school_memberships")
-      .select("auth_user_id").eq("school_id", school).eq("role", "parent").eq("is_active", true)
-      .in("auth_user_id", authUserIds).limit(3000);
-    if (membershipsError) return reply({ message: "وضعیت عضویت اولیا بررسی نشد." }, 500);
-    const activeParentIds = new Set((memberships ?? []).map((row) => clean(row.auth_user_id)));
-    const activeParents = (parents ?? []).filter((row) => activeParentIds.has(clean(row.auth_user_id)));
-    usernames = [...new Set(activeParents.map((row) => clean(row.username)).filter(Boolean))];
-    if (!usernames.length) return reply({ message: "هیچ حساب ولی فعالی برای دریافت دعوت‌نامه پیدا نشد." }, 409);
+    if (!usernames.length) {
+      return reply({ message: "برای این مخاطب هیچ ارتباط ولی و دانش‌آموزی ثبت نشده است." }, 409);
+    }
 
-    const userIds = new Map(activeParents.map((row) => [row.username, row.auth_user_id]));
+    const { data: parents, error: parentsError } = await db.from("account_settings")
+      .select("username,auth_user_id").eq("tenant_school_id", school).eq("role", "parent")
+      .in("username", usernames).limit(5000);
+    if (parentsError) return reply({ message: "حساب‌های ثبت‌شده اولیا بررسی نشد." }, 500);
+    const authUserIds = [...new Set((parents ?? []).map((row) => clean(row.auth_user_id)).filter(Boolean))];
+    let activeParentIds = new Set<string>();
+    if (authUserIds.length) {
+      const { data: memberships, error: membershipsError } = await db.from("school_memberships")
+        .select("auth_user_id").eq("school_id", school).eq("role", "parent").eq("is_active", true)
+        .in("auth_user_id", authUserIds).limit(5000);
+      if (membershipsError) return reply({ message: "وضعیت عضویت اولیا بررسی نشد." }, 500);
+      activeParentIds = new Set((memberships ?? []).map((row) => clean(row.auth_user_id)));
+    }
+    const userIds = new Map(
+      (parents ?? [])
+        .filter((row) => activeParentIds.has(clean(row.auth_user_id)))
+        .map((row) => [clean(row.username), clean(row.auth_user_id)])
+    );
     const invitationBatchId = crypto.randomUUID();
     const managerReviewedAt = isManager ? new Date().toISOString() : null;
     const rows = usernames.map((username) => ({
