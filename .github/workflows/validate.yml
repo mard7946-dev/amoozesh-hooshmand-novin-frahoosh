@@ -44,7 +44,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check classroom authorization and management Edge Functions
-        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts
+        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts
       - name: Test Tehran schedule activation boundaries
         run: deno test tests/classroom-schedule.test.ts tests/discipline-rules.test.ts tests/teacher-identity.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
