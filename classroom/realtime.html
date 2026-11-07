@@ -85,8 +85,15 @@ async function enterRoom(room,scheduleEntryId){
 async function boot(){
  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
  try{
-  const data=await postFunction("classroom-authorize",{active_role:activeRole});
+  const requestedRoomId=Number(new URLSearchParams(location.search).get("room_id")||0);
+  const requestedScheduleEntryId=Number(new URLSearchParams(location.search).get("schedule_entry_id")||0);
+  const data=await postFunction("classroom-authorize",requestedRoomId?{room_id:requestedRoomId,schedule_entry_id:requestedScheduleEntryId,active_role:activeRole}:{active_role:activeRole});
   profile=data.profile||{};
+  if(requestedRoomId){
+   if(!data.room)throw new Error("سرور مجوز این کلاس را تأیید نکرد؛ زنگ یا برنامه ممکن است غیرفعال شده باشد.");
+   await enterRoom(data.room,requestedScheduleEntryId);
+   return;
+  }
   const role=String(profile.role||"").toLocaleLowerCase("fa");
   const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
   let rooms=[];
