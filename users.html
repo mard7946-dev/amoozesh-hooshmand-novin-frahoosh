@@ -98,14 +98,16 @@ document.getElementById("importParents").addEventListener("click",async()=>{
   if(hasDigiform){
    rows=[];
    const digits=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\\D/g,"");
+   const code=v=>digits(v).padStart(10,"0");
+   const phone=v=>{const d=digits(v);return d.length===10?"0"+d:d};
    const val=(r,k)=>String(r[k]??"").trim();
    for(const r of sourceRows){
-    const childCode=digits(val(r,"کد ملی 3"));
+    const childCode=code(val(r,"کد ملی 3"));
     const childFull=val(r,"نام و نام خانوادگی");
     const parts=childFull.split(/\\s+/).filter(Boolean);
     const base={student_national_code:childCode,student_first_name:parts[0]||childFull,student_last_name:parts.slice(1).join(" ")||"—"};
-    const fatherCode=digits(val(r,"کد ملی 1")),fatherName=val(r,"نام پدر"),fatherPhone=digits(val(r,"موبایل 1"));
-    const motherCode=digits(val(r,"کد ملی 2")),motherName=val(r,"نام نام خانوادگی مادر"),motherPhone=digits(val(r,"موبایل 2"));
+    const fatherCode=code(val(r,"کد ملی 1")),fatherName=val(r,"نام پدر"),fatherPhone=phone(val(r,"موبایل 1"));
+    const motherCode=code(val(r,"کد ملی 2")),motherName=val(r,"نام نام خانوادگی مادر"),motherPhone=phone(val(r,"موبایل 2"));
     if(fatherCode&&fatherName)rows.push({...base,parent_national_code:fatherCode,parent_name:fatherName,parent_phone:fatherPhone,relationship_type:"father"});
     if(motherCode&&motherName)rows.push({...base,parent_national_code:motherCode,parent_name:motherName,parent_phone:motherPhone,relationship_type:"mother"});
    }
