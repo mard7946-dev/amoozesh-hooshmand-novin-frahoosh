@@ -107,7 +107,7 @@ console.log("Reports checks passed: protected API, attendance/grades/discipline,
 
 
 const financePage = readFileSync("finance.html", "utf8");
-const financeScripts = [...financePage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const financeScripts = financePage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
 assert.ok(financeScripts.length > 0, "Finance page must contain its operational script");
 for (const source of financeScripts) assert.doesNotThrow(() => new Function(source), "Finance script must have valid JavaScript syntax");
 assert.ok(financePage.includes("async function apiAll(path,pageSize=1000)") && !financePage.includes("finance_vouchers?select=*&order=created_at.desc&limit=500"), "Finance reports must page through the complete ledger instead of silently truncating at fixed limits");
