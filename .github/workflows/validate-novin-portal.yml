@@ -37,6 +37,8 @@ on:
       - 'supabase/functions/school-reports/index.ts'
       - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
       - 'index.html'
+      - 'finance.html'
+      - 'supabase/migrations/20261107150000_atomic_finance_voucher_creation.sql'
       - 'tests/validate-novin-portal.mjs'
       - '.github/workflows/validate-novin-portal.yml'
   pull_request:
@@ -54,6 +56,8 @@ on:
       - 'supabase/migrations/20261107133000_enforce_parent_first_login_password_change.sql'
       - 'tests/validate-novin-portal.mjs'
       - 'index.html'
+      - 'finance.html'
+      - 'supabase/migrations/20261107150000_atomic_finance_voucher_creation.sql'
       - 'supabase/migrations/20261031180000_commercial_platform_management.sql'
       - 'supabase/migrations/20261031190000_school_manager_invitation.sql'
       - 'supabase/migrations/20261031210000_restrict_sensitive_public_rpcs.sql'
