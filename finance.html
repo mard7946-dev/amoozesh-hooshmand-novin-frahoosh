@@ -84,7 +84,7 @@ async function saveVoucher(post=false){
     if(!savedVoucher?.id)throw new Error('سند یا ردیف‌های آن در تراکنش پایگاه داده ذخیره نشد.');
     const attachmentErrors=[];
     for(const file of [...$('attachment').files]){
-      const safeName=file.name.replace(/[^\\w.\\-\\u0600-\\u06FF]/g,'_');
+      const safeName=file.name.replace(/[^A-Za-z0-9._-]/g,'_');
       const path=savedVoucher.id+'/'+crypto.randomUUID()+'-'+safeName;
       try{
         const upload=await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':file.type||'application/octet-stream','x-upsert':'false'},body:file});
