@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
       .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
     const nationalCode = digits(account.data?.national_code).trim();
-    if (!/^\\d{10}$/.test(nationalCode) || digits(account.data?.username).trim() !== nationalCode) {
+    if (!/^\d{10}$/.test(nationalCode) || digits(account.data?.username).trim() !== nationalCode) {
       return respond({ message: "کد ملی حساب ولی معتبر نیست؛ با مدیر مدرسه تماس بگیرید." }, 409);
     }
     if (newPassword.length < 10 || newPassword.length > 128 || newPassword === nationalCode) {
