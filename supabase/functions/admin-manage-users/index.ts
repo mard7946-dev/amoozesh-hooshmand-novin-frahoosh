@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
       for (const key of keys) if (raw[key] !== undefined && clean(raw[key])) return clean(raw[key]);
       return "";
     };
-    const groups = new Map<string, { parentCode: string; parentName: string; phone: string; children: Array<{ code: string; row: number; name: string }> }>();
+    const groups = new Map<string, { parentCode: string; parentName: string; phone: string; children: Array<{ code: string; row: number; name: string; relationship: string }> }>();
     const rowErrors: Array<{ row: number; success: false; message: string }> = [];
     for (let i = 0; i < rows.length; i++) {
       const raw = rows[i] && typeof rows[i] === "object" ? rows[i] as Record<string, unknown> : {};
@@ -132,6 +132,9 @@ Deno.serve(async (req: Request) => {
       const phone = digits(get(raw, "parent_phone", "شماره تماس ولی", "تلفن ولی"));
       const childCode = digits(get(raw, "student_national_code", "کد ملی دانش‌آموز", "کد ملی فرزند"));
       const childName = [get(raw, "student_first_name", "نام دانش‌آموز", "نام فرزند"), get(raw, "student_last_name", "نام خانوادگی دانش‌آموز", "نام خانوادگی فرزند")].filter(Boolean).join(" ");
+      const relationRaw = get(raw, "relationship_type", "relationship", "نسبت با دانش‌آموز", "نسبت", "نوع ولی").toLowerCase();
+      const relationship = ["father", "پدر"].includes(relationRaw) ? "father"
+        : ["mother", "مادر"].includes(relationRaw) ? "mother" : "guardian";
       if (!/^\d{10}$/.test(parentCode) || !parentName || !/^\d{10}$/.test(childCode)) {
         rowErrors.push({ row: i + 2, success: false, message: "کد ملی ۱۰ رقمی ولی، نام ولی و کد ملی ۱۰ رقمی دانش‌آموز الزامی است." });
         continue;
@@ -146,9 +149,9 @@ Deno.serve(async (req: Request) => {
           rowErrors.push({ row: i + 2, success: false, message: "این دانش‌آموز برای این ولی در فایل تکرار شده است." });
           continue;
         }
-        current.children.push({ code: childCode, row: i + 2, name: childName });
+        current.children.push({ code: childCode, row: i + 2, name: childName, relationship });
       } else {
-        groups.set(parentCode, { parentCode, parentName, phone, children: [{ code: childCode, row: i + 2, name: childName }] });
+        groups.set(parentCode, { parentCode, parentName, phone, children: [{ code: childCode, row: i + 2, name: childName, relationship }] });
       }
     }
     const allChildCodes = [...new Set([...groups.values()].flatMap(g => g.children.map(c => c.code)))];
@@ -227,8 +230,9 @@ Deno.serve(async (req: Request) => {
             if (error) throw error;
           }
         }
-        const links = students.map((student: any) => ({
-          parent_username: group.parentCode, student_id: student.id, tenant_school_id: schoolId
+        const links = students.map((student: any, index: number) => ({
+          parent_username: group.parentCode, student_id: student.id, tenant_school_id: schoolId,
+          relationship_type: group.children[index].relationship
         }));
         const { error: linkError } = await admin.from("parent_children").upsert(links, {
           onConflict: "parent_username,student_id", ignoreDuplicates: true
@@ -237,7 +241,7 @@ Deno.serve(async (req: Request) => {
         results.push({
           row: group.children[0].row, rows: group.children.map(x => x.row), success: true,
           username: group.parentCode, created, temporary_password: created ? temporaryPassword : null,
-          linked_students: students.map((s: any) => ({ id: s.id, name: [s.first_name, s.last_name].filter(Boolean).join(" ") }))
+          linked_students: students.map((s: any, index: number) => ({ id: s.id, name: [s.first_name, s.last_name].filter(Boolean).join(" "), relationship_type: group.children[index].relationship }))
         });
       } catch (error) {
         if (created && authUserId) {
