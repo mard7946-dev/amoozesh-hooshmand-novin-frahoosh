@@ -91,9 +91,27 @@ function renderParentImport(data){
 document.getElementById("importParents").addEventListener("click",async()=>{
  const button=document.getElementById("importParents");button.disabled=true;
  try{
-  const rows=await parseExcel(document.getElementById("parentExcel"));
-  if(!rows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");
-  if(rows.length>1000)throw new Error("حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری مجاز است.");
+  const sourceRows=await parseExcel(document.getElementById("parentExcel"));
+  if(!sourceRows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");
+  const hasDigiform=sourceRows.some(r=>Object.prototype.hasOwnProperty.call(r,"کد ملی 1")&&Object.prototype.hasOwnProperty.call(r,"کد ملی 2")&&Object.prototype.hasOwnProperty.call(r,"کد ملی 3"));
+  let rows=sourceRows;
+  if(hasDigiform){
+   rows=[];
+   const digits=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\\D/g,"");
+   const val=(r,k)=>String(r[k]??"").trim();
+   for(const r of sourceRows){
+    const childCode=digits(val(r,"کد ملی 3"));
+    const childFull=val(r,"نام و نام خانوادگی");
+    const parts=childFull.split(/\\s+/).filter(Boolean);
+    const base={student_national_code:childCode,student_first_name:parts[0]||childFull,student_last_name:parts.slice(1).join(" ")||"—"};
+    const fatherCode=digits(val(r,"کد ملی 1")),fatherName=val(r,"نام پدر"),fatherPhone=digits(val(r,"موبایل 1"));
+    const motherCode=digits(val(r,"کد ملی 2")),motherName=val(r,"نام نام خانوادگی مادر"),motherPhone=digits(val(r,"موبایل 2"));
+    if(fatherCode&&fatherName)rows.push({...base,parent_national_code:fatherCode,parent_name:fatherName,parent_phone:fatherPhone,relationship_type:"father"});
+    if(motherCode&&motherName)rows.push({...base,parent_national_code:motherCode,parent_name:motherName,parent_phone:motherPhone,relationship_type:"mother"});
+   }
+  }
+  if(!rows.length)throw new Error("هیچ ردیف معتبر پدر یا مادر در فایل پیدا نشد.");
+  if(rows.length>1000)throw new Error("حداکثر ۱۰۰۰ ردیف والد در هر بار بارگذاری مجاز است.");
   document.getElementById("parentImportStatus").textContent="در حال بررسی پرونده دانش‌آموزان و ساخت حساب‌های اولیا…";
   const result=await api({action:"import_parents",rows});
   renderParentImport(result);await load();await loadProfiles();
