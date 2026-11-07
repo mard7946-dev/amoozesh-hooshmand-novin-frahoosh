@@ -98,6 +98,7 @@ Deno.serve(async (req: Request) => {
     const role = norm(authorization.profile?.role || profile.role);
     const isTeacher = ["teacher", "دبیر", "معلم"].includes(role);
     const isManager = ["manager", "مدیر", "مدیریت"].includes(role);
+    const isStudent = ["student", "دانش‌آموز", "دانش آموز"].includes(role);
     const presetName = isTeacher || isManager ? "group_call_host" : "group_call_guest";
     const room = authorization.room;
 
@@ -143,7 +144,7 @@ Deno.serve(async (req: Request) => {
     const participantsData = await cloudflare(`/meetings/${meetingId}/participants?limit=1000`);
     const participants = Array.isArray(participantsData) ? participantsData : participantsData?.data ?? [];
     let participant = participants.find((item: any) => item.custom_participant_id === authData.user.id);
-    const displayName = clean(profile.display_name) || clean(profile.username) || "کاربر فراهوش";
+    const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}` : (clean(profile.display_name) || clean(profile.username) || "کاربر فراهوش");
     const expiresOn = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     let participantToken = "";
 
