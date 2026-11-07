@@ -193,13 +193,11 @@ Deno.serve(async (req: Request) => {
       let created = false;
       try {
         if (!existing) {
-          const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-          const bytes = new Uint8Array(24);
-          crypto.getRandomValues(bytes);
-          temporaryPassword = Array.from(bytes, b => alphabet[b % alphabet.length]).join("");
+          temporaryPassword = group.parentCode;
           const { data: authCreated, error: authCreateError } = await admin.auth.admin.createUser({
             email, password: temporaryPassword, email_confirm: true,
-            user_metadata: { username: group.parentCode, display_name: group.parentName, role: "parent", tenant_school_id: schoolId }
+            user_metadata: { username: group.parentCode, display_name: group.parentName, role: "parent", tenant_school_id: schoolId },
+            app_metadata: { must_change_password: true }
           });
           if (authCreateError || !authCreated.user) throw new Error("ساخت حساب ورود ولی انجام نشد.");
           authUserId = authCreated.user.id;
