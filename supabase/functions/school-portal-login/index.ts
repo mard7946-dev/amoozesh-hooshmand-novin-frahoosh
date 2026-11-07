@@ -58,6 +58,7 @@ Deno.serve(async (req: Request) => {
   const password = String(body?.password ?? "");
   const expectedRole = clean(body?.role);
   const schoolCode = clean(body?.school_code).toUpperCase();
+  const action = clean(body?.action);
 
   if (!username || !password || !schoolCode ||
       !["manager", "deputy", "teacher", "student", "parent", "counselor"].includes(expectedRole)) {
@@ -149,6 +150,47 @@ Deno.serve(async (req: Request) => {
     });
     if (!hasActiveSubscription) {
       return reply({ message: "اشتراک این مدرسه فعال نیست؛ برای تمدید با پشتیبانی فراهوش تماس بگیرید." }, 403);
+    }
+
+    const { data: authUserResult, error: authUserError } = await admin.auth.admin.getUserById(login.user.id);
+    if (authUserError || !authUserResult.user) {
+      console.error("school portal auth metadata lookup failed", authUserError?.message ?? "missing user");
+      return reply({ message: "وضعیت امنیتی حساب بررسی نشد؛ دوباره تلاش کنید." }, 503);
+    }
+    const mustChangeParentPassword = authUserResult.user.app_metadata?.must_change_password === true;
+
+    if (action === "change_parent_initial_password") {
+      if (expectedRole !== "parent" || !roleAllowed(profile.role, "parent") || !membershipRoles.has("parent")) {
+        return reply({ message: "این عملیات فقط برای حساب ولی مجاز است." }, 403);
+      }
+      if (!mustChangeParentPassword) {
+        return reply({ message: "برای این حساب تغییر رمز اولیه اجباری ثبت نشده است؛ از ورود عادی استفاده کنید." }, 409);
+      }
+      const newPassword = String(body?.new_password ?? "");
+      if (newPassword.length < 10 || newPassword.length > 128 || newPassword === username) {
+        return reply({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با کد ملی یکسان نباشد." }, 400);
+      }
+      const nextAppMetadata = {
+        ...(authUserResult.user.app_metadata ?? {}),
+        must_change_password: false,
+        password_changed_at: new Date().toISOString(),
+      };
+      const { error: passwordUpdateError } = await admin.auth.admin.updateUserById(login.user.id, {
+        password: newPassword,
+        app_metadata: nextAppMetadata,
+      });
+      if (passwordUpdateError) {
+        console.error("parent initial password update failed", passwordUpdateError.message);
+        return reply({ message: "ثبت رمز جدید انجام نشد؛ دوباره تلاش کنید." }, 500);
+      }
+      return reply({ password_changed: true, message: "رمز عبور با موفقیت تغییر کرد. اکنون با رمز جدید وارد شوید." });
+    }
+
+    if (expectedRole === "parent" && mustChangeParentPassword) {
+      return reply({
+        must_change_password: true,
+        message: "برای نخستین ورود، ابتدا باید رمز عبور اولیه را تغییر دهید.",
+      }, 428);
     }
 
     let className = "";
