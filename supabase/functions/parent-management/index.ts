@@ -23,7 +23,7 @@ Deno.serve(async(req:Request)=>{
  if(!school)return reply({message:"شناسه مدرسه ثبت نشده است."},409);
  // Parent links imported from the school spreadsheet are keyed by the parent's national code.
  // A parent's login username may differ, so resolve both authenticated account identifiers.
- const normalizeIdentity=(value:unknown)=>clean(value).replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\\s\\-]/g,"");
+ const normalizeIdentity=(value:unknown)=>clean(value).replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\s-]/g,"");
  const parentIdentityKeys=[...new Set([clean(c.username),clean(c.national_code),normalizeIdentity(c.username),normalizeIdentity(c.national_code)].filter(Boolean))];
  const isManager=managerRoles.includes(role),isParent=role==="parent";
  if(!isManager&&!isParent)return reply({message:"این حساب اجازه دسترسی به پنل اولیا را ندارد."},403);
