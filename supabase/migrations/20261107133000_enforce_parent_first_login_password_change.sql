@@ -76,3 +76,55 @@ using (
   auth_user_id = auth.uid()
   and not private.frahoosh_parent_password_change_required()
 );
+
+-- Tenant-scoped and username/student helper functions are also used by direct
+-- PostgREST policies. Return no identity context while a parent must reset.
+do $migration$
+declare
+  definition text;
+begin
+  select pg_get_functiondef('private.frahoosh_current_school_id()'::regprocedure)
+    into definition;
+  if position('frahoosh_parent_password_change_required' in definition) = 0 then
+    definition := replace(
+      definition,
+      E'begin\n  select a.tenant_school_id',
+      E'begin\n  if private.frahoosh_parent_password_change_required() then return null; end if;\n  select a.tenant_school_id'
+    );
+    if position('frahoosh_parent_password_change_required' in definition) = 0 then
+      raise exception 'Could not safely wrap private.frahoosh_current_school_id()';
+    end if;
+    execute definition;
+  end if;
+
+  select pg_get_functiondef('private.frahoosh_current_student_id()'::regprocedure)
+    into definition;
+  if position('frahoosh_parent_password_change_required' in definition) = 0 then
+    definition := replace(
+      definition,
+      '  select coalesce(',
+      '  select case when private.frahoosh_parent_password_change_required() then null else coalesce('
+    );
+    definition := replace(definition, E'  )\n$function$', E'  ) end\n$function$');
+    if position('frahoosh_parent_password_change_required' in definition) = 0 then
+      raise exception 'Could not safely wrap private.frahoosh_current_student_id()';
+    end if;
+    execute definition;
+  end if;
+
+  select pg_get_functiondef('public.current_account_username()'::regprocedure)
+    into definition;
+  if position('frahoosh_parent_password_change_required' in definition) = 0 then
+    definition := replace(
+      definition,
+      '  select coalesce(',
+      '  select case when private.frahoosh_parent_password_change_required() then null else coalesce('
+    );
+    definition := replace(definition, E'  );\n$function$', E'  ) end;\n$function$');
+    if position('frahoosh_parent_password_change_required' in definition) = 0 then
+      raise exception 'Could not safely wrap public.current_account_username()';
+    end if;
+    execute definition;
+  end if;
+end;
+$migration$;
