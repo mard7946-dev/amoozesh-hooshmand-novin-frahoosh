@@ -34,7 +34,7 @@ begin
   v_description := coalesce(p_voucher->>'description', '');
   v_counterparty := coalesce(p_voucher->>'counterparty', '');
   if v_document_number is null or v_fiscal_year is null or v_voucher_date is null then raise exception 'شماره سند، سال مالی و تاریخ الزامی است'; end if;
-  if v_voucher_type not in ('دریافت','پرداخت','انتقال','اصلاحیه','افتتاحیه','اختتامیه') then raise exception 'نوع سند معتبر نیست'; end if;
+  if v_voucher_type is null or v_voucher_type not in ('دریافت','پرداخت','انتقال','اصلاحیه','افتتاحیه','اختتامیه') then raise exception 'نوع سند معتبر نیست'; end if;
 
   select count(*),coalesce(sum(x.debit),0),coalesce(sum(x.credit),0)
     into v_line_count,v_debit,v_credit
