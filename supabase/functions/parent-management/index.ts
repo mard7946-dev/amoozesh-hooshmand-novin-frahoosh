@@ -21,6 +21,10 @@ Deno.serve(async(req:Request)=>{
  if(ce||!c)return reply({message:"حساب کاربری پیدا نشد."},403);
  const role=clean(c.role).toLowerCase(),school=clean(c.tenant_school_id);
  if(!school)return reply({message:"شناسه مدرسه ثبت نشده است."},409);
+ // Parent links imported from the school spreadsheet are keyed by the parent's national code.
+ // A parent's login username may differ, so resolve both authenticated account identifiers.
+ const normalizeIdentity=(value:unknown)=>clean(value).replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\\s\\-]/g,"");
+ const parentIdentityKeys=[...new Set([clean(c.username),clean(c.national_code),normalizeIdentity(c.username),normalizeIdentity(c.national_code)].filter(Boolean))];
  const isManager=managerRoles.includes(role),isParent=role==="parent";
  if(!isManager&&!isParent)return reply({message:"این حساب اجازه دسترسی به پنل اولیا را ندارد."},403);
  const expectedRole=isManager?"manager":"parent";
@@ -31,11 +35,14 @@ Deno.serve(async(req:Request)=>{
   const studentId=Number(input.student_id),requestType=clean(input.request_type),expertise=clean(input.expertise).slice(0,500),message=clean(input.message);
   if(!Number.isInteger(studentId)||!requestType||!message)return reply({message:"انتخاب فرزند، نوع درخواست و توضیحات الزامی است."},400);
   if(requestType.length>120||message.length<5||message.length>3000)return reply({message:"نوع درخواست یا توضیحات خارج از محدوده مجاز است."},400);
-  const {data:link,error:linkError}=await db.from("parent_children").select("student_id").eq("tenant_school_id",school).eq("parent_username",clean(c.username)).eq("student_id",studentId).maybeSingle();
-  if(linkError||!link)return reply({message:"این دانش‌آموز به حساب ولی متصل نیست."},403);
+  const {data:links,error:linkError}=await db.from("parent_children").select("parent_username,student_id").eq("tenant_school_id",school).in("parent_username",parentIdentityKeys).eq("student_id",studentId).limit(2);
+  if(linkError)return reply({message:"بررسی ارتباط ولی و دانش‌آموز انجام نشد."},500);
+  if(!links?.length)return reply({message:"برای این حساب، ارتباط ولی با این دانش‌آموز پیدا نشد؛ شناسه ورود و کد ملی حساب را بررسی کنید."},403);
+  if(links.length>1)return reply({message:"برای این حساب بیش از یک شناسه ولی منطبق پیدا شد؛ مدیر باید اطلاعات هویتی را بررسی کند."},409);
+  const matchedParentUsername=clean(links[0].parent_username);
   const {data:student,error:studentError}=await db.from("students").select("id,first_name,last_name").eq("tenant_school_id",school).eq("id",studentId).maybeSingle();
   if(studentError||!student)return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
-  const {data:created,error}=await db.from("parent_association_requests").insert({tenant_school_id:school,parent_user_id:a.user.id,parent_username:c.username,parent_name:c.display_name||c.username,parent_phone:c.phone||"",student_id:student.id,student_name:[student.first_name,student.last_name].filter(Boolean).join(" "),request_type:requestType,expertise,message,status:"pending"}).select("id,status,created_at").single();
+  const {data:created,error}=await db.from("parent_association_requests").insert({tenant_school_id:school,parent_user_id:a.user.id,parent_username:matchedParentUsername,parent_name:c.display_name||c.username,parent_phone:c.phone||"",student_id:student.id,student_name:[student.first_name,student.last_name].filter(Boolean).join(" "),request_type:requestType,expertise,message,status:"pending"}).select("id,status,created_at").single();
   if(error){console.error("parent association create",error.code);return reply({message:"ثبت درخواست انجمن انجام نشد."},500)}
   return reply({ok:true,request:created});
  }
@@ -56,7 +63,7 @@ Deno.serve(async(req:Request)=>{
    : db.from("account_settings").select("username,display_name,phone,email,national_code,role,auth_user_id").eq("tenant_school_id",school).eq("auth_user_id",a.user.id).eq("role","parent").limit(1),
   isManager
    ? db.from("parent_children").select("parent_username,student_id").eq("tenant_school_id",school).limit(3000)
-   : db.from("parent_children").select("parent_username,student_id").eq("tenant_school_id",school).eq("parent_username",clean(c.username)).limit(1000)
+   : db.from("parent_children").select("parent_username,student_id").eq("tenant_school_id",school).in("parent_username",parentIdentityKeys).limit(1000)
  ]);
  if(parentsResult.error||linksResult.error)return reply({message:"اطلاعات حساب ولی یا اتصال فرزندان دریافت نشد."},500);
  const parents=parentsResult.data??[],links=linksResult.data??[];
