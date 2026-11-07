@@ -4,7 +4,7 @@ create or replace function public.finance_create_voucher_draft(p_voucher jsonb,p
 returns jsonb
 language plpgsql
 security invoker
-set search_path = public, private
+set search_path = ''
 as $$
 declare
   v_school uuid;
