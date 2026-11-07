@@ -17,6 +17,7 @@ Deno.serve(async(req:Request)=>{
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:a,error:ae}=await db.auth.getUser(bearer.slice(7));
  if(ae||!a.user)return reply({message:"نشست ورود معتبر نیست."},401);
+ if(a.user.app_metadata?.must_change_password===true)return reply({message:"برای دسترسی به پنل اولیا، ابتدا رمز عبور اولیه را تغییر دهید."},403);
  const {data:profile,error:pe}=await db.from("account_settings").select("username,display_name,role,tenant_school_id,auth_user_id").eq("auth_user_id",a.user.id).maybeSingle();
  if(pe||!profile?.tenant_school_id)return reply({message:"پروفایل مدرسه پیدا نشد."},403);
  const role=clean(profile.role).toLowerCase(),school=profile.tenant_school_id;

@@ -14,6 +14,21 @@ assert.ok(schoolLogin.includes("body?.school_code") && schoolLogin.includes("pro
 assert.ok(schoolLogin.includes('normalize(school.school_code) !== normalize(schoolCode)'), "School login must reject a mismatched school code");
 assert.ok(schoolLogin.includes('.eq("tenant_school_id", school.id)'), "Student lookup must be restricted to the selected school");
 assert.ok(schoolLogin.includes("hasActiveSubscription"), "School login must require an active school subscription");
+const usernameLogin = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
+assert.ok(usernameLogin.includes("must_change_password"), "Username login must enforce the server-side first-login password gate");
+assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLogin.includes("password_changed: true"), "Username login must change the initial parent password without returning a session");
+assert.ok(usernameLogin.includes("school_code") && usernameLogin.includes("account.data?.national_code"), "Initial parent password change must validate school and national-code account identity");
+assert.ok(schoolLogin.includes("loginResponse.status === 428") && schoolLogin.includes("login.password_changed === true"), "School portal login must relay the auth-boundary first-login gate");
+const parentAdmin = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(parentAdmin.includes("temporaryPassword = group.parentCode") && parentAdmin.includes("must_change_password: true"), "New parent accounts must use national code as temporary password and set a forced-reset flag");
+assert.ok(parentAdmin.includes("action === \"reset_parent_password\"") && parentAdmin.includes("must_change_password: true"), "Manager must be able to reset a parent password and re-enable forced reset");
+for (const file of ["supabase/functions/parent-management/index.ts", "supabase/functions/parent-meetings/index.ts", "supabase/functions/family-education/index.ts"]) {
+  const source = readFileSync(file, "utf8");
+  assert.ok(source.includes("must_change_password"), file + " must block parent services during forced password reset");
+}
+const parentGateMigration = readFileSync("supabase/migrations/20261107133000_enforce_parent_first_login_password_change.sql", "utf8");
+assert.ok(parentGateMigration.includes("auth.users") && parentGateMigration.includes("raw_app_meta_data"), "RLS must check the current server-side Auth metadata, including already-issued tokens");
+assert.ok(parentGateMigration.includes("account_settings_authenticated_select") && parentGateMigration.includes("frahoosh_current_parent_matches"), "RLS must block both direct profile joins and helper-based parent access");
 assert.ok(html.includes("sb_publishable_"), "Portal must use a public Supabase publishable key");
 assert.ok(!html.includes("frahoosh-live-classroom-edge.mard7946.workers.dev"), "Portal must not call the legacy classroom Worker");
 assert.ok(!html.includes("sso-ticket"), "Portal must not request legacy classroom SSO tickets");

@@ -38,6 +38,7 @@ Deno.serve(async (req: Request) => {
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: authData, error: authError } = await db.auth.getUser(authorization.slice(7));
   if (authError || !authData.user) return reply({ message: "نشست ورود معتبر نیست." }, 401);
+ if (authData.user.app_metadata?.must_change_password === true) return reply({ message: "برای دسترسی به خدمات اولیا، ابتدا رمز عبور اولیه را تغییر دهید." }, 403);
 
   const { data: profile, error: profileError } = await db.from("account_settings")
     .select("username,display_name,role,national_code,tenant_school_id,auth_user_id")
