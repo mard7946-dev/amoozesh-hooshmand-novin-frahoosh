@@ -25,7 +25,7 @@ begin
     raise exception 'فقط مدیر یا حسابدار مجاز به ثبت سند است';
   end if;
   if v_school is null or not private.frahoosh_school_access_active(v_school) then raise exception 'دسترسی مدرسه فعال نیست'; end if;
-  if jsonb_typeof(p_voucher) <> 'object' or jsonb_typeof(p_lines) <> 'array' then raise exception 'ساختار سند یا ردیف‌ها معتبر نیست'; end if;
+  if jsonb_typeof(p_voucher) is distinct from 'object' or jsonb_typeof(p_lines) is distinct from 'array' then raise exception 'ساختار سند یا ردیف‌ها معتبر نیست'; end if;
 
   v_document_number := nullif(btrim(p_voucher->>'document_number'), '');
   v_fiscal_year := nullif(btrim(p_voucher->>'fiscal_year'), '');
