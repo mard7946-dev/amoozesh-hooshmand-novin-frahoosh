@@ -113,6 +113,7 @@ for (const source of financeScripts) assert.doesNotThrow(() => new Function(sour
 assert.ok(financePage.includes("async function apiAll(path,pageSize=1000)") && !financePage.includes("finance_vouchers?select=*&order=created_at.desc&limit=500"), "Finance reports must page through the complete ledger instead of silently truncating at fixed limits");
 assert.ok(financePage.includes("rpc/finance_create_voucher_draft") && financePage.includes("p_lines:lines.map"), "Voucher header and journal lines must be created through one atomic server transaction");
 assert.ok(financePage.includes("rpc/finance_post_voucher"), "Final posting must use the server-side balance validation RPC");
+assert.ok(financePage.includes("file.name.replace(/[^A-Za-z0-9._-]/g,'_')"), "Finance attachment names must be normalized before using them in private storage paths");
 assert.ok(financePage.includes("پیش‌نویس شماره ") && financePage.includes("ثبت قطعی انجام نشد"), "The UI must distinguish a saved draft from a failed final posting");
 const financeMigration = readFileSync("supabase/migrations/20261107150000_atomic_finance_voucher_creation.sql", "utf8");
 assert.ok(financeMigration.includes("finance_create_voucher_draft") && financeMigration.includes("security invoker"), "Atomic voucher creation must execute with the authenticated user's RLS permissions");
