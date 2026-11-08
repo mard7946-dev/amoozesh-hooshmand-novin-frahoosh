@@ -290,7 +290,7 @@ Deno.serve(async (req: Request) => {
       if (attemptError || !attempt) return reply({ message: "برگه آزمون متعلق به این حساب نیست." }, 403);
       if (attempt.status === "locked") return reply({ message: attempt.lock_reason || "آزمون قفل شده است." }, 423);
       if (attempt.status !== "in_progress") return reply({ message: "این آزمون قبلاً تحویل داده شده است." }, 409);
-      if (attempt.verification_due_at && Date.now() >= Date.parse(attempt.verification_due_at) && !attempt.verification_completed_at) return reply({ message: "ابتدا صحت‌سنجی حین آزمون را تکمیل کنید." }, 423);
+      if (attempt.verification_due_at && !attempt.verification_completed_at) return reply({ message: Date.now() < Date.parse(attempt.verification_due_at) ? "برای تحویل آزمون باید تا درخواست صحت‌سنجی زمان‌بندی‌شده صبر کنید و آن را تکمیل کنید." : "ابتدا صحت‌سنجی حین آزمون را تکمیل کنید." }, 423);
       const { data: exam } = await admin.from("assessment_exams").select("ends_at,duration_minutes")
         .eq("id", attempt.exam_id).maybeSingle();
       const cutoff = Math.min(Date.parse(exam?.ends_at || new Date().toISOString()), Date.parse(attempt.started_at) + Number(exam?.duration_minutes || 45) * 60000);

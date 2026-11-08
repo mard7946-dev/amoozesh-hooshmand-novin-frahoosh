@@ -22,6 +22,7 @@ create table if not exists public.classroom_verification_events (
   prompt_at timestamptz not null default now(),
   deadline_at timestamptz not null,
   responded_at timestamptz,
+  last_seen_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   unique(schedule_entry_id, student_id, class_date, check_slot)
 );

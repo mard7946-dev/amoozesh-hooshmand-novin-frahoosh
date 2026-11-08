@@ -89,22 +89,33 @@ Deno.serve(async(req:Request)=>{
    const times=[setting.check1_time,setting.check2_time];
    for(let i=0;i<times.length;i++){
     const due=minutes(times[i]);if(due<0||clock.minute<due)continue;
-    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,check_slot").eq("schedule_entry_id",scheduleId).eq("student_id",student.id).eq("class_date",clock.date).eq("check_slot",i+1).maybeSingle();
+    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,check_slot,last_seen_at").eq("schedule_entry_id",scheduleId).eq("student_id",student.id).eq("class_date",clock.date).eq("check_slot",i+1).maybeSingle();
     if(eventError)throw eventError;
     if(!event){
      const now=new Date(),deadline=new Date(now.getTime()+90000);
      const status="pending";
-     const {data:created,error:createError}=await db.from("classroom_verification_events").insert({tenant_school_id:school,schedule_entry_id:scheduleId,student_id:student.id,class_date:clock.date,check_slot:i+1,status,prompt_at:now.toISOString(),deadline_at:deadline.toISOString()}).select("id,status,deadline_at,check_slot").single();
+     const {data:created,error:createError}=await db.from("classroom_verification_events").insert({tenant_school_id:school,schedule_entry_id:scheduleId,student_id:student.id,class_date:clock.date,check_slot:i+1,status,prompt_at:now.toISOString(),deadline_at:deadline.toISOString(),last_seen_at:now.toISOString()}).select("id,status,deadline_at,check_slot,last_seen_at").single();
      if(createError&&createError.code!=="23505")throw createError;
      if(created&&created.status==="missed")return reply({ok:true,blocked:true,reason:"در نوبت "+(i+1)+" صحت‌سنجی زنگ، درخواست در زمان مقرر تأیید نشده است."});
      if(created)return reply({ok:true,enabled:true,prompt:true,event:created,check_slot:i+1});
     }
-    if(event?.status==="pending"&&Date.now()>Date.parse(event.deadline_at)){
-     await db.from("classroom_verification_events").update({status:"missed"}).eq("id",event.id).eq("status","pending");
-     return reply({ok:true,blocked:true,reason:"مهلت ۹۰ ثانیه‌ای نوبت "+(i+1)+" صحت‌سنجی تمام شده است؛ حضور تأیید نشده است."});
+    if(event?.status==="pending"){
+     const nowMs=Date.now(),deadlineMs=Date.parse(event.deadline_at),lastSeenMs=Date.parse(event.last_seen_at||event.prompt_at);
+     if(nowMs>deadlineMs){
+      const wasOnlineThroughDeadline=lastSeenMs>=deadlineMs-15000&&nowMs-lastSeenMs<=30000;
+      if(wasOnlineThroughDeadline){
+       await db.from("classroom_verification_events").update({status:"missed"}).eq("id",event.id).eq("status","pending");
+       return reply({ok:true,blocked:true,reason:"مهلت ۹۰ ثانیه‌ای نوبت "+(i+1)+" صحت‌سنجی تمام شده است؛ درخواست در زمان اتصال فعال تأیید نشد."});
+      }
+      const extendedDeadline=new Date(nowMs+90000).toISOString();
+      const {data:extended,error:extendError}=await db.from("classroom_verification_events").update({deadline_at:extendedDeadline,last_seen_at:new Date().toISOString()}).eq("id",event.id).eq("status","pending").select("id,status,deadline_at,check_slot,last_seen_at").single();
+      if(extendError)throw extendError;
+      return reply({ok:true,enabled:true,prompt:true,event:extended,check_slot:i+1,deadline_extended:true});
+     }
+     await db.from("classroom_verification_events").update({last_seen_at:new Date().toISOString()}).eq("id",event.id).eq("status","pending");
+     return reply({ok:true,enabled:true,prompt:true,event,check_slot:i+1});
     }
     if(event?.status==="missed")return reply({ok:true,blocked:true,reason:"نوبت "+(i+1)+" صحت‌سنجی این زنگ تأیید نشده است؛ دسترسی این زنگ غیرفعال شده است."});
-    if(event?.status==="pending")return reply({ok:true,enabled:true,prompt:true,event,check_slot:i+1});
    }
    return reply({ok:true,enabled:true,prompt:false});
   }
