@@ -187,6 +187,50 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, class: data });
     }
 
+    if (action === "academic_review_list") {
+      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به بررسی اطلاعات آموزشی است." }, 403);
+      const [attendanceRows, gradeRows, disciplineRows] = await Promise.all([
+        admin.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,class_name,approval_status").eq("tenant_school_id",school).eq("approval_status","pending").order("id",{ascending:false}).limit(1500),
+        admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).eq("manager_released",0).order("id",{ascending:false}).limit(1500),
+        admin.from("discipline_records").select("id,student_id,title,description,record_type,incident_date,class_name,subject,actor_role,status").eq("tenant_school_id",school).eq("status","pending").is("deleted_at",null).order("id",{ascending:false}).limit(1500)
+      ]);
+      const failed = [attendanceRows,gradeRows,disciplineRows].find((x:any)=>x.error);
+      if (failed) throw failed.error;
+      const ids = [...new Set([...(attendanceRows.data??[]),...(gradeRows.data??[]),...(disciplineRows.data??[])].map((x:any)=>Number(x.student_id)).filter(Boolean))];
+      const {data:students,error:studentsError}=ids.length
+        ? await admin.from("students").select("id,first_name,last_name,class_name").eq("tenant_school_id",school).in("id",ids)
+        : {data:[],error:null};
+      if(studentsError) throw studentsError;
+      const names=new Map((students??[]).map((x:any)=>[Number(x.id),clean(x.first_name)+" "+clean(x.last_name)]));
+      const enrich=(rows:any[])=>rows.map((x:any)=>({...x,student_name:names.get(Number(x.student_id))??"دانش‌آموز"}));
+      return reply({ok:true,attendance:enrich(attendanceRows.data??[]),grades:enrich(gradeRows.data??[]),discipline:enrich(disciplineRows.data??[])});
+    }
+
+    if (action === "academic_review") {
+      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به تأیید اطلاعات آموزشی است." }, 403);
+      const type=clean(body.entity_type), id=asInt(body.id), status=clean(body.status);
+      if(!id || !["approved","rejected"].includes(status) || !["attendance","grade","discipline"].includes(type))
+        return reply({message:"نوع اطلاعات، شناسه یا نتیجه بررسی معتبر نیست."},400);
+      const reviewedAt=new Date().toISOString(), reviewer=clean(profile.display_name)||clean(profile.username);
+      let updated:any=null, error:any=null;
+      if(type==="attendance"){
+        const result=await admin.from("attendance").update({approval_status:status,approved_at:reviewedAt,approved_by:reviewer})
+          .eq("tenant_school_id",school).eq("id",id).eq("approval_status","pending").select("id,approval_status").maybeSingle();
+        updated=result.data;error=result.error;
+      } else if(type==="grade"){
+        const result=await admin.from("student_grades").update({manager_released:status==="approved"?1:0})
+          .eq("tenant_school_id",school).eq("id",id).eq("manager_released",0).select("id,manager_released").maybeSingle();
+        updated=result.data;error=result.error;
+      } else {
+        const result=await admin.from("discipline_records").update({status,updated_at:reviewedAt})
+          .eq("tenant_school_id",school).eq("id",id).eq("status","pending").is("deleted_at",null).select("id,status").maybeSingle();
+        updated=result.data;error=result.error;
+      }
+      if(error) throw error;
+      if(!updated) return reply({message:"این مورد پیدا نشد یا قبلاً بررسی شده است."},409);
+      return reply({ok:true,entity_type:type,record:updated,status,reviewed_by:reviewer});
+    }
+
     if (action === "attendance") {
       if (!teacher && !manager) return reply({ message: "مجوز ثبت حضور و غیاب ندارید." }, 403);
       const rows = boundedRows(body.rows);
