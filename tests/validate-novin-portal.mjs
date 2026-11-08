@@ -180,7 +180,7 @@ assert.ok(html.includes("تأیید دعوت‌نامه‌های اولیا") &&
 assert.ok(publishWorkflow.includes("- 'family-invitations-review.html'") && publishWorkflow.includes("family-invitations-review.html messages.html _site/"), "GitHub Pages must trigger on and publish the manager invitation review page");
 assert.ok(invitationReviewPage.includes("action:'review'") && invitationReviewPage.includes("batch_id,status,manager_note"), "Manager review page must submit batch-level approval decisions");
 assert.ok(invitationReviewPage.includes("role!=='manager'") && invitationReviewPage.includes("data-filter"), "Manager review page must enforce the manager session and provide status filters");
-const invitationReviewScripts = [...invitationReviewPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+const invitationReviewScripts = invitationReviewPage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
 assert.ok(invitationReviewScripts.length > 0, "Manager invitation review page must contain its application script");
 for (const source of invitationReviewScripts) assert.doesNotThrow(() => new Function(source), "Manager invitation review script must have valid JavaScript syntax");
 
