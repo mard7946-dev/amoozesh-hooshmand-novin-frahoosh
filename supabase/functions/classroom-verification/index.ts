@@ -33,25 +33,33 @@ Deno.serve(async(req:Request)=>{
   const action=clean(body.action),school=profile.tenant_school_id,role=norm(profile.role),manager=managerRole(role);
   if(action==="list_settings"){
    if(!manager)return reply({message:"فقط مدیر مدرسه به تنظیم صحت‌سنجی کلاس دسترسی دارد."},403);
-   const {data:entries,error}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,start_time,end_time,day_enabled").eq("tenant_school_id",school).order("weekday").order("period").limit(1000);
+   const {data:entries,error}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,period,start_time,end_time,day_enabled").eq("tenant_school_id",school).order("period").limit(1000);
    if(error)throw error;
-   const ids=(entries??[]).map((x:any)=>x.id);
-   const {data:settings,error:settingsError}=ids.length?await db.from("classroom_verification_settings").select("schedule_entry_id,check1_time,check2_time,enabled").eq("tenant_school_id",school).in("schedule_entry_id",ids):{data:[],error:null};
+   const {data:settings,error:settingsError}=await db.from("classroom_verification_period_settings").select("period,check1_time,check2_time,enabled").eq("tenant_school_id",school);
    if(settingsError)throw settingsError;
-   const map=new Map((settings??[]).map((x:any)=>[Number(x.schedule_entry_id),x]));
-   return reply({ok:true,entries:(entries??[]).map((x:any)=>({...x,verification:map.get(Number(x.id))??null}))});
+   const map=new Map((settings??[]).map((x:any)=>[Number(x.period),x]));
+   const periods=[1,2,3].map(period=>{
+    const rows=(entries??[]).filter((x:any)=>Number(x.period)===period);
+    const starts=rows.map((x:any)=>minutes(x.start_time)).filter((n:number)=>n>=0);
+    const ends=rows.map((x:any)=>minutes(x.end_time)).filter((n:number)=>n>=0);
+    const toTime=(n:number)=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
+    return {period,session_count:rows.length,class_count:new Set(rows.map((x:any)=>norm(x.class_name))).size,start_time:starts.length?toTime(Math.min(...starts)):"—",end_time:ends.length?toTime(Math.max(...ends)):"—",verification:map.get(period)??null};
+   }).filter((p:any)=>p.session_count>0);
+   return reply({ok:true,periods});
   }
-  if(action==="save_settings"){
+  if(action==="save_period_settings"){
    if(!manager)return reply({message:"فقط مدیر مدرسه می‌تواند زمان‌های صحت‌سنجی را تنظیم کند."},403);
-   const id=Number(body.schedule_entry_id),t1=clean(body.check1_time),t2=clean(body.check2_time);
-   if(!Number.isInteger(id)||id<1||!/^\d{2}:\d{2}$/.test(t1)||!/^\d{2}:\d{2}$/.test(t2)||t1===t2)return reply({message:"برای هر زنگ دو ساعت متفاوت و معتبر وارد کنید."},400);
-   const {data:entry,error}=await db.from("weekly_schedule_entries").select("id,start_time,end_time,day_enabled").eq("id",id).eq("tenant_school_id",school).maybeSingle();
-   if(error||!entry)return reply({message:"جلسه برنامه هفتگی پیدا نشد."},404);
-   const start=minutes(entry.start_time),end=minutes(entry.end_time),a=minutes(t1),b=minutes(t2);
-   if(start<0||end<=start||a<start||a>=end||b<start||b>=end)return reply({message:"هر دو زمان صحت‌سنجی باید داخل بازه همان زنگ باشند."},400);
-   const {data,error:saveError}=await db.from("classroom_verification_settings").upsert({schedule_entry_id:id,tenant_school_id:school,check1_time:t1,check2_time:t2,enabled:body.enabled!==false,updated_at:new Date().toISOString()},{onConflict:"schedule_entry_id"}).select("schedule_entry_id,check1_time,check2_time,enabled").single();
+   const period=Number(body.period),t1=clean(body.check1_time),t2=clean(body.check2_time);
+   if(!Number.isInteger(period)||period<1||period>3||!/^\\d{2}:\\d{2}$/.test(t1)||!/^\\d{2}:\\d{2}$/.test(t2)||t1===t2)return reply({message:"برای زنگ انتخاب‌شده دو ساعت متفاوت و معتبر وارد کنید."},400);
+   const {data:entries,error:entriesError}=await db.from("weekly_schedule_entries").select("start_time,end_time").eq("tenant_school_id",school).eq("period",period).limit(1000);
+   if(entriesError)throw entriesError;
+   if(!entries?.length)return reply({message:"برای این زنگ برنامه هفتگی ثبت نشده است."},404);
+   const starts=entries.map((x:any)=>minutes(x.start_time)).filter((n:number)=>n>=0),ends=entries.map((x:any)=>minutes(x.end_time)).filter((n:number)=>n>=0);
+   const lower=starts.length?Math.min(...starts):-1,upper=ends.length?Math.max(...ends):-1,a=minutes(t1),b=minutes(t2);
+   if(lower<0||upper<=lower||a<lower||a>=upper||b<lower||b>=upper)return reply({message:"هر دو زمان باید داخل بازه کلی زنگ "+period+" باشند ("+(lower>=0?String(Math.floor(lower/60)).padStart(2,"0")+":"+String(lower%60).padStart(2,"0"):"—")+" تا "+(upper>=0?String(Math.floor(upper/60)).padStart(2,"0")+":"+String(upper%60).padStart(2,"0"):"—")+")."},400);
+   const {data,error:saveError}=await db.from("classroom_verification_period_settings").upsert({tenant_school_id:school,period,check1_time:t1,check2_time:t2,enabled:body.enabled!==false,updated_at:new Date().toISOString()},{onConflict:"tenant_school_id,period"}).select("period,check1_time,check2_time,enabled").single();
    if(saveError)throw saveError;
-   return reply({ok:true,setting:data,message:"دو زمان صحت‌سنجی برای این زنگ ذخیره شد."});
+   return reply({ok:true,setting:data,message:"دو زمان صحت‌سنجی برای تمام کلاس‌های این زنگ ذخیره شد."});
   }
   if(action==="status"||action==="confirm"){
    if(role!=="student"&&!role.includes("دانشآموز")&&!role.includes("دانش آموز"))return reply({message:"صحت‌سنجی کلاس فقط برای حساب دانش‌آموز فعال است."},403);
@@ -64,14 +72,21 @@ Deno.serve(async(req:Request)=>{
    if(!Number.isInteger(scheduleId)||scheduleId<1)return reply({message:"شناسه زنگ برنامه هفتگی معتبر نیست."},400);
    const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
    if(entryError||!entry||norm(entry.class_name)!==norm(student.class_name)||Number(entry.online_class_id)!==Number(body.room_id))return reply({message:"این زنگ متعلق به کلاس ثبت‌شده دانش‌آموز نیست."},403);
-   const {data:setting,error:settingError}=await db.from("classroom_verification_settings").select("check1_time,check2_time,enabled").eq("schedule_entry_id",scheduleId).eq("tenant_school_id",school).maybeSingle();
-   if(settingError)throw settingError;
+   const period=Number((entry as any).period);
+   const {data:periodSetting,error:periodSettingError}=await db.from("classroom_verification_period_settings").select("check1_time,check2_time,enabled").eq("tenant_school_id",school).eq("period",period).maybeSingle();
+   if(periodSettingError)throw periodSettingError;
+   let setting=periodSetting;
+   if(!setting){
+    const {data:legacySetting,error:legacyError}=await db.from("classroom_verification_settings").select("check1_time,check2_time,enabled").eq("schedule_entry_id",scheduleId).eq("tenant_school_id",school).maybeSingle();
+    if(legacyError)throw legacyError;
+    setting=legacySetting;
+   }
    if(!setting||!setting.enabled)return reply({ok:true,enabled:false});
    const clock=tehranParts();
    const weekdayKey=norm(entry.weekday).replace(/\s/g,"");
    if(weekdayKey!==norm(clock.weekday).replace(/\s/g,"")||entry.day_enabled!==true)return reply({ok:true,enabled:true,not_today:true});
    const start=minutes(entry.start_time),end=minutes(entry.end_time);
-   if(clock.minute<start||clock.minute>=end)return reply({ok:true,enabled:true,not_in_class_time:true});
+   if(!periodSetting&&(clock.minute<start||clock.minute>=end))return reply({ok:true,enabled:true,not_in_class_time:true});
    if(action==="confirm"){
     const eventId=clean(body.event_id);
     const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,schedule_entry_id").eq("id",eventId).eq("student_id",student.id).eq("tenant_school_id",school).maybeSingle();
