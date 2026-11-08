@@ -1,5 +1,5 @@
 export function timeToMinutes(value: unknown): number {
-  const match = /^(\\d{1,2}):(\\d{2})/.exec(String(value ?? "").trim());
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(value ?? "").trim());
   if (!match) return -1;
   const hour = Number(match[1]), minute = Number(match[2]);
   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 ? hour * 60 + minute : -1;
