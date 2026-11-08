@@ -102,4 +102,14 @@ assert.ok(classroomAuthorize.includes('entry.day_enabled === true'), "Disabled s
 assert.ok(classroomAuthorize.includes("isScheduleSlotActive"), "Server must enforce the active bell time window");
 assert.ok(classroomAuthorize.includes('schedule_entry_id'), "Room entry must be tied to an exact weekly schedule row");
 
+
+const verificationFunction = readFileSync(new URL("../supabase/functions/classroom-verification/index.ts", import.meta.url), "utf8");
+const verificationMigration = readFileSync(new URL("../supabase/migrations/20261108220000_classroom_verification_by_period.sql", import.meta.url), "utf8");
+const verificationUi = readFileSync(new URL("../classroom/management.html", import.meta.url), "utf8");
+assert.ok(verificationFunction.includes('classroom_verification_period_settings') && verificationFunction.includes('eq("period",Number(entry.period))'), "Student checks must read one school-scoped setting shared by the assigned bell");
+assert.ok(verificationFunction.includes('sessionCheckpointMinutes'), "Both checks must scale to the exact session window, including parallel half-bell sessions");
+assert.ok(verificationFunction.includes('eq("period",period)') && verificationFunction.includes('onConflict:"tenant_school_id,period"'), "Manager saves must target a single setting per school and bell");
+assert.ok(verificationUi.includes("ذخیره برای همه کلاس‌ها") && verificationUi.includes("data-verification-period"), "Manager UI must save one row per bell rather than one row per weekly session");
+assert.ok(verificationMigration.includes("primary key (tenant_school_id, period)") && verificationMigration.includes("check1_position") && verificationMigration.includes("check2_position"), "Migration must persist two shared positions per school bell");
+
 console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
