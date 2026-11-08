@@ -27,10 +27,10 @@ button,a.button{border:1px solid var(--line);background:#1a2940;color:var(--text
 <main>
 <section class="panel">
 <h2>ایجاد جلسه جدید</h2>
-<p class="muted">جلسه پس از ساخت فوراً فعال می‌شود. لینک اختصاصی را برای مخاطبان بفرستید. مخاطبان ابتدا با حساب خود وارد فراهوش شوند و سپس لینک را باز کنند؛ ورود بر اساس گروه انتخاب‌شده کنترل می‌شود.</p>
+<p class="muted">جلسه پس از ساخت فوراً فعال می‌شود. مدت انتخاب‌شده، مهلت ورود با لینک است؛ برای پایان‌دادن به جلسه و خارج‌کردن افراد حاضر، از دکمه «پایان جلسه» استفاده کنید. لینک اختصاصی را برای مخاطبان بفرستید. مخاطبان ابتدا با حساب خود وارد فراهوش شوند و سپس لینک را باز کنند؛ ورود بر اساس گروه انتخاب‌شده کنترل می‌شود.</p>
 <div class="grid">
 <label>عنوان جلسه<input id="title" maxlength="140" placeholder="مثلاً جلسه هماهنگی اولیا"></label>
-<label>مدت جلسه<select id="duration"><option value="30">۳۰ دقیقه</option><option value="60" selected>۶۰ دقیقه</option><option value="90">۹۰ دقیقه</option><option value="120">۱۲۰ دقیقه</option><option value="180">۱۸۰ دقیقه</option><option value="240">۲۴۰ دقیقه</option></select></label>
+<label>مدت اعتبار لینک ورود<select id="duration"><option value="30">۳۰ دقیقه</option><option value="60" selected>۶۰ دقیقه</option><option value="90">۹۰ دقیقه</option><option value="120">۱۲۰ دقیقه</option><option value="180">۱۸۰ دقیقه</option><option value="240">۲۴۰ دقیقه</option></select></label>
 <label>مخاطبان<select id="audience"><option value="all_school">تمام حساب‌های فعال مدرسه</option><option value="roles">انتخاب گروه‌های مشخص</option></select></label>
 </div>
 <label>توضیحات جلسه<textarea id="description" maxlength="1000" placeholder="موضوع و توضیحات کوتاه جلسه"></textarea></label>
@@ -48,7 +48,7 @@ button,a.button{border:1px solid var(--line);background:#1a2940;color:var(--text
 <div id="message" role="status" class="small"></div>
 </section>
 <section class="panel"><h2>جلسه‌های ساخته‌شده</h2><div id="meetings" class="small">در حال دریافت فهرست…</div></section>
-<div class="notice">نکته امنیتی: لینک را فقط برای مخاطبان موردنظر ارسال کنید. حتی با داشتن لینک، ورود بدون حساب مدرسه یا خارج از گروه انتخاب‌شده مجاز نیست. ضبط جلسه به‌صورت پیش‌فرض خاموش است.</div>
+<div class="notice">نکته امنیتی: لینک را فقط برای مخاطبان موردنظر ارسال کنید. حتی با داشتن لینک، ورود بدون حساب مدرسه یا خارج از گروه انتخاب‌شده مجاز نیست. پس از پایان اعتبار لینک، ورود مجدد مسدود می‌شود؛ مدیر می‌تواند جلسه فعال را هر زمان پایان دهد. ضبط جلسه به‌صورت پیش‌فرض خاموش است.</div>
 </main>
 <script>
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
