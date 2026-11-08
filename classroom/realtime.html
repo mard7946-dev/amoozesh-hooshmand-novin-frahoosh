@@ -4,120 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#101827">
-<title>کلاس زنده | فراهوش نوین</title>
+<title>بازگشت به کلاس آنلاین | فراهوش نوین</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--line:#2c3b50;--text:#eef4ff;--muted:#a7b6cc;--accent:#46d6b0}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#101a2a;border-bottom:1px solid var(--line);flex-wrap:wrap}
-h1{font-size:18px;margin:0}small,.muted{color:var(--muted)}
-button,.tool{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 13px;cursor:pointer}
-button:disabled{opacity:.5;cursor:not-allowed}
-main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
-#roomList{display:grid;gap:8px}
-.room{width:100%;text-align:right;line-height:1.8}
-#meetingMount{height:min(74vh,780px);min-height:420px;overflow:hidden;border-radius:12px;background:#111827}
-#meetingMount rtk-meeting{display:block;width:100%;height:100%;min-height:420px}
-.notice{padding:12px;border:1px solid #7b6534;border-radius:10px;background:#302817;color:#ffe7a8;line-height:1.9}
-.hidden{display:none!important}
-@media(max-width:640px){main{padding:8px}#meetingMount{height:72vh;min-height:380px}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1220;color:#eef4ff;font-family:Tahoma,"Segoe UI",sans-serif}
+main{max-width:520px;margin:20px;padding:24px;border:1px solid #2c3b50;border-radius:14px;background:#121d2e;text-align:center;line-height:2}
+a{color:#46d6b0}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js"></script>
-<script type="module">
-import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js";
-defineCustomElements();
-</script>
 </head>
 <body>
-<header>
- <div><h1>فراهوش نوین · کلاس صوتی و تصویری</h1><small id="status">در حال بررسی نشست ورود…</small></div>
- <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="back">بازگشت به پنل</button></div>
-</header>
 <main>
- <section class="panel" id="selector">
-  <strong>کلاس‌های مجاز</strong>
-  <p class="muted">ورود فقط برای زنگ فعال و پس از بررسی مجوز حساب، مدرسه و برنامهٔ هفتگی انجام می‌شود.</p>
-  <div id="roomList"></div>
- </section>
- <section class="panel hidden" id="meetingPanel">
-  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-   <strong id="meetingTitle">کلاس زنده</strong><small id="meetingDetail"></small>
-  </div>
-  <div id="meetingMount"><rtk-meeting id="realtimeMeeting" show-setup-screen="true"></rtk-meeting></div>
- </section>
- <div class="notice" id="notice">صدا و تصویر فقط پس از اجازهٔ شما برای میکروفن و دوربین فعال می‌شوند. ضبط کلاس خاموش است و گفت‌وگوی داخلی تا آماده‌شدن پیام‌رسانی تحت نظارت غیرفعال است.</div>
+<h2>بازگشت به کلاس آنلاین فراهوش</h2>
+<p>ورود صوتی‌ـ‌تصویری از مسیر قبلی کلاس انجام می‌شود.</p>
+<p><a href="index.html">اگر انتقال خودکار انجام نشد، وارد کلاس آنلاین شوید.</a></p>
 </main>
 <script>
-const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
-const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
-const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
-const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
-const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:"دانش‌آموز"};
-let profile=null,meeting=null;
-const $=id=>document.getElementById(id);
-function say(text){$("status").textContent=text;$("notice").textContent=text;}
-async function postFunction(name,body){
- const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
- const data=await response.json().catch(()=>({}));
- if(!response.ok||!data.ok)throw new Error(data.message||"درخواست به سرور انجام نشد.");
- return data;
-}
-function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
-$("back").addEventListener("click",returnToPanel);
-async function enterRoom(room,scheduleEntryId){
- const buttons=$("roomList").querySelectorAll("button");buttons.forEach(b=>b.disabled=true);
- try{
-  say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
-  const credentials=await postFunction("classroom-realtime-token",{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
-  await customElements.whenDefined("rtk-meeting");
-  const sdk=window.RealtimeKitClient;
-  if(!sdk||typeof sdk.init!=="function")throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
-  meeting=await sdk.init({authToken:credentials.token,defaults:{audio:false,video:false}});
-  $("realtimeMeeting").meeting=meeting;
-  $("meetingTitle").textContent=room.title||room.subject||"کلاس آنلاین";
-  $("meetingDetail").textContent=[room.class_name,room.teacher].filter(Boolean).join(" · ");
-  $("meetingPanel").classList.remove("hidden");
-  $("selector").classList.add("hidden");
-  $("notice").textContent="اتصال برقرار شد. میکروفن و دوربین را فقط در صورت نیاز و با اجازهٔ مرورگر فعال کنید.";
-  $("status").textContent="اتصال امن کلاس برقرار شد · "+(labels[profile?.role]||profile?.role||"شرکت‌کننده");
- }catch(error){say(error.message||"اتصال به کلاس انجام نشد.");buttons.forEach(b=>b.disabled=false);}
-}
-async function boot(){
- if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
- try{
-  const requestedRoomId=Number(new URLSearchParams(location.search).get("room_id")||0);
-  const requestedScheduleEntryId=Number(new URLSearchParams(location.search).get("schedule_entry_id")||0);
-  const data=await postFunction("classroom-authorize",requestedRoomId?{room_id:requestedRoomId,schedule_entry_id:requestedScheduleEntryId,active_role:activeRole}:{active_role:activeRole});
-  profile=data.profile||{};
-  if(requestedRoomId){
-   if(!data.room)throw new Error("سرور مجوز این کلاس را تأیید نکرد؛ زنگ یا برنامه ممکن است غیرفعال شده باشد.");
-   await enterRoom(data.room,requestedScheduleEntryId);
-   return;
-  }
-  const role=String(profile.role||"").toLocaleLowerCase("fa");
-  const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
-  let rooms=[];
-  if(staffOrStudent){
-   const schedule=Array.isArray(data.schedule)?data.schedule:[];
-   rooms=schedule.filter(entry=>entry.day_enabled===true&&entry.is_active===true&&Number(entry.id)>0&&Number(entry.schedule_entry_id)>0)
-    .map(entry=>({room:{id:entry.id,title:entry.title||entry.subject,subject:entry.subject,class_name:entry.class_name,teacher:entry.teacher,start_time:entry.start_time,end_time:entry.end_time},scheduleEntryId:entry.schedule_entry_id}));
-  }else{
-   rooms=(Array.isArray(data.rooms)?data.rooms:[]).filter(room=>!["inactive","disabled","cancelled","canceled","غیرفعال","لغو"].includes(String(room.status||"").toLowerCase()))
-    .map(room=>({room,scheduleEntryId:0}));
-  }
-  $("roomList").replaceChildren();
-  if(!rooms.length){say("در حال حاضر زنگ فعالی برای این حساب وجود ندارد. برنامهٔ روزانه و فعال‌سازی زنگ را در پنل مدیریت بررسی کنید.");return;}
-  for(const item of rooms){
-   const room=item.room,b=document.createElement("button");b.className="room";
-   b.textContent=[room.start_time||"",room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(" · ");
-   b.addEventListener("click",()=>enterRoom(room,item.scheduleEntryId));$("roomList").append(b);
-  }
-  say(rooms.length.toLocaleString("fa-IR")+" کلاس مجاز برای ورود نمایش داده شد.");
- }catch(error){say(error.message||"بررسی نشست و مجوز کلاس انجام نشد.");}
-}
-window.addEventListener("beforeunload",()=>{try{meeting?.leave?.();}catch(_){}});
-boot();
+const target = new URL("index.html", location.href);
+target.search = location.search;
+target.hash = location.hash;
+location.replace(target.href);
 </script>
-<script src="../panel-return.js?v=20261106-return"></script>
 </body>
 </html>
