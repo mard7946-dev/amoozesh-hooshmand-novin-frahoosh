@@ -79,7 +79,7 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["classroom/meetings.html", adHocMeetingsPage], ["classroom/realtime.html", realtimeMeetingPage], ["classroom/index.html", classroomHome], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
