@@ -79,7 +79,11 @@ jobs:
               cairosvg.svg2png(url=f'icons/frahoosh-{size}.svg', write_to=f'_site/icons/frahoosh-{size}.png', output_width=size, output_height=size)
           PY
           mkdir -p _site/classroom
-          cp classroom/index.html classroom/realtime.html classroom/schedule.html classroom/management.html classroom/meetings.html classroom/weekly-schedule-import.js _site/classroom/
+          cp classroom/index.html _site/classroom/index.html
+          cp classroom/realtime.html _site/classroom/realtime.html
+          cp classroom/schedule.html _site/classroom/schedule.html
+          cp classroom/management.html classroom/weekly-schedule-import.js _site/classroom/
+          cp classroom/meetings.html _site/classroom/meetings.html
           cp classroom.html _site/classroom.html
           touch _site/.nojekyll
       - name: Upload site artifact
