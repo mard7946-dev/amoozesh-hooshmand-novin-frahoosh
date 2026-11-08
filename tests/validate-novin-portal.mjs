@@ -175,6 +175,15 @@ for (const source of directoryScripts) assert.doesNotThrow(() => new Function(so
 console.log("Staff directory deployment checks passed: trigger, published artifact, and page source.");
 
 
+const invitationReviewPage = readFileSync("family-invitations-review.html", "utf8");
+assert.ok(html.includes("تأیید دعوت‌نامه‌های اولیا") && html.includes("family-invitations-review.html?v="), "Manager portal must expose and route to parent invitation approvals");
+assert.ok(publishWorkflow.includes("- 'family-invitations-review.html'") && publishWorkflow.includes("family-invitations-review.html messages.html _site/"), "GitHub Pages must trigger on and publish the manager invitation review page");
+assert.ok(invitationReviewPage.includes("action:'review'") && invitationReviewPage.includes("batch_id,status,manager_note"), "Manager review page must submit batch-level approval decisions");
+assert.ok(invitationReviewPage.includes("role!=='manager'") && invitationReviewPage.includes("data-filter"), "Manager review page must enforce the manager session and provide status filters");
+const invitationReviewScripts = [...invitationReviewPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+assert.ok(invitationReviewScripts.length > 0, "Manager invitation review page must contain its application script");
+for (const source of invitationReviewScripts) assert.doesNotThrow(() => new Function(source), "Manager invitation review script must have valid JavaScript syntax");
+
 const counselorPage = readFileSync("counseling.html", "utf8");
 assert.ok(html.includes("location.href='counseling.html?tab='"), "Counselor page must open on the portal origin so sessionStorage is shared");
 assert.ok(!html.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html"), "Counselor route must not cross origins and lose the session token");
