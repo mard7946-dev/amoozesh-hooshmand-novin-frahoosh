@@ -124,5 +124,6 @@ assert.ok(adHocMeetingMigration.includes("classroom_ad_hoc_meetings") && adHocMe
 assert.ok(adHocMeetingTokenApi.includes('eq("join_code", joinCode)') && adHocMeetingTokenApi.includes("audience_roles") && adHocMeetingTokenApi.includes("expires_at"), "Ad-hoc meeting token issuance must validate link, audience, school, and expiry");
 assert.ok(realtimeMeetingPage.includes('query.get("meeting_id")') && realtimeMeetingPage.includes('query.get("join_code")') && realtimeMeetingPage.includes('meeting_id:adHoc.id'), "Realtime room must accept manager-issued meeting links");
 assert.ok(adHocMeetingsPage.includes("ساخت جلسه و دریافت لینک") && adHocMeetingsPage.includes("کپی لینک دعوت") && adHocMeetingsPage.includes("تمام حساب‌های فعال مدرسه"), "Manager page must create and share meeting links with audience controls");
+assert.ok(adHocMeetingsPage.includes("ورود به جلسه") && adHocMeetingsPage.includes("roleNames"), "Manager must be able to enter an active meeting and see Persian audience labels");
 assert.ok(classroomHome.includes('id="managerMeetingsLink"') && classroomHome.includes("meetings.html"), "Online classroom home must expose ad-hoc meeting creation to managers");
 console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
