@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>بررسی و انتشار اطلاعات آموزشی | فراهوش</title>
+<style>
+:root{color-scheme:dark}body{margin:0;padding:14px;background:#0b1220;color:#eef4ff;font:14px Tahoma,Arial}main{max-width:1100px;margin:auto}header,.panel,.item{background:#121d2e;border:1px solid #2c3b50;border-radius:12px;padding:14px;margin:10px 0}button{font:inherit;padding:9px 13px;border:1px solid #496078;border-radius:8px;background:#1c3149;color:#fff;cursor:pointer;margin:3px}button.approve{background:#145b43;border-color:#238b67}button.reject{background:#63313a;border-color:#a44b58}.muted{color:#a7b6cc}.status{padding:12px;border-radius:8px;background:#18263a;white-space:pre-wrap}.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs button[aria-pressed=true]{background:#17463f;border-color:#46d6b0}.item h3{margin:4px 0 10px}.item p{margin:7px 0;line-height:1.8}.row{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.empty{padding:18px;color:#a7b6cc;text-align:center}.bad{color:#ffc4c4}
+</style></head>
+<body><main>
+<header><h2>بررسی و انتشار اطلاعات آموزشی</h2><p class="muted">اطلاعات ثبت‌شده توسط دبیران تا زمان تأیید مدیر یا معاون در پنل اولیا نمایش داده نمی‌شود.</p><button id="back">بازگشت به پنل</button> <button id="reload">تازه‌سازی</button></header>
+<div id="status" class="status">در حال بررسی نشست و دریافت موارد در انتظار تأیید…</div>
+<section class="panel"><div class="tabs"><button data-kind="attendance" aria-pressed="true">حضور و غیاب</button><button data-kind="grade" aria-pressed="false">نمره و ارزشیابی</button><button data-kind="discipline" aria-pressed="false">انضباط و تشویق</button></div><div id="list"></div></section>
+</main>
+<script>
+const endpoint='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management',key='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP',token=sessionStorage.getItem('frahoosh_novin_access_token')||'',role=(sessionStorage.getItem('frahoosh_novin_role')||'').toLowerCase();
+const $=id=>document.getElementById(id);let data={attendance:[],grades:[],discipline:[]},kind='attendance';
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function say(v,bad=false){$('status').textContent=v;$('status').classList.toggle('bad',bad)}
+async function api(body){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify(body)});const x=await r.json();if(!r.ok||!x.ok)throw Error(x.message||'درخواست انجام نشد');return x}
+function details(type,x){
+ if(type==='attendance')return ['حضور و غیاب',x.status,x.attendance_date||x.date,x.subject,x.class_name,x.description];
+ if(type==='grade')return ['نمره و ارزشیابی',x.assessment_title,x.subject,x.score,'نوبت '+(x.term||'—'),x.grade_date_shamsi,x.class_name];
+ return [x.record_type==='praise'?'تشویق':'انضباط',x.title,x.subject,x.class_name,x.incident_date,x.description];
+}
+function render(){
+ document.querySelectorAll('[data-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kind===kind)));
+ const rows=data[kind]||[];
+ $('list').innerHTML=rows.length?rows.map(x=>{const d=details(kind,x);return '<article class="item"><div class="row"><h3>'+esc(d[0])+' · '+esc(x.student_name)+'</h3><span class="muted">شناسه '+esc(x.id)+'</span></div><p>'+d.slice(1).filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='').map(esc).join(' · ')+'</p><button class="approve" data-review="'+esc(x.id)+'" data-status="approved">تأیید و نمایش برای ولی</button><button class="reject" data-review="'+esc(x.id)+'" data-status="rejected">رد مورد</button></article>'}).join(''):'<div class="empty">موردی در انتظار بررسی این بخش وجود ندارد.</div>';
+}
+async function load(){if(!token||!['manager','deputy'].includes(role)){say('برای بررسی اطلاعات آموزشی باید با حساب مدیر یا معاون وارد شوید.',true);return}try{say('در حال دریافت اطلاعات در انتظار تأیید…');const x=await api({action:'academic_review_list',active_role:role});data={attendance:x.attendance||[],grades:x.grades||[],discipline:x.discipline||[]};render();say('دریافت شد · حضور و غیاب: '+data.attendance.length+' · نمره: '+data.grades.length+' · انضباط: '+data.discipline.length)}catch(e){say(e.message,true)}}
+document.addEventListener('click',async e=>{const tab=e.target.closest('[data-kind]');if(tab){kind=tab.dataset.kind;render();return}const b=e.target.closest('[data-review]');if(!b)return;const id=Number(b.dataset.review),status=b.dataset.status;if(!confirm(status==='approved'?'این مورد تأیید و برای ولی منتشر شود؟':'این مورد رد شود؟'))return;try{b.disabled=true;say('در حال ذخیره نتیجه بررسی…');await api({action:'academic_review',active_role:role,entity_type:kind,id,status});say(status==='approved'?'مورد تأیید و منتشر شد.':'مورد رد شد.');await load()}catch(err){b.disabled=false;say(err.message,true)}});
+$('reload').addEventListener('click',load);$('back').addEventListener('click',()=>location.href='portal.html?step=panel&role='+encodeURIComponent(role));load();
+</script></body></html>
