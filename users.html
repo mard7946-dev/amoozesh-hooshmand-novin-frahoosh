@@ -13,6 +13,13 @@
 <header><div><h1>مدیریت کاربران و نقش‌ها</h1><p>نقش و عضویت کاربران از پایگاه داده مدرسه خوانده و همان‌جا ذخیره می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
 <section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
 
+<section class="card" id="studentAccountReset">
+<h2>حساب‌های ورود دانش‌آموزان</h2>
+<p>فقط دانش‌آموزان همین مدرسه بررسی می‌شوند. برای هر پروندهٔ یکتا با کد ملی ۱۰ رقمی، نام کاربری و رمز موقت برابر کد ملی ثبت می‌شود؛ تغییر رمز در نخستین ورود اجباری است.</p>
+<div class="actions"><button class="btn primary" id="resetAllStudentAccounts" type="button">بازنشانی حساب همه دانش‌آموزان</button></div>
+<div id="studentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های دانش‌آموزی موجود را نیز بازنشانی می‌کند.</div>
+<small>هشدار امنیتی: کد ملی به‌تنهایی رمز امنی نیست. این روش فقط برای آزمون کنترل‌شده است؛ دانش‌آموز باید بلافاصله رمز مستقل و غیرقابل حدس تعیین کند.</small>
+</section>
 <section class="card" id="parentBulkImport">
 <h2>ورود گروهی اولیا و اتصال خودکار به فرزندان</h2>
 <p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
@@ -58,7 +65,20 @@ function renderProfileDetail(p){const box=document.getElementById("profileDetail
 function parseExcel(input){const file=input.files&&input.files[0];if(!file)throw new Error("ابتدا فایل اکسل را انتخاب کن.");if(typeof XLSX==="undefined")throw new Error("ابزار خواندن اکسل بارگذاری نشده؛ صفحه را دوباره باز کن.");return file.arrayBuffer().then(buffer=>{const workbook=XLSX.read(buffer,{type:"array"});return XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:"",raw:false})})}
 function downloadTemplate(rows,name){if(typeof XLSX==="undefined"){document.getElementById("importStatus").textContent="ابزار اکسل بارگذاری نشده است.";return}const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"اطلاعات");XLSX.writeFile(wb,name)}
 function reportImport(data){const n=document.getElementById("importStatus");n.className="status "+(Number(data.failed||0)?"error":"ok");n.textContent="ردیف‌ها: "+data.total+"، موفق: "+data.succeeded+"، ناموفق: "+data.failed+(data.results&&data.results.some(x=>!x.success)?" — جزئیات: "+data.results.filter(x=>!x.success).slice(0,8).map(x=>"ردیف "+x.row+": "+x.message).join(" | "):"")}
-document.querySelectorAll(".profile-group").forEach(b=>b.addEventListener("click",()=>{selectedCategory=b.dataset.category;selectedProfile=null;document.querySelectorAll(".profile-group").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));document.getElementById("profileDetail").hidden=true;renderProfiles()}));document.getElementById("profileSearch").addEventListener("input",renderProfiles);document.getElementById("reloadProfiles").addEventListener("click",loadProfiles);
+document.querySelectorAll(".profile-group").forEach(b=>b.addEventListener("click",()=>{selectedCategory=b.dataset.category;selectedProfile=null;document.querySelectorAll(".profile-group").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));document.getElementById("profileDetail").hidden=true;renderProfiles()}));document.getElementById("profileSearch").addEventListener("input",renderProfiles);
+document.getElementById("resetAllStudentAccounts").addEventListener("click",async()=>{
+ const status=document.getElementById("studentResetStatus");
+ if(!confirm("هشدار: رمز همه حساب‌های دانش‌آموزی این مدرسه بازنشانی می‌شود و رمزهای فعلی دیگر کار نمی‌کنند. ادامه می‌دهید؟"))return;
+ if(!confirm("برای تأیید نهایی، همه دانش‌آموزان واجد شرایط با رمز موقت کد ملی فعال می‌شوند. مطمئن هستید؟"))return;
+ const button=document.getElementById("resetAllStudentAccounts");button.disabled=true;status.className="status";status.textContent="در حال بررسی پرونده‌ها و بازنشانی حساب‌ها…";
+ try{
+  const result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS"});
+  status.className="status "+(result.failed?"error":"ok");
+  status.textContent="پایان عملیات — کل پرونده‌ها: "+result.total+"، حساب جدید: "+result.created+"، رمز بازنشانی‌شده: "+result.reset+"، ردشده: "+result.skipped+"، خطا: "+result.failed+". "+(result.message||"");
+ }catch(error){status.className="status error";status.textContent=error.message||"بازنشانی حساب دانش‌آموزان ناموفق بود."}
+ finally{button.disabled=false}
+});
+document.getElementById("reloadProfiles").addEventListener("click",loadProfiles);
 
 document.getElementById("parentTemplate").addEventListener("click",()=>downloadTemplate([
  {"کد ملی ولی":"1234567890","نام ولی":"ولی نمونه الف","شماره تماس ولی":"09120000000","نسبت با دانش‌آموز":"مادر","کد ملی دانش‌آموز":"1111111111","نام دانش‌آموز":"فرزند اول","نام خانوادگی دانش‌آموز":"نمونه"},
