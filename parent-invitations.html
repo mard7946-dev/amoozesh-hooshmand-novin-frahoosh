@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1730">
+<title>دعوت‌نامه‌های من | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#11213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0}
+*{box-sizing:border-box}body{margin:0;padding:16px;background:radial-gradient(ellipse at 15% 5%,#17365a 0,transparent 42%),var(--bg);font-family:Tahoma,"Segoe UI",sans-serif;color:var(--text)}main{max-width:900px;margin:auto}header,.item{background:#0e1b32;border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0}h1{font-size:clamp(21px,4vw,30px);margin:0 0 8px}p{line-height:1.9;color:var(--muted)}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#203451;color:var(--text);margin:4px}button:disabled{opacity:.55;cursor:wait}.item h2{font-size:19px;margin:0 0 12px;color:var(--mint)}.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.meta div{background:#132743;padding:9px;border-radius:9px}.actions{margin-top:14px}.accept{border-color:#277a5e}.decline{border-color:#8a4b4b}.status{padding:10px;border-radius:10px;background:#132743}.error{color:#ffb5b5}.empty{text-align:center;padding:24px}
+</style></head>
+<body><main>
+<header><h1>دعوت‌نامه‌های من</h1><p>در این صفحه فقط دعوت‌نامه‌هایی نمایش داده می‌شود که مدیر مدرسه تأیید و منتشر کرده است. پاسخ شما مستقیماً برای مدرسه ثبت می‌شود.</p><button id="back" type="button">بازگشت به پنل ولی</button><button id="reload" type="button">بروزرسانی</button></header>
+<div id="status" class="status" role="status" aria-live="polite">در حال دریافت دعوت‌نامه‌ها…</div><section id="list" aria-live="polite"></section>
+</main>
+<script>
+const endpoint='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/family-education';
+const key='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=(sessionStorage.getItem('frahoosh_novin_role')||'').toLowerCase();
+let rows=[];
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function say(value,error=false){$('status').textContent=value;$('status').classList.toggle('error',error)}
+async function call(payload){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify(payload)});const data=await r.json().catch(()=>({}));if(!r.ok||!data.ok)throw Error(data.message||'عملیات انجام نشد.');return data}
+function render(){if(!rows.length){$('list').innerHTML='<div class="item empty"><h2>دعوت‌نامه‌ای برای شما ثبت نشده است</h2><p>اگر دعوت‌نامه‌ای برای شما ارسال شود، پس از تأیید مدیر در همین صفحه نمایش داده خواهد شد.</p></div>';return}
+$('list').innerHTML=rows.map(x=>'<article class="item"><h2>'+esc(x.title)+'</h2>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+'<div class="meta"><div><b>مخاطب:</b> '+esc(x.student_name||'—')+'</div><div><b>روز:</b> '+esc(x.event_weekday||'—')+'</div><div><b>تاریخ:</b> '+esc(x.event_date_shamsi||'—')+'</div><div><b>ساعت:</b> '+esc(x.event_time||'—')+'</div><div><b>محل:</b> '+esc(x.venue||'—')+'</div><div><b>وضعیت پاسخ:</b> '+({pending:'در انتظار پاسخ شما',accepted:'حضور شما تأیید شده',declined:'عدم حضور ثبت شده'}[x.status]||esc(x.status))+'</div></div>'+(x.manager_note?'<p><b>یادداشت مدرسه:</b> '+esc(x.manager_note)+'</p>':'')+(x.status==='pending'?'<div class="actions"><button class="accept" data-answer="accepted" data-id="'+Number(x.id)+'">تأیید حضور</button><button class="decline" data-answer="declined" data-id="'+Number(x.id)+'">عدم حضور</button></div>':'')+(x.parent_note?'<p><b>توضیح شما:</b> '+esc(x.parent_note)+'</p>':'')+'</article>').join('')}
+async function load(){if(!token||role!=='parent')throw Error('برای مشاهده دعوت‌نامه‌ها باید با حساب واقعی ولی وارد شوید.');say('در حال دریافت دعوت‌نامه‌های تأییدشده…');const data=await call({action:'list'});if(data.role!=='parent')throw Error('نقش حساب واردشده، ولی تأیید نشد.');rows=(data.invitations||[]).filter(x=>x.approval_status==='approved');render();say('دعوت‌نامه‌های تأییدشده دریافت شد.')}
+$('list').addEventListener('click',async ev=>{const b=ev.target.closest('button[data-answer]');if(!b)return;b.disabled=true;try{await call({action:'respond',id:Number(b.dataset.id),status:b.dataset.answer});say('پاسخ شما با موفقیت ثبت شد.');await load()}catch(e){say(e.message,true);b.disabled=false}});
+$('reload').onclick=()=>load().catch(e=>say(e.message,true));
+$('back').onclick=()=>location.href='portal.html?step=panel&role=parent';
+load().catch(e=>say(e.message,true));
+</script></body></html>
