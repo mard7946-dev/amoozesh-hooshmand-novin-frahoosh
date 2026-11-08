@@ -287,7 +287,7 @@ assert.ok(classroomManagementFunction.includes('action === "academic_review_list
 assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('eq("manager_released",0)') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include only pending attendance, unpublished grades, and pending discipline");
 assert.ok(parentManagementFunction.includes('eq("approval_status","approved")') && parentManagementFunction.includes('eq("manager_released",1)') && parentManagementFunction.includes('eq("status","approved")'), "Parent API must return only approved attendance, released grades, and approved discipline");
 assert.ok(parentManagementFunction.includes('eq("status","active")'), "Parent API must return only active assignments");
-assert.ok(portal.includes("academic-review.html") && portal.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
+assert.ok(html.includes("academic-review.html") && html.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
 assert.ok(publishWorkflow.includes("'academic-review.html'") && publishWorkflow.includes("academic-review.html"), "Academic review page must trigger and enter GitHub Pages deployment");
 for (const source of [...academicReviewPage.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(Boolean)) {
   assert.doesNotThrow(() => new Function(source), "Academic review page script must have valid JavaScript syntax");
