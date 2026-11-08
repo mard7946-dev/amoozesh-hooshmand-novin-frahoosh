@@ -19,7 +19,7 @@ const adminUsersApi = readFileSync(new URL("../supabase/functions/admin-manage-u
 const adHocMeetingsPage = readFileSync(new URL("../classroom/meetings.html", import.meta.url), "utf8");
 const adHocMeetingsApi = readFileSync(new URL("../supabase/functions/classroom-meetings/index.ts", import.meta.url), "utf8");
 const adHocMeetingTokenApi = readFileSync(new URL("../supabase/functions/classroom-realtime-token/index.ts", import.meta.url), "utf8");
-const adHocMeetingMigration = readFileSync(new URL("../supabase/migrations/20261108100000_classroom_ad_hoc_meetings.sql", import.meta.url), "utf8");
+const adHocMeetingMigration = readFileSync(new URL("../supabase/migrations/20261109000000_classroom_ad_hoc_meetings.sql", import.meta.url), "utf8");
 const realtimeMeetingPage = readFileSync(new URL("../classroom/realtime.html", import.meta.url), "utf8");
 const classroomHome = readFileSync(new URL("../classroom/index.html", import.meta.url), "utf8");
 
