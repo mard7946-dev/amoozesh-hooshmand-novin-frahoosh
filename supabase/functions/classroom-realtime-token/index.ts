@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
         const role = norm(value);
         if (role === "manager" || role.includes("مدیر")) return "manager";
         if (role === "teacher" || role.includes("دبیر") || role.includes("معلم")) return "teacher";
-        if (role === "student" || role.includes("دانش‌آموز") || role.includes("دانش آموز")) return "student";
+        if (role === "student" || role.includes("دانشآموز") || role.includes("دانش آموز")) return "student";
         if (role === "parent" || role.includes("ولی") || role.includes("والد")) return "parent";
         if (role === "counselor" || role.includes("مشاور")) return "counselor";
         if (role === "deputy" || role.includes("معاون") || role.endsWith("_deputy") || ["educational","executive","cultural","advisor"].includes(role)) return "deputy";
