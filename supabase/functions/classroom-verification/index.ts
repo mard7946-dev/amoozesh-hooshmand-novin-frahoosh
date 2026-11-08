@@ -50,7 +50,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="save_period_settings"){
    if(!manager)return reply({message:"فقط مدیر مدرسه می‌تواند زمان‌های صحت‌سنجی را تنظیم کند."},403);
    const period=Number(body.period),t1=clean(body.check1_time),t2=clean(body.check2_time);
-   if(!Number.isInteger(period)||period<1||period>3||!/^\\d{2}:\\d{2}$/.test(t1)||!/^\\d{2}:\\d{2}$/.test(t2)||t1===t2)return reply({message:"برای زنگ انتخاب‌شده دو ساعت متفاوت و معتبر وارد کنید."},400);
+   if(!Number.isInteger(period)||period<1||period>3||!/^\d{2}:\d{2}$/.test(t1)||!/^\d{2}:\d{2}$/.test(t2)||t1===t2)return reply({message:"برای زنگ انتخاب‌شده دو ساعت متفاوت و معتبر وارد کنید."},400);
    const {data:entries,error:entriesError}=await db.from("weekly_schedule_entries").select("start_time,end_time").eq("tenant_school_id",school).eq("period",period).limit(1000);
    if(entriesError)throw entriesError;
    if(!entries?.length)return reply({message:"برای این زنگ برنامه هفتگی ثبت نشده است."},404);
