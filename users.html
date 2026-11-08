@@ -89,10 +89,10 @@ function renderParentImport(data){
  }
 }
 function normalizeParentHeader(value){
- return String(value??"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\\u064B-\\u065F\\u0670\\u200c\\u200d\\ufeff]/g,"").toLowerCase().replace(/[^\\p{L}\\p{N}]/gu,"");
+ return String(value??"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u064B-\u065F\u0670\u200c\u200d\ufeff]/g,"").toLowerCase().replace(/[^\p{L}\p{N}]/gu,"");
 }
 function parentDigits(value){
- const d=String(value??"").replace(/[۰-۹]/g,x=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(x))).replace(/[٠-٩]/g,x=>String("٠١٢٣٤٥٦٧٨٩".indexOf(x))).replace(/\\D/g,"");
+ const d=String(value??"").replace(/[۰-۹]/g,x=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(x))).replace(/[٠-٩]/g,x=>String("٠١٢٣٤٥٦٧٨٩".indexOf(x))).replace(/\D/g,"");
  return d.length===9?"0"+d:d;
 }
 function normalizeParentRows(sourceRows){
@@ -103,7 +103,7 @@ function normalizeParentRows(sourceRows){
   const out=[];
   for(const r of normalized){
    const full=pick(r,"نام و نام خانوادگی","نام نام خانوادگی دانش‌آموز");
-   const parts=full.split(/\\s+/).filter(Boolean);
+   const parts=full.split(/\s+/).filter(Boolean);
    const base={student_national_code:parentDigits(pick(r,"کد ملی 3")),student_first_name:parts[0]||"",student_last_name:parts.slice(1).join(" ")};
    const father=parentDigits(pick(r,"کد ملی 1")),fatherName=pick(r,"نام پدر"),fatherPhone=parentDigits(pick(r,"موبایل 1"));
    const mother=parentDigits(pick(r,"کد ملی 2")),motherName=pick(r,"نام مادر","نام نام خانوادگی مادر","نام خانوادگی مادر"),motherPhone=parentDigits(pick(r,"موبایل 2"));
@@ -128,11 +128,11 @@ document.getElementById("importParents").addEventListener("click",async()=>{
   const sourceRows=await parseExcel(document.getElementById("parentExcel"));
   if(!sourceRows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");
   const rows=normalizeParentRows(sourceRows);
-  const valid=rows.filter(r=>/^\\d{10}$/.test(r.parent_national_code||"")&&!!r.parent_name&&/^\\d{10}$/.test(r.student_national_code||""));
+  const valid=rows.filter(r=>/^\d{10}$/.test(r.parent_national_code||"")&&!!r.parent_name&&/^\d{10}$/.test(r.student_national_code||""));
   if(!valid.length)throw new Error("فایل خوانده شد، اما ستون‌های لازم شناسایی نشدند. عنوان‌های کد ملی ولی، نام ولی و کد ملی دانش‌آموز را بررسی کنید؛ هیچ اطلاعاتی ثبت نشد.");
-  const sample=valid.slice(0,3).map(r=>r.parent_name+" ← "+[r.student_first_name,r.student_last_name].filter(Boolean).join(" ")+" (شناسه ولی: …"+r.parent_national_code.slice(-4)+")").join("\\n");
+  const sample=valid.slice(0,3).map(r=>r.parent_name+" ← "+[r.student_first_name,r.student_last_name].filter(Boolean).join(" ")+" (شناسه ولی: …"+r.parent_national_code.slice(-4)+")").join("\n");
   const invalid=rows.length-valid.length;
-  const message="از فایل "+sourceRows.length+" ردیف خوانده شد.\\nردیف‌های قابل بررسی: "+valid.length+"\\nردیف‌های ناقص: "+invalid+"\\n\\nنمونه اطلاعات استخراج‌شده:\\n"+sample+"\\n\\nبا ادامه، ردیف‌های معتبر برای بررسی و اتصال به پرونده دانش‌آموزان ارسال می‌شوند. ادامه می‌دهید؟";
+  const message="از فایل "+sourceRows.length+" ردیف خوانده شد.\nردیف‌های قابل بررسی: "+valid.length+"\nردیف‌های ناقص: "+invalid+"\n\nنمونه اطلاعات استخراج‌شده:\n"+sample+"\n\nبا ادامه، ردیف‌های معتبر برای بررسی و اتصال به پرونده دانش‌آموزان ارسال می‌شوند. ادامه می‌دهید؟";
   if(!confirm(message))return;
   document.getElementById("parentImportStatus").textContent="در حال بررسی پرونده دانش‌آموزان و ساخت حساب‌های اولیا…";
   const result=await api({action:"import_parents",rows});
