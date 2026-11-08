@@ -191,7 +191,7 @@ Deno.serve(async (req: Request) => {
       if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به بررسی اطلاعات آموزشی است." }, 403);
       const [attendanceRows, gradeRows, disciplineRows] = await Promise.all([
         admin.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,class_name,approval_status").eq("tenant_school_id",school).eq("approval_status","pending").order("id",{ascending:false}).limit(1500),
-        admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).eq("manager_released",0).order("id",{ascending:false}).limit(1500),
+        admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).or("manager_released.eq.0,manager_released.is.null").order("id",{ascending:false}).limit(1500),
         admin.from("discipline_records").select("id,student_id,title,description,record_type,incident_date,class_name,subject,actor_role,status").eq("tenant_school_id",school).eq("status","pending").is("deleted_at",null).order("id",{ascending:false}).limit(1500)
       ]);
       const failed = [attendanceRows,gradeRows,disciplineRows].find((x:any)=>x.error);
@@ -218,8 +218,8 @@ Deno.serve(async (req: Request) => {
           .eq("tenant_school_id",school).eq("id",id).eq("approval_status","pending").select("id,approval_status").maybeSingle();
         updated=result.data;error=result.error;
       } else if(type==="grade"){
-        const result=await admin.from("student_grades").update({manager_released:status==="approved"?1:0})
-          .eq("tenant_school_id",school).eq("id",id).eq("manager_released",0).select("id,manager_released").maybeSingle();
+        const result=await admin.from("student_grades").update({manager_released:status==="approved"?1:-1})
+          .eq("tenant_school_id",school).eq("id",id).or("manager_released.eq.0,manager_released.is.null").select("id,manager_released").maybeSingle();
         updated=result.data;error=result.error;
       } else {
         const result=await admin.from("discipline_records").update({status,updated_at:reviewedAt})
