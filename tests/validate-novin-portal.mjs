@@ -175,6 +175,15 @@ for (const source of directoryScripts) assert.doesNotThrow(() => new Function(so
 console.log("Staff directory deployment checks passed: trigger, published artifact, and page source.");
 
 
+const parentInvitationsPage = readFileSync("parent-invitations.html", "utf8");
+assert.ok(html.includes("دعوت‌نامه‌های من") && html.includes("parent-invitations.html?v="), "Parent portal must expose a separate invitation inbox");
+assert.ok(publishWorkflow.includes("- 'parent-invitations.html'") && publishWorkflow.includes("parent-invitations.html"), "GitHub Pages must trigger on and publish the standalone parent invitation page");
+assert.ok(parentPage.includes("دعوت‌نامه‌ها در صفحه مستقل «دعوت‌نامه‌های من»") && parentPage.includes("const rows=role==='manager'?(d.familyInvitations||[]):[]"), "Parent family education tab must not render invitations");
+assert.ok(parentInvitationsPage.includes("action:'list'") && parentInvitationsPage.includes("action:'respond'") && parentInvitationsPage.includes("approval_status==='approved'"), "Standalone parent invitation page must list only approved invitations and submit parent responses");
+const parentInvitationsScripts = parentInvitationsPage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
+assert.ok(parentInvitationsScripts.length > 0, "Standalone parent invitation page must contain its operational script");
+for (const source of parentInvitationsScripts) assert.doesNotThrow(() => new Function(source), "Standalone parent invitation script must have valid JavaScript syntax");
+
 const invitationReviewPage = readFileSync("family-invitations-review.html", "utf8");
 const invitationReviewWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(html.includes("تأیید دعوت‌نامه‌های اولیا") && html.includes("family-invitations-review.html?v="), "Manager portal must expose and route to parent invitation approvals");
