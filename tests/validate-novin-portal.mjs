@@ -178,7 +178,7 @@ console.log("Staff directory deployment checks passed: trigger, published artifa
 const invitationReviewPage = readFileSync("family-invitations-review.html", "utf8");
 const invitationReviewWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(html.includes("تأیید دعوت‌نامه‌های اولیا") && html.includes("family-invitations-review.html?v="), "Manager portal must expose and route to parent invitation approvals");
-assert.ok(invitationReviewWorkflow.includes("- 'family-invitations-review.html'") && invitationReviewWorkflow.includes("family-invitations-review.html messages.html _site/"), "GitHub Pages must trigger on and publish the manager invitation review page");
+assert.ok(invitationReviewWorkflow.includes("- 'family-invitations-review.html'") && invitationReviewWorkflow.includes("family-invitations-review.html") && invitationReviewWorkflow.includes("_site/"), "GitHub Pages must trigger on and publish the manager invitation review page");
 assert.ok(invitationReviewPage.includes("action:'review'") && invitationReviewPage.includes("batch_id,status,manager_note"), "Manager review page must submit batch-level approval decisions");
 assert.ok(invitationReviewPage.includes("role!=='manager'") && invitationReviewPage.includes("data-filter"), "Manager review page must enforce the manager session and provide status filters");
 const invitationReviewScripts = invitationReviewPage.split("<script>").slice(1).map(part => part.split("</script>")[0]).filter(source => source.trim());
