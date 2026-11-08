@@ -18,7 +18,7 @@
 <p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
 <div class="upload-row">
 <div class="upload-box"><strong>قالب اکسل اولیا</strong><p>ستون‌های ضروری: کد ملی ولی، نام ولی، کد ملی دانش‌آموز. ستون «نسبت با دانش‌آموز» را با «پدر»، «مادر» یا «سرپرست» تکمیل کنید. شماره تماس ولی نیز وارد شود. اگر نسبت مشخص نشده باشد، «سرپرست» ثبت می‌شود. کد ملی دانش‌آموز باید دقیقاً در پرونده همان مدرسه موجود باشد. ستون‌های کد ملی را در اکسل روی حالت «متن» بگذارید تا صفر ابتدای کد حذف نشود.</p><button class="btn" id="parentTemplate">دریافت نمونه قالب اکسل اولیا</button></div>
-<div class="upload-box"><strong>بارگذاری فایل تکمیل‌شده</strong><input id="parentExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importParents">ساخت حساب‌ها و اتصال خودکار فرزندان</button></div><small>حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری. برای حساب جدید، نام کاربری و رمز اولیه هر دو کد ملی ولی است و تغییر رمز در نخستین ورود اجباری خواهد بود. رمز حساب‌های قبلی تغییر نمی‌کند.</small></div>
+<div class="upload-box"><strong>بارگذاری فایل تکمیل‌شده</strong><input id="parentExcel" type="file" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" id="importParents">ساخت حساب‌ها و اتصال خودکار فرزندان</button></div><small>حداکثر ۱۰۰۰ ردیف در هر بار بارگذاری. برای حساب جدید، نام کاربری کد ملی ولی و رمز اولیه یک‌بارمصرفِ تصادفی است؛ تغییر رمز در نخستین ورود اجباری خواهد بود. رمز حساب‌های قبلی تغییر نمی‌کند.</small></div>
 </div>
 <div id="parentImportStatus" class="status" role="status" aria-live="polite">پس از بارگذاری، نتیجه هر ولی و ردیف‌های نامعتبر نمایش داده می‌شود.</div>
 <div class="table-wrap" id="parentImportResults"></div>
@@ -73,7 +73,7 @@ function renderParentImport(data){
  status.textContent="ردیف‌ها: "+data.total+" · ردیف‌های موفق: "+succeededRows+" · ردیف‌های ناموفق: "+failedRows+" · حساب‌های ایجادشده: "+(data.results||[]).filter(x=>x.success&&x.created).length;
  wrap.replaceChildren();
  const table=document.createElement("table"),head=document.createElement("thead"),hr=document.createElement("tr");
- ["وضعیت","ردیف‌های اکسل","نام کاربری ولی","رمز اولیه (کد ملی ولی)","فرزندان متصل و نسبت / توضیح"].forEach(v=>hr.append(el("th","",v)));
+ ["وضعیت","ردیف‌های اکسل","نام کاربری ولی","رمز موقت تصادفی","فرزندان متصل و نسبت / توضیح"].forEach(v=>hr.append(el("th","",v)));
  head.append(hr);const body=document.createElement("tbody");
  for(const item of data.results||[]){
   const tr=document.createElement("tr"),children=(item.linked_students||[]).map(x=>x.name+" ("+({father:"پدر",mother:"مادر",guardian:"سرپرست"}[x.relationship_type]||"سرپرست")+")").join("، ");
@@ -88,32 +88,52 @@ function renderParentImport(data){
   wrap.append(copy);
  }
 }
+function normalizeParentHeader(value){
+ return String(value??"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\\u064B-\\u065F\\u0670\\u200c\\u200d\\ufeff]/g,"").toLowerCase().replace(/[^\\p{L}\\p{N}]/gu,"");
+}
+function parentDigits(value){
+ const d=String(value??"").replace(/[۰-۹]/g,x=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(x))).replace(/[٠-٩]/g,x=>String("٠١٢٣٤٥٦٧٨٩".indexOf(x))).replace(/\\D/g,"");
+ return d.length===9?"0"+d:d;
+}
+function normalizeParentRows(sourceRows){
+ const normalized=sourceRows.map(raw=>Object.fromEntries(Object.entries(raw||{}).map(([k,v])=>[normalizeParentHeader(k),v])));
+ const pick=(row,...aliases)=>{for(const alias of aliases){const key=normalizeParentHeader(alias);if(row[key]!==undefined&&String(row[key]??"").trim()!=="")return String(row[key]).trim()}return ""};
+ const digiform=normalized.some(r=>r.kodملی1!==undefined&&r.kodملی2!==undefined&&r.kodملی3!==undefined);
+ if(digiform){
+  const out=[];
+  for(const r of normalized){
+   const full=pick(r,"نام و نام خانوادگی","نام نام خانوادگی دانش‌آموز");
+   const parts=full.split(/\\s+/).filter(Boolean);
+   const base={student_national_code:parentDigits(pick(r,"کد ملی 3")),student_first_name:parts[0]||"",student_last_name:parts.slice(1).join(" ")};
+   const father=parentDigits(pick(r,"کد ملی 1")),fatherName=pick(r,"نام پدر"),fatherPhone=parentDigits(pick(r,"موبایل 1"));
+   const mother=parentDigits(pick(r,"کد ملی 2")),motherName=pick(r,"نام مادر","نام نام خانوادگی مادر","نام خانوادگی مادر"),motherPhone=parentDigits(pick(r,"موبایل 2"));
+   if(father||fatherName)out.push({...base,parent_national_code:father,parent_name:fatherName,parent_phone:fatherPhone,relationship_type:"father"});
+   if(mother||motherName)out.push({...base,parent_national_code:mother,parent_name:motherName,parent_phone:motherPhone,relationship_type:"mother"});
+  }
+  return out;
+ }
+ return normalized.map(r=>({
+  parent_national_code:parentDigits(pick(r,"کد ملی ولی","کدملی ولی","کد ملی نام ولی","کدملی نام ولی","کد ملی سرپرست")),
+  parent_name:pick(r,"نام ولی","نام و نام خانوادگی ولی"),
+  parent_phone:parentDigits(pick(r,"شماره تماس ولی","شماره تلفن ولی","تلفن ولی")),
+  relationship_type:pick(r,"نسبت با دانش‌آموز","نسبت با دانش آموز","نسبت","نوع ولی"),
+  student_national_code:parentDigits(pick(r,"کد ملی دانش‌آموز","کد ملی دانش آموز","کدملی دانش‌آموز","کد ملی فرزند")),
+  student_first_name:pick(r,"نام دانش‌آموز","نام دانش آموز","نام فرزند"),
+  student_last_name:pick(r,"نام خانوادگی دانش‌آموز","نام خانوادگی دانش آموز","نام خانوادگی فرزند")
+ }));
+}
 document.getElementById("importParents").addEventListener("click",async()=>{
  const button=document.getElementById("importParents");button.disabled=true;
  try{
   const sourceRows=await parseExcel(document.getElementById("parentExcel"));
   if(!sourceRows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");
-  const hasDigiform=sourceRows.some(r=>Object.prototype.hasOwnProperty.call(r,"کد ملی 1")&&Object.prototype.hasOwnProperty.call(r,"کد ملی 2")&&Object.prototype.hasOwnProperty.call(r,"کد ملی 3"));
-  let rows=sourceRows;
-  if(hasDigiform){
-   rows=[];
-   const digits=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\\D/g,"");
-   const code=v=>digits(v).padStart(10,"0");
-   const phone=v=>{const d=digits(v);return d.length===10?"0"+d:d};
-   const val=(r,k)=>String(r[k]??"").trim();
-   for(const r of sourceRows){
-    const childCode=code(val(r,"کد ملی 3"));
-    const childFull=val(r,"نام و نام خانوادگی");
-    const parts=childFull.split(/\\s+/).filter(Boolean);
-    const base={student_national_code:childCode,student_first_name:parts[0]||childFull,student_last_name:parts.slice(1).join(" ")||"—"};
-    const fatherCode=code(val(r,"کد ملی 1")),fatherName=val(r,"نام پدر"),fatherPhone=phone(val(r,"موبایل 1"));
-    const motherCode=code(val(r,"کد ملی 2")),motherName=val(r,"نام نام خانوادگی مادر"),motherPhone=phone(val(r,"موبایل 2"));
-    if(fatherCode&&fatherName)rows.push({...base,parent_national_code:fatherCode,parent_name:fatherName,parent_phone:fatherPhone,relationship_type:"father"});
-    if(motherCode&&motherName)rows.push({...base,parent_national_code:motherCode,parent_name:motherName,parent_phone:motherPhone,relationship_type:"mother"});
-   }
-  }
-  if(!rows.length)throw new Error("هیچ ردیف معتبر پدر یا مادر در فایل پیدا نشد.");
-  if(rows.length>1000)throw new Error("حداکثر ۱۰۰۰ ردیف والد در هر بار بارگذاری مجاز است.");
+  const rows=normalizeParentRows(sourceRows);
+  const valid=rows.filter(r=>/^\\d{10}$/.test(r.parent_national_code||"")&&!!r.parent_name&&/^\\d{10}$/.test(r.student_national_code||""));
+  if(!valid.length)throw new Error("فایل خوانده شد، اما ستون‌های لازم شناسایی نشدند. عنوان‌های کد ملی ولی، نام ولی و کد ملی دانش‌آموز را بررسی کنید؛ هیچ اطلاعاتی ثبت نشد.");
+  const sample=valid.slice(0,3).map(r=>r.parent_name+" ← "+[r.student_first_name,r.student_last_name].filter(Boolean).join(" ")+" (شناسه ولی: …"+r.parent_national_code.slice(-4)+")").join("\\n");
+  const invalid=rows.length-valid.length;
+  const message="از فایل "+sourceRows.length+" ردیف خوانده شد.\\nردیف‌های قابل بررسی: "+valid.length+"\\nردیف‌های ناقص: "+invalid+"\\n\\nنمونه اطلاعات استخراج‌شده:\\n"+sample+"\\n\\nبا ادامه، ردیف‌های معتبر برای بررسی و اتصال به پرونده دانش‌آموزان ارسال می‌شوند. ادامه می‌دهید؟";
+  if(!confirm(message))return;
   document.getElementById("parentImportStatus").textContent="در حال بررسی پرونده دانش‌آموزان و ساخت حساب‌های اولیا…";
   const result=await api({action:"import_parents",rows});
   renderParentImport(result);await load();await loadProfiles();
