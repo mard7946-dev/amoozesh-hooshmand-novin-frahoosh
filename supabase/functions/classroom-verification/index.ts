@@ -89,12 +89,12 @@ Deno.serve(async(req:Request)=>{
    const times=[setting.check1_time,setting.check2_time];
    for(let i=0;i<times.length;i++){
     const due=minutes(times[i]);if(due<0||clock.minute<due)continue;
-    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,check_slot,last_seen_at").eq("schedule_entry_id",scheduleId).eq("student_id",student.id).eq("class_date",clock.date).eq("check_slot",i+1).maybeSingle();
+    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,check_slot,last_seen_at,prompt_at").eq("schedule_entry_id",scheduleId).eq("student_id",student.id).eq("class_date",clock.date).eq("check_slot",i+1).maybeSingle();
     if(eventError)throw eventError;
     if(!event){
      const now=new Date(),deadline=new Date(now.getTime()+90000);
      const status="pending";
-     const {data:created,error:createError}=await db.from("classroom_verification_events").insert({tenant_school_id:school,schedule_entry_id:scheduleId,student_id:student.id,class_date:clock.date,check_slot:i+1,status,prompt_at:now.toISOString(),deadline_at:deadline.toISOString(),last_seen_at:now.toISOString()}).select("id,status,deadline_at,check_slot,last_seen_at").single();
+     const {data:created,error:createError}=await db.from("classroom_verification_events").insert({tenant_school_id:school,schedule_entry_id:scheduleId,student_id:student.id,class_date:clock.date,check_slot:i+1,status,prompt_at:now.toISOString(),deadline_at:deadline.toISOString(),last_seen_at:now.toISOString()}).select("id,status,deadline_at,check_slot,last_seen_at,prompt_at").single();
      if(createError&&createError.code!=="23505")throw createError;
      if(created&&created.status==="missed")return reply({ok:true,blocked:true,reason:"در نوبت "+(i+1)+" صحت‌سنجی زنگ، درخواست در زمان مقرر تأیید نشده است."});
      if(created)return reply({ok:true,enabled:true,prompt:true,event:created,check_slot:i+1});
