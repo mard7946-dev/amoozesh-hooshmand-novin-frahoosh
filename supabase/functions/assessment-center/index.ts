@@ -222,9 +222,9 @@ Deno.serve(async (req: Request) => {
       if (error || !exam) return reply({ message: "این آزمون برای کلاس شما در دسترس نیست." }, 404);
       const now = Date.now();
       if (now < Date.parse(exam.starts_at) || now > Date.parse(exam.ends_at)) return reply({ message: "زمان شروع یا پایان آزمون فرا نرسیده یا به پایان رسیده است." }, 403);
-      const { data: existing } = await admin.from("assessment_attempts").select("id,status")
+      const { data: existing } = await admin.from("assessment_attempts").select("id,status,lock_reason")
         .eq("exam_id", exam.id).eq("student_id", student.id).maybeSingle();
-      if (existing) return reply({ message: existing.status === "in_progress" ? "برای این آزمون تلاش در حال انجام دارید؛ ادامه آزمون در این نسخه پشتیبانی نمی‌شود." : "پاسخ این آزمون قبلاً ثبت شده است." }, 409);
+      if (existing) return reply({ message: existing.status === "locked" ? (existing.lock_reason || "آزمون قبلی قفل شده است؛ با دبیر یا مدیریت تماس بگیرید.") : existing.status === "in_progress" ? "برای این آزمون تلاش در حال انجام دارید؛ ادامه آزمون در این نسخه پشتیبانی نمی‌شود." : "پاسخ این آزمون قبلاً ثبت شده است." }, 409);
       const { data: questions, error: qError } = await admin.from("assessment_questions")
         .select("id,position,question_type,prompt,options,points,time_limit_seconds,math_markup,diagram_shapes")
         .eq("exam_id", exam.id).order("position");
