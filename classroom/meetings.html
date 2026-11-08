@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827"><title>جلسات آنلاین اختصاصی | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--line:#2c3b50;--text:#eef4ff;--muted:#a7b6cc;--accent:#46d6b0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Tahoma,Arial,sans-serif}
+header{padding:15px 18px;background:#101a2a;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+main{max-width:980px;margin:auto;padding:14px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+h1{font-size:19px;margin:0}h2{font-size:17px;margin:0 0 12px}.muted,.small{color:var(--muted);font-size:12px;line-height:1.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+label{display:block;color:var(--muted);font-size:12px;margin:8px 0}
+input,select,textarea{width:100%;margin-top:6px;padding:11px;border-radius:8px;border:1px solid var(--line);background:#0b1423;color:var(--text);font:inherit}
+textarea{min-height:78px;resize:vertical}
+button,a.button{border:1px solid var(--line);background:#1a2940;color:var(--text);border-radius:9px;padding:10px 13px;font:inherit;cursor:pointer;text-decoration:none}
+.primary{background:#17463f;border-color:var(--accent)}button:disabled{opacity:.5;cursor:not-allowed}
+.roles{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.roles label{display:flex;align-items:center;gap:7px;margin:0;padding:8px 10px;background:#18263a;border-radius:8px}.roles input{width:auto;margin:0}
+.notice{padding:11px;border:1px solid #7b6534;border-radius:10px;background:#302817;color:#ffe7a8;line-height:1.9;font-size:12px}
+#message{white-space:pre-wrap;line-height:1.9;margin:10px 0}.meeting{padding:13px;border:1px solid var(--line);border-radius:11px;margin:10px 0;background:#18263a}
+.meeting-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.linkbox{display:flex;gap:7px;margin-top:10px}.linkbox input{min-width:0;direction:ltr;text-align:left}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.end{border-color:#a94b58;color:#ffd4d8}
+@media(max-width:560px){main{padding:8px}.panel{padding:12px}.linkbox{flex-direction:column}}
+</style></head>
+<body>
+<header><div><h1>فراهوش نوین · ساخت جلسه آنلاین اختصاصی</h1><div class="small">ساخت اتاق مستقل از برنامه هفتگی و دریافت لینک دعوت</div></div><button id="back">بازگشت به پنل</button></header>
+<main>
+<section class="panel">
+<h2>ایجاد جلسه جدید</h2>
+<p class="muted">جلسه پس از ساخت فوراً فعال می‌شود. لینک اختصاصی را برای مخاطبان بفرستید. ورود فقط با حساب معتبر فراهوش و بر اساس گروه مخاطبی که انتخاب می‌کنید امکان‌پذیر است.</p>
+<div class="grid">
+<label>عنوان جلسه<input id="title" maxlength="140" placeholder="مثلاً جلسه هماهنگی اولیا"></label>
+<label>مدت جلسه<select id="duration"><option value="30">۳۰ دقیقه</option><option value="60" selected>۶۰ دقیقه</option><option value="90">۹۰ دقیقه</option><option value="120">۱۲۰ دقیقه</option><option value="180">۱۸۰ دقیقه</option><option value="240">۲۴۰ دقیقه</option></select></label>
+<label>مخاطبان<select id="audience"><option value="all_school">تمام حساب‌های فعال مدرسه</option><option value="roles">انتخاب گروه‌های مشخص</option></select></label>
+</div>
+<label>توضیحات جلسه<textarea id="description" maxlength="1000" placeholder="موضوع و توضیحات کوتاه جلسه"></textarea></label>
+<div id="roleChoices" hidden>
+<div class="small">گروه‌های مجاز برای ورود را انتخاب کنید:</div>
+<div class="roles">
+<label><input type="checkbox" value="teacher" checked> دبیران</label>
+<label><input type="checkbox" value="student"> دانش‌آموزان</label>
+<label><input type="checkbox" value="parent"> اولیا</label>
+<label><input type="checkbox" value="deputy"> معاونان</label>
+<label><input type="checkbox" value="counselor"> مشاور</label>
+<label><input type="checkbox" value="manager"> مدیران</label>
+</div></div>
+<div class="actions"><button class="primary" id="create">ساخت جلسه و دریافت لینک</button><button id="refresh">به‌روزرسانی فهرست</button></div>
+<div id="message" role="status" class="small"></div>
+</section>
+<section class="panel"><h2>جلسه‌های ساخته‌شده</h2><div id="meetings" class="small">در حال دریافت فهرست…</div></section>
+<div class="notice">نکته امنیتی: لینک را فقط برای مخاطبان موردنظر ارسال کنید. حتی با داشتن لینک، ورود بدون حساب مدرسه یا خارج از گروه انتخاب‌شده مجاز نیست. ضبط جلسه به‌صورت پیش‌فرض خاموش است.</div>
+</main>
+<script>
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=String(sessionStorage.getItem("frahoosh_novin_role")||"").toLowerCase();
+const $=id=>document.getElementById(id);
+function say(value,bad=false){$("message").textContent=value;$("message").style.color=bad?"#ffc4c4":"#a7b6cc";}
+async function api(action,extra={}){if(!token)throw new Error("نشست ورود پیدا نشد؛ دوباره از پنل فراهوش وارد شوید.");const r=await fetch(SUPABASE_URL+"/functions/v1/classroom-meetings",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.message||"عملیات جلسه انجام نشد.");return d;}
+function joinUrl(meeting){const url=new URL("realtime.html",location.href);url.searchParams.set("meeting_id",meeting.id);url.searchParams.set("join_code",meeting.join_code);return url.toString();}
+function copyText(value){if(navigator.clipboard?.writeText){navigator.clipboard.writeText(value).then(()=>say("لینک جلسه کپی شد.")).catch(()=>fallbackCopy(value));}else fallbackCopy(value);}
+function fallbackCopy(value){const input=document.createElement("textarea");input.value=value;input.style.position="fixed";input.style.opacity="0";document.body.append(input);input.select();try{document.execCommand("copy");say("لینک جلسه کپی شد.");}catch(_){say("کپی خودکار انجام نشد؛ لینک را انتخاب و کپی کنید.");}input.remove();}
+function renderMeetings(rows){const root=$("meetings");root.replaceChildren();if(!rows.length){root.textContent="هنوز جلسه‌ای ساخته نشده است.";return;}for(const m of rows){const card=document.createElement("article");card.className="meeting";const head=document.createElement("div");head.className="meeting-head";const title=document.createElement("strong");title.textContent=m.title;const status=document.createElement("span");status.className="small";const active=m.status==="active"&&new Date(m.expires_at).getTime()>Date.now();status.textContent=active?"فعال":m.status==="ended"?"پایان‌یافته":m.status==="cancelled"?"لغوشده":"منقضی‌شده";head.append(title,status);const detail=document.createElement("p");detail.className="small";detail.textContent="مدت تا: "+new Date(m.expires_at).toLocaleString("fa-IR")+" · مخاطبان: "+(m.audience_type==="all_school"?"تمام مدرسه":(m.audience_roles||[]).join("، "));const link=document.createElement("input");link.readOnly=true;link.value=joinUrl(m);link.setAttribute("aria-label","لینک جلسه "+m.title);const linkbox=document.createElement("div");linkbox.className="linkbox";linkbox.append(link);const actions=document.createElement("div");actions.className="actions";const copy=document.createElement("button");copy.textContent="کپی لینک دعوت";copy.onclick=()=>copyText(link.value);actions.append(copy);if(active){const end=document.createElement("button");end.className="end";end.textContent="پایان جلسه";end.onclick=async()=>{end.disabled=true;try{await api("end",{meeting_id:m.id});say("جلسه پایان یافت.");await load();}catch(e){say(e.message,true);end.disabled=false;}};actions.append(end);}card.append(head,detail,linkbox,actions);root.append(card);}}
+async function load(){try{const d=await api("list");renderMeetings(d.meetings||[]);}catch(e){$("meetings").textContent=e.message;say(e.message,true);}}
+$("audience").addEventListener("change",()=>{$("roleChoices").hidden=$("audience").value!=="roles";});
+$("create").addEventListener("click",async()=>{const title=$("title").value.trim();const audience_type=$("audience").value;const audience_roles=[...$("roleChoices").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);$("create").disabled=true;say("در حال ساخت اتاق امن و ایجاد لینک دعوت…");try{const d=await api("create",{title,description:$("description").value.trim(),duration_minutes:Number($("duration").value),audience_type,audience_roles});$("title").value="";$("description").value="";say("جلسه ساخته شد؛ لینک دعوت در فهرست پایین قرار گرفت.");await load();const link=joinUrl(d.meeting);copyText(link);}catch(e){say(e.message,true);}finally{$("create").disabled=false;}});
+$("refresh").addEventListener("click",load);
+$("back").addEventListener("click",()=>{if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(role||"manager");else location.href="../index.html";});
+async function boot(){if(!token){say("برای مدیریت جلسه ابتدا از پنل فراهوش وارد شوید.",true);$("create").disabled=true;return;}if(!["manager","مدیر","مدیریت"].includes(role)){say("این بخش فقط برای مدیر مدرسه فعال است.",true);$("create").disabled=true;return;}await load();}
+boot();
+</script>
+<script src="../panel-return.js?v=20261106-return"></script>
+</body></html>
