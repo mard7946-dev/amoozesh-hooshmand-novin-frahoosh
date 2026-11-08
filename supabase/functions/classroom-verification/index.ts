@@ -54,7 +54,7 @@ Deno.serve(async(req:Request)=>{
    return reply({ok:true,setting:data,message:"دو زمان صحت‌سنجی برای این زنگ ذخیره شد."});
   }
   if(action==="status"||action==="confirm"){
-   if(role!=="student"&&!role.includes("دانش آموز")&&!role.includes("دانش‌آموز"))return reply({message:"صحت‌سنجی کلاس فقط برای حساب دانش‌آموز فعال است."},403);
+   if(role!=="student"&&!role.includes("دانشآموز")&&!role.includes("دانش آموز"))return reply({message:"صحت‌سنجی کلاس فقط برای حساب دانش‌آموز فعال است."},403);
    const code=clean(profile.national_code),username=clean(profile.username);
    let sq=db.from("students").select("id,class_name,national_code,student_code").eq("tenant_school_id",school);
    if(code)sq=sq.eq("national_code",code);else sq=sq.eq("student_code",username);
@@ -62,8 +62,8 @@ Deno.serve(async(req:Request)=>{
    if(studentError||!student)return reply({message:"پرونده دانش‌آموز با حساب ورود تطبیق داده نشد."},403);
    const scheduleId=Number(body.schedule_entry_id);
    if(!Number.isInteger(scheduleId)||scheduleId<1)return reply({message:"شناسه زنگ برنامه هفتگی معتبر نیست."},400);
-   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,start_time,end_time,day_enabled").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
-   if(entryError||!entry||norm(entry.class_name)!==norm(student.class_name))return reply({message:"این زنگ متعلق به کلاس ثبت‌شده دانش‌آموز نیست."},403);
+   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
+   if(entryError||!entry||norm(entry.class_name)!==norm(student.class_name)||Number(entry.online_class_id)!==Number(body.room_id))return reply({message:"این زنگ متعلق به کلاس ثبت‌شده دانش‌آموز نیست."},403);
    const {data:setting,error:settingError}=await db.from("classroom_verification_settings").select("check1_time,check2_time,enabled").eq("schedule_entry_id",scheduleId).eq("tenant_school_id",school).maybeSingle();
    if(settingError)throw settingError;
    if(!setting||!setting.enabled)return reply({ok:true,enabled:false});
@@ -93,7 +93,7 @@ Deno.serve(async(req:Request)=>{
     if(eventError)throw eventError;
     if(!event){
      const now=new Date(),deadline=new Date(now.getTime()+90000);
-     const status=clock.minute>due+2?"missed":"pending";
+     const status="pending";
      const {data:created,error:createError}=await db.from("classroom_verification_events").insert({tenant_school_id:school,schedule_entry_id:scheduleId,student_id:student.id,class_date:clock.date,check_slot:i+1,status,prompt_at:now.toISOString(),deadline_at:deadline.toISOString()}).select("id,status,deadline_at,check_slot").single();
      if(createError&&createError.code!=="23505")throw createError;
      if(created&&created.status==="missed")return reply({ok:true,blocked:true,reason:"در نوبت "+(i+1)+" صحت‌سنجی زنگ، درخواست در زمان مقرر تأیید نشده است."});

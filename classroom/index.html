@@ -53,7 +53,7 @@ function showClassroomVerificationPrompt(event){
  const h=document.createElement('h2');h.textContent='تأیید حضور در کلاس';const p=document.createElement('p');p.textContent='دانش‌آموز گرامی، برای ثبت حضور فعال خود در این زنگ، لطفاً گزینه «حاضر هستم» را انتخاب کنید. این درخواست صحت‌سنجی حین برگزاری کلاس است. فقط ۹۰ ثانیه فرصت دارید.';
  const b=document.createElement('button');b.type='button';b.textContent='حاضر هستم';b.style.cssText='background:#46d6b0;color:#09231e;border:0;border-radius:10px;padding:12px 24px;font-weight:bold';
  const status=document.createElement('p');status.style.cssText='font-size:12px;color:#ffdf9b';
- b.onclick=async()=>{b.disabled=true;status.textContent='در حال ثبت تأیید حضور…';try{const d=await classroomVerificationCall('confirm',{schedule_entry_id:Number(selectedRoom?.schedule_entry_id||new URLSearchParams(location.search).get('schedule_entry_id')),event_id:event.id});if(d.confirmed){closeVerificationPrompt();message(d.message||'حضور تأیید شد.')}else{status.textContent=d.message||'تأیید حضور انجام نشد.';b.disabled=false}}catch(e){status.textContent=e.message+' اگر مشکل اتصال دارید، دوباره تلاش کنید.';b.disabled=false}};
+ b.onclick=async()=>{b.disabled=true;status.textContent='در حال ثبت تأیید حضور…';try{const d=await classroomVerificationCall('confirm',{schedule_entry_id:Number(selectedRoom?.schedule_entry_id||new URLSearchParams(location.search).get('schedule_entry_id')),room_id:Number(selectedRoom?.id||0),event_id:event.id});if(d.confirmed){closeVerificationPrompt();message(d.message||'حضور تأیید شد.')}else{status.textContent=d.message||'تأیید حضور انجام نشد.';b.disabled=false}}catch(e){status.textContent=e.message+' اگر مشکل اتصال دارید، دوباره تلاش کنید.';b.disabled=false}};
  card.append(h,p,b,status);box.append(card);document.body.append(box);
 }
 async function stopRoomForVerification(reason){
@@ -68,7 +68,7 @@ async function stopRoomForVerification(reason){
 async function pollClassroomVerification(){
  if(!selectedRoom||profile?.role!=='student')return;
  const scheduleId=Number(selectedRoom.schedule_entry_id||new URLSearchParams(location.search).get('schedule_entry_id')||0);if(!scheduleId)return;
- try{const d=await classroomVerificationCall('status',{schedule_entry_id:scheduleId});if(d.blocked){await stopRoomForVerification(d.reason||'صحت‌سنجی این زنگ تأیید نشده است.');return}if(d.prompt&&d.event)showClassroomVerificationPrompt(d.event)}
+ try{const d=await classroomVerificationCall('status',{schedule_entry_id:scheduleId,room_id:Number(selectedRoom.id)});if(d.blocked){await stopRoomForVerification(d.reason||'صحت‌سنجی این زنگ تأیید نشده است.');return}if(d.prompt&&d.event)showClassroomVerificationPrompt(d.event)}
  catch(e){console.warn('Classroom verification temporarily unavailable; no absence was recorded.',e)}
 }
 function startClassroomVerification(room){
