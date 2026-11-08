@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'users.html'
       - 'platform-admin.html'
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
@@ -45,6 +46,7 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'users.html'
       - 'platform-admin.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'

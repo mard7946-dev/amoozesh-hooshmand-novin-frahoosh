@@ -177,8 +177,41 @@ Deno.serve(async (req: Request) => {
   }
   const mustChange = data.user.app_metadata?.must_change_password === true;
   if (mustChange) {
-    if (clean(account.data?.role).toLowerCase() !== "parent" || requestedRole !== "parent") {
-      return respond({ message: "برای ادامه، ابتدا باید رمز عبور اولیه حساب ولی تغییر کند." , must_change_password: true }, 428);
+    const accountRole = clean(account.data?.role).toLowerCase();
+    if (accountRole === "student" && requestedRole === "student") {
+      if (action !== "change_student_initial_password") {
+        return respond({ message: "برای نخستین ورود دانش‌آموز، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
+      }
+      const digits = (value: unknown) => String(value ?? "")
+        .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+        .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+      const nationalCode = digits(account.data?.national_code).trim();
+      if (!/^\d{10}$/.test(nationalCode) || digits(account.data?.username).trim() !== nationalCode) {
+        return respond({ message: "کد ملی حساب دانش‌آموز معتبر نیست؛ با مدیر مدرسه تماس بگیرید." }, 409);
+      }
+      if (newPassword.length < 10 || newPassword.length > 128 || digits(newPassword).trim() === nationalCode) {
+        return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با کد ملی یکسان نباشد." }, 400);
+      }
+      const schoolCode = clean(body?.school_code).toUpperCase();
+      if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
+      const school = await admin.from("schools").select("school_code,status")
+        .eq("id", account.data?.tenant_school_id).maybeSingle();
+      if (school.error || !school.data || school.data.status !== "active" ||
+          clean(school.data.school_code).toUpperCase() !== schoolCode) {
+        return respond({ message: "کد مدرسه با حساب دانش‌آموز مطابقت ندارد." }, 403);
+      }
+      const nextAppMetadata = { ...(data.user.app_metadata ?? {}), must_change_password: false, password_changed_at: new Date().toISOString() };
+      const { error: updateError } = await admin.auth.admin.updateUserById(data.user.id, {
+        password: newPassword, app_metadata: nextAppMetadata,
+      });
+      if (updateError) {
+        console.error("student initial password update failed", updateError.message);
+        return respond({ message: "ثبت رمز جدید انجام نشد؛ دوباره تلاش کنید." }, 500);
+      }
+      return respond({ password_changed: true, message: "رمز عبور دانش‌آموز با موفقیت تغییر کرد. اکنون با رمز جدید وارد شوید." });
+    }
+    if (accountRole !== "parent" || requestedRole !== "parent") {
+      return respond({ message: "برای ادامه، ابتدا باید رمز عبور اولیه حساب تغییر کند.", must_change_password: true }, 428);
     }
     if (action !== "change_parent_initial_password") {
       return respond({ message: "برای نخستین ورود، ابتدا باید رمز عبور اولیه را تغییر دهید.", must_change_password: true }, 428);

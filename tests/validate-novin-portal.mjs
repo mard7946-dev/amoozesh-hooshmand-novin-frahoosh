@@ -22,6 +22,14 @@ assert.ok(schoolLogin.includes("loginResponse.status === 428") && schoolLogin.in
 const parentAdmin = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
 assert.ok(parentAdmin.includes("temporaryPassword = group.parentCode") && parentAdmin.includes("must_change_password: true"), "New parent accounts must use national code as temporary password and set a forced-reset flag");
 assert.ok(parentAdmin.includes("action === \"reset_parent_password\"") && parentAdmin.includes("must_change_password: true"), "Manager must be able to reset a parent password and re-enable forced reset");
+assert.ok(parentAdmin.includes('action === "reset_student_accounts"') && parentAdmin.includes('"RESET_ALL_STUDENTS"'), "Manager-only bulk student reset must require explicit confirmation");
+assert.ok(parentAdmin.includes('eq("tenant_school_id", schoolId)') && parentAdmin.includes('must_change_password: true'), "Student accounts must be limited to the current school and forced to change their temporary password");
+assert.ok(usernameLogin.includes("change_student_initial_password") && usernameLogin.includes('accountRole === "student"'), "Student first login must be forced through a server-side password change");
+assert.ok(schoolLogin.includes('"change_student_initial_password"'), "School portal login must relay the student password-change completion response");
+assert.ok(html.includes('requestedRole===\'student\'') && html.includes('change_student_initial_password'), "Student portal must show and submit the first-login password change form");
+const usersPage = readFileSync("users.html", "utf8");
+assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"reset_student_accounts"'), "Manager user page must expose the confirmed bulk student reset control");
+
 for (const file of ["supabase/functions/parent-management/index.ts", "supabase/functions/parent-meetings/index.ts", "supabase/functions/family-education/index.ts"]) {
   const source = readFileSync(file, "utf8");
   assert.ok(source.includes("must_change_password"), file + " must block parent services during forced password reset");

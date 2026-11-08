@@ -301,6 +301,106 @@ Deno.serve(async (req: Request) => {
     return reply({success:true,total:rows.length,succeeded:results.filter(x=>x.success).length,failed:results.filter(x=>!x.success).length,results});
   }
 
+
+  if (action === "reset_student_accounts") {
+    if (body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
+    const { data: students, error: studentsError } = await admin.from("students")
+      .select("id,first_name,last_name,national_code").eq("tenant_school_id", schoolId).limit(2000);
+    if (studentsError) return reply({ message: "فهرست دانش‌آموزان دریافت نشد." }, 500);
+    const digits = (v: unknown) => clean(v)
+      .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const counts = { total: (students ?? []).length, created: 0, reset: 0, skipped: 0, failed: 0 };
+    const normalized = (students ?? []).map((s: any) => ({ ...s, code: digits(s.national_code) }));
+    const byCode = new Map<string, any[]>();
+    for (const student of normalized) { const group = byCode.get(student.code) ?? []; group.push(student); byCode.set(student.code, group); }
+    for (const student of normalized) {
+      const code = student.code;
+      if (!/^\d{10}$/.test(code) || (byCode.get(code)?.length ?? 0) !== 1) { counts.skipped++; continue; }
+      let createdAuthId = "";
+      try {
+        const { data: matching, error: matchingError } = await admin.from("account_settings")
+          .select("username,email,role,auth_user_id,national_code,tenant_school_id")
+          .eq("national_code", code).limit(10);
+        if (matchingError) throw matchingError;
+        const sameSchool = (matching ?? []).filter((a: any) => clean(a.tenant_school_id) === schoolId);
+        if (sameSchool.length > 1 || sameSchool.some((a: any) => clean(a.role).toLowerCase() !== "student")) { counts.skipped++; continue; }
+        const account: any = sameSchool[0] ?? null;
+        const { data: usernameOwners, error: usernameError } = await admin.from("account_settings")
+          .select("username,auth_user_id,role,tenant_school_id").eq("username", code).limit(5);
+        if (usernameError) throw usernameError;
+        if ((usernameOwners ?? []).some((a: any) => account ? clean(a.username) !== clean(account.username) : true)) { counts.skipped++; continue; }
+        let authUserId = clean(account?.auth_user_id);
+        if (account && authUserId) {
+          const { data: authRow, error: authReadError } = await admin.auth.admin.getUserById(authUserId);
+          if (authReadError || !authRow.user || !clean(authRow.user.email)) throw new Error("حساب احراز هویت یا ایمیل آن موجود نیست.");
+          const { data: allMemberships, error: allMembershipsError } = await admin.from("school_memberships")
+            .select("school_id,role").eq("auth_user_id", authUserId).limit(20);
+          if (allMembershipsError) throw allMembershipsError;
+          if ((allMemberships ?? []).some((m: any) => clean(m.school_id) !== schoolId || clean(m.role).toLowerCase() !== "student")) {
+            counts.skipped++; continue;
+          }
+          const { error: accountUpdateError } = await admin.from("account_settings").update({
+            username: code, national_code: code, email: clean(authRow.user.email), updated_at: new Date().toISOString()
+          }).eq("auth_user_id", authUserId).eq("tenant_school_id", schoolId);
+          if (accountUpdateError) throw accountUpdateError;
+          const { data: membership, error: membershipReadError } = await admin.from("school_memberships")
+            .select("id").eq("auth_user_id", authUserId).eq("school_id", schoolId).eq("role", "student").maybeSingle();
+          if (membershipReadError) throw membershipReadError;
+          const membershipWrite = membership
+            ? await admin.from("school_memberships").update({ is_active: true, updated_at: new Date().toISOString() }).eq("id", membership.id)
+            : await admin.from("school_memberships").insert({ auth_user_id: authUserId, school_id: schoolId, role: "student", is_active: true });
+          if (membershipWrite.error) throw membershipWrite.error;
+          const nextMetadata = { ...(authRow.user.app_metadata ?? {}), must_change_password: true, password_reset_at: new Date().toISOString() };
+          const { error: resetError } = await admin.auth.admin.updateUserById(authUserId, { password: code, app_metadata: nextMetadata });
+          if (resetError) throw resetError;
+          counts.reset++;
+          continue;
+        }
+        if (account && !authUserId) { counts.skipped++; continue; }
+        const email = clean(account?.email) || code + "@student.frahoosh.invalid";
+        const { data: authCreated, error: authCreateError } = await admin.auth.admin.createUser({
+          email, password: code, email_confirm: true,
+          user_metadata: { username: code, display_name: [clean(student.first_name), clean(student.last_name)].filter(Boolean).join(" "), role: "student", tenant_school_id: schoolId },
+          app_metadata: { must_change_password: true, password_reset_at: new Date().toISOString() }
+        });
+        if (authCreateError || !authCreated.user) throw authCreateError ?? new Error("ساخت حساب احراز هویت ناموفق بود.");
+        authUserId = authCreated.user.id; createdAuthId = authUserId;
+        if (account) {
+          const { error } = await admin.from("account_settings").update({
+            username: code, national_code: code, email, auth_user_id: authUserId, role: "student",
+            display_name: [clean(student.first_name), clean(student.last_name)].filter(Boolean).join(" "),
+            updated_at: new Date().toISOString()
+          }).eq("username", account.username).eq("tenant_school_id", schoolId);
+          if (error) throw error;
+        } else {
+          const { error } = await admin.from("account_settings").insert({
+            username: code, national_code: code, email, auth_user_id: authUserId, role: "student",
+            display_name: [clean(student.first_name), clean(student.last_name)].filter(Boolean).join(" "),
+            tenant_school_id: schoolId, preferences: "{}"
+          });
+          if (error) throw error;
+        }
+        const { error: membershipError } = await admin.from("school_memberships").insert({
+          auth_user_id: authUserId, school_id: schoolId, role: "student", is_active: true
+        });
+        if (membershipError) throw membershipError;
+        counts.created++;
+      } catch (error) {
+        if (createdAuthId) {
+          await admin.from("school_memberships").delete().eq("auth_user_id", createdAuthId).eq("school_id", schoolId);
+          await admin.from("account_settings").delete().eq("auth_user_id", createdAuthId).eq("tenant_school_id", schoolId);
+          await admin.auth.admin.deleteUser(createdAuthId);
+        }
+        counts.failed++;
+        console.error("admin student account reset failed", JSON.stringify({ student_id: student.id, code: (error as any)?.code ?? null }));
+      }
+    }
+    return reply({ success: true, ...counts,
+      message: "عملیات حساب‌های دانش‌آموزی پایان یافت. نام کاربری و رمز موقت برای موارد موفق، کد ملی ۱۰ رقمی است و تغییر رمز در نخستین ورود اجباری خواهد بود."
+    });
+  }
+
   const targetId = clean(body.auth_user_id);
   if (!targetId || targetId === auth.user.id) return reply({ message: "حساب هدف نامعتبر است." }, 400);
   const { data: target, error: targetError } = await admin.from("account_settings")
