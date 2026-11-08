@@ -70,7 +70,7 @@ Deno.serve(async(req:Request)=>{
    if(studentError||!student)return reply({message:"پرونده دانش‌آموز با حساب ورود تطبیق داده نشد."},403);
    const scheduleId=Number(body.schedule_entry_id);
    if(!Number.isInteger(scheduleId)||scheduleId<1)return reply({message:"شناسه زنگ برنامه هفتگی معتبر نیست."},400);
-   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
+   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,period,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
    if(entryError||!entry||norm(entry.class_name)!==norm(student.class_name)||Number(entry.online_class_id)!==Number(body.room_id))return reply({message:"این زنگ متعلق به کلاس ثبت‌شده دانش‌آموز نیست."},403);
    const period=Number((entry as any).period);
    const {data:periodSetting,error:periodSettingError}=await db.from("classroom_verification_period_settings").select("check1_time,check2_time,enabled").eq("tenant_school_id",school).eq("period",period).maybeSingle();
