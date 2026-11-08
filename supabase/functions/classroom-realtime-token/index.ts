@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
         if (role === "student" || role.includes("دانش‌آموز") || role.includes("دانش آموز")) return "student";
         if (role === "parent" || role.includes("ولی") || role.includes("والد")) return "parent";
         if (role === "counselor" || role.includes("مشاور")) return "counselor";
-        if (role === "deputy" || role.includes("معاون") || ["educational","executive","cultural","advisor"].includes(role)) return "deputy";
+        if (role === "deputy" || role.includes("معاون") || role.endsWith("_deputy") || ["educational","executive","cultural","advisor"].includes(role)) return "deputy";
         return role;
       };
       const activeRoles = new Set((memberships ?? []).map((item: any) => roleKey(item.role)));
