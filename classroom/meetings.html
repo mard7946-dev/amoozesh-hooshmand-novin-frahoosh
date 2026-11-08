@@ -67,7 +67,7 @@ $("audience").addEventListener("change",()=>{$("roleChoices").hidden=$("audience
 $("create").addEventListener("click",async()=>{const title=$("title").value.trim();const audience_type=$("audience").value;const audience_roles=[...$("roleChoices").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);$("create").disabled=true;say("در حال ساخت اتاق امن و ایجاد لینک دعوت…");try{const d=await api("create",{title,description:$("description").value.trim(),duration_minutes:Number($("duration").value),audience_type,audience_roles});$("title").value="";$("description").value="";say("جلسه ساخته شد؛ لینک دعوت در فهرست پایین قرار گرفت.");await load();const link=joinUrl(d.meeting);copyText(link);}catch(e){say(e.message,true);}finally{$("create").disabled=false;}});
 $("refresh").addEventListener("click",load);
 $("back").addEventListener("click",()=>{if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(role||"manager");else location.href="../index.html";});
-async function boot(){if(!token){say("برای مدیریت جلسه ابتدا از پنل فراهوش وارد شوید.",true);$("create").disabled=true;return;}if(!["manager","مدیر","مدیریت"].includes(role)){say("این بخش فقط برای مدیر مدرسه فعال است.",true);$("create").disabled=true;return;}await load();}
+async function boot(){if(!token){say("برای مدیریت جلسه ابتدا از پنل فراهوش وارد شوید.",true);$("create").disabled=true;return;}if(!(["manager","مدیر","مدیریت"].includes(role)||role.includes("مدیر"))){say("این بخش فقط برای مدیر مدرسه فعال است.",true);$("create").disabled=true;return;}await load();}
 boot();
 </script>
 <script src="../panel-return.js?v=20261106-return"></script>
