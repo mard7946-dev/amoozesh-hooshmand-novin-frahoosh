@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { bellPosition, formatMinutes, sessionCheckpointMinutes } from "../_shared/classroom-verification-period.ts";
 
 const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8"}});
@@ -33,25 +34,40 @@ Deno.serve(async(req:Request)=>{
   const action=clean(body.action),school=profile.tenant_school_id,role=norm(profile.role),manager=managerRole(role);
   if(action==="list_settings"){
    if(!manager)return reply({message:"فقط مدیر مدرسه به تنظیم صحت‌سنجی کلاس دسترسی دارد."},403);
-   const {data:entries,error}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,period,subject,teacher_name,start_time,end_time,day_enabled").eq("tenant_school_id",school).order("weekday").order("period").limit(1000);
+   const {data:entries,error}=await db.from("weekly_schedule_entries").select("class_name,period,start_time,end_time").eq("tenant_school_id",school).order("period").limit(1000);
    if(error)throw error;
-   const ids=(entries??[]).map((x:any)=>x.id);
-   const {data:settings,error:settingsError}=ids.length?await db.from("classroom_verification_settings").select("schedule_entry_id,check1_time,check2_time,enabled").eq("tenant_school_id",school).in("schedule_entry_id",ids):{data:[],error:null};
+   const periods=new Map<number,{period:number,sessions:number,classes:Set<string>,start:number,end:number}>();
+   for(const entry of entries??[]){
+    const period=Number(entry.period),start=minutes(entry.start_time),end=minutes(entry.end_time);
+    if(!Number.isInteger(period)||period<1||period>6||start<0||end<=start)continue;
+    const item=periods.get(period)??{period,sessions:0,classes:new Set<string>(),start:1440,end:0};
+    item.sessions++;if(entry.class_name)item.classes.add(clean(entry.class_name));
+    item.start=Math.min(item.start,start);item.end=Math.max(item.end,end);periods.set(period,item);
+   }
+   const ids=[...periods.keys()];
+   const {data:settings,error:settingsError}=ids.length?await db.from("classroom_verification_period_settings").select("period,check1_position,check2_position,enabled").eq("tenant_school_id",school).in("period",ids):{data:[],error:null};
    if(settingsError)throw settingsError;
-   const map=new Map((settings??[]).map((x:any)=>[Number(x.schedule_entry_id),x]));
-   return reply({ok:true,entries:(entries??[]).map((x:any)=>({...x,verification:map.get(Number(x.id))??null}))});
+   const map=new Map((settings??[]).map((x:any)=>[Number(x.period),x]));
+   return reply({ok:true,periods:[...periods.values()].sort((a,b)=>a.period-b.period).map(item=>{
+    const setting=map.get(item.period)??null,span=item.end-item.start;
+    return {period:item.period,session_count:item.sessions,class_count:item.classes.size,class_names:[...item.classes].sort(),bell_start:formatMinutes(item.start),bell_end:formatMinutes(item.end),check1_time:setting?formatMinutes(item.start+span*Number(setting.check1_position)):"",check2_time:setting?formatMinutes(item.start+span*Number(setting.check2_position)):"",enabled:setting?.enabled===true,configured:!!setting};
+   })});
   }
   if(action==="save_settings"){
    if(!manager)return reply({message:"فقط مدیر مدرسه می‌تواند زمان‌های صحت‌سنجی را تنظیم کند."},403);
-   const id=Number(body.schedule_entry_id),t1=clean(body.check1_time),t2=clean(body.check2_time);
-   if(!Number.isInteger(id)||id<1||!/^\d{2}:\d{2}$/.test(t1)||!/^\d{2}:\d{2}$/.test(t2)||t1===t2)return reply({message:"برای هر زنگ دو ساعت متفاوت و معتبر وارد کنید."},400);
-   const {data:entry,error}=await db.from("weekly_schedule_entries").select("id,start_time,end_time,day_enabled").eq("id",id).eq("tenant_school_id",school).maybeSingle();
-   if(error||!entry)return reply({message:"جلسه برنامه هفتگی پیدا نشد."},404);
-   const start=minutes(entry.start_time),end=minutes(entry.end_time),a=minutes(t1),b=minutes(t2);
-   if(start<0||end<=start||a<start||a>=end||b<start||b>=end)return reply({message:"هر دو زمان صحت‌سنجی باید داخل بازه همان زنگ باشند."},400);
-   const {data,error:saveError}=await db.from("classroom_verification_settings").upsert({schedule_entry_id:id,tenant_school_id:school,check1_time:t1,check2_time:t2,enabled:body.enabled!==false,updated_at:new Date().toISOString()},{onConflict:"schedule_entry_id"}).select("schedule_entry_id,check1_time,check2_time,enabled").single();
+   const period=Number(body.period),t1=clean(body.check1_time),t2=clean(body.check2_time);
+   if(!Number.isInteger(period)||period<1||period>6||!/^\\d{2}:\\d{2}$/.test(t1)||!/^\\d{2}:\\d{2}$/.test(t2)||t1===t2)return reply({message:"زنگ و دو ساعت متفاوت و معتبر را انتخاب کنید."},400);
+   const {data:entries,error}=await db.from("weekly_schedule_entries").select("start_time,end_time").eq("tenant_school_id",school).eq("period",period).limit(1000);
+   if(error)throw error;
+   if(!entries?.length)return reply({message:"برای این زنگ، جلسه‌ای در برنامه هفتگی ثبت نشده است."},404);
+   const ranges=entries.map((entry:any)=>({start:minutes(entry.start_time),end:minutes(entry.end_time)})).filter((x:any)=>x.start>=0&&x.end>x.start);
+   if(!ranges.length)return reply({message:"بازه زمانی معتبر برای این زنگ پیدا نشد."},409);
+   const bellStart=Math.min(...ranges.map((x:any)=>x.start)),bellEnd=Math.max(...ranges.map((x:any)=>x.end));
+   const first=bellPosition(t1,bellStart,bellEnd),second=bellPosition(t2,bellStart,bellEnd);
+   if(first===null||second===null||first===second)return reply({message:"هر دو زمان باید داخل بازه کلی همان زنگ و متفاوت از یکدیگر باشند."},400);
+   const {data,error:saveError}=await db.from("classroom_verification_period_settings").upsert({tenant_school_id:school,period,check1_position:first,check2_position:second,enabled:body.enabled!==false,updated_at:new Date().toISOString()},{onConflict:"tenant_school_id,period"}).select("period,check1_position,check2_position,enabled").single();
    if(saveError)throw saveError;
-   return reply({ok:true,setting:data,message:"دو زمان صحت‌سنجی برای این زنگ ذخیره شد."});
+   return reply({ok:true,setting:data,message:"دو صحت‌سنجی این زنگ برای همه کلاس‌ها و کلاس‌های موازی ذخیره شد."});
   }
   if(action==="status"||action==="confirm"){
    if(role!=="student"&&!role.includes("دانشآموز")&&!role.includes("دانش آموز"))return reply({message:"صحت‌سنجی کلاس فقط برای حساب دانش‌آموز فعال است."},403);
@@ -62,11 +78,13 @@ Deno.serve(async(req:Request)=>{
    if(studentError||!student)return reply({message:"پرونده دانش‌آموز با حساب ورود تطبیق داده نشد."},403);
    const scheduleId=Number(body.schedule_entry_id);
    if(!Number.isInteger(scheduleId)||scheduleId<1)return reply({message:"شناسه زنگ برنامه هفتگی معتبر نیست."},400);
-   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
+   const {data:entry,error:entryError}=await db.from("weekly_schedule_entries").select("id,class_name,weekday,period,start_time,end_time,day_enabled,online_class_id").eq("id",scheduleId).eq("tenant_school_id",school).maybeSingle();
    if(entryError||!entry||norm(entry.class_name)!==norm(student.class_name)||Number(entry.online_class_id)!==Number(body.room_id))return reply({message:"این زنگ متعلق به کلاس ثبت‌شده دانش‌آموز نیست."},403);
-   const {data:setting,error:settingError}=await db.from("classroom_verification_settings").select("check1_time,check2_time,enabled").eq("schedule_entry_id",scheduleId).eq("tenant_school_id",school).maybeSingle();
+   const {data:setting,error:settingError}=await db.from("classroom_verification_period_settings").select("check1_position,check2_position,enabled").eq("period",Number(entry.period)).eq("tenant_school_id",school).maybeSingle();
    if(settingError)throw settingError;
    if(!setting||!setting.enabled)return reply({ok:true,enabled:false});
+   const sessionTimes=sessionCheckpointMinutes(entry.start_time,entry.end_time,Number(setting.check1_position),Number(setting.check2_position));
+   if(!sessionTimes)return reply({message:"بازه زنگ برای محاسبه صحت‌سنجی معتبر نیست."},409);
    const clock=tehranParts();
    const weekdayKey=norm(entry.weekday).replace(/\s/g,"");
    if(weekdayKey!==norm(clock.weekday).replace(/\s/g,"")||entry.day_enabled!==true)return reply({ok:true,enabled:true,not_today:true});
@@ -86,9 +104,9 @@ Deno.serve(async(req:Request)=>{
     if(!updated)return reply({message:"درخواست قبلاً تعیین تکلیف شده است."},409);
     return reply({ok:true,confirmed:true,message:"حضور شما با موفقیت تأیید شد."});
    }
-   const times=[setting.check1_time,setting.check2_time];
+   const times=sessionTimes;
    for(let i=0;i<times.length;i++){
-    const due=minutes(times[i]);if(due<0||clock.minute<due)continue;
+    const due=times[i];if(due<0||clock.minute<due)continue;
     const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,check_slot,last_seen_at,prompt_at").eq("schedule_entry_id",scheduleId).eq("student_id",student.id).eq("class_date",clock.date).eq("check_slot",i+1).maybeSingle();
     if(eventError)throw eventError;
     if(!event){
