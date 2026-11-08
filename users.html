@@ -98,7 +98,7 @@ function parentDigits(value){
 function normalizeParentRows(sourceRows){
  const normalized=sourceRows.map(raw=>Object.fromEntries(Object.entries(raw||{}).map(([k,v])=>[normalizeParentHeader(k),v])));
  const pick=(row,...aliases)=>{for(const alias of aliases){const key=normalizeParentHeader(alias);if(row[key]!==undefined&&String(row[key]??"").trim()!=="")return String(row[key]).trim()}return ""};
- const digiform=normalized.some(r=>r.kodملی1!==undefined&&r.kodملی2!==undefined&&r.kodملی3!==undefined);
+ const digiform=normalized.some(r=>r["کدملی1"]!==undefined&&r["کدملی2"]!==undefined&&r["کدملی3"]!==undefined);
  if(digiform){
   const out=[];
   for(const r of normalized){
