@@ -8,7 +8,7 @@ const cors = {
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...cors, "Content-Type": "application/json; charset=utf-8" },
 });
-const clean = (value: unknown) => String(value ?? "").replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "").trim();
+const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (value: unknown) => clean(value).replace(/[يى]/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
 const ACCOUNT_ID = "f8543e56a787c242f86ec4b0b69907b8";
 const APP_ID = "409805e3-3e16-4698-8e01-2140f7273084";
@@ -54,7 +54,7 @@ const allowedRoles = new Set(["manager", "deputy", "teacher", "student", "parent
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply({ message: "فقط درخواست POST پذیرفته می‌شود." }, 405);
-  const bearer = clean(req.headers.get("authorization")).replace(/^Bearer\\s+/i, "");
+  const bearer = clean(req.headers.get("authorization")).replace(/^Bearer\s+/i, "");
   if (!bearer) return reply({ message: "ابتدا وارد سامانه شوید." }, 401);
 
   try {
