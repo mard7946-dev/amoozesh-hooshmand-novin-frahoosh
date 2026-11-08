@@ -351,6 +351,7 @@ Deno.serve(async (req: Request) => {
           counts.reset++;
           continue;
         }
+        if (account && !authUserId) { counts.skipped++; continue; }
         const email = clean(account?.email) || code + "@student.frahoosh.invalid";
         const { data: authCreated, error: authCreateError } = await admin.auth.admin.createUser({
           email, password: code, email_confirm: true,
