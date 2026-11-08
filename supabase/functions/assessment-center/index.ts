@@ -222,9 +222,9 @@ Deno.serve(async (req: Request) => {
       if (error || !exam) return reply({ message: "این آزمون برای کلاس شما در دسترس نیست." }, 404);
       const now = Date.now();
       if (now < Date.parse(exam.starts_at) || now > Date.parse(exam.ends_at)) return reply({ message: "زمان شروع یا پایان آزمون فرا نرسیده یا به پایان رسیده است." }, 403);
-      const { data: existing } = await admin.from("assessment_attempts").select("id,status")
+      const { data: existing } = await admin.from("assessment_attempts").select("id,status,lock_reason")
         .eq("exam_id", exam.id).eq("student_id", student.id).maybeSingle();
-      if (existing) return reply({ message: existing.status === "in_progress" ? "برای این آزمون تلاش در حال انجام دارید؛ ادامه آزمون در این نسخه پشتیبانی نمی‌شود." : "پاسخ این آزمون قبلاً ثبت شده است." }, 409);
+      if (existing) return reply({ message: existing.status === "locked" ? (existing.lock_reason || "آزمون قبلی قفل شده است؛ با دبیر یا مدیریت تماس بگیرید.") : existing.status === "in_progress" ? "برای این آزمون تلاش در حال انجام دارید؛ ادامه آزمون در این نسخه پشتیبانی نمی‌شود." : "پاسخ این آزمون قبلاً ثبت شده است." }, 409);
       const { data: questions, error: qError } = await admin.from("assessment_questions")
         .select("id,position,question_type,prompt,options,points,time_limit_seconds,math_markup,diagram_shapes")
         .eq("exam_id", exam.id).order("position");
@@ -232,12 +232,54 @@ Deno.serve(async (req: Request) => {
       if (!questions?.length) return reply({ message: "سؤال‌های این آزمون هنوز ثبت نشده‌اند." }, 409);
       const ordered = exam.question_order === "random" ? shuffle(questions) : questions;
       const maxScore = questions.reduce((sum: number, q: any) => sum + Number(q.points || 0), 0);
+      const durationMs = Number(exam.duration_minutes || 45) * 60000;
+      const verificationDelayMs = Math.min(5 * 60000, Math.max(30 * 1000, Math.floor(durationMs * 0.4)));
+      const verificationDueAt = new Date(Date.now() + verificationDelayMs).toISOString();
+      const randomBytes = new Uint32Array(1);
+      crypto.getRandomValues(randomBytes);
+      const verificationCode = String(100 + (randomBytes[0] % 900));
       const { data: attempt, error: attemptError } = await admin.from("assessment_attempts").insert({
         exam_id: exam.id, student_id: student.id, tenant_school_id: schoolId,
         question_order: ordered.map((q: any) => q.id), max_score: maxScore,
-      }).select("id,started_at,status").single();
+        verification_due_at: verificationDueAt, verification_code: verificationCode,
+      }).select("id,started_at,status,verification_due_at").single();
       if (attemptError) throw attemptError;
       return reply({ ok: true, attempt, exam: { id: exam.id, title: exam.title, duration_minutes: exam.duration_minutes, display_mode: exam.display_mode, group_size: exam.group_size }, questions: ordered });
+    }
+
+    if (action === "exam_verification_status" && role === "student") {
+      const attemptId = clean(actionBody.attempt_id);
+      const { data: attempt, error } = await admin.from("assessment_attempts").select("id,status,verification_due_at,verification_code,verification_completed_at,locked_at,lock_reason")
+        .eq("id", attemptId).eq("student_id", student.id).eq("tenant_school_id", schoolId).maybeSingle();
+      if (error || !attempt) return reply({ message: "تلاش آزمون متعلق به این حساب نیست." }, 403);
+      if (attempt.status === "locked") return reply({ ok: true, locked: true, reason: attempt.lock_reason || "آزمون قفل شده است." });
+      if (attempt.status !== "in_progress") return reply({ ok: true, complete: true });
+      if (attempt.verification_completed_at) return reply({ ok: true, complete: true });
+      if (!attempt.verification_due_at || Date.now() < Date.parse(attempt.verification_due_at)) return reply({ ok: true, pending: true, due_at: attempt.verification_due_at });
+      return reply({ ok: true, challenge: true, code: attempt.verification_code, prompt: "برای تأیید حضور در آزمون، عدد نمایش‌داده‌شده را وارد کنید." });
+    }
+
+    if (action === "verify_exam_presence" && role === "student") {
+      const attemptId = clean(actionBody.attempt_id);
+      const entered = clean(actionBody.code).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+      const { data: attempt, error } = await admin.from("assessment_attempts").select("id,status,verification_due_at,verification_code,verification_completed_at")
+        .eq("id", attemptId).eq("student_id", student.id).eq("tenant_school_id", schoolId).maybeSingle();
+      if (error || !attempt) return reply({ message: "تلاش آزمون متعلق به این حساب نیست." }, 403);
+      if (attempt.status === "locked") return reply({ ok: true, locked: true, reason: "این آزمون قبلاً قفل شده است." });
+      if (attempt.status !== "in_progress") return reply({ message: "این آزمون فعال نیست." }, 409);
+      if (attempt.verification_completed_at) return reply({ ok: true, verified: true, message: "صحت‌سنجی این نوبت قبلاً انجام شده است." });
+      if (!attempt.verification_due_at || Date.now() < Date.parse(attempt.verification_due_at)) return reply({ message: "زمان صحت‌سنجی هنوز فرا نرسیده است." }, 409);
+      if (entered !== clean(attempt.verification_code)) {
+        const reason = "آزمون قفل شد؛ عدد صحت‌سنجی نمایش‌داده‌شده نادرست وارد شد. برای رفع قفل، با دبیر یا مدیریت مدرسه تماس بگیرید.";
+        const { error: lockError } = await admin.from("assessment_attempts").update({ status: "locked", locked_at: new Date().toISOString(), lock_reason: reason })
+          .eq("id", attempt.id).eq("status", "in_progress");
+        if (lockError) throw lockError;
+        return reply({ ok: true, locked: true, reason });
+      }
+      const { error: verifyError } = await admin.from("assessment_attempts").update({ verification_completed_at: new Date().toISOString() })
+        .eq("id", attempt.id).eq("status", "in_progress").is("verification_completed_at", null);
+      if (verifyError) throw verifyError;
+      return reply({ ok: true, verified: true, message: "صحت‌سنجی با موفقیت انجام شد؛ ادامه آزمون مجاز است." });
     }
 
     if (action === "submit_exam" && role === "student") {
@@ -246,7 +288,9 @@ Deno.serve(async (req: Request) => {
       const { data: attempt, error: attemptError } = await admin.from("assessment_attempts").select("*")
         .eq("id", attemptId).eq("student_id", student.id).eq("tenant_school_id", schoolId).maybeSingle();
       if (attemptError || !attempt) return reply({ message: "برگه آزمون متعلق به این حساب نیست." }, 403);
+      if (attempt.status === "locked") return reply({ message: attempt.lock_reason || "آزمون قفل شده است." }, 423);
       if (attempt.status !== "in_progress") return reply({ message: "این آزمون قبلاً تحویل داده شده است." }, 409);
+      if (attempt.verification_due_at && !attempt.verification_completed_at) return reply({ message: Date.now() < Date.parse(attempt.verification_due_at) ? "برای تحویل آزمون باید تا درخواست صحت‌سنجی زمان‌بندی‌شده صبر کنید و آن را تکمیل کنید." : "ابتدا صحت‌سنجی حین آزمون را تکمیل کنید." }, 423);
       const { data: exam } = await admin.from("assessment_exams").select("ends_at,duration_minutes")
         .eq("id", attempt.exam_id).maybeSingle();
       const cutoff = Math.min(Date.parse(exam?.ends_at || new Date().toISOString()), Date.parse(attempt.started_at) + Number(exam?.duration_minutes || 45) * 60000);
@@ -284,7 +328,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", examId).eq("teacher_id", teacher.id).eq("tenant_school_id", schoolId).maybeSingle();
       if (error || !exam || !classAllowed(exam.grade, exam.class_name)) return reply({ message: "آزمون مجاز پیدا نشد." }, 403);
       const { data: attempts, error: attemptError } = await admin.from("assessment_attempts")
-        .select("id,student_id,status,started_at,submitted_at,score,max_score")
+        .select("id,student_id,status,started_at,submitted_at,score,max_score,locked_at,lock_reason")
         .eq("exam_id", exam.id).eq("tenant_school_id", schoolId).order("started_at", { ascending: false });
       if (attemptError) throw attemptError;
       const ids = (attempts ?? []).map((a: any) => a.student_id);
