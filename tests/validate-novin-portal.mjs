@@ -276,3 +276,20 @@ const teacherPageScripts = [...teacherClassroomPage.matchAll(/<script[^>]*>([\s\
 assert.ok(teacherPageScripts.length > 0, "Teacher classroom page must contain its operational script");
 for (const source of teacherPageScripts) assert.doesNotThrow(() => new Function(source), "Teacher classroom page script must have valid JavaScript syntax");
 console.log("Teacher classroom schedule checks passed: daily/weekly views, server-authorized active slots, exact room routing, and JavaScript syntax.");
+
+
+const academicReviewPage = readFileSync("academic-review.html", "utf8");
+const classroomManagementFunction = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
+const parentManagementFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
+assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewPage.includes("academic_review"), "Academic review page must load and submit real review actions");
+assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
+assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
+assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('eq("manager_released",0)') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include only pending attendance, unpublished grades, and pending discipline");
+assert.ok(parentManagementFunction.includes('eq("approval_status","approved")') && parentManagementFunction.includes('eq("manager_released",1)') && parentManagementFunction.includes('eq("status","approved")'), "Parent API must return only approved attendance, released grades, and approved discipline");
+assert.ok(parentManagementFunction.includes('eq("status","active")'), "Parent API must return only active assignments");
+assert.ok(portal.includes("academic-review.html") && portal.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
+assert.ok(publishWorkflow.includes("'academic-review.html'") && publishWorkflow.includes("academic-review.html"), "Academic review page must trigger and enter GitHub Pages deployment");
+for (const source of [...academicReviewPage.matchAll(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(Boolean)) {
+  assert.doesNotThrow(() => new Function(source), "Academic review page script must have valid JavaScript syntax");
+}
+console.log("Academic review checks passed: manager/deputy approval, server-side parent publication filters, and deployed review page.");
