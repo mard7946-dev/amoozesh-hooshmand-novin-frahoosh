@@ -127,13 +127,13 @@ Deno.serve(async (req: Request) => {
       if (lookupError) throw lookupError;
       if (!meeting) return reply({ message: "جلسه پیدا نشد." }, 404);
       if (meeting.status !== "active") return reply({ ok: true, already_ended: true });
+      // Disable the RealtimeKit meeting first: this also removes active participants
+      // and prevents valid-but-unexpired tokens from starting another session.
+      await cloudflare(`/meetings/${clean(meeting.cloudflare_meeting_id)}`, "PATCH", { status: "INACTIVE" });
       const { error } = await admin.from("classroom_ad_hoc_meetings")
         .update({ status: "ended", ended_at: new Date().toISOString() })
         .eq("id", id).eq("tenant_school_id", schoolId).eq("status", "active");
       if (error) throw error;
-      await cloudflare(`/meetings/${clean(meeting.cloudflare_meeting_id)}`, "PATCH", { status: "INACTIVE" }).catch(error => {
-        console.error("RealtimeKit meeting close failed", String(error));
-      });
       return reply({ ok: true });
     }
 
