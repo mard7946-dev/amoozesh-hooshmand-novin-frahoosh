@@ -189,7 +189,7 @@ Deno.serve(async (req: Request) => {
       if (!/^\d{10}$/.test(nationalCode) || digits(account.data?.username).trim() !== nationalCode) {
         return respond({ message: "کد ملی حساب دانش‌آموز معتبر نیست؛ با مدیر مدرسه تماس بگیرید." }, 409);
       }
-      if (newPassword.length < 10 || newPassword.length > 128 || newPassword === nationalCode) {
+      if (newPassword.length < 10 || newPassword.length > 128 || digits(newPassword).trim() === nationalCode) {
         return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با کد ملی یکسان نباشد." }, 400);
       }
       const schoolCode = clean(body?.school_code).toUpperCase();
