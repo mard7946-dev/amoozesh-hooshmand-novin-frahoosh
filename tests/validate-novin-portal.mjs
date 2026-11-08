@@ -289,7 +289,7 @@ assert.ok(parentManagementFunction.includes('eq("approval_status","approved")') 
 assert.ok(parentManagementFunction.includes('eq("status","active")'), "Parent API must return only active assignments");
 assert.ok(portal.includes("academic-review.html") && portal.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
 assert.ok(publishWorkflow.includes("'academic-review.html'") && publishWorkflow.includes("academic-review.html"), "Academic review page must trigger and enter GitHub Pages deployment");
-for (const source of [...academicReviewPage.matchAll(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(Boolean)) {
+for (const source of [...academicReviewPage.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(Boolean)) {
   assert.doesNotThrow(() => new Function(source), "Academic review page script must have valid JavaScript syntax");
 }
 console.log("Academic review checks passed: manager/deputy approval, server-side parent publication filters, and deployed review page.");
