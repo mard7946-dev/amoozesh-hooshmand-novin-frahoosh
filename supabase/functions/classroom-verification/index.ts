@@ -74,8 +74,8 @@ Deno.serve(async(req:Request)=>{
    if(clock.minute<start||clock.minute>=end)return reply({ok:true,enabled:true,not_in_class_time:true});
    if(action==="confirm"){
     const eventId=clean(body.event_id);
-    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at").eq("id",eventId).eq("student_id",student.id).eq("tenant_school_id",school).maybeSingle();
-    if(eventError||!event)return reply({message:"درخواست صحت‌سنجی پیدا نشد."},404);
+    const {data:event,error:eventError}=await db.from("classroom_verification_events").select("id,status,deadline_at,schedule_entry_id").eq("id",eventId).eq("student_id",student.id).eq("tenant_school_id",school).maybeSingle();
+    if(eventError||!event||Number(event.schedule_entry_id)!==scheduleId)return reply({message:"درخواست صحت‌سنجی برای این زنگ پیدا نشد."},404);
     if(event.status!=="pending")return reply({message:event.status==="confirmed"?"حضور شما قبلاً تأیید شده است.":"مهلت پاسخ‌گویی تمام شده و دسترسی این زنگ غیرفعال شده است."},409);
     if(Date.now()>Date.parse(event.deadline_at)){
      await db.from("classroom_verification_events").update({status:"missed"}).eq("id",event.id).eq("status","pending");
