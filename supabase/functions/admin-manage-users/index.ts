@@ -320,16 +320,16 @@ Deno.serve(async (req: Request) => {
       let createdAuthId = "";
       try {
         const { data: matching, error: matchingError } = await admin.from("account_settings")
-          .select("username,email,role,auth_user_id,national_code,tenant_school_id")
+          .select("id,username,email,role,auth_user_id,national_code,tenant_school_id")
           .eq("national_code", code).limit(10);
         if (matchingError) throw matchingError;
         const sameSchool = (matching ?? []).filter((a: any) => clean(a.tenant_school_id) === schoolId);
         if (sameSchool.length > 1 || sameSchool.some((a: any) => clean(a.role).toLowerCase() !== "student")) { counts.skipped++; continue; }
         const account: any = sameSchool[0] ?? null;
         const { data: usernameOwners, error: usernameError } = await admin.from("account_settings")
-          .select("auth_user_id,role,tenant_school_id").eq("username", code).limit(5);
+          .select("id,auth_user_id,role,tenant_school_id").eq("username", code).limit(5);
         if (usernameError) throw usernameError;
-        if ((usernameOwners ?? []).some((a: any) => clean(a.auth_user_id) !== clean(account?.auth_user_id))) { counts.skipped++; continue; }
+        if ((usernameOwners ?? []).some((a: any) => account ? String(a.id) !== String(account.id) : true)) { counts.skipped++; continue; }
         let authUserId = clean(account?.auth_user_id);
         if (account && authUserId) {
           const { data: authRow, error: authReadError } = await admin.auth.admin.getUserById(authUserId);
