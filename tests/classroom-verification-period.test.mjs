@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 const html = readFileSync(new URL("../classroom/management.html", import.meta.url), "utf8");
 const edge = readFileSync(new URL("../supabase/functions/classroom-verification/index.ts", import.meta.url), "utf8");
-const migration = readFileSync(new URL("../supabase/migrations/20261108193000_classroom_verification_by_period.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/20261108181500_classroom_verification_by_period.sql", import.meta.url), "utf8");
 assert.match(html, /تنظیمات هر زنگ فقط یک‌بار ثبت می‌شود/);
 assert.match(html, /data-save-verification-period/);
 assert.match(edge, /save_period_settings/);
