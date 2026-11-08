@@ -333,9 +333,15 @@ Deno.serve(async (req: Request) => {
         let authUserId = clean(account?.auth_user_id);
         if (account && authUserId) {
           const { data: authRow, error: authReadError } = await admin.auth.admin.getUserById(authUserId);
-          if (authReadError || !authRow.user) throw new Error("حساب احراز هویت موجود نیست.");
+          if (authReadError || !authRow.user || !clean(authRow.user.email)) throw new Error("حساب احراز هویت یا ایمیل آن موجود نیست.");
+          const { data: allMemberships, error: allMembershipsError } = await admin.from("school_memberships")
+            .select("school_id,role").eq("auth_user_id", authUserId).limit(20);
+          if (allMembershipsError) throw allMembershipsError;
+          if ((allMemberships ?? []).some((m: any) => clean(m.school_id) !== schoolId || clean(m.role).toLowerCase() !== "student")) {
+            counts.skipped++; continue;
+          }
           const { error: accountUpdateError } = await admin.from("account_settings").update({
-            username: code, national_code: code, updated_at: new Date().toISOString()
+            username: code, national_code: code, email: clean(authRow.user.email), updated_at: new Date().toISOString()
           }).eq("auth_user_id", authUserId).eq("tenant_school_id", schoolId);
           if (accountUpdateError) throw accountUpdateError;
           const { data: membership, error: membershipReadError } = await admin.from("school_memberships")
