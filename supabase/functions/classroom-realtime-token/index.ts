@@ -66,6 +66,84 @@ Deno.serve(async (req: Request) => {
     if (authError || !authData.user) return reply({ message: "نشست معتبر نیست؛ دوباره وارد سامانه شوید." }, 401);
 
     const body = await req.json().catch(() => ({}));
+    const adHocMeetingId = clean(body?.meeting_id);
+    if (adHocMeetingId) {
+      const joinCode = clean(body?.join_code);
+      if (!joinCode) return reply({ message: "لینک دعوت کامل نیست." }, 400);
+      const { data: adHocProfile, error: adHocProfileError } = await admin.from("account_settings")
+        .select("display_name,username,role,tenant_school_id")
+        .eq("auth_user_id", authData.user.id).maybeSingle();
+      if (adHocProfileError || !adHocProfile?.tenant_school_id) return reply({ message: "حساب کاربری به مدرسه متصل نیست." }, 403);
+      const { data: adHocMeeting, error: adHocMeetingError } = await admin.from("classroom_ad_hoc_meetings")
+        .select("id,title,description,created_by,tenant_school_id,audience_type,audience_roles,join_code,cloudflare_meeting_id,status,expires_at")
+        .eq("id", adHocMeetingId).eq("join_code", joinCode)
+        .eq("tenant_school_id", adHocProfile.tenant_school_id).maybeSingle();
+      if (adHocMeetingError) throw adHocMeetingError;
+      if (!adHocMeeting) return reply({ message: "لینک جلسه معتبر نیست یا به مدرسه دیگری تعلق دارد." }, 403);
+      if (adHocMeeting.status !== "active" || new Date(adHocMeeting.expires_at).getTime() <= Date.now()) {
+        return reply({ message: "این جلسه پایان یافته یا مهلت ورود آن تمام شده است." }, 410);
+      }
+      const { data: memberships, error: membershipError } = await admin.from("school_memberships")
+        .select("role").eq("school_id", adHocProfile.tenant_school_id)
+        .eq("auth_user_id", authData.user.id).eq("is_active", true);
+      if (membershipError) throw membershipError;
+      const roleKey = (value: unknown) => {
+        const role = norm(value);
+        if (role === "manager" || role.includes("مدیر")) return "manager";
+        if (role === "teacher" || role.includes("دبیر") || role.includes("معلم")) return "teacher";
+        if (role === "student" || role.includes("دانش‌آموز") || role.includes("دانش آموز")) return "student";
+        if (role === "parent" || role.includes("ولی") || role.includes("والد")) return "parent";
+        if (role === "counselor" || role.includes("مشاور")) return "counselor";
+        if (role === "deputy" || role.includes("معاون") || ["educational","executive","cultural","advisor"].includes(role)) return "deputy";
+        return role;
+      };
+      const activeRoles = new Set((memberships ?? []).map((item: any) => roleKey(item.role)));
+      const requestedRole = roleKey(body?.active_role || adHocProfile.role);
+      const isCreator = adHocMeeting.created_by === authData.user.id;
+      if (!activeRoles.has(requestedRole) && !(isCreator && requestedRole === "manager" && roleKey(adHocProfile.role) === "manager")) {
+        return reply({ message: "سمت فعال این حساب در مدرسه تأیید نشد." }, 403);
+      }
+      const isAudienceAllowed = adHocMeeting.audience_type === "all_school"
+        ? activeRoles.size > 0
+        : (Array.isArray(adHocMeeting.audience_roles) && adHocMeeting.audience_roles.map(roleKey).includes(requestedRole));
+      if (!isAudienceAllowed && !isCreator) return reply({ message: "این جلسه برای گروه کاربری شما دعوت نشده است." }, 403);
+
+      const cloudMeetingId = clean(adHocMeeting.cloudflare_meeting_id);
+      if (!cloudMeetingId) return reply({ message: "اتاق رسانه این جلسه آماده نیست." }, 503);
+      const isHost = isCreator && requestedRole === "manager";
+      const presetName = isHost ? "group_call_host" : "group_call_guest";
+      const participantsData = await cloudflare(`/meetings/${cloudMeetingId}/participants?limit=1000`);
+      const participants = Array.isArray(participantsData) ? participantsData : participantsData?.data ?? [];
+      let participant = participants.find((item: any) => item.custom_participant_id === authData.user.id);
+      const isStudent = requestedRole === "student";
+      const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}`
+        : (clean(adHocProfile.display_name) || clean(adHocProfile.username) || "کاربر فراهوش");
+      const expiresOn = new Date(Math.min(Date.now() + 60 * 60 * 1000, new Date(adHocMeeting.expires_at).getTime())).toISOString();
+      let participantToken = "";
+      if (participant && participant.preset_name !== presetName) {
+        await cloudflare(`/meetings/${cloudMeetingId}/participants/${participant.id}`, "DELETE");
+        participant = null;
+      }
+      if (participant) {
+        const refreshed = await cloudflare(`/meetings/${cloudMeetingId}/participants/${participant.id}/token`, "POST", { expires_on: expiresOn });
+        participantToken = clean(refreshed?.token);
+      } else {
+        const created = await cloudflare(`/meetings/${cloudMeetingId}/participants`, "POST", {
+          name: displayName,
+          preset_name: presetName,
+          custom_participant_id: authData.user.id,
+          token: { expires_on: expiresOn },
+        });
+        participantToken = clean(created?.token);
+      }
+      if (!participantToken) throw new Error("توکن ورود به جلسه دریافت نشد.");
+      return reply({
+        ok: true,
+        token: participantToken,
+        expires_on: expiresOn,
+        room: { id: adHocMeeting.id, title: adHocMeeting.title, subject: "جلسه اختصاصی", class_name: "", teacher: adHocProfile.display_name || adHocProfile.username || "مدیریت مدرسه" },
+      });
+    }
     const roomId = Number(body?.room_id);
     const scheduleEntryId = Number(body?.schedule_entry_id ?? 0);
     if (!Number.isInteger(roomId) || roomId < 1) return reply({ message: "شناسه کلاس معتبر نیست." }, 400);
