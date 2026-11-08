@@ -64,18 +64,18 @@ async function postFunction(name,body){
 }
 function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
 $("back").addEventListener("click",returnToPanel);
-async function enterRoom(room,scheduleEntryId){
+async function enterRoom(room,scheduleEntryId,adHoc=null){
  const buttons=$("roomList").querySelectorAll("button");buttons.forEach(b=>b.disabled=true);
  try{
   say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
-  const credentials=await postFunction("classroom-realtime-token",{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
+  const credentials=await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
   await customElements.whenDefined("rtk-meeting");
   const sdk=window.RealtimeKitClient;
   if(!sdk||typeof sdk.init!=="function")throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
   meeting=await sdk.init({authToken:credentials.token,defaults:{audio:false,video:false}});
   $("realtimeMeeting").meeting=meeting;
-  $("meetingTitle").textContent=room.title||room.subject||"کلاس آنلاین";
-  $("meetingDetail").textContent=[room.class_name,room.teacher].filter(Boolean).join(" · ");
+  $("meetingTitle").textContent=credentials.room?.title||room.title||room.subject||"کلاس آنلاین";
+  $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت · ورود با مجوز مدرسه":[room.class_name,room.teacher].filter(Boolean).join(" · ");
   $("meetingPanel").classList.remove("hidden");
   $("selector").classList.add("hidden");
   $("notice").textContent="اتصال برقرار شد. میکروفن و دوربین را فقط در صورت نیاز و با اجازهٔ مرورگر فعال کنید.";
@@ -85,8 +85,17 @@ async function enterRoom(room,scheduleEntryId){
 async function boot(){
  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
  try{
-  const requestedRoomId=Number(new URLSearchParams(location.search).get("room_id")||0);
-  const requestedScheduleEntryId=Number(new URLSearchParams(location.search).get("schedule_entry_id")||0);
+  const query=new URLSearchParams(location.search);
+  const requestedMeetingId=query.get("meeting_id")||"";
+  const requestedJoinCode=query.get("join_code")||"";
+  if(requestedMeetingId){
+   if(!requestedJoinCode)throw new Error("لینک دعوت جلسه ناقص است.");
+   profile={role:activeRole||"participant"};
+   await enterRoom({id:requestedMeetingId,title:"جلسه آنلاین اختصاصی"},0,{id:requestedMeetingId,code:requestedJoinCode});
+   return;
+  }
+  const requestedRoomId=Number(query.get("room_id")||0);
+  const requestedScheduleEntryId=Number(query.get("schedule_entry_id")||0);
   const data=await postFunction("classroom-authorize",requestedRoomId?{room_id:requestedRoomId,schedule_entry_id:requestedScheduleEntryId,active_role:activeRole}:{active_role:activeRole});
   profile=data.profile||{};
   if(requestedRoomId){

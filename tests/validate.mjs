@@ -16,6 +16,12 @@ const parentMeetingsApi = readFileSync(new URL("../supabase/functions/parent-mee
 const parentMeetingMembershipMigration = readFileSync(new URL("../supabase/migrations/20261031150000_backfill_school_memberships_for_existing_accounts.sql", import.meta.url), "utf8");
 const usersPage = readFileSync(new URL("../users.html", import.meta.url), "utf8");
 const adminUsersApi = readFileSync(new URL("../supabase/functions/admin-manage-users/index.ts", import.meta.url), "utf8");
+const adHocMeetingsPage = readFileSync(new URL("../classroom/meetings.html", import.meta.url), "utf8");
+const adHocMeetingsApi = readFileSync(new URL("../supabase/functions/classroom-meetings/index.ts", import.meta.url), "utf8");
+const adHocMeetingTokenApi = readFileSync(new URL("../supabase/functions/classroom-realtime-token/index.ts", import.meta.url), "utf8");
+const adHocMeetingMigration = readFileSync(new URL("../supabase/migrations/20261109000000_classroom_ad_hoc_meetings.sql", import.meta.url), "utf8");
+const realtimeMeetingPage = readFileSync(new URL("../classroom/realtime.html", import.meta.url), "utf8");
+const classroomHome = readFileSync(new URL("../classroom/index.html", import.meta.url), "utf8");
 
 assert.ok(["manager","deputy","teacher","parent","student","counselor"].every(role => landing.includes(`href="portal.html?step=login&role=${role}"`)), "Landing must route all six roles through the current authenticated portal login");
 assert.ok(!landing.includes('href="./classroom.html?role=teacher"') && !landing.includes('href="./classroom.html?role=student"'), "Landing must not expose direct unauthenticated classroom entry");
@@ -73,8 +79,8 @@ assert.ok(server.includes("educational_deputy") && server.includes("executive_de
 assert.ok(server.includes("password.length < 8") && server.includes("hashPassword(password)"), "Staff passwords must be validated and securely hashed");
 assert.ok(portal.includes("staffForm") && portal.includes("api('/staff'"), "Manager portal should create staff accounts");
 assert.ok(portal.includes("managerOnlyTools") && portal.includes("staffTools"), "Staff administration tools should be manager-only");
-for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
-  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
+for (const [name, html] of [["index.html", landing], ["classroom.html", classroom], ["classroom/schedule.html", classroomSchedule], ["classroom/management.html", classroomManagement], ["classroom/meetings.html", adHocMeetingsPage], ["classroom/realtime.html", realtimeMeetingPage], ["classroom/index.html", classroomHome], ["portal.html", portal], ["root portal.html", rootPortal], ["users.html", usersPage]]) {
+  const scripts = [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi)].filter(m => !/\btype\s*=\s*["']module["']/i.test(m[1] || "")).map(m => m[2]).filter(s => s.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " has invalid JS syntax");
 }
 
@@ -112,4 +118,13 @@ assert.ok(verificationFunction.includes('eq("period",period)') && verificationFu
 assert.ok(verificationUi.includes("ذخیره برای همه کلاس‌ها") && verificationUi.includes("data-verification-period"), "Manager UI must save one row per bell rather than one row per weekly session");
 assert.ok(verificationMigration.includes("primary key (tenant_school_id, period)") && verificationMigration.includes("check1_position") && verificationMigration.includes("check2_position"), "Migration must persist two shared positions per school bell");
 
+assert.ok(adHocMeetingsApi.includes('action === "create"') && adHocMeetingsApi.includes('action === "list"') && adHocMeetingsApi.includes('action === "end"'), "Manager API must create, list, and end ad-hoc meetings");
+assert.ok(adHocMeetingsApi.includes("isManager(profile.role)") && adHocMeetingsApi.includes("record_on_start: false") && adHocMeetingsApi.includes("transcribe_on_end: false"), "Only managers may create meetings and recording/transcription must remain disabled");
+assert.ok(adHocMeetingsApi.includes('await cloudflare(`/meetings/${clean(meeting.cloudflare_meeting_id)}`, "PATCH", { status: "INACTIVE" });'), "Ending a meeting must successfully disable the RealtimeKit room before marking it ended");
+assert.ok(adHocMeetingMigration.includes("classroom_ad_hoc_meetings") && adHocMeetingMigration.includes("enable row level security") && adHocMeetingMigration.includes("revoke all"), "Ad-hoc meeting records must be protected behind server authorization");
+assert.ok(adHocMeetingTokenApi.includes('eq("join_code", joinCode)') && adHocMeetingTokenApi.includes("audience_roles") && adHocMeetingTokenApi.includes("expires_at"), "Ad-hoc meeting token issuance must validate link, audience, school, and expiry");
+assert.ok(realtimeMeetingPage.includes('query.get("meeting_id")') && realtimeMeetingPage.includes('query.get("join_code")') && realtimeMeetingPage.includes('meeting_id:adHoc.id'), "Realtime room must accept manager-issued meeting links");
+assert.ok(adHocMeetingsPage.includes("ساخت جلسه و دریافت لینک") && adHocMeetingsPage.includes("کپی لینک دعوت") && adHocMeetingsPage.includes("تمام حساب‌های فعال مدرسه"), "Manager page must create and share meeting links with audience controls");
+assert.ok(adHocMeetingsPage.includes("ورود به جلسه") && adHocMeetingsPage.includes("roleNames"), "Manager must be able to enter an active meeting and see Persian audience labels");
+assert.ok(classroomHome.includes('id="managerMeetingsLink"') && classroomHome.includes("meetings.html"), "Online classroom home must expose ad-hoc meeting creation to managers");
 console.log("Static checks passed: classroom controls, portal workflows, bulk parent Excel import, school-scoped links, and page script syntax.");
