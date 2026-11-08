@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تأیید دعوت‌نامه‌های اولیا | فراهوش نوین</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#f3f6fb;color:#172033;font:14px Tahoma,Arial,sans-serif}main{max-width:1050px;margin:auto}.head,.card{background:#fff;border:1px solid #dce3ed;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 4px 16px #15243b0a}.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}h2,h3{margin:4px 0 12px}button,select,textarea{font:inherit;border-radius:9px;padding:10px;border:1px solid #cbd5e1}button{cursor:pointer;background:#176b45;color:white;border:0;margin:3px}button.secondary{background:#334155}button.reject{background:#b42318}button:disabled{opacity:.55;cursor:wait}.muted{color:#64748b;line-height:1.9}.status{padding:12px;border-radius:9px;background:#eef4fa;margin:10px 0;white-space:pre-wrap}.error{color:#b42318;background:#fff0ef}.good{color:#137547;background:#ecfdf3}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button{background:#e8eef6;color:#172033}.tabs button.active{background:#176b45;color:white}.item{border:1px solid #dce3ed;border-radius:12px;padding:14px;margin:10px 0}.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:10px 0}.meta div{background:#f8fafc;border-radius:8px;padding:9px}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.note{width:100%;min-height:65px;margin-top:8px}
+</style></head>
+<body><main>
+<header class="head"><div><h2>تأیید دعوت‌نامه‌های اولیا</h2><div class="muted">بررسی دعوت‌نامه‌های ثبت‌شده توسط دبیران، معاونان و مشاوران</div></div><div><button class="secondary" id="reload">تازه‌سازی</button><button class="secondary" id="back">بازگشت به پنل مدیر</button></div></header>
+<div id="status" class="status" role="status">در حال بررسی نشست مدیر…</div>
+<section class="card"><div class="tabs"><button class="active" data-filter="pending">در انتظار بررسی</button><button data-filter="approved">تأییدشده‌ها</button><button data-filter="rejected">ردشده‌ها</button><button data-filter="all">همه</button></div><div id="list" class="muted">در حال دریافت…</div></section>
+</main>
+<script>
+const endpoint='https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/family-education';
+const key='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
+const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
+const role=(sessionStorage.getItem('frahoosh_novin_role')||'').toLowerCase();
+const $=id=>document.getElementById(id);let rows=[],filter='pending';
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function say(v,bad=false){$('status').textContent=v;$('status').className='status '+(bad?'error':'good');}
+async function call(payload){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+token},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw Error(d.message||'عملیات انجام نشد');return d;}
+function batches(){const map=new Map();for(const row of rows){const k=row.invitation_batch_id||String(row.id);if(!map.has(k))map.set(k,[]);map.get(k).push(row);}return [...map.entries()].map(([batch_id,items])=>({batch_id,items,first:items[0]}));}
+function render(){const groups=batches().filter(g=>filter==='all'||g.first.approval_status===filter);if(!groups.length){$('list').textContent=filter==='pending'?'دعوت‌نامه‌ای در انتظار تأیید وجود ندارد.':'موردی برای نمایش وجود ندارد.';return;}
+$('list').innerHTML=groups.map(g=>{const x=g.first;const pending=x.approval_status==='pending';return '<article class="item"><h3>'+esc(x.title)+'</h3><div class="meta"><div><b>مخاطب:</b> '+esc(x.student_name||'—')+'</div><div><b>ثبت‌کننده:</b> '+esc(x.invited_by_name||'—')+'</div><div><b>زمان:</b> '+esc(x.event_weekday||'')+' '+esc(x.event_date_shamsi||'')+' · '+esc(x.event_time||'بدون ساعت')+'</div><div><b>تعداد اولیا:</b> '+g.items.length+'</div><div><b>وضعیت:</b> '+({pending:'در انتظار تأیید مدیر',approved:'تأیید شده',rejected:'رد شده'}[x.approval_status]||esc(x.approval_status))+'</div><div><b>محل:</b> '+esc(x.venue||'—')+'</div></div>'+(x.description?'<p>'+esc(x.description)+'</p>':'')+(x.manager_note?'<p><b>یادداشت مدیر:</b> '+esc(x.manager_note)+'</p>':'')+(pending?'<label>یادداشت مدیر (اختیاری)<textarea class="note" data-note="'+esc(g.batch_id)+'" placeholder="توضیح برای ثبت‌کننده یا اولیا"></textarea></label><div class="actions"><button data-review="approved" data-batch="'+esc(g.batch_id)+'">تأیید و انتشار برای اولیا</button><button class="reject" data-review="rejected" data-batch="'+esc(g.batch_id)+'">رد دعوت‌نامه</button></div>':'')+'</article>';}).join('');}
+async function load(){if(!token)throw Error('نشست ورود پیدا نشد؛ دوباره با حساب مدیر وارد شوید.');if(role!=='manager')throw Error('این صفحه فقط برای حساب مدیر مدرسه قابل استفاده است.');const d=await call({action:'list'});if(d.role!=='manager')throw Error('سطح دسترسی مدیر تأیید نشد.');rows=d.invitations||[];render();const count=batches().filter(g=>g.first.approval_status==='pending').length;say('دعوت‌نامه‌ها دریافت شد؛ '+count+' مورد در انتظار بررسی است.');}
+$('list').addEventListener('click',async ev=>{const b=ev.target.closest('button[data-review]');if(!b)return;const status=b.dataset.review,batch_id=b.dataset.batch;const note=document.querySelector('[data-note="'+CSS.escape(batch_id)+'"]')?.value.trim()||'';if(status==='rejected'&&!note){say('برای رد دعوت‌نامه، علت یا توضیح مدیر را وارد کنید.',true);return;}if(!confirm(status==='approved'?'دعوت‌نامه تأیید و برای اولیای مربوط منتشر شود؟':'دعوت‌نامه رد شود؟'))return;b.disabled=true;try{const d=await call({action:'review',batch_id,status,manager_note:note});say(status==='approved'?'دعوت‌نامه تأیید و منتشر شد.':'دعوت‌نامه رد شد.');await load();}catch(e){say(e.message,true);b.disabled=false;}});
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render();}));
+$('reload').onclick=()=>load().catch(e=>say(e.message,true));
+$('back').onclick=()=>location.href='portal.html?step=panel&role=manager';
+load().catch(e=>say(e.message,true));
+</script></body></html>
