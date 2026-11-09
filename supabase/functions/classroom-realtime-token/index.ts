@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
       const activeRoles = new Set((memberships ?? []).map((item: any) => roleKey(item.role)));
       const requestedRole = roleKey(body?.active_role || adHocProfile.role);
       const isCreator = adHocMeeting.created_by === authData.user.id;
-      if (!activeRoles.has(requestedRole) && !(isCreator && requestedRole === "manager" && roleKey(adHocProfile.role) === "manager")) {
+      if (!activeRoles.has(requestedRole)) {
         return reply({ message: "سمت فعال این حساب در مدرسه تأیید نشد." }, 403);
       }
       const isAudienceAllowed = adHocMeeting.audience_type === "all_school"
