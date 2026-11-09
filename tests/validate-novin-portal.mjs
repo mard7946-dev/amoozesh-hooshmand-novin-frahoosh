@@ -28,7 +28,8 @@ assert.ok(usernameLogin.includes("change_student_initial_password") && usernameL
 assert.ok(schoolLogin.includes('"change_student_initial_password"'), "School portal login must relay the student password-change completion response");
 assert.ok(html.includes('requestedRole===\'student\'') && html.includes('change_student_initial_password'), "Student portal must show and submit the first-login password change form");
 const usersPage = readFileSync("users.html", "utf8");
-assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"reset_student_accounts"'), "Manager user page must expose the confirmed bulk student reset control");
+assert.ok(parentAdmin.includes('action === "ensure_student_accounts"') && parentAdmin.includes("if (ensureOnly)") && parentAdmin.includes("counts.existing++"), "Student account provisioning must preserve existing passwords and only create missing accounts");
+assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"ensure_student_accounts"') && usersPage.includes("رمز حساب‌های موجود تغییر نمی‌کند"), "Manager user page must expose safe missing-student-account provisioning");
 
 for (const file of ["supabase/functions/parent-management/index.ts", "supabase/functions/parent-meetings/index.ts", "supabase/functions/family-education/index.ts"]) {
   const source = readFileSync(file, "utf8");
