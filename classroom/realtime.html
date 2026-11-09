@@ -74,6 +74,14 @@ async function postFunction(name,body){
 }
 function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
 $("back").addEventListener("click",returnToPanel);
+function offerEntry(room,scheduleEntryId,adHoc=null){
+ const button=document.createElement("button");button.className="room";
+ button.textContent="ورود به "+(room.title||room.subject||"جلسه آنلاین");
+ button.addEventListener("click",()=>enterRoom(room,scheduleEntryId,adHoc));
+ $("roomList").replaceChildren(button);
+ $("selector").classList.remove("hidden");
+ say("برای ورود به جلسه، دکمهٔ زیر را بزنید.");
+}
 function participantName(participant){return participant.name||("کاربر "+String(participant.identity||"").slice(-5));}
 function getTile(participant){
  const identity=participant.identity;
@@ -186,7 +194,7 @@ async function boot(){
   if(requestedMeetingId){
    if(!requestedJoinCode)throw new Error("لینک دعوت جلسه ناقص است.");
    profile={role:activeRole||"participant"};
-   await enterRoom({id:requestedMeetingId,title:"جلسه آنلاین اختصاصی"},0,{id:requestedMeetingId,code:requestedJoinCode});
+   offerEntry({id:requestedMeetingId,title:"جلسه آنلاین اختصاصی"},0,{id:requestedMeetingId,code:requestedJoinCode});
    return;
   }
   const requestedRoomId=Number(query.get("room_id")||0);
@@ -195,7 +203,7 @@ async function boot(){
   profile=data.profile||{};
   if(requestedRoomId){
    if(!data.room)throw new Error("سرور مجوز این کلاس را تأیید نکرد؛ زنگ یا برنامه ممکن است غیرفعال شده باشد.");
-   await enterRoom(data.room,requestedScheduleEntryId);return;
+   offerEntry(data.room,requestedScheduleEntryId);return;
   }
   const role=String(profile.role||"").toLocaleLowerCase("fa");
   const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
