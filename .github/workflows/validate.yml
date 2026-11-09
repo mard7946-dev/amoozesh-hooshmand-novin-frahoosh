@@ -38,7 +38,7 @@ jobs:
         working-directory: server
         run: npm install --package-lock=false
       - name: Validate page structure and JavaScript syntax
-        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs
+        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs && node tests/validate-livekit-classroom.mjs
       - name: Set up Deno for classroom authorization checks
         uses: denoland/setup-deno@v2
         with:
