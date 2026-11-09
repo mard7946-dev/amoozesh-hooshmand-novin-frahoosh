@@ -112,7 +112,7 @@ export async function createLiveKitParticipantToken(
   roomName: string,
   identity: string,
   displayName: string,
-  options: { host?: boolean; ttlSeconds?: number; role?: string } = {},
+  options: { host?: boolean; screenShare?: boolean; ttlSeconds?: number; role?: string } = {},
 ): Promise<{ token: string; server_url: string; expires_at: string }> {
   if (!roomName || !identity) throw new Error("اطلاعات ورود به اتاق کامل نیست.");
   const ttl = Math.max(60, Math.min(Number(options.ttlSeconds) || 3600, 4 * 3600));
@@ -127,7 +127,8 @@ export async function createLiveKitParticipantToken(
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
-      canPublishData: true,
+      canPublishData: false,
+      canPublishSources: options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"],
       ...(options.host ? { roomAdmin: true } : {}),
     },
   });
@@ -135,5 +136,6 @@ export async function createLiveKitParticipantToken(
     token,
     server_url: getLiveKitWsUrl(),
     expires_at: new Date((now + ttl) * 1000).toISOString(),
+    can_share_screen: Boolean(options.screenShare),
   };
 }
