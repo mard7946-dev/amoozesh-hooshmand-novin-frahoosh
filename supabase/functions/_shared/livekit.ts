@@ -113,7 +113,7 @@ export async function createLiveKitParticipantToken(
   identity: string,
   displayName: string,
   options: { host?: boolean; screenShare?: boolean; ttlSeconds?: number; role?: string } = {},
-): Promise<{ token: string; server_url: string; expires_at: string }> {
+): Promise<{ token: string; server_url: string; expires_at: string; can_share_screen: boolean }> {
   if (!roomName || !identity) throw new Error("اطلاعات ورود به اتاق کامل نیست.");
   const ttl = Math.max(60, Math.min(Number(options.ttlSeconds) || 3600, 4 * 3600));
   const now = Math.floor(Date.now() / 1000);
