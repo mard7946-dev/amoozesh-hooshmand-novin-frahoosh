@@ -142,6 +142,18 @@ Deno.serve(async (req: Request) => {
         return reply({ message: "فهرست کلاس‌های آنلاین از پایگاه داده دریافت نشد." }, 503);
       }
       rows = allRows ?? [];
+      // Managers and school deputies need weekday-linked schedule data
+      // so the classroom entry screen can list each room by day.
+      let managerScheduleQuery = admin.from("weekly_schedule_entries")
+        .select("id,class_name,weekday,period,teacher_name,online_class_id,start_time,end_time,day_enabled,tenant_school_id");
+      managerScheduleQuery = managerScheduleQuery.eq("tenant_school_id", profile.tenant_school_id);
+      const { data: managerSchedule, error: managerScheduleError } = await managerScheduleQuery
+        .order("weekday", { ascending: true }).order("period", { ascending: true }).limit(500);
+      if (managerScheduleError) {
+        console.error("classroom-authorize manager schedule lookup failed", JSON.stringify({ code: managerScheduleError.code, message: managerScheduleError.message }));
+        return reply({ message: "برنامه هفتگی کلاس‌ها برای حساب مدیریت دریافت نشد." }, 503);
+      }
+      scheduleRows = managerSchedule ?? [];
     }
 
     const rooms = rows.map((row: any) => ({
@@ -206,7 +218,7 @@ Deno.serve(async (req: Request) => {
     }
     return reply({ ok: true, profile: {
       username: clean(profile.username), display_name: name, role: clean(profile.role), class_name: className,
-    }, rooms, schedule });
+    }, rooms: ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role) ? schedule : rooms, schedule });
   } catch (error) {
     console.error("classroom-authorize failed", String(error));
     return reply({ message: "بررسی نشست انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
