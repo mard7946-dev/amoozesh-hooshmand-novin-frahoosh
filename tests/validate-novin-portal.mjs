@@ -29,6 +29,7 @@ assert.ok(schoolLogin.includes('"change_student_initial_password"'), "School por
 assert.ok(html.includes('requestedRole===\'student\'') && html.includes('change_student_initial_password'), "Student portal must show and submit the first-login password change form");
 const usersPage = readFileSync("users.html", "utf8");
 assert.ok(parentAdmin.includes('action === "ensure_student_accounts"') && parentAdmin.includes("if (ensureOnly)") && parentAdmin.includes("counts.existing++"), "Student account provisioning must preserve existing passwords and only create missing accounts");
+assert.ok(parentAdmin.includes('if (!ensureOnly && body.confirm !== "RESET_ALL_STUDENTS")'), "Safe provisioning must not require the legacy bulk-reset confirmation token");
 assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"ensure_student_accounts"') && usersPage.includes("رمز حساب‌های موجود تغییر نمی‌کند"), "Manager user page must expose safe missing-student-account provisioning");
 
 for (const file of ["supabase/functions/parent-management/index.ts", "supabase/functions/parent-meetings/index.ts", "supabase/functions/family-education/index.ts"]) {
