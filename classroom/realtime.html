@@ -113,21 +113,27 @@ function attachTrack(track,participant){
 }
 function detachTrack(track){
  for(const element of track.detach()){
+  const tile=element.closest(".participant");
   if(element.parentElement)element.parentElement.removeChild(element);
+  if(track.kind===window.LivekitClient.Track.Kind.Video&&tile&&!tile.querySelector("video")&&!tile.querySelector(".avatar")){
+   const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent="دوربین خاموش";
+   tile.insertBefore(avatar,tile.querySelector(".name"));
+  }
  }
 }
 function bindRoomEvents(room){
  room.on(window.LivekitClient.RoomEvent.TrackSubscribed,(track,publication,participant)=>attachTrack(track,participant));
  room.on(window.LivekitClient.RoomEvent.TrackUnsubscribed,(track)=>detachTrack(track));
+ room.on(window.LivekitClient.RoomEvent.TrackUnpublished,(publication)=>{if(publication.track)detachTrack(publication.track);});
  room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>getTile(participant));
  room.on(window.LivekitClient.RoomEvent.ParticipantDisconnected,(participant)=>removeTile(participant.identity));
  room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");});
  room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged,(state)=>{$("status").textContent="وضعیت اتصال: "+state;});
  room.on(window.LivekitClient.RoomEvent.LocalTrackPublished,(publication,participant)=>{
-  if(publication.track)attachTrack(publication.track,participant);
+  if(publication.track&&publication.track.kind===window.LivekitClient.Track.Kind.Video)attachTrack(publication.track,participant);
  });
  room.on(window.LivekitClient.RoomEvent.LocalTrackUnpublished,(publication)=>{
-  if(publication.track)detachTrack(publication.track);
+  if(publication.track&&publication.track.kind===window.LivekitClient.Track.Kind.Video)detachTrack(publication.track);
  });
 }
 async function enterRoom(room,scheduleEntryId,adHoc=null){
@@ -147,7 +153,7 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
    getTile(participant);
    for(const publication of participant.trackPublications.values())if(publication.track)attachTrack(publication.track,participant);
   }
-  for(const publication of liveRoom.localParticipant.trackPublications.values())if(publication.track)attachTrack(publication.track,liveRoom.localParticipant);
+  for(const publication of liveRoom.localParticipant.trackPublications.values())if(publication.track&&publication.track.kind===sdk.Track.Kind.Video)attachTrack(publication.track,liveRoom.localParticipant);
   $("meetingTitle").textContent=credentials.room?.title||room.title||room.subject||"کلاس آنلاین";
   $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت · ورود با مجوز مدرسه":[room.class_name,room.teacher].filter(Boolean).join(" · ");
   $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
