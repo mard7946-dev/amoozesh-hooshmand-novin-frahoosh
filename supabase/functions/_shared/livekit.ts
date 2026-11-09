@@ -78,8 +78,9 @@ async function roomService(method: string, body: Record<string, unknown>): Promi
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const detail = clean(data?.msg || data?.message || data?.error);
+    const detail = clean(data?.msg || data?.message || data?.error || data?.code);
     if (response.status === 409 && /already exists|already_exists/i.test(detail)) return data;
+    if (response.status === 404 && method === "DeleteRoom") return data;
     console.error("LiveKit RoomService error", method, response.status, detail.slice(0, 240));
     throw new Error("سرویس کلاس آنلاین در ایجاد یا مدیریت اتاق پاسخ معتبر نداد.");
   }
