@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
       if (lookupError) throw lookupError;
       if (!meeting) return reply({ message: "جلسه پیدا نشد." }, 404);
       if (meeting.status !== "active") return reply({ ok: true, already_ended: true });
-      // Disable the RealtimeKit meeting first: this also removes active participants
+      // Delete the LiveKit room first: this disconnects active participants
       // and prevents valid-but-unexpired tokens from starting another session.
       await deleteLiveKitRoom(clean(meeting.cloudflare_meeting_id));
       const { error } = await admin.from("classroom_ad_hoc_meetings")
