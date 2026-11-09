@@ -14,19 +14,22 @@ button,.tool{font:inherit;border:1px solid var(--line);border-radius:9px;backgro
 button:disabled{opacity:.5;cursor:not-allowed}
 main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
-#roomList{display:grid;gap:8px}
-.room{width:100%;text-align:right;line-height:1.8}
-#meetingMount{height:min(74vh,780px);min-height:420px;overflow:hidden;border-radius:12px;background:#111827}
-#meetingMount rtk-meeting{display:block;width:100%;height:100%;min-height:420px}
+#roomList{display:grid;gap:8px}.room{width:100%;text-align:right;line-height:1.8}
+#meetingMount{min-height:420px;overflow:hidden;border-radius:12px;background:#111827;padding:10px}
+#participants{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.participant{position:relative;min-height:180px;border:1px solid var(--line);border-radius:12px;background:#0b1423;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.participant video{width:100%;height:100%;min-height:180px;max-height:520px;object-fit:contain;background:#050a12}
+.participant .name{position:absolute;bottom:8px;right:8px;padding:5px 9px;border-radius:7px;background:#000a;color:#fff;font-size:12px;z-index:2}
+.participant .avatar{font-size:14px;color:var(--muted);padding:18px;text-align:center}
+.participant audio{display:none}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.toolbar button.active{background:#17463f;border-color:var(--accent)}
+.toolbar button.leave{background:#54232b;border-color:#a94b58}
 .notice{padding:12px;border:1px solid #7b6534;border-radius:10px;background:#302817;color:#ffe7a8;line-height:1.9}
 .hidden{display:none!important}
-@media(max-width:640px){main{padding:8px}#meetingMount{height:72vh;min-height:380px}}
+@media(max-width:640px){main{padding:8px}#meetingMount{min-height:380px;padding:6px}#participants{grid-template-columns:1fr}.participant{min-height:220px}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js"></script>
-<script type="module">
-import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js";
-defineCustomElements();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.23.0/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
 <header>
@@ -43,9 +46,15 @@ defineCustomElements();
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
    <strong id="meetingTitle">کلاس زنده</strong><small id="meetingDetail"></small>
   </div>
-  <div id="meetingMount"><rtk-meeting id="realtimeMeeting" show-setup-screen="true"></rtk-meeting></div>
+  <div id="meetingMount"><div id="participants"></div></div>
+  <div class="toolbar">
+   <button id="micToggle" type="button">فعال‌کردن میکروفن</button>
+   <button id="cameraToggle" type="button">فعال‌کردن دوربین</button>
+   <button id="screenToggle" type="button">اشتراک‌گذاری صفحه</button>
+   <button id="leave" class="leave" type="button">خروج از کلاس</button>
+  </div>
  </section>
- <div class="notice" id="notice">صدا و تصویر فقط پس از اجازهٔ شما برای میکروفن و دوربین فعال می‌شوند. ضبط کلاس خاموش است و گفت‌وگوی داخلی تا آماده‌شدن پیام‌رسانی تحت نظارت غیرفعال است.</div>
+ <div class="notice" id="notice">میکروفن و دوربین در ابتدا خاموش هستند. برای فعال‌کردن هرکدام، دکمهٔ مربوط را بزنید و اجازهٔ مرورگر را صادر کنید. ضبط و گفت‌وگوی متنی در این نسخه غیرفعال است.</div>
 </main>
 <script>
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
@@ -53,8 +62,9 @@ const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
 const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:"دانش‌آموز"};
-let profile=null,meeting=null;
 const $=id=>document.getElementById(id);
+let profile=null,liveRoom=null,micOn=false,cameraOn=false,screenOn=false;
+const participantTiles=new Map();
 function say(text){$("status").textContent=text;$("notice").textContent=text;}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
@@ -64,24 +74,109 @@ async function postFunction(name,body){
 }
 function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
 $("back").addEventListener("click",returnToPanel);
+function participantName(participant){return participant.name||("کاربر "+String(participant.identity||"").slice(-5));}
+function getTile(participant){
+ const identity=participant.identity;
+ let tile=participantTiles.get(identity);
+ if(tile)return tile;
+ tile=document.createElement("div");tile.className="participant";tile.dataset.identity=identity;
+ const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent="دوربین خاموش";
+ const name=document.createElement("div");name.className="name";name.textContent=participantName(participant);
+ tile.append(avatar,name);$("participants").append(tile);
+ participantTiles.set(identity,tile);
+ return tile;
+}
+function removeTile(identity){
+ const tile=participantTiles.get(identity);
+ if(tile)tile.remove();
+ participantTiles.delete(identity);
+}
+function attachTrack(track,participant){
+ const tile=getTile(participant);
+ const element=track.attach();
+ if(track.kind===window.LivekitClient.Track.Kind.Video){
+  element.autoplay=true;element.playsInline=true;element.className="media-video";
+  const avatar=tile.querySelector(".avatar");if(avatar)avatar.remove();
+  tile.insertBefore(element,tile.querySelector(".name"));
+ }else{
+  element.autoplay=true;element.controls=false;element.style.display="none";
+  tile.append(element);
+ }
+}
+function detachTrack(track){
+ for(const element of track.detach()){
+  if(element.parentElement)element.parentElement.removeChild(element);
+ }
+}
+function bindRoomEvents(room){
+ room.on(window.LivekitClient.RoomEvent.TrackSubscribed,(track,publication,participant)=>attachTrack(track,participant));
+ room.on(window.LivekitClient.RoomEvent.TrackUnsubscribed,(track)=>detachTrack(track));
+ room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>getTile(participant));
+ room.on(window.LivekitClient.RoomEvent.ParticipantDisconnected,(participant)=>removeTile(participant.identity));
+ room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");});
+ room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged,(state)=>{$("status").textContent="وضعیت اتصال: "+state;});
+ room.on(window.LivekitClient.RoomEvent.LocalTrackPublished,(publication,participant)=>{
+  if(publication.track)attachTrack(publication.track,participant);
+ });
+ room.on(window.LivekitClient.RoomEvent.LocalTrackUnpublished,(publication)=>{
+  if(publication.track)detachTrack(publication.track);
+ });
+}
 async function enterRoom(room,scheduleEntryId,adHoc=null){
- const buttons=$("roomList").querySelectorAll("button");buttons.forEach(b=>b.disabled=true);
+ const buttons=$("roomList").querySelectorAll("button");buttons.forEach(button=>button.disabled=true);
  try{
   say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
   const credentials=await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
-  await customElements.whenDefined("rtk-meeting");
-  const sdk=window.RealtimeKitClient;
-  if(!sdk||typeof sdk.init!=="function")throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
-  meeting=await sdk.init({authToken:credentials.token,defaults:{audio:false,video:false}});
-  $("realtimeMeeting").meeting=meeting;
+  const sdk=window.LivekitClient;
+  if(!sdk||!sdk.Room)throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
+  if(!credentials.server_url||!credentials.token)throw new Error("اطلاعات اتصال امن کلاس از سرور دریافت نشد.");
+  liveRoom=new sdk.Room({adaptiveStream:true,dynacast:true});
+  bindRoomEvents(liveRoom);
+  await liveRoom.connect(credentials.server_url,credentials.token);
+  await liveRoom.localParticipant.setMicrophoneEnabled(false);
+  await liveRoom.localParticipant.setCameraEnabled(false);
+  for(const participant of liveRoom.remoteParticipants.values()){
+   getTile(participant);
+   for(const publication of participant.trackPublications.values())if(publication.track)attachTrack(publication.track,participant);
+  }
+  for(const publication of liveRoom.localParticipant.trackPublications.values())if(publication.track)attachTrack(publication.track,liveRoom.localParticipant);
   $("meetingTitle").textContent=credentials.room?.title||room.title||room.subject||"کلاس آنلاین";
   $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت · ورود با مجوز مدرسه":[room.class_name,room.teacher].filter(Boolean).join(" · ");
-  $("meetingPanel").classList.remove("hidden");
-  $("selector").classList.add("hidden");
-  $("notice").textContent="اتصال برقرار شد. میکروفن و دوربین را فقط در صورت نیاز و با اجازهٔ مرورگر فعال کنید.";
+  $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
   $("status").textContent="اتصال امن کلاس برقرار شد · "+(labels[profile?.role]||profile?.role||"شرکت‌کننده");
- }catch(error){say(error.message||"اتصال به کلاس انجام نشد.");buttons.forEach(b=>b.disabled=false);}
+  $("notice").textContent="به کلاس وارد شدید. میکروفن و دوربین خاموش هستند؛ در صورت نیاز آن‌ها را فعال کنید.";
+  $("micToggle").disabled=false;$("cameraToggle").disabled=false;$("screenToggle").disabled=false;
+ }catch(error){
+  say(error.message||"اتصال به کلاس انجام نشد.");
+  buttons.forEach(button=>button.disabled=false);
+  if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
+ }
 }
+$("micToggle").addEventListener("click",async()=>{
+ if(!liveRoom)return;
+ try{micOn=!micOn;await liveRoom.localParticipant.setMicrophoneEnabled(micOn);$("micToggle").textContent=micOn?"خاموش‌کردن میکروفن":"فعال‌کردن میکروفن";$("micToggle").classList.toggle("active",micOn);}
+ catch(error){micOn=false;say("فعال‌سازی میکروفن انجام نشد؛ اجازهٔ مرورگر را بررسی کنید.");}
+});
+$("cameraToggle").addEventListener("click",async()=>{
+ if(!liveRoom)return;
+ try{cameraOn=!cameraOn;await liveRoom.localParticipant.setCameraEnabled(cameraOn);$("cameraToggle").textContent=cameraOn?"خاموش‌کردن دوربین":"فعال‌کردن دوربین";$("cameraToggle").classList.toggle("active",cameraOn);}
+ catch(error){cameraOn=false;say("فعال‌سازی دوربین انجام نشد؛ اجازهٔ مرورگر را بررسی کنید.");}
+});
+$("screenToggle").addEventListener("click",async()=>{
+ if(!liveRoom)return;
+ try{screenOn=!screenOn;await liveRoom.localParticipant.setScreenShareEnabled(screenOn);$("screenToggle").textContent=screenOn?"توقف اشتراک صفحه":"اشتراک‌گذاری صفحه";$("screenToggle").classList.toggle("active",screenOn);}
+ catch(error){screenOn=false;say("اشتراک‌گذاری صفحه در این مرورگر یا دستگاه در دسترس نیست.");}
+});
+async function leaveRoom(){
+ if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
+ for(const identity of [...participantTiles.keys()])removeTile(identity);
+ micOn=false;cameraOn=false;screenOn=false;
+ $("micToggle").textContent="فعال‌کردن میکروفن";$("cameraToggle").textContent="فعال‌کردن دوربین";$("screenToggle").textContent="اشتراک‌گذاری صفحه";
+ $("micToggle").classList.remove("active");$("cameraToggle").classList.remove("active");$("screenToggle").classList.remove("active");
+ $("meetingPanel").classList.add("hidden");$("selector").classList.remove("hidden");
+ say("از کلاس خارج شدید.");
+}
+$("leave").addEventListener("click",leaveRoom);
 async function boot(){
  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
  try{
@@ -100,8 +195,7 @@ async function boot(){
   profile=data.profile||{};
   if(requestedRoomId){
    if(!data.room)throw new Error("سرور مجوز این کلاس را تأیید نکرد؛ زنگ یا برنامه ممکن است غیرفعال شده باشد.");
-   await enterRoom(data.room,requestedScheduleEntryId);
-   return;
+   await enterRoom(data.room,requestedScheduleEntryId);return;
   }
   const role=String(profile.role||"").toLocaleLowerCase("fa");
   const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
@@ -117,14 +211,14 @@ async function boot(){
   $("roomList").replaceChildren();
   if(!rooms.length){say("در حال حاضر زنگ فعالی برای این حساب وجود ندارد. برنامهٔ روزانه و فعال‌سازی زنگ را در پنل مدیریت بررسی کنید.");return;}
   for(const item of rooms){
-   const room=item.room,b=document.createElement("button");b.className="room";
-   b.textContent=[room.start_time||"",room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(" · ");
-   b.addEventListener("click",()=>enterRoom(room,item.scheduleEntryId));$("roomList").append(b);
+   const room=item.room,button=document.createElement("button");button.className="room";
+   button.textContent=[room.start_time||"",room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(" · ");
+   button.addEventListener("click",()=>enterRoom(room,item.scheduleEntryId));$("roomList").append(button);
   }
   say(rooms.length.toLocaleString("fa-IR")+" کلاس مجاز برای ورود نمایش داده شد.");
  }catch(error){say(error.message||"بررسی نشست و مجوز کلاس انجام نشد.");}
 }
-window.addEventListener("beforeunload",()=>{try{meeting?.leave?.();}catch(_){}});
+window.addEventListener("beforeunload",()=>{try{liveRoom?.disconnect?.();}catch(_){}});
 boot();
 </script>
 <script src="../panel-return.js?v=20261106-return"></script>
