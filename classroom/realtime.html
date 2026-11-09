@@ -153,7 +153,9 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
   $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
   $("status").textContent="اتصال امن کلاس برقرار شد · "+(labels[profile?.role]||profile?.role||"شرکت‌کننده");
   $("notice").textContent="به کلاس وارد شدید. میکروفن و دوربین خاموش هستند؛ در صورت نیاز آن‌ها را فعال کنید.";
-  $("micToggle").disabled=false;$("cameraToggle").disabled=false;$("screenToggle").disabled=false;
+  $("micToggle").disabled=false;$("cameraToggle").disabled=false;
+  $("screenToggle").disabled=!credentials.can_share_screen;
+  $("screenToggle").title=credentials.can_share_screen?"اشتراک‌گذاری صفحه":"اشتراک صفحه فقط برای دبیر یا مدیر مجاز است";
  }catch(error){
   say(error.message||"اتصال به کلاس انجام نشد.");
   buttons.forEach(button=>button.disabled=false);
