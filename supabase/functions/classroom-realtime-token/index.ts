@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
         liveKitRoomName,
         authData.user.id,
         displayName,
-        { host: isHost, role: requestedRole, ttlSeconds: Math.min(3600, remainingSeconds) },
+        { host: isHost, screenShare: isHost, role: requestedRole, ttlSeconds: Math.min(3600, remainingSeconds) },
       );
       return reply({
         ok: true,
@@ -137,7 +137,6 @@ Deno.serve(async (req: Request) => {
     const isTeacher = ["teacher", "دبیر", "معلم"].includes(role);
     const isManager = ["manager", "مدیر", "مدیریت"].includes(role);
     const isStudent = ["student", "دانش‌آموز", "دانش آموز"].includes(role);
-    const presetName = isTeacher || isManager ? "group_call_host" : "group_call_guest";
     const room = authorization.room;
 
     let liveKitRoomName = "";
@@ -163,7 +162,10 @@ Deno.serve(async (req: Request) => {
           .select("cloudflare_meeting_id")
           .eq("tenant_school_id", profile.tenant_school_id)
           .eq("online_class_id", roomId).maybeSingle();
-        if (winnerError || !winner?.cloudflare_meeting_id) throw insertError;
+        if (winnerError || !winner?.cloudflare_meeting_id) {
+          await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+          throw insertError;
+        }
         if (winner.cloudflare_meeting_id !== liveKitRoomName) {
           // Another participant won the first-join race; remove this unused room.
           await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
@@ -177,7 +179,7 @@ Deno.serve(async (req: Request) => {
       liveKitRoomName,
       authData.user.id,
       displayName,
-      { host: isTeacher || isManager, role, ttlSeconds: 3600 },
+      { host: isTeacher || isManager, screenShare: isTeacher || isManager, role, ttlSeconds: 3600 },
     );
 
     return reply({
