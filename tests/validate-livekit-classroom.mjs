@@ -16,6 +16,8 @@ const livekitHelper = readFileSync("supabase/functions/_shared/livekit.ts", "utf
 
 assert.match(tokenFunction, /createLiveKitParticipantToken/);
 assert.match(tokenFunction, /classroom-authorize/);
+assert.match(tokenFunction, /if \(!activeRoles\.has\(requestedRole\)\) \{/);
+assert.doesNotMatch(tokenFunction, /isCreator && requestedRole === "manager"/);
 assert.doesNotMatch(tokenFunction, /CLOUDFLARE_REALTIME_API_TOKEN|cloudflare\(/i);
 assert.match(meetingsFunction, /createLiveKitRoom/);
 assert.match(meetingsFunction, /deleteLiveKitRoom/);
