@@ -304,7 +304,7 @@ Deno.serve(async (req: Request) => {
 
   const ensureOnly = action === "ensure_student_accounts";
   if (action === "reset_student_accounts" || ensureOnly) {
-    if (body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
+    if (!ensureOnly && body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
     const { data: students, error: studentsError } = await admin.from("students")
       .select("id,first_name,last_name,national_code").eq("tenant_school_id", schoolId).limit(2000);
     if (studentsError) return reply({ message: "فهرست دانش‌آموزان دریافت نشد." }, 500);
