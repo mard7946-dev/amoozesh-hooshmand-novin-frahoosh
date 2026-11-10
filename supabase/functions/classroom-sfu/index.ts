@@ -51,11 +51,11 @@ function getServiceKey(): string {
 function getSfuEnvironment(): SfuEnvironment | null {
   const appId = clean(Deno.env.get("CLOUDFLARE_SFU_APP_ID"));
   const appSecret = clean(Deno.env.get("CLOUDFLARE_SFU_APP_SECRET"));
-  if (!/^[a-f0-9]{32}$/i.test(appId) || appSecret.length < 32 || appSecret.length > 512 || /\\s/.test(appSecret)) return null;
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(appId) || appSecret.length < 32 || appSecret.length > 512 || /\\s/.test(appSecret)) return null;
   return {
     appId,
     appSecret,
-    baseUrl: "https://rtc.live.cloudflare.com/v1/apps/" + appId,
+    baseUrl: "https://rtc.live.cloudflare.com/v1/apps/" + encodeURIComponent(appId),
   };
 }
 
@@ -75,7 +75,7 @@ async function sfuRequest(
     signal: AbortSignal.timeout(12000),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.errorCode || data?.success === false) {
+  if (!response.ok || data?.errorCode || data?.errorDescription || data?.success === false) {
     throw new SafeSfuException(response.ok ? 502 : response.status, data);
   }
   return data && typeof data === "object" ? data : {};
@@ -86,6 +86,27 @@ async function createSfuSession(env: SfuEnvironment): Promise<string> {
   const sessionId = clean(data.sessionId ?? data.data?.sessionId);
   if (!sessionId) throw new SafeSfuException(502, { errorCode: "missing_session_id" });
   return sessionId;
+}
+
+async function closeSfuTracks(
+  env: SfuEnvironment,
+  sessionId: string,
+  mids: string[],
+): Promise<void> {
+  const uniqueMids = [...new Set(mids.map(clean).filter(Boolean))];
+  if (!uniqueMids.length) return;
+  const result = await sfuRequest(
+    env,
+    "/sessions/" + encodeURIComponent(sessionId) + "/tracks/close",
+    "PUT",
+    { tracks: uniqueMids.map(mid => ({ mid })), force: true },
+  );
+  const closeResults = Array.isArray(result.tracks) ? result.tracks : [];
+  const failed = closeResults.some((item: any) =>
+    (item?.errorCode && item.errorCode !== "close_track_error")
+    || (!item?.errorCode && item?.errorDescription)
+  );
+  if (failed) throw new SafeSfuException(502, { errorCode: "track_cleanup_incomplete" });
 }
 
 async function closeSfuSession(env: SfuEnvironment, sessionId: string | null | undefined): Promise<void> {
@@ -99,19 +120,10 @@ async function closeSfuSession(env: SfuEnvironment, sessionId: string | null | u
     throw error;
   }
   const tracks = Array.isArray(session.tracks) ? session.tracks : [];
-  const mids = [...new Set(tracks
+  const mids = tracks
     .filter((track: any) => clean(track?.mid))
-    .map((track: any) => clean(track.mid)))];
-  if (!mids.length) return;
-  const result = await sfuRequest(env, "/sessions/" + encodeURIComponent(id) + "/tracks/close", "PUT", {
-    tracks: mids.map(mid => ({ mid })),
-    force: true,
-  });
-  const closeResults = Array.isArray(result.tracks) ? result.tracks : [];
-  const failed = closeResults.some((item: any) =>
-    item?.errorCode && item.errorCode !== "close_track_error"
-  );
-  if (failed) throw new SafeSfuException(502, { errorCode: "track_cleanup_incomplete" });
+    .map((track: any) => clean(track.mid));
+  await closeSfuTracks(env, id, mids);
 }
 
 async function authenticate(req: Request, url: string, serviceKey: string) {
@@ -508,8 +520,13 @@ Deno.serve(async (req: Request) => {
         }
         if (!result.sessionDescription) throw new SafeSfuException(502, { errorCode: "missing_sdp_answer" });
         const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
+        const failedMids = trackResults
+          .filter((item: any) => item?.errorCode || item?.errorDescription)
+          .map((item: any) => clean(item?.mid))
+          .filter(Boolean);
+        await closeSfuTracks(sfuEnv, participant.publisher_session_id, failedMids);
         const publications = trackResults.filter((item: any) =>
-          !item?.errorCode && clean(item?.mid)
+          !item?.errorCode && !item?.errorDescription && clean(item?.mid)
         ).map((item: any) => {
           const match = tracks.find((track: any) => track.kind === clean(item.trackName))
             ?? tracks[trackResults.indexOf(item)];
@@ -594,8 +611,13 @@ Deno.serve(async (req: Request) => {
           throw error;
         }
         const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
+        const failedMids = trackResults
+          .filter((item: any) => item?.errorCode || item?.errorDescription)
+          .map((item: any) => clean(item?.mid))
+          .filter(Boolean);
+        await closeSfuTracks(sfuEnv, participant.subscriber_session_id, failedMids);
         const subscriptions = trackResults.map((item: any, index: number) => ({ item, index }))
-          .filter(({ item }: any) => !item?.errorCode && clean(item?.mid))
+          .filter(({ item }: any) => !item?.errorCode && !item?.errorDescription && clean(item?.mid))
           .map(({ item, index }: any) => {
             const request = requests.find((candidate: any) =>
               candidate.sessionId === clean(item.sessionId) && candidate.trackName === clean(item.trackName)
@@ -619,6 +641,7 @@ Deno.serve(async (req: Request) => {
           requiresImmediateRenegotiation: result.requiresImmediateRenegotiation === true,
           ...(result.sessionDescription ? { sessionDescription: result.sessionDescription } : {}),
           subscriptions,
+          partial: subscriptions.length !== requests.length,
         });
       } finally {
         if (!keepLock) {
