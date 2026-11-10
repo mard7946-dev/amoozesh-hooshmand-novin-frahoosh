@@ -134,8 +134,93 @@ as $$
 declare
   changed_id uuid;
 begin
-  if p_session_kind not in ('publisher', 'subscriber')
-     or p_mutation_id !~ '^[A-Za-z0-9_-]{8,96}$' then
+  if p_session_kind is null
+     or p_session_kind not in ('publisher', 'subscriber')
+     or p_mutation_id is null
+     or p_mutation_id !~ '^[A-Za-z0-9_-]{8,96}
+    return false;
+  end if;
+
+  if p_session_kind = 'publisher' then
+    update public.classroom_sfu_participants
+       set publisher_mutation_id = p_mutation_id,
+           publisher_mutation_started_at = now()
+     where id = p_participant_id
+       and generation = p_generation
+       and status = 'active'
+       and (
+         publisher_mutation_id is null
+         or publisher_mutation_started_at is null
+         or publisher_mutation_started_at < now() - interval '45 seconds'
+       )
+    returning id into changed_id;
+  else
+    update public.classroom_sfu_participants
+       set subscriber_mutation_id = p_mutation_id,
+           subscriber_mutation_started_at = now()
+     where id = p_participant_id
+       and generation = p_generation
+       and status = 'active'
+       and (
+         subscriber_mutation_id is null
+         or subscriber_mutation_started_at is null
+         or subscriber_mutation_started_at < now() - interval '45 seconds'
+       )
+    returning id into changed_id;
+  end if;
+
+  return changed_id is not null;
+end;
+$$;
+
+create or replace function public.release_classroom_sfu_session_mutation(
+  p_participant_id uuid,
+  p_generation integer,
+  p_session_kind text,
+  p_mutation_id text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  changed_id uuid;
+begin
+  if p_session_kind = 'publisher' then
+    update public.classroom_sfu_participants
+       set publisher_mutation_id = null,
+           publisher_mutation_started_at = null
+     where id = p_participant_id
+       and generation = p_generation
+       and publisher_mutation_id = p_mutation_id
+    returning id into changed_id;
+  elsif p_session_kind = 'subscriber' then
+    update public.classroom_sfu_participants
+       set subscriber_mutation_id = null,
+           subscriber_mutation_started_at = null
+     where id = p_participant_id
+       and generation = p_generation
+       and subscriber_mutation_id = p_mutation_id
+    returning id into changed_id;
+  else
+    return false;
+  end if;
+
+  return changed_id is not null;
+end;
+$$;
+
+revoke all on function public.claim_classroom_sfu_session_mutation(uuid, integer, text, text)
+  from public, anon, authenticated;
+grant execute on function public.claim_classroom_sfu_session_mutation(uuid, integer, text, text)
+  to service_role;
+
+revoke all on function public.release_classroom_sfu_session_mutation(uuid, integer, text, text)
+  from public, anon, authenticated;
+grant execute on function public.release_classroom_sfu_session_mutation(uuid, integer, text, text)
+  to service_role;
+ then
     return false;
   end if;
 
