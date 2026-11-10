@@ -37,6 +37,7 @@ on:
       - 'classroom/schedule.html'
       - 'classroom/management.html'
       - 'classroom/meetings.html'
+      - 'classroom/livekit-check.html'
       - 'classroom/weekly-schedule-import.js'
       - '.github/workflows/publish-six-icon-portal.yml'
   workflow_dispatch:
@@ -84,6 +85,7 @@ jobs:
           cp classroom/schedule.html _site/classroom/schedule.html
           cp classroom/management.html classroom/weekly-schedule-import.js _site/classroom/
           cp classroom/meetings.html _site/classroom/meetings.html
+          cp classroom/livekit-check.html _site/classroom/livekit-check.html
           cp classroom.html _site/classroom.html
           touch _site/.nojekyll
       - name: Upload site artifact
