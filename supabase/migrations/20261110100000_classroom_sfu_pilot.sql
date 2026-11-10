@@ -137,7 +137,9 @@ begin
   if p_session_kind is null
      or p_session_kind not in ('publisher', 'subscriber')
      or p_mutation_id is null
-     or p_mutation_id !~ '^[A-Za-z0-9_-]{8,96}
+     or length(p_mutation_id) < 8
+     or length(p_mutation_id) > 96
+     or p_mutation_id ~ '[^A-Za-z0-9_-]' then
     return false;
   end if;
 
