@@ -102,11 +102,16 @@ async function closeSfuTracks(
     { tracks: uniqueMids.map(mid => ({ mid })), force: true },
   );
   const closeResults = Array.isArray(result.tracks) ? result.tracks : [];
-  const failed = closeResults.some((item: any) =>
-    (item?.errorCode && item.errorCode !== "close_track_error")
-    || (!item?.errorCode && item?.errorDescription)
-  );
-  if (failed) throw new SafeSfuException(502, { errorCode: "track_cleanup_incomplete" });
+  const resultsByMid = new Map(closeResults.map((item: any) => [clean(item?.mid), item]));
+  const unresolved = uniqueMids.filter(mid => {
+    const item: any = resultsByMid.get(mid);
+    if (!item) return true;
+    if (item.errorCode === "close_track_error") return false;
+    return Boolean(item.errorCode || item.errorDescription);
+  });
+  if (unresolved.length) {
+    throw new SafeSfuException(502, { errorCode: "track_cleanup_incomplete" });
+  }
 }
 
 function midsFrom(items: unknown): string[] {
