@@ -127,10 +127,7 @@ async function closeSfuSession(
   try {
     session = await sfuRequest(env, "/sessions/" + encodeURIComponent(id));
   } catch (error) {
-    if (error instanceof SafeSfuException && (error.status === 404 || error.status === 410)) {
-      await closeSfuTracks(env, id, retainedMids);
-      return;
-    }
+    if (error instanceof SafeSfuException && (error.status === 404 || error.status === 410)) return;
     if (retainedMids.length) await closeSfuTracks(env, id, retainedMids).catch(() => {});
     throw error;
   }
