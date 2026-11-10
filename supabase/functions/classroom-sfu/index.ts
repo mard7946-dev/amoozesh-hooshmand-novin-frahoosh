@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildRemoteTrackRequests,
+  buildSfuRoomKey,
   getSafeSfuError,
   normalizeSfuRole,
 } from "../_shared/classroom-sfu.ts";
@@ -171,7 +172,7 @@ async function authorizeScheduledRoom(
   const schoolId = clean(accountProfile?.tenant_school_id);
   if (!schoolId) throw Object.assign(new Error("مدرسهٔ حساب کاربری مشخص نیست."), { status: 403 });
   return {
-    roomKey: "school:" + schoolId + ":class:" + roomId + ":" + scheduleEntryId,
+    roomKey: buildSfuRoomKey({ schoolId, onlineClassId: roomId, scheduleEntryId }),
     schoolId,
     room: data.room,
     profile,
@@ -219,7 +220,7 @@ async function authorizeAdHocRoom(
     throw Object.assign(new Error("این جلسه برای گروه کاربری شما دعوت نشده است."), { status: 403 });
   }
   return {
-    roomKey: "school:" + clean(profile.tenant_school_id) + ":meeting:" + meetingId,
+    roomKey: buildSfuRoomKey({ schoolId: clean(profile.tenant_school_id), meetingId }),
     schoolId: clean(profile.tenant_school_id),
     room: { id: meeting.id, title: meeting.title, subject: "جلسه اختصاصی", class_name: "", teacher: profile.display_name || profile.username || "مدیریت مدرسه" },
     role,
