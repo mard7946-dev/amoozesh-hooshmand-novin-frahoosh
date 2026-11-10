@@ -30,7 +30,27 @@ async function cloudflare(path: string, method = "GET", body?: unknown) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.success === false) {
-    console.error("RealtimeKit API error", response.status, JSON.stringify(data?.errors ?? data?.error ?? {}));
+    const apiErrors = Array.isArray(data?.errors) ? data.errors : [];
+    if (response.status === 400 && apiErrors.some((item: any) => String(item?.code) === "9106")) {
+      try {
+        const verifyResponse = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${apiToken}`, "Content-Type": "application/json" },
+        });
+        const verifyData = await verifyResponse.json().catch(() => ({}));
+        console.error("Cloudflare API token verification", verifyResponse.status, JSON.stringify({
+          success: verifyData?.success === true,
+          status: verifyData?.result?.status ?? null,
+          expires_on: verifyData?.result?.expires_on ?? null,
+          errors: Array.isArray(verifyData?.errors)
+            ? verifyData.errors.map((item: any) => ({ code: item?.code, message: item?.message }))
+            : [],
+        }));
+      } catch (verificationError) {
+        console.error("Cloudflare API token verification request failed", String(verificationError).slice(0, 240));
+      }
+    }
+    console.error("RealtimeKit API error", response.status, JSON.stringify(apiErrors.length ? apiErrors : data?.error ?? {}));
     throw new Error("سرویس رسانه کلاس آنلاین پاسخ معتبر نداد.");
   }
   return data?.data ?? {};
