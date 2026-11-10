@@ -24,14 +24,15 @@ const normalizePersian = (value: unknown): string => clean(value)
 
 export function normalizeSfuRole(value: unknown): string {
   const role = normalizePersian(value);
-  if (["manager", "مدیر", "مدیریت"].includes(role)) return "manager";
-  if (["teacher", "دبیر", "معلم"].includes(role)) return "teacher";
-  if (["student", "دانشآموز"].includes(role)) return "student";
-  if (
-    ["deputy", "معاون", "معاونآموزشی", "معاوناجرایی", "معاونپرورشی", "educational", "executive", "cultural", "advisor", "counselor"].includes(role)
-    || role.endsWith("_deputy")
-  ) return "deputy";
+  if (role === "manager" || role.includes("مدیر")) return "manager";
+  if (role === "teacher" || role.includes("دبیر") || role.includes("معلم")) return "teacher";
+  if (role === "student" || role.includes("دانشآموز")) return "student";
   if (role === "parent" || role.includes("ولی") || role.includes("والد")) return "parent";
+  if (role === "counselor" || role.includes("مشاور")) return "counselor";
+  if (
+    role === "deputy" || role.includes("معاون") || role.endsWith("_deputy")
+    || ["educational", "executive", "cultural", "advisor"].includes(role)
+  ) return "deputy";
   return role;
 }
 
@@ -113,4 +114,17 @@ export function buildSfuRoomKey(input: {
     : "school:" + schoolId + ":meeting:" + clean(input.meetingId);
   if (key.length > 180) throw new Error("Room identifier is too long.");
   return key;
+}
+
+export function buildSfuDisplayName(
+  role: unknown,
+  userId: unknown,
+  displayName: unknown,
+  username: unknown,
+): string {
+  if (normalizeSfuRole(role) === "student") {
+    const suffix = clean(userId).replace(/[^a-z0-9]/gi, "").slice(-4) || "عضو";
+    return "دانش‌آموز-" + suffix;
+  }
+  return clean(displayName) || clean(username) || "کاربر فراهوش";
 }
