@@ -53,13 +53,14 @@ declare
   publisher_id text;
   subscriber_id text;
   publication_data jsonb;
+  subscription_data jsonb;
 begin
   select count(*) into participant_count
     from public.classroom_sfu_participants
    where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
      and auth_user_id = '00000000-0000-4000-8000-000000000002';
-  select generation, status, publisher_session_id, subscriber_session_id, publications
-    into participant_generation, participant_status, publisher_id, subscriber_id, publication_data
+  select generation, status, publisher_session_id, subscriber_session_id, publications, subscriptions
+    into participant_generation, participant_status, publisher_id, subscriber_id, publication_data, subscription_data
     from public.classroom_sfu_participants
    where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
      and auth_user_id = '00000000-0000-4000-8000-000000000002';
@@ -67,7 +68,7 @@ begin
   if participant_count <> 1 or participant_generation <> 2 or participant_status <> 'joining' then
     raise exception 'SFU participant claim did not advance the generation atomically';
   end if;
-  if publisher_id is not null or subscriber_id is not null or publication_data <> '[]'::jsonb then
+  if publisher_id is not null or subscriber_id is not null or publication_data <> '[]'::jsonb or subscription_data <> '[]'::jsonb then
     raise exception 'SFU participant claim did not clear old session state';
   end if;
   if not (select relrowsecurity from pg_class where oid = 'public.classroom_sfu_participants'::regclass) then
