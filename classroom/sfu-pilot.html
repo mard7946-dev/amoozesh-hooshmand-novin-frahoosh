@@ -59,7 +59,7 @@ main{max-width:1250px;margin:0 auto;padding:14px;display:grid;gap:12px}
    <div id="participants">هنوز شرکت‌کنندهٔ دیگری وارد نشده است.</div>
   </div>
  </section>
- <div class="notice" id="notice">این مسیر آزمایشی از Cloudflare Realtime SFU استفاده می‌کند و از RealtimeKit جداست. ضبط، گفت‌وگو و تختهٔ مشترک در این نسخه فعال نیستند. میکروفن و دوربین تا اقدام شما خاموش می‌مانند.</div>
+ <div class="notice" id="notice">این مسیر آزمایشی از Cloudflare Realtime SFU استفاده می‌کند و از RealtimeKit جداست. ضبط، گفت‌وگو و تختهٔ مشترک در این نسخه فعال نیستند. میکروفن و دوربین تا اقدام شما خاموش می‌مانند. TURN هنوز پیکربندی نشده و بعضی شبکه‌ها ممکن است به تنظیم TURN نیاز داشته باشند.</div>
 </main>
 <script>
 "use strict";
@@ -295,7 +295,7 @@ async function startRoom(room,entryId,adHoc=null){
   $("meetingTitle").textContent=result.room?.title||room.title||room.subject||"کلاس آنلاین";
   $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت": [room.class_name,room.teacher,room.start_time,room.end_time].filter(Boolean).join(" · ");
   $("selector").classList.add("hidden");$("meetingPanel").classList.remove("hidden");
-  $("notice").textContent="اتصال به اتاق برقرار شد. برای ارسال صدا یا تصویر، دکمهٔ مربوط را انتخاب کنید؛ هیچ رسانه‌ای خودکار فعال نمی‌شود.";
+  $("notice").textContent="ورود به اتاق تأیید شد. برای ارسال صدا یا تصویر، دکمهٔ مربوط را انتخاب کنید؛ هیچ رسانه‌ای خودکار فعال نمی‌شود. TURN هنوز پیکربندی نشده است.";
   say("عضویت تأیید شد · "+(profile?.display_name||"شرکت‌کننده"));
   roomSay("به کلاس وارد شدید؛ میکروفن و دوربین خاموش هستند.");
   renderSnapshot(result.snapshot);
