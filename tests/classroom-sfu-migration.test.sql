@@ -92,6 +92,17 @@ begin
      or not has_function_privilege('service_role', 'public.release_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE') then
     raise exception 'SFU session mutation RPC grants are not service-role-only';
   end if;
+  if exists (
+    select 1 from pg_proc
+     where oid in (
+       'public.claim_classroom_sfu_participant(text,uuid,integer,bigint,uuid,uuid,text,text)'::regprocedure,
+       'public.claim_classroom_sfu_session_mutation(uuid,integer,text,text)'::regprocedure,
+       'public.release_classroom_sfu_session_mutation(uuid,integer,text,text)'::regprocedure
+     )
+       and prosecdef
+  ) then
+    raise exception 'SFU RPCs must run as invoker, not SECURITY DEFINER';
+  end if;
 
   begin
     insert into public.classroom_sfu_participants (
