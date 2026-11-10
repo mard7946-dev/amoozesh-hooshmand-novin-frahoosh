@@ -2,9 +2,9 @@
 
 do $$
 begin
-  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
-  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
-  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'anon') then execute 'create role anon nologin'; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then execute 'create role authenticated nologin'; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then execute 'create role service_role nologin'; end if;
 end
 $$;
 
@@ -54,10 +54,12 @@ declare
   subscriber_id text;
   publication_data jsonb;
 begin
-  select count(*), max(generation), max(status), max(publisher_session_id),
-         max(subscriber_session_id), max(publications)
-    into participant_count, participant_generation, participant_status,
-         publisher_id, subscriber_id, publication_data
+  select count(*) into participant_count
+    from public.classroom_sfu_participants
+   where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+     and auth_user_id = '00000000-0000-4000-8000-000000000002';
+  select generation, status, publisher_session_id, subscriber_session_id, publications
+    into participant_generation, participant_status, publisher_id, subscriber_id, publication_data
     from public.classroom_sfu_participants
    where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
      and auth_user_id = '00000000-0000-4000-8000-000000000002';
