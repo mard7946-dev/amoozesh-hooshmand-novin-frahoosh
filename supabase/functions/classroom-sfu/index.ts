@@ -386,9 +386,13 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: oldParticipant, error: oldError } = await admin.from("classroom_sfu_participants")
-        .select("publisher_session_id,subscriber_session_id")
+        .select("publisher_session_id,subscriber_session_id,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
         .eq("room_key", admission.roomKey).eq("auth_user_id", user.id).maybeSingle();
       if (oldError) throw oldError;
+      if (
+        mutationLockIsActive(oldParticipant?.publisher_mutation_id, oldParticipant?.publisher_mutation_started_at)
+        || mutationLockIsActive(oldParticipant?.subscriber_mutation_id, oldParticipant?.subscriber_mutation_started_at)
+      ) throw Object.assign(new Error("نشست قبلی هنوز در حال مذاکرهٔ رسانه است؛ کمی صبر کنید و دوباره وارد شوید."), { status: 409 });
       await closeSfuSession(sfuEnv, oldParticipant?.publisher_session_id);
       await closeSfuSession(sfuEnv, oldParticipant?.subscriber_session_id);
 
