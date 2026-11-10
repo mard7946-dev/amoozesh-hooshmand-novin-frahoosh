@@ -181,12 +181,14 @@ async function publishTrack(kind,track){
   await waitForIce(publisherPc);
   const mid=transceiver.mid;
   if(mid===null)throw new Error("شناسهٔ مسیر رسانه در مرورگر ساخته نشد.");
+  const mutationId=crypto.randomUUID().replaceAll("-","");
   const result=await callSfu({
    action:"publish",room_key:roomState.roomKey,generation:roomState.generation,
-   sessionDescription:publisherPc.localDescription,
+   mutation_id:mutationId,sessionDescription:publisherPc.localDescription,
    tracks:[{kind,mid}]
   });
   await publisherPc.setRemoteDescription(result.sessionDescription);
+  await callSfu({action:"complete_publish",room_key:roomState.roomKey,generation:roomState.generation,mutation_id:mutationId});
   await waitForConnected(publisherPc);
   roomSay(kind==="audio"?"میکروفن فعال شد.":"دوربین فعال شد.");
   await refreshRoom().catch(error=>roomSay(error.message||"فهرست شرکت‌کنندگان به‌روزرسانی نشد."));
@@ -239,9 +241,10 @@ async function syncSubscriptions(snapshot){
  await enqueueConsumer(async()=>{
   const stillPending=pending.filter(item=>!subscribedKeys.has(item.key));
   if(!stillPending.length)return;
+  const mutationId=crypto.randomUUID().replaceAll("-","");
   const result=await callSfu({
    action:"subscribe",room_key:roomState.roomKey,generation:roomState.generation,
-   track_keys:stillPending.map(item=>item.key)
+   mutation_id:mutationId,track_keys:stillPending.map(item=>item.key)
   });
   const acceptedOwners=[];
   for(const sub of result.subscriptions||[]){
@@ -311,7 +314,10 @@ async function startRoom(room,entryId,adHoc=null){
 async function leaveRoom(){
  $("leave").disabled=true;
  try{
-  if(roomState)await callSfu({action:"leave",room_key:roomState.roomKey,generation:roomState.generation});
+  if(roomState){
+   await Promise.all([publisherQueue,consumerQueue]);
+   await callSfu({action:"leave",room_key:roomState.roomKey,generation:roomState.generation});
+  }
   cleanupLocal();
   $("meetingPanel").classList.add("hidden");$("selector").classList.remove("hidden");
   $("videoGrid").replaceChildren();$("roomList").querySelectorAll("button").forEach(button=>button.disabled=false);
