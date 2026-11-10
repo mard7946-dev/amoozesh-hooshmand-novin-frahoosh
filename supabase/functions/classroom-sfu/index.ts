@@ -118,11 +118,24 @@ function midsFrom(items: unknown): string[] {
 async function closeSfuSession(
   env: SfuEnvironment,
   sessionId: string | null | undefined,
-  mids: unknown,
+  knownMids: unknown,
 ): Promise<void> {
   const id = clean(sessionId);
   if (!id) return;
-  await closeSfuTracks(env, id, midsFrom(mids));
+  const retainedMids = midsFrom(knownMids);
+  let session: Record<string, any>;
+  try {
+    session = await sfuRequest(env, "/sessions/" + encodeURIComponent(id));
+  } catch (error) {
+    if (error instanceof SafeSfuException && (error.status === 404 || error.status === 410)) {
+      await closeSfuTracks(env, id, retainedMids);
+      return;
+    }
+    if (retainedMids.length) await closeSfuTracks(env, id, retainedMids).catch(() => {});
+    throw error;
+  }
+  const inspectedMids = midsFrom(session.tracks);
+  await closeSfuTracks(env, id, [...retainedMids, ...inspectedMids]);
 }
 
 async function authenticate(req: Request, url: string, serviceKey: string) {
@@ -377,7 +390,7 @@ async function pruneStaleSubscriptions(
   const existing = Array.isArray(participant.subscriptions) ? participant.subscriptions : [];
   const stale = existing.filter((item: any) => !activeKeys.has(clean(item?.key)));
   if (!stale.length) return;
-  await closeSfuSession(env, participant.subscriber_session_id, stale);
+  await closeSfuTracks(env, participant.subscriber_session_id, midsFrom(stale));
   const retained = existing.filter((item: any) => activeKeys.has(clean(item?.key)));
   const { error } = await admin.from("classroom_sfu_participants")
     .update({ subscriptions: retained, last_seen_at: new Date().toISOString() })
