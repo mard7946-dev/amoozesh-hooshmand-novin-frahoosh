@@ -82,7 +82,7 @@
 - [ ] Create producer and consumer PeerConnections with Cloudflare STUN.
 - [ ] Capture local audio/video only after explicit user action; publish with the actual transceiver mids.
 - [ ] Subscribe to authorized participants' active publications and map received mids to remote video elements.
-- [ ] Queue per-session mutations; apply SFU offers and send answers through `renegotiate`.
+- [ ] Queue per-session mutations; send mutation IDs, hold publisher lock until the browser applies the answer, and hold subscriber lock through `renegotiate`.
 - [ ] Poll room snapshots with bounded intervals and reconcile subscriptions without duplicates.
 - [ ] Implement explicit leave and cleanup; keep the current class page unchanged.
 
@@ -93,6 +93,7 @@
 
 - [ ] Run `deno check` on the new function and helper.
 - [ ] Run `deno test` for the new helper and existing classroom tests.
+- [ ] Run the PostgreSQL SFU migration/lease test.
 - [ ] Run the full repository `Validate classroom prototype` workflow.
 - [ ] Verify no secret strings or SDP are emitted to browser logs or responses.
 - [ ] Create a draft PR; do not merge or deploy until the user completes the SFU App and Secret setup and real two-device testing passes.
