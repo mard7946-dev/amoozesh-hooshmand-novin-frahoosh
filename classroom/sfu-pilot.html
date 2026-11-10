@@ -231,7 +231,7 @@ async function syncSubscriptions(snapshot){
  for(const item of participants){
   if(item.isSelf)continue;
   for(const publication of item.publications||[]){
-   const key=item.id+":"+publication.kind;
+   const key=item.id+":"+publication.kind+":"+publication.sessionId;
    if(!subscribedKeys.has(key))pending.push({key,participantId:item.id,kind:publication.kind,displayName:item.displayName});
   }
  }
