@@ -76,7 +76,7 @@ async function sfuRequest(
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.errorCode || data?.success === false) {
-    throw new SafeSfuException(response.status || 502, data);
+    throw new SafeSfuException(response.ok ? 502 : response.status, data);
   }
   return data && typeof data === "object" ? data : {};
 }
@@ -134,6 +134,7 @@ async function authorizeScheduledRoom(
   url: string,
   bearer: string,
   body: Record<string, any>,
+  accountProfile: any,
 ): Promise<{ roomKey: string; schoolId: string; room: any; profile: any; role: string; roomId: number; scheduleEntryId: number }> {
   const roomId = Number(body.room_id);
   const scheduleEntryId = Number(body.schedule_entry_id);
@@ -163,11 +164,8 @@ async function authorizeScheduledRoom(
   }
   const profile = data.profile;
   const role = normalizeSfuRole(profile.active_role || profile.role);
-  const schoolId = clean(profile.tenant_school_id);
-  if (!schoolId) {
-    const accountProfile = data.profile;
-    if (!accountProfile) throw Object.assign(new Error("مدرسهٔ حساب کاربری مشخص نیست."), { status: 403 });
-  }
+  const schoolId = clean(accountProfile?.tenant_school_id);
+  if (!schoolId) throw Object.assign(new Error("مدرسهٔ حساب کاربری مشخص نیست."), { status: 403 });
   return {
     roomKey: "school:" + schoolId + ":class:" + roomId + ":" + scheduleEntryId,
     schoolId,
@@ -297,8 +295,7 @@ Deno.serve(async (req: Request) => {
       if (clean(body.meeting_id)) {
         admission = await authorizeAdHocRoom(admin, user.id, body, profile);
       } else {
-        admission = await authorizeScheduledRoom(url, bearer, body);
-        if (!admission.schoolId) admission.schoolId = clean(profile.tenant_school_id);
+        admission = await authorizeScheduledRoom(url, bearer, body, profile);
         if (admission.schoolId !== clean(profile.tenant_school_id)) {
           return reply({ ok: false, message: "کلاس انتخاب‌شده متعلق به مدرسهٔ حساب شما نیست." }, 403);
         }
