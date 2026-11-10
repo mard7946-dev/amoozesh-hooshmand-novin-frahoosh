@@ -50,7 +50,7 @@ function getServiceKey(): string {
 function getSfuEnvironment(): SfuEnvironment | null {
   const appId = clean(Deno.env.get("CLOUDFLARE_SFU_APP_ID"));
   const appSecret = clean(Deno.env.get("CLOUDFLARE_SFU_APP_SECRET"));
-  if (!/^[a-f0-9]{32}$/i.test(appId) || !/^[a-f0-9]{64}$/i.test(appSecret)) return null;
+  if (!/^[a-f0-9]{32}$/i.test(appId) || appSecret.length < 32 || appSecret.length > 512 || /\\s/.test(appSecret)) return null;
   return {
     appId,
     appSecret,
