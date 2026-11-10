@@ -100,10 +100,12 @@ export function buildSfuRoomKey(input: {
   if (!schoolId || schoolId.length > 100) {
     throw new Error("A valid school identifier is required.");
   }
+  const hasAnyClassField = input.onlineClassId !== undefined && input.onlineClassId !== null
+    || input.scheduleEntryId !== undefined && input.scheduleEntryId !== null;
   const hasClass = Number.isInteger(input.onlineClassId) && Number(input.onlineClassId) > 0
     && Number.isInteger(input.scheduleEntryId) && Number(input.scheduleEntryId) > 0;
   const hasMeeting = Boolean(clean(input.meetingId));
-  if (hasClass === hasMeeting) {
+  if ((hasAnyClassField && !hasClass) || hasClass === hasMeeting) {
     throw new Error("Provide exactly one valid class slot or meeting identifier.");
   }
   const key = hasClass
