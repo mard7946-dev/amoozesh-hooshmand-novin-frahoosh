@@ -189,7 +189,7 @@ async function publishTrack(kind,track){
   await publisherPc.setRemoteDescription(result.sessionDescription);
   await waitForConnected(publisherPc);
   roomSay(kind==="audio"?"میکروفن فعال شد.":"دوربین فعال شد.");
-  await refreshRoom();
+  await refreshRoom().catch(error=>roomSay(error.message||"فهرست شرکت‌کنندگان به‌روزرسانی نشد."));
  });
 }
 async function enableMedia(kind){
@@ -243,23 +243,32 @@ async function syncSubscriptions(snapshot){
    action:"subscribe",room_key:roomState.roomKey,generation:roomState.generation,
    track_keys:stillPending.map(item=>item.key)
   });
+  const acceptedOwners=[];
   for(const sub of result.subscriptions||[]){
    const owner=stillPending.find(item=>item.participantId===sub.participantId&&item.kind===sub.kind);
-   if(owner){midOwners.set(sub.mid,{participantId:owner.participantId,displayName:owner.displayName});subscribedKeys.add(owner.key);}
+   if(owner){midOwners.set(sub.mid,{participantId:owner.participantId,displayName:owner.displayName});acceptedOwners.push(owner);}
   }
-  if(result.requiresImmediateRenegotiation&&result.sessionDescription){
-   await consumerPc.setRemoteDescription(result.sessionDescription);
-   const answer=await consumerPc.createAnswer();
-   await consumerPc.setLocalDescription(answer);
-   await waitForIce(consumerPc);
-   await callSfu({
-    action:"renegotiate",room_key:roomState.roomKey,generation:roomState.generation,
-    sessionDescription:consumerPc.localDescription
-   });
-   await waitForConnected(consumerPc);
-  }else{
-   for(const item of stillPending)if((result.subscriptions||[]).some(sub=>sub.participantId===item.participantId&&sub.kind===item.kind))subscribedKeys.add(item.key);
+  if(result.requiresImmediateRenegotiation){
+   if(!result.sessionDescription){
+    for(const sub of result.subscriptions||[])midOwners.delete(sub.mid);
+    throw new Error("پاسخ مذاکرهٔ رسانه از سرور دریافت نشد.");
+   }
+   try{
+    await consumerPc.setRemoteDescription(result.sessionDescription);
+    const answer=await consumerPc.createAnswer();
+    await consumerPc.setLocalDescription(answer);
+    await waitForIce(consumerPc);
+    await callSfu({
+     action:"renegotiate",room_key:roomState.roomKey,generation:roomState.generation,
+     sessionDescription:consumerPc.localDescription
+    });
+    await waitForConnected(consumerPc);
+   }catch(error){
+    for(const sub of result.subscriptions||[])midOwners.delete(sub.mid);
+    throw error;
+   }
   }
+  for(const owner of acceptedOwners)subscribedKeys.add(owner.key);
  });
 }
 async function refreshRoom(){
