@@ -263,7 +263,7 @@ async function syncSubscriptions(snapshot){
     await waitForIce(consumerPc);
     await callSfu({
      action:"renegotiate",room_key:roomState.roomKey,generation:roomState.generation,
-     sessionDescription:consumerPc.localDescription
+     mutation_id:mutationId,sessionDescription:consumerPc.localDescription
     });
     await waitForConnected(consumerPc);
    }catch(error){
