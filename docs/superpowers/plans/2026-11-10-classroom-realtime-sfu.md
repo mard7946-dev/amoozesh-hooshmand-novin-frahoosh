@@ -4,7 +4,7 @@
 
 **Goal:** Add an isolated, testable Cloudflare Realtime SFU pilot for Frahoosh online classes without changing the existing RealtimeKit path.
 
-**Architecture:** A new static pilot page uses separate producer and consumer WebRTC PeerConnections. A new Supabase Edge Function authenticates users, reuses `classroom-authorize` for scheduled-room admission, calls the Cloudflare Realtime SFU Connection API, and stores participant/publication discovery in a service-role-only table.
+**Architecture:** A new static pilot page uses separate producer and consumer WebRTC PeerConnections. A new Supabase Edge Function authenticates users, reuses `classroom-authorize` for scheduled-room admission, calls the Cloudflare Realtime SFU Connection API, and stores participant, publication, and subscription state in a service-role-only table.
 
 **Tech Stack:** Static HTML/JavaScript, Supabase Edge Functions (Deno + supabase-js v2), PostgreSQL, Cloudflare Realtime SFU Connection API.
 
@@ -39,10 +39,10 @@
 - `buildRemoteTrackRequests(publications, excludedParticipantId): Array<{location:"remote";sessionId:string;trackName:string}>`
 - `getSafeSfuError(status:number, body:unknown): {code:string; retryable:boolean; message:string}`
 
-- [ ] Write tests for role normalization, excluding self/invalid/duplicate publications, and sanitizing provider errors.
-- [ ] Run `deno test tests/classroom-sfu.test.ts`; verify the expected missing-module failure.
-- [ ] Implement the minimal pure helpers.
-- [ ] Run the focused test and the existing classroom schedule tests.
+- [x] Write tests for role normalization, excluding self/invalid/duplicate publications, sanitizing provider errors, school-scoped room keys, and student-name privacy.
+- [x] Run the focused tests first and observe the expected missing-export failures before implementing the helpers.
+- [x] Implement the pure helpers.
+- [x] Run the focused tests and existing classroom schedule tests in CI.
 
 ### Task 2: Private participant registry
 
@@ -61,39 +61,45 @@
 - Modify: `.github/workflows/validate.yml`
 
 **Interfaces:**
-- POST actions: `join`, `snapshot`, `publish`, `subscribe`, `renegotiate`, `leave`.
+- POST actions: `join`, `snapshot`, `publish`, `complete_publish`, `subscribe`, `renegotiate`, `leave`.
 - Environment: `CLOUDFLARE_SFU_APP_ID`, `CLOUDFLARE_SFU_APP_SECRET`.
 - Browser response contains only short-lived room/session identifiers and SDP needed for negotiation; never provider credentials.
 
-- [ ] Validate bearer token with Supabase Auth.
-- [ ] For scheduled classes, invoke `classroom-authorize` with room ID, schedule entry ID, and active role.
-- [ ] Verify current user owns the active participant row for every post-join action.
-- [ ] Implement SFU session creation, local track publication, remote track subscription, renegotiation, snapshot, and cleanup.
-- [ ] Check HTTP status and each track result; sanitize errors and do not log SDP.
-- [ ] Add Deno type-check for the new function to CI.
+- [x] Validate bearer token with Supabase Auth.
+- [x] For scheduled classes, invoke `classroom-authorize` with room ID, schedule entry ID, and active role; re-check the schedule row belongs to the same school and class.
+- [x] Verify current user owns the active participant row and generation for every post-join action.
+- [x] Implement SFU session creation, local track publication, remote track subscription, renegotiation, snapshot, and cleanup.
+- [x] Serialize publisher/subscriber mutations with expiring server-side leases and browser-side queues.
+- [x] Inspect HTTP and per-track errors; reconcile session tracks for cleanup; sanitize errors and do not log SDP.
+- [x] Add Deno type-check and unit tests to CI.
 
 ### Task 4: Isolated browser pilot page
 
 **Files:**
 - Create: `classroom/sfu-pilot.html`
 
-- [ ] Reuse the current Supabase session-storage contract and the existing `classroom-authorize` room list.
-- [ ] Render only authorized schedule entries; retain the active-bell gate.
-- [ ] Create producer and consumer PeerConnections with Cloudflare STUN.
-- [ ] Capture local audio/video only after explicit user action; publish with the actual transceiver mids.
-- [ ] Subscribe to authorized participants' active publications and map received mids to remote video elements.
-- [ ] Queue per-session mutations; send mutation IDs, hold publisher lock until the browser applies the answer, and hold subscriber lock through `renegotiate`.
-- [ ] Poll room snapshots with bounded intervals and reconcile subscriptions without duplicates.
-- [ ] Implement explicit leave and cleanup; keep the current class page unchanged.
+- [x] Reuse the current Supabase session-storage contract and the existing `classroom-authorize` room list.
+- [x] Render only authorized schedule entries; retain the active-bell gate.
+- [x] Create producer and consumer PeerConnections with Cloudflare STUN.
+- [x] Capture local audio/video only after explicit user action; publish with the actual transceiver mids.
+- [x] Subscribe to authorized participants' active publications and map received mids to remote video elements.
+- [x] Queue per-session mutations; send mutation IDs, hold publisher lock until the browser applies the answer, and hold subscriber lock through `renegotiate`.
+- [x] Poll room snapshots with bounded intervals and reconcile subscriptions without duplicates.
+- [x] Implement explicit leave and cleanup; keep the current class page unchanged.
 
 ### Task 5: Verification and handoff
 
 **Files:**
 - Review: all files above and GitHub Actions results.
 
-- [ ] Run `deno check` on the new function and helper.
-- [ ] Run `deno test` for the new helper and existing classroom tests.
-- [ ] Run the PostgreSQL SFU migration/lease test.
-- [ ] Run the full repository `Validate classroom prototype` workflow.
-- [ ] Verify no secret strings or SDP are emitted to browser logs or responses.
-- [ ] Create a draft PR; do not merge or deploy until the user completes the SFU App and Secret setup and real two-device testing passes.
+- [x] Run `deno check` on the new function and helper.
+- [x] Run `deno test` for the new helper and existing classroom tests.
+- [x] Run the PostgreSQL SFU migration/lease test.
+- [x] Run the full repository validation workflow (latest run 1049 passed).
+- [x] Verify the browser page contains no SFU App Secret and that SDP is not logged or returned in diagnostics.
+- [x] Create draft PR #55; keep it unmerged and undeployed.
+- [ ] Create the Cloudflare SFU App and add its ID/Secret directly in Supabase Edge Function Secrets.
+- [ ] Merge only after the user explicitly approves.
+- [ ] Deploy the migration and Edge Function, then test real audio/video with two devices on separate networks.
+- [ ] Configure TURN before broad school use; current pilot is STUN-only.
+- [ ] Design selective track/active-speaker subscription and run load tests before claiming 700/1000 concurrent participants.
