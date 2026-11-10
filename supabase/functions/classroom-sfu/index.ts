@@ -167,6 +167,7 @@ async function authorizeScheduledRoom(
   bearer: string,
   body: Record<string, any>,
   accountProfile: any,
+  admin: any,
 ): Promise<{ roomKey: string; schoolId: string; room: any; profile: any; role: string; roomId: number; scheduleEntryId: number }> {
   const roomId = Number(body.room_id);
   const scheduleEntryId = Number(body.schedule_entry_id);
@@ -198,11 +199,7 @@ async function authorizeScheduledRoom(
   const role = normalizeSfuRole(profile.active_role || profile.role);
   const schoolId = clean(accountProfile?.tenant_school_id);
   if (!schoolId) throw Object.assign(new Error("مدرسهٔ حساب کاربری مشخص نیست."), { status: 403 });
-  const { data: scheduleEntry, error: scheduleEntryError } = await createClient(
-    url,
-    getServiceKey(),
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  ).from("weekly_schedule_entries")
+  const { data: scheduleEntry, error: scheduleEntryError } = await admin.from("weekly_schedule_entries")
     .select("id,online_class_id")
     .eq("id", scheduleEntryId)
     .eq("online_class_id", roomId)
