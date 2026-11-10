@@ -185,7 +185,7 @@ begin
   ) into acquired;
   if acquired then raise exception 'invalid mutation ID unexpectedly acquired a lock'; end if;
 end
-$;
+$$;
 
 select * from public.claim_classroom_sfu_participant(
   'school:00000000-0000-4000-8000-000000000001:class:17:42',
@@ -198,7 +198,7 @@ select * from public.claim_classroom_sfu_participant(
   'دبیر آزمایشی'
 );
 
-do $
+do $$
 declare
   participant_generation integer;
   publisher_lock text;
@@ -213,6 +213,6 @@ begin
     raise exception 'new SFU generation did not clear stale session mutation locks';
   end if;
 end
-$;
+$$;
 
 select 'classroom SFU mutation lock checks passed' as result;
