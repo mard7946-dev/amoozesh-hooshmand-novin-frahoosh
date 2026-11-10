@@ -231,7 +231,7 @@ async function authorizeAdHocRoom(
 
 async function requireParticipant(admin: any, userId: string, roomKey: string, generation: number) {
   const { data, error } = await admin.from("classroom_sfu_participants")
-    .select("id,tenant_school_id,room_key,online_class_id,schedule_entry_id,ad_hoc_meeting_id,auth_user_id,role,display_name,generation,publisher_session_id,subscriber_session_id,publications,status")
+    .select("id,tenant_school_id,room_key,online_class_id,schedule_entry_id,ad_hoc_meeting_id,auth_user_id,role,display_name,generation,publisher_session_id,subscriber_session_id,publications,status,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
     .eq("room_key", roomKey).eq("auth_user_id", userId).eq("status", "active").maybeSingle();
   if (error) throw error;
   if (!data) throw Object.assign(new Error("عضویت فعال شما در این کلاس پیدا نشد؛ دوباره وارد کلاس شوید."), { status: 403 });
@@ -252,16 +252,28 @@ async function requireParticipant(admin: any, userId: string, roomKey: string, g
 async function pruneStaleParticipants(admin: any, env: SfuEnvironment, roomKey: string, selfId: string) {
   const cutoff = new Date(Date.now() - 90_000).toISOString();
   const { data, error } = await admin.from("classroom_sfu_participants")
-    .select("id,publisher_session_id,subscriber_session_id")
+    .select("id,publisher_session_id,subscriber_session_id,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
     .eq("room_key", roomKey).eq("status", "active").neq("id", selfId)
     .lt("last_seen_at", cutoff).limit(30);
   if (error) throw error;
   for (const stale of data ?? []) {
+    if (
+      mutationLockIsActive(stale.publisher_mutation_id, stale.publisher_mutation_started_at)
+      || mutationLockIsActive(stale.subscriber_mutation_id, stale.subscriber_mutation_started_at)
+    ) continue;
     try {
       await closeSfuSession(env, stale.publisher_session_id);
       await closeSfuSession(env, stale.subscriber_session_id);
       const { error: updateError } = await admin.from("classroom_sfu_participants")
-        .update({ status: "left", publications: [], left_at: new Date().toISOString() })
+        .update({
+          status: "left",
+          publications: [],
+          publisher_mutation_id: null,
+          publisher_mutation_started_at: null,
+          subscriber_mutation_id: null,
+          subscriber_mutation_started_at: null,
+          left_at: new Date().toISOString(),
+        })
         .eq("id", stale.id).eq("status", "active");
       if (updateError) throw updateError;
     } catch (error) {
@@ -269,6 +281,50 @@ async function pruneStaleParticipants(admin: any, env: SfuEnvironment, roomKey: 
       console.warn("classroom-sfu stale participant cleanup pending", code);
     }
   }
+}
+
+async function claimMutationLock(
+  admin: any,
+  participantId: string,
+  generation: number,
+  sessionKind: "publisher" | "subscriber",
+  mutationId: string,
+): Promise<void> {
+  if (!/^[A-Za-z0-9_-]{8,96}$/.test(mutationId)) {
+    throw Object.assign(new Error("شناسهٔ عملیات رسانه معتبر نیست."), { status: 400 });
+  }
+  const { data, error } = await admin.rpc("claim_classroom_sfu_session_mutation", {
+    p_participant_id: participantId,
+    p_generation: generation,
+    p_session_kind: sessionKind,
+    p_mutation_id: mutationId,
+  });
+  if (error) throw error;
+  if (data !== true) {
+    throw Object.assign(new Error("عملیات دیگری روی همین مسیر رسانه در حال انجام است؛ چند لحظه صبر کنید."), { status: 409 });
+  }
+}
+
+async function releaseMutationLock(
+  admin: any,
+  participantId: string,
+  generation: number,
+  sessionKind: "publisher" | "subscriber",
+  mutationId: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc("release_classroom_sfu_session_mutation", {
+    p_participant_id: participantId,
+    p_generation: generation,
+    p_session_kind: sessionKind,
+    p_mutation_id: mutationId,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
+function mutationLockIsActive(id: unknown, startedAt: unknown): boolean {
+  const timestamp = Date.parse(clean(startedAt));
+  return Boolean(clean(id)) && Number.isFinite(timestamp) && Date.now() - timestamp < 45_000;
 }
 
 async function getRoomSnapshot(admin: any, roomKey: string, selfId: string) {
@@ -313,7 +369,7 @@ Deno.serve(async (req: Request) => {
     if (rawBody.length > 1_100_000) return reply({ ok: false, message: "اندازهٔ درخواست رسانه بیش از حد مجاز است." }, 413);
     const body = JSON.parse(rawBody || "{}");
     const action = clean(body.action);
-    if (!["join", "snapshot", "publish", "subscribe", "renegotiate", "leave"].includes(action)) {
+    if (!["join", "snapshot", "publish", "complete_publish", "subscribe", "renegotiate", "leave"].includes(action)) {
       return reply({ ok: false, message: "عملیات کلاس معتبر نیست." }, 400);
     }
 
@@ -333,6 +389,8 @@ Deno.serve(async (req: Request) => {
         .select("publisher_session_id,subscriber_session_id")
         .eq("room_key", admission.roomKey).eq("auth_user_id", user.id).maybeSingle();
       if (oldError) throw oldError;
+      await closeSfuSession(sfuEnv, oldParticipant?.publisher_session_id);
+      await closeSfuSession(sfuEnv, oldParticipant?.subscriber_session_id);
 
       const displayName = buildSfuDisplayName(admission.role, user.id, profile.display_name, profile.username);
       const { data: claimRows, error: claimError } = await admin.rpc("claim_classroom_sfu_participant", {
@@ -373,8 +431,6 @@ Deno.serve(async (req: Request) => {
           .eq("id", participantId).eq("generation", generation);
         throw error;
       }
-      await closeSfuSession(sfuEnv, oldParticipant?.publisher_session_id).catch(() => {});
-      await closeSfuSession(sfuEnv, oldParticipant?.subscriber_session_id).catch(() => {});
       const snapshot = await getRoomSnapshot(admin, admission.roomKey, participantId);
       return reply({
         ok: true,
@@ -406,11 +462,13 @@ Deno.serve(async (req: Request) => {
     if (action === "publish") {
       const sessionDescription = body.sessionDescription;
       const requestedTracks = Array.isArray(body.tracks) ? body.tracks : [];
+      const mutationId = clean(body.mutation_id);
       if (
         !sessionDescription || sessionDescription.type !== "offer"
         || typeof sessionDescription.sdp !== "string" || sessionDescription.sdp.length < 1
         || sessionDescription.sdp.length > 1_000_000
         || requestedTracks.length < 1 || requestedTracks.length > 2
+        || !/^[A-Za-z0-9_-]{8,96}$/.test(mutationId)
       ) return reply({ ok: false, message: "اطلاعات انتشار صدا و تصویر معتبر نیست." }, 400);
       const tracks = requestedTracks.map((item: any) => ({
         kind: clean(item.kind),
@@ -421,44 +479,70 @@ Deno.serve(async (req: Request) => {
         || new Set(tracks.map((item: any) => item.kind)).size !== tracks.length
       ) return reply({ ok: false, message: "مسیرهای صوت و تصویر معتبر نیستند." }, 400);
 
-      const result = await sfuRequest(
-        sfuEnv,
-        "/sessions/" + encodeURIComponent(participant.publisher_session_id) + "/tracks/new",
-        "POST",
-        {
-          sessionDescription,
-          tracks: tracks.map((item: any) => ({
-            location: "local",
-            mid: item.mid,
-            trackName: item.kind,
-          })),
-        },
-      );
-      if (!result.sessionDescription) throw new SafeSfuException(502, { errorCode: "missing_sdp_answer" });
-      const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
-      const publications = trackResults.filter((item: any) =>
-        !item?.errorCode && clean(item?.mid)
-      ).map((item: any) => {
-        const match = tracks.find((track: any) => track.kind === clean(item.trackName))
-          ?? tracks[trackResults.indexOf(item)];
-        return match ? { kind: match.kind, trackName: match.kind, mid: clean(item.mid) } : null;
-      }).filter(Boolean);
-      if (!publications.length) throw new SafeSfuException(502, { errorCode: "publish_failed" });
-      const existingPublications = Array.isArray(participant.publications) ? participant.publications : [];
-      const mergedPublications = [
-        ...existingPublications.filter((item: any) => !publications.some((next: any) => next.kind === item?.kind)),
-        ...publications,
-      ];
-      const { error: updateError } = await admin.from("classroom_sfu_participants")
-        .update({ publications: mergedPublications, last_seen_at: new Date().toISOString() })
-        .eq("id", participant.id).eq("generation", generation).eq("status", "active");
-      if (updateError) throw updateError;
-      return reply({
-        ok: true,
-        sessionDescription: result.sessionDescription,
-        tracks: publications,
-        partial: publications.length !== tracks.length,
-      });
+      await claimMutationLock(admin, participant.id, generation, "publisher", mutationId);
+      let keepLock = false;
+      try {
+        let result: Record<string, any>;
+        try {
+          result = await sfuRequest(
+            sfuEnv,
+            "/sessions/" + encodeURIComponent(participant.publisher_session_id) + "/tracks/new",
+            "POST",
+            {
+              sessionDescription,
+              tracks: tracks.map((item: any) => ({
+                location: "local",
+                mid: item.mid,
+                trackName: item.kind,
+              })),
+            },
+          );
+          keepLock = true;
+        } catch (error) {
+          if (!(error instanceof SafeSfuException) || error.safe.retryable) keepLock = true;
+          throw error;
+        }
+        if (!result.sessionDescription) throw new SafeSfuException(502, { errorCode: "missing_sdp_answer" });
+        const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
+        const publications = trackResults.filter((item: any) =>
+          !item?.errorCode && clean(item?.mid)
+        ).map((item: any) => {
+          const match = tracks.find((track: any) => track.kind === clean(item.trackName))
+            ?? tracks[trackResults.indexOf(item)];
+          return match ? { kind: match.kind, trackName: match.kind, mid: clean(item.mid) } : null;
+        }).filter(Boolean);
+        if (!publications.length) throw new SafeSfuException(502, { errorCode: "publish_failed" });
+        const existingPublications = Array.isArray(participant.publications) ? participant.publications : [];
+        const mergedPublications = [
+          ...existingPublications.filter((item: any) => !publications.some((next: any) => next.kind === item?.kind)),
+          ...publications,
+        ];
+        const { error: updateError } = await admin.from("classroom_sfu_participants")
+          .update({ publications: mergedPublications, last_seen_at: new Date().toISOString() })
+          .eq("id", participant.id).eq("generation", generation).eq("status", "active");
+        if (updateError) throw updateError;
+        return reply({
+          ok: true,
+          mutation_id: mutationId,
+          sessionDescription: result.sessionDescription,
+          tracks: publications,
+          partial: publications.length !== tracks.length,
+        });
+      } finally {
+        if (!keepLock) {
+          await releaseMutationLock(admin, participant.id, generation, "publisher", mutationId).catch(() => {});
+        }
+      }
+    }
+
+    if (action === "complete_publish") {
+      const mutationId = clean(body.mutation_id);
+      if (!/^[A-Za-z0-9_-]{8,96}$/.test(mutationId)) {
+        return reply({ ok: false, message: "شناسهٔ تکمیل انتشار رسانه معتبر نیست." }, 400);
+      }
+      const released = await releaseMutationLock(admin, participant.id, generation, "publisher", mutationId);
+      if (!released) return reply({ ok: false, message: "نشست انتشار تغییر کرده است؛ برای ادامه دوباره وارد کلاس شوید." }, 409);
+      return reply({ ok: true });
     }
 
     if (action === "subscribe") {
@@ -485,60 +569,99 @@ Deno.serve(async (req: Request) => {
       if (!requests.length) {
         return reply({ ok: true, requiresImmediateRenegotiation: false, subscriptions: [] });
       }
-      const result = await sfuRequest(
-        sfuEnv,
-        "/sessions/" + encodeURIComponent(participant.subscriber_session_id) + "/tracks/new",
-        "POST",
-        { tracks: requests },
-      );
-      const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
-      const subscriptions = trackResults.map((item: any, index: number) => ({ item, index }))
-        .filter(({ item }: any) => !item?.errorCode && clean(item?.mid))
-        .map(({ item, index }: any) => {
-        const request = requests.find((candidate: any) =>
-          candidate.sessionId === clean(item.sessionId) && candidate.trackName === clean(item.trackName)
-        ) ?? requests[index];
-        const publication = publications.find((candidate: any) =>
-          candidate.sessionId === request?.sessionId && candidate.trackName === request?.trackName
-        );
-        return publication ? {
-          mid: clean(item.mid),
-          participantId: publication.participantId,
-          kind: publication.kind,
-          trackName: publication.trackName,
-        } : null;
-      }).filter(Boolean);
-      return reply({
-        ok: true,
-        requiresImmediateRenegotiation: result.requiresImmediateRenegotiation === true,
-        ...(result.sessionDescription ? { sessionDescription: result.sessionDescription } : {}),
-        subscriptions,
-      });
+      const mutationId = clean(body.mutation_id);
+      if (!/^[A-Za-z0-9_-]{8,96}$/.test(mutationId)) {
+        return reply({ ok: false, message: "شناسهٔ عملیات دریافت رسانه معتبر نیست." }, 400);
+      }
+      await claimMutationLock(admin, participant.id, generation, "subscriber", mutationId);
+      let keepLock = false;
+      try {
+        let result: Record<string, any>;
+        try {
+          result = await sfuRequest(
+            sfuEnv,
+            "/sessions/" + encodeURIComponent(participant.subscriber_session_id) + "/tracks/new",
+            "POST",
+            { tracks: requests },
+          );
+          keepLock = result.requiresImmediateRenegotiation === true;
+        } catch (error) {
+          if (!(error instanceof SafeSfuException) || error.safe.retryable) keepLock = true;
+          throw error;
+        }
+        const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
+        const subscriptions = trackResults.map((item: any, index: number) => ({ item, index }))
+          .filter(({ item }: any) => !item?.errorCode && clean(item?.mid))
+          .map(({ item, index }: any) => {
+            const request = requests.find((candidate: any) =>
+              candidate.sessionId === clean(item.sessionId) && candidate.trackName === clean(item.trackName)
+            ) ?? requests[index];
+            const publication = publications.find((candidate: any) =>
+              candidate.sessionId === request?.sessionId && candidate.trackName === request?.trackName
+            );
+            return publication ? {
+              mid: clean(item.mid),
+              participantId: publication.participantId,
+              kind: publication.kind,
+              trackName: publication.trackName,
+            } : null;
+          }).filter(Boolean);
+        if (keepLock && !result.sessionDescription) {
+          throw new SafeSfuException(502, { errorCode: "missing_sdp_offer" });
+        }
+        return reply({
+          ok: true,
+          mutation_id: mutationId,
+          requiresImmediateRenegotiation: result.requiresImmediateRenegotiation === true,
+          ...(result.sessionDescription ? { sessionDescription: result.sessionDescription } : {}),
+          subscriptions,
+        });
+      } finally {
+        if (!keepLock) {
+          await releaseMutationLock(admin, participant.id, generation, "subscriber", mutationId).catch(() => {});
+        }
+      }
     }
 
     if (action === "renegotiate") {
       const sessionDescription = body.sessionDescription;
+      const mutationId = clean(body.mutation_id);
       if (
         !sessionDescription || sessionDescription.type !== "answer"
         || typeof sessionDescription.sdp !== "string" || sessionDescription.sdp.length < 1
         || sessionDescription.sdp.length > 1_000_000
+        || !/^[A-Za-z0-9_-]{8,96}$/.test(mutationId)
       ) return reply({ ok: false, message: "پاسخ مذاکرهٔ رسانه معتبر نیست." }, 400);
+      if (
+        clean(participant.subscriber_mutation_id) !== mutationId
+        || !mutationLockIsActive(participant.subscriber_mutation_id, participant.subscriber_mutation_started_at)
+      ) return reply({ ok: false, message: "نشست دریافت رسانه منقضی شده است؛ دوباره وارد کلاس شوید." }, 409);
       await sfuRequest(
         sfuEnv,
         "/sessions/" + encodeURIComponent(participant.subscriber_session_id) + "/renegotiate",
         "PUT",
         { sessionDescription },
       );
+      const released = await releaseMutationLock(admin, participant.id, generation, "subscriber", mutationId);
+      if (!released) return reply({ ok: false, message: "نسل نشست رسانه تغییر کرده است؛ دوباره وارد کلاس شوید." }, 409);
       return reply({ ok: true });
     }
 
     if (action === "leave") {
+      if (
+        mutationLockIsActive(participant.publisher_mutation_id, participant.publisher_mutation_started_at)
+        || mutationLockIsActive(participant.subscriber_mutation_id, participant.subscriber_mutation_started_at)
+      ) return reply({ ok: false, message: "عملیات رسانه هنوز در حال تکمیل است؛ چند لحظه صبر کنید و دوباره خروج را بزنید." }, 409);
       await closeSfuSession(sfuEnv, participant.publisher_session_id);
       await closeSfuSession(sfuEnv, participant.subscriber_session_id);
       const { error: leaveError } = await admin.from("classroom_sfu_participants")
         .update({
           status: "left",
           publications: [],
+          publisher_mutation_id: null,
+          publisher_mutation_started_at: null,
+          subscriber_mutation_id: null,
+          subscriber_mutation_started_at: null,
           left_at: new Date().toISOString(),
           last_seen_at: new Date().toISOString(),
         })
