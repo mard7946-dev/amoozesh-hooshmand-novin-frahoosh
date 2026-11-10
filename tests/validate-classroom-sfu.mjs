@@ -23,6 +23,8 @@ assert.ok(html.includes('postFunction("classroom-sfu"'), "Pilot must call the is
 assert.ok(html.includes('action:"publish"'), "Pilot must publish local tracks through the backend");
 assert.ok(html.includes('action:"subscribe"'), "Pilot must subscribe to authorized remote tracks");
 assert.ok(html.includes('action:"renegotiate"'), "Pilot must complete SFU offer/answer exchanges");
+assert.ok(html.includes("mutation_id:mutationId"), "Pilot must bind renegotiation to the server-side mutation lock");
+assert.ok(html.includes('action:"complete_publish"'), "Pilot must release publisher locks after applying the SFU answer");
 assert.ok(html.includes('action:"leave"'), "Pilot must explicitly clean up when leaving");
 assert.ok(html.includes("stun:stun.cloudflare.com:3478"), "Pilot must configure the documented Cloudflare STUN server");
 assert.ok(html.includes("navigator.mediaDevices.getUserMedia"), "Pilot must request media only after an explicit user action");
