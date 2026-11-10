@@ -198,6 +198,18 @@ async function authorizeScheduledRoom(
   const role = normalizeSfuRole(profile.active_role || profile.role);
   const schoolId = clean(accountProfile?.tenant_school_id);
   if (!schoolId) throw Object.assign(new Error("مدرسهٔ حساب کاربری مشخص نیست."), { status: 403 });
+  const { data: scheduleEntry, error: scheduleEntryError } = await createClient(
+    url,
+    getServiceKey(),
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  ).from("weekly_schedule_entries")
+    .select("id,online_class_id")
+    .eq("id", scheduleEntryId)
+    .eq("online_class_id", roomId)
+    .eq("tenant_school_id", schoolId)
+    .maybeSingle();
+  if (scheduleEntryError) throw scheduleEntryError;
+  if (!scheduleEntry) throw Object.assign(new Error("این زنگ به کلاس انتخاب‌شده یا مدرسهٔ شما تعلق ندارد."), { status: 403 });
   return {
     roomKey: buildSfuRoomKey({ schoolId, onlineClassId: roomId, scheduleEntryId }),
     schoolId,
