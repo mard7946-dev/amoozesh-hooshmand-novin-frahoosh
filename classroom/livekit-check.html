@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827"><title>بررسی سرویس LiveKit | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--line:#2c3b50;--text:#eef4ff;--muted:#a7b6cc;--accent:#46d6b0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif;line-height:1.9}
+main{max-width:720px;margin:24px auto;padding:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+h1{font-size:20px;margin:0 0 8px}p{color:var(--muted)}button,a{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 14px;text-decoration:none;display:inline-block}
+button{background:#145447;border-color:#46d6b0;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
+#result{white-space:pre-wrap;margin-top:16px;padding:12px;border-radius:10px;background:#0b1423;min-height:70px}
+.ok{color:#8de6c9}.bad{color:#ffb5b5}.muted{color:var(--muted);font-size:13px}
+</style></head>
+<body><main><section class="panel">
+<h1>بررسی امن اتصال LiveKit</h1>
+<p>این آزمون فقط وجود تنظیمات، اعتبارسنجی ارتباط سرور و امضای آزمایشی را بررسی می‌کند. هیچ کلید یا رمز محرمانه‌ای در صفحه نمایش داده نمی‌شود و جلسه‌ای ساخته نمی‌شود.</p>
+<button id="run">شروع بررسی</button>
+<a href="realtime.html">بازگشت به کلاس زنده</a>
+<div id="result" role="status">برای شروع، دکمهٔ بررسی را بزنید.</div>
+<p class="muted">این بخش فقط برای مدیر مدرسه فعال است. ابتدا باید از پنل فراهوش وارد شده باشید.</p>
+</section></main>
+<script>
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const button=document.getElementById("run"),result=document.getElementById("result");
+button.addEventListener("click",async()=>{
+ const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+ if(!token){result.className="bad";result.textContent="نشست ورود پیدا نشد. از پنل فراهوش وارد شوید و دوباره این صفحه را باز کنید.";return;}
+ button.disabled=true;result.className="";result.textContent="در حال بررسی امن تنظیمات سرور…";
+ try{
+  const response=await fetch(SUPABASE_URL+"/functions/v1/classroom-livekit-diagnostic",{
+   method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:"{}"
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.ok){
+   result.className="bad";
+   const checks=data.checks?Object.entries(data.checks).map(([k,v])=>k+": "+(v?"موجود":"موجود نیست")).join("\n"):"";
+   result.textContent=[data.message||"بررسی ناموفق بود.",data.error_code?"کد خطا: "+data.error_code:"",checks].filter(Boolean).join("\n");
+   return;
+  }
+  result.className="ok";
+  result.textContent=[
+   "اتصال LiveKit با موفقیت تأیید شد.",
+   "نشانی سرور: "+(data.host||"تأیید شد"),
+   "ساخت توکن: "+(data.token_signing?"موفق":"ناموفق"),
+   "اعتبار API: "+(data.api_authentication?"تأیید شد":"تأیید نشد"),
+   "اتاق‌های فعال موجود: "+String(data.active_room_count??"نامشخص"),
+   data.message||""
+  ].join("\n");
+ }catch(e){result.className="bad";result.textContent="ارتباط با تابع بررسی برقرار نشد. اتصال اینترنت را بررسی کنید.";}
+ finally{button.disabled=false;}
+});
+</script></body></html>
