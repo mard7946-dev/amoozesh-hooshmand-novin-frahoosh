@@ -438,7 +438,7 @@ Deno.serve(async (req: Request) => {
       if (clean(body.meeting_id)) {
         admission = await authorizeAdHocRoom(admin, user.id, body, profile);
       } else {
-        admission = await authorizeScheduledRoom(url, bearer, body, profile);
+        admission = await authorizeScheduledRoom(url, bearer, body, profile, admin);
         if (admission.schoolId !== clean(profile.tenant_school_id)) {
           return reply({ ok: false, message: "کلاس انتخاب‌شده متعلق به مدرسهٔ حساب شما نیست." }, 403);
         }
