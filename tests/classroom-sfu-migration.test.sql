@@ -173,7 +173,45 @@ begin
     'subscribe-mutation-001'
   ) into released;
   if not released then raise exception 'subscriber mutation lock was not released'; end if;
+
+  select public.claim_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'publisher',
+    'bad'
+  ) into acquired;
+  if acquired then raise exception 'invalid mutation ID unexpectedly acquired a lock'; end if;
 end
-$$;
+$;
+
+select * from public.claim_classroom_sfu_participant(
+  'school:00000000-0000-4000-8000-000000000001:class:17:42',
+  '00000000-0000-4000-8000-000000000001',
+  17,
+  42,
+  null,
+  '00000000-0000-4000-8000-000000000002',
+  'teacher',
+  'دبیر آزمایشی'
+);
+
+do $
+declare
+  participant_generation integer;
+  publisher_lock text;
+  subscriber_lock text;
+begin
+  select generation, publisher_mutation_id, subscriber_mutation_id
+    into participant_generation, publisher_lock, subscriber_lock
+    from public.classroom_sfu_participants
+   where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+     and auth_user_id = '00000000-0000-4000-8000-000000000002';
+  if participant_generation <> 3 or publisher_lock is not null or subscriber_lock is not null then
+    raise exception 'new SFU generation did not clear stale session mutation locks';
+  end if;
+end
+$;
 
 select 'classroom SFU mutation lock checks passed' as result;
