@@ -18,8 +18,6 @@ const clean = (value: unknown) => String(value ?? "").trim();
 const PUBLISHABLE_KEY = "sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 
 type SfuEnvironment = { appId: string; appSecret: string; baseUrl: string };
-type SfuFailure = { status: number; safe: ReturnType<typeof getSafeSfuError> };
-
 class SafeSfuException extends Error {
   status: number;
   safe: ReturnType<typeof getSafeSfuError>;
@@ -91,7 +89,13 @@ async function createSfuSession(env: SfuEnvironment): Promise<string> {
 async function closeSfuSession(env: SfuEnvironment, sessionId: string | null | undefined): Promise<void> {
   const id = clean(sessionId);
   if (!id) return;
-  const session = await sfuRequest(env, "/sessions/" + encodeURIComponent(id));
+  let session: Record<string, any>;
+  try {
+    session = await sfuRequest(env, "/sessions/" + encodeURIComponent(id));
+  } catch (error) {
+    if (error instanceof SafeSfuException && (error.status === 404 || error.status === 410)) return;
+    throw error;
+  }
   const tracks = Array.isArray(session.tracks) ? session.tracks : [];
   const mids = [...new Set(tracks
     .filter((track: any) => clean(track?.mid))
@@ -243,9 +247,31 @@ async function requireParticipant(admin: any, userId: string, roomKey: string, g
   return data;
 }
 
+async function pruneStaleParticipants(admin: any, env: SfuEnvironment, roomKey: string, selfId: string) {
+  const cutoff = new Date(Date.now() - 90_000).toISOString();
+  const { data, error } = await admin.from("classroom_sfu_participants")
+    .select("id,publisher_session_id,subscriber_session_id")
+    .eq("room_key", roomKey).eq("status", "active").neq("id", selfId)
+    .lt("last_seen_at", cutoff).limit(30);
+  if (error) throw error;
+  for (const stale of data ?? []) {
+    try {
+      await closeSfuSession(env, stale.publisher_session_id);
+      await closeSfuSession(env, stale.subscriber_session_id);
+      const { error: updateError } = await admin.from("classroom_sfu_participants")
+        .update({ status: "left", publications: [], left_at: new Date().toISOString() })
+        .eq("id", stale.id).eq("status", "active");
+      if (updateError) throw updateError;
+    } catch (error) {
+      const code = error instanceof SafeSfuException ? error.safe.code : "cleanup_failed";
+      console.warn("classroom-sfu stale participant cleanup pending", code);
+    }
+  }
+}
+
 async function getRoomSnapshot(admin: any, roomKey: string, selfId: string) {
   const { data, error } = await admin.from("classroom_sfu_participants")
-    .select("id,display_name,role,publisher_session_id,publications,status")
+    .select("id,display_name,role,publisher_session_id,publications,status,joined_at")
     .eq("room_key", roomKey).eq("status", "active")
     .order("joined_at", { ascending: true }).limit(100);
   if (error) throw error;
@@ -371,6 +397,7 @@ Deno.serve(async (req: Request) => {
       await admin.from("classroom_sfu_participants")
         .update({ last_seen_at: new Date().toISOString() })
         .eq("id", participant.id).eq("generation", generation);
+      await pruneStaleParticipants(admin, sfuEnv, roomKey, participant.id);
       return reply({ ok: true, snapshot: await getRoomSnapshot(admin, roomKey, participant.id) });
     }
 
@@ -415,8 +442,13 @@ Deno.serve(async (req: Request) => {
         return match ? { kind: match.kind, trackName: match.kind, mid: clean(item.mid) } : null;
       }).filter(Boolean);
       if (!publications.length) throw new SafeSfuException(502, { errorCode: "publish_failed" });
+      const existingPublications = Array.isArray(participant.publications) ? participant.publications : [];
+      const mergedPublications = [
+        ...existingPublications.filter((item: any) => !publications.some((next: any) => next.kind === item?.kind)),
+        ...publications,
+      ];
       const { error: updateError } = await admin.from("classroom_sfu_participants")
-        .update({ publications, last_seen_at: new Date().toISOString() })
+        .update({ publications: mergedPublications, last_seen_at: new Date().toISOString() })
         .eq("id", participant.id).eq("generation", generation).eq("status", "active");
       if (updateError) throw updateError;
       return reply({
@@ -429,14 +461,24 @@ Deno.serve(async (req: Request) => {
 
     if (action === "subscribe") {
       const snapshot = await getRoomSnapshot(admin, roomKey, participant.id);
+      const requestedKeys = new Set(
+        (Array.isArray(body.track_keys) ? body.track_keys : [])
+          .map((value: unknown) => clean(value))
+          .filter(Boolean)
+          .slice(0, 100),
+      );
+      if (!requestedKeys.size) {
+        return reply({ ok: true, requiresImmediateRenegotiation: false, subscriptions: [] });
+      }
       const publications = snapshot.participants.flatMap((item: any) =>
         item.publications.map((publication: any) => ({
           participantId: item.id,
           sessionId: publication.sessionId,
           trackName: publication.trackName,
           kind: publication.kind,
+          key: item.id + ":" + publication.kind,
         }))
-      );
+      ).filter((publication: any) => requestedKeys.has(publication.key));
       const requests = buildRemoteTrackRequests(publications, participant.id);
       if (!requests.length) {
         return reply({ ok: true, requiresImmediateRenegotiation: false, subscriptions: [] });
