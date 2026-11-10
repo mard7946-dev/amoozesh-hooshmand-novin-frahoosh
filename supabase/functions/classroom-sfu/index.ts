@@ -109,21 +109,20 @@ async function closeSfuTracks(
   if (failed) throw new SafeSfuException(502, { errorCode: "track_cleanup_incomplete" });
 }
 
-async function closeSfuSession(env: SfuEnvironment, sessionId: string | null | undefined): Promise<void> {
+function midsFrom(items: unknown): string[] {
+  return Array.isArray(items)
+    ? [...new Set(items.map((item: any) => clean(item?.mid)).filter(Boolean))]
+    : [];
+}
+
+async function closeSfuSession(
+  env: SfuEnvironment,
+  sessionId: string | null | undefined,
+  mids: unknown,
+): Promise<void> {
   const id = clean(sessionId);
   if (!id) return;
-  let session: Record<string, any>;
-  try {
-    session = await sfuRequest(env, "/sessions/" + encodeURIComponent(id));
-  } catch (error) {
-    if (error instanceof SafeSfuException && (error.status === 404 || error.status === 410)) return;
-    throw error;
-  }
-  const tracks = Array.isArray(session.tracks) ? session.tracks : [];
-  const mids = tracks
-    .filter((track: any) => clean(track?.mid))
-    .map((track: any) => clean(track.mid));
-  await closeSfuTracks(env, id, mids);
+  await closeSfuTracks(env, id, midsFrom(mids));
 }
 
 async function authenticate(req: Request, url: string, serviceKey: string) {
@@ -243,7 +242,7 @@ async function authorizeAdHocRoom(
 
 async function requireParticipant(admin: any, userId: string, roomKey: string, generation: number) {
   const { data, error } = await admin.from("classroom_sfu_participants")
-    .select("id,tenant_school_id,room_key,online_class_id,schedule_entry_id,ad_hoc_meeting_id,auth_user_id,role,display_name,generation,publisher_session_id,subscriber_session_id,publications,status,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
+    .select("id,tenant_school_id,room_key,online_class_id,schedule_entry_id,ad_hoc_meeting_id,auth_user_id,role,display_name,generation,publisher_session_id,subscriber_session_id,publications,subscriptions,status,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
     .eq("room_key", roomKey).eq("auth_user_id", userId).eq("status", "active").maybeSingle();
   if (error) throw error;
   if (!data) throw Object.assign(new Error("عضویت فعال شما در این کلاس پیدا نشد؛ دوباره وارد کلاس شوید."), { status: 403 });
@@ -264,7 +263,7 @@ async function requireParticipant(admin: any, userId: string, roomKey: string, g
 async function pruneStaleParticipants(admin: any, env: SfuEnvironment, roomKey: string, selfId: string) {
   const cutoff = new Date(Date.now() - 90_000).toISOString();
   const { data, error } = await admin.from("classroom_sfu_participants")
-    .select("id,publisher_session_id,subscriber_session_id,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
+    .select("id,publisher_session_id,subscriber_session_id,publications,subscriptions,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
     .eq("room_key", roomKey).eq("status", "active").neq("id", selfId)
     .lt("last_seen_at", cutoff).limit(30);
   if (error) throw error;
@@ -274,12 +273,13 @@ async function pruneStaleParticipants(admin: any, env: SfuEnvironment, roomKey: 
       || mutationLockIsActive(stale.subscriber_mutation_id, stale.subscriber_mutation_started_at)
     ) continue;
     try {
-      await closeSfuSession(env, stale.publisher_session_id);
-      await closeSfuSession(env, stale.subscriber_session_id);
+      await closeSfuSession(env, stale.publisher_session_id, stale.publications);
+      await closeSfuSession(env, stale.subscriber_session_id, stale.subscriptions);
       const { error: updateError } = await admin.from("classroom_sfu_participants")
         .update({
           status: "left",
           publications: [],
+          subscriptions: [],
           publisher_mutation_id: null,
           publisher_mutation_started_at: null,
           subscriber_mutation_id: null,
@@ -357,9 +357,32 @@ async function getRoomSnapshot(admin: any, roomKey: string, selfId: string) {
           kind: publication.kind,
           trackName: publication.trackName,
           sessionId: item.publisher_session_id,
+          key: item.id + ":" + publication.kind + ":" + item.publisher_session_id,
         })),
     })),
   };
+}
+
+async function pruneStaleSubscriptions(
+  admin: any,
+  env: SfuEnvironment,
+  participant: any,
+  snapshot: any,
+): Promise<void> {
+  const activeKeys = new Set(
+    snapshot.participants.flatMap((item: any) =>
+      item.isSelf ? [] : item.publications.map((publication: any) => publication.key)
+    ),
+  );
+  const existing = Array.isArray(participant.subscriptions) ? participant.subscriptions : [];
+  const stale = existing.filter((item: any) => !activeKeys.has(clean(item?.key)));
+  if (!stale.length) return;
+  await closeSfuSession(env, participant.subscriber_session_id, stale);
+  const retained = existing.filter((item: any) => activeKeys.has(clean(item?.key)));
+  const { error } = await admin.from("classroom_sfu_participants")
+    .update({ subscriptions: retained, last_seen_at: new Date().toISOString() })
+    .eq("id", participant.id).eq("generation", participant.generation).eq("status", "active");
+  if (error) throw error;
 }
 
 Deno.serve(async (req: Request) => {
@@ -398,15 +421,15 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: oldParticipant, error: oldError } = await admin.from("classroom_sfu_participants")
-        .select("publisher_session_id,subscriber_session_id,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
+        .select("publisher_session_id,subscriber_session_id,publications,subscriptions,publisher_mutation_id,publisher_mutation_started_at,subscriber_mutation_id,subscriber_mutation_started_at")
         .eq("room_key", admission.roomKey).eq("auth_user_id", user.id).maybeSingle();
       if (oldError) throw oldError;
       if (
         mutationLockIsActive(oldParticipant?.publisher_mutation_id, oldParticipant?.publisher_mutation_started_at)
         || mutationLockIsActive(oldParticipant?.subscriber_mutation_id, oldParticipant?.subscriber_mutation_started_at)
       ) throw Object.assign(new Error("نشست قبلی هنوز در حال مذاکرهٔ رسانه است؛ کمی صبر کنید و دوباره وارد شوید."), { status: 409 });
-      await closeSfuSession(sfuEnv, oldParticipant?.publisher_session_id);
-      await closeSfuSession(sfuEnv, oldParticipant?.subscriber_session_id);
+      await closeSfuSession(sfuEnv, oldParticipant?.publisher_session_id, oldParticipant?.publications);
+      await closeSfuSession(sfuEnv, oldParticipant?.subscriber_session_id, oldParticipant?.subscriptions);
 
       const displayName = buildSfuDisplayName(admission.role, user.id, profile.display_name, profile.username);
       const { data: claimRows, error: claimError } = await admin.rpc("claim_classroom_sfu_participant", {
@@ -440,8 +463,8 @@ Deno.serve(async (req: Request) => {
           .select("id").maybeSingle();
         if (activateError || !activated) throw activateError || new Error("نشست جایگزین شد؛ دوباره وارد کلاس شوید.");
       } catch (error) {
-        await closeSfuSession(sfuEnv, publisherSessionId).catch(() => {});
-        await closeSfuSession(sfuEnv, subscriberSessionId).catch(() => {});
+        await closeSfuSession(sfuEnv, publisherSessionId, []).catch(() => {});
+        await closeSfuSession(sfuEnv, subscriberSessionId, []).catch(() => {});
         await admin.from("classroom_sfu_participants")
           .update({ status: "left", left_at: new Date().toISOString() })
           .eq("id", participantId).eq("generation", generation);
@@ -472,7 +495,9 @@ Deno.serve(async (req: Request) => {
         .update({ last_seen_at: new Date().toISOString() })
         .eq("id", participant.id).eq("generation", generation);
       await pruneStaleParticipants(admin, sfuEnv, roomKey, participant.id);
-      return reply({ ok: true, snapshot: await getRoomSnapshot(admin, roomKey, participant.id) });
+      const snapshot = await getRoomSnapshot(admin, roomKey, participant.id);
+      await pruneStaleSubscriptions(admin, sfuEnv, participant, snapshot);
+      return reply({ ok: true, snapshot });
     }
 
     if (action === "publish") {
@@ -630,10 +655,27 @@ Deno.serve(async (req: Request) => {
               participantId: publication.participantId,
               kind: publication.kind,
               trackName: publication.trackName,
+              key: publication.key,
             } : null;
           }).filter(Boolean);
         if (keepLock && !result.sessionDescription) {
           throw new SafeSfuException(502, { errorCode: "missing_sdp_offer" });
+        }
+        if (subscriptions.length) {
+          const existingSubscriptions = Array.isArray(participant.subscriptions) ? participant.subscriptions : [];
+          const mergedSubscriptions = [
+            ...existingSubscriptions.filter((item: any) =>
+              !subscriptions.some((next: any) => next.key === item?.key)
+            ),
+            ...subscriptions,
+          ];
+          const { error: updateError } = await admin.from("classroom_sfu_participants")
+            .update({ subscriptions: mergedSubscriptions, last_seen_at: new Date().toISOString() })
+            .eq("id", participant.id).eq("generation", generation).eq("status", "active");
+          if (updateError) {
+            await closeSfuSession(sfuEnv, participant.subscriber_session_id, trackResults);
+            throw updateError;
+          }
         }
         return reply({
           ok: true,
@@ -679,12 +721,13 @@ Deno.serve(async (req: Request) => {
         mutationLockIsActive(participant.publisher_mutation_id, participant.publisher_mutation_started_at)
         || mutationLockIsActive(participant.subscriber_mutation_id, participant.subscriber_mutation_started_at)
       ) return reply({ ok: false, message: "عملیات رسانه هنوز در حال تکمیل است؛ چند لحظه صبر کنید و دوباره خروج را بزنید." }, 409);
-      await closeSfuSession(sfuEnv, participant.publisher_session_id);
-      await closeSfuSession(sfuEnv, participant.subscriber_session_id);
+      await closeSfuSession(sfuEnv, participant.publisher_session_id, participant.publications);
+      await closeSfuSession(sfuEnv, participant.subscriber_session_id, participant.subscriptions);
       const { error: leaveError } = await admin.from("classroom_sfu_participants")
         .update({
           status: "left",
           publications: [],
+          subscriptions: [],
           publisher_mutation_id: null,
           publisher_mutation_started_at: null,
           subscriber_mutation_id: null,
