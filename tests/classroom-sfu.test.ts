@@ -1,5 +1,6 @@
 import {
   buildRemoteTrackRequests,
+  buildSfuRoomKey,
   getSafeSfuError,
   normalizeSfuRole,
 } from "../supabase/functions/_shared/classroom-sfu.ts";
@@ -43,4 +44,45 @@ Deno.test("sanitizes Cloudflare errors and classifies retryable statuses", () =>
   if (!invalid.message || invalid.message.includes("private provider detail")) {
     throw new Error("پیام امن خطای 400 تولید نشد");
   }
+});
+
+Deno.test("builds school-scoped keys for scheduled classes and ad-hoc meetings", () => {
+  const scheduled = buildSfuRoomKey({
+    schoolId: "school-123",
+    onlineClassId: 17,
+    scheduleEntryId: 42,
+  });
+  if (scheduled !== "school:school-123:class:17:42") {
+    throw new Error("کلید کلاس باید مدرسه و زنگ را در بر بگیرد");
+  }
+  const meeting = buildSfuRoomKey({
+    schoolId: "school-123",
+    meetingId: "meeting-456",
+  });
+  if (meeting !== "school:school-123:meeting:meeting-456") {
+    throw new Error("کلید جلسه باید مدرسه و شناسه جلسه را در بر بگیرد");
+  }
+});
+
+Deno.test("rejects ambiguous or incomplete SFU room identity", () => {
+  let rejected = false;
+  try {
+    buildSfuRoomKey({ schoolId: "", onlineClassId: 1, scheduleEntryId: 2 });
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("شناسه مدرسه خالی باید رد شود");
+
+  rejected = false;
+  try {
+    buildSfuRoomKey({
+      schoolId: "school-123",
+      onlineClassId: 1,
+      scheduleEntryId: 2,
+      meetingId: "meeting-456",
+    });
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("ترکیب هم‌زمان کلاس و جلسه باید رد شود");
 });
