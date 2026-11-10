@@ -476,7 +476,7 @@ Deno.serve(async (req: Request) => {
           sessionId: publication.sessionId,
           trackName: publication.trackName,
           kind: publication.kind,
-          key: item.id + ":" + publication.kind,
+          key: item.id + ":" + publication.kind + ":" + publication.sessionId,
         }))
       ).filter((publication: any) => requestedKeys.has(publication.key));
       const requests = buildRemoteTrackRequests(publications, participant.id);
