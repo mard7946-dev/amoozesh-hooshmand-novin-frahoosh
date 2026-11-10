@@ -76,7 +76,7 @@ let currentSnapshot=null;
 function say(message){$("status").textContent=message;}
 function roomSay(message){$("roomStatus").textContent=message;}
 function returnToPanel(){
- if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");
+ if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.active_role||activeRole||profile?.role||"teacher");
  else location.href="../index.html";
 }
 $("back").addEventListener("click",returnToPanel);
@@ -362,7 +362,7 @@ async function boot(){
    await startRoom(data.room,requestedEntryId);
    return;
   }
-  const role=String(profile.role||"").toLocaleLowerCase("fa");
+  const role=String(profile.active_role||activeRole||profile.role||"").toLocaleLowerCase("fa");
   const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
   const entries=staffOrStudent?(Array.isArray(data.schedule)?data.schedule:[]):(Array.isArray(data.rooms)?data.rooms:[]);
   const rooms=entries.filter(entry=>entry.day_enabled===true&&entry.is_active===true&&Number(entry.id)>0&&Number(entry.schedule_entry_id)>0)
