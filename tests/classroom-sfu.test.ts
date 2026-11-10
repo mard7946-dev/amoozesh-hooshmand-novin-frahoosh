@@ -1,5 +1,6 @@
 import {
   buildRemoteTrackRequests,
+  buildSfuDisplayName,
   buildSfuRoomKey,
   getSafeSfuError,
   normalizeSfuRole,
@@ -10,6 +11,8 @@ Deno.test("normalizes Persian and English school roles", () => {
   if (normalizeSfuRole("معاون آموزشی") !== "deputy") throw new Error("معاون باید deputy شود");
   if (normalizeSfuRole("دانش‌آموز") !== "student") throw new Error("دانش‌آموز باید student شود");
   if (normalizeSfuRole("manager") !== "manager") throw new Error("manager باید حفظ شود");
+  if (normalizeSfuRole("مشاور") !== "counselor") throw new Error("مشاور باید counselor باقی بماند");
+  if (normalizeSfuRole("educational") !== "deputy") throw new Error("educational باید deputy شود");
 });
 
 Deno.test("builds unique remote track requests and excludes the current participant", () => {
@@ -97,4 +100,11 @@ Deno.test("rejects ambiguous or incomplete SFU room identity", () => {
     rejected = true;
   }
   if (!rejected) throw new Error("شناسه ناقص کلاس همراه با جلسه باید رد شود");
+});
+
+Deno.test("keeps student display names private in SFU rooms", () => {
+  const student = buildSfuDisplayName("student", "1234567890", "نام واقعی دانش‌آموز", "student-user");
+  if (student !== "دانش‌آموز-7890") throw new Error("نام کامل دانش‌آموز نباید در اتاق رسانه نمایش داده شود");
+  const teacher = buildSfuDisplayName("teacher", "1234567890", "دبیر آزمایشی", "teacher-user");
+  if (teacher !== "دبیر آزمایشی") throw new Error("نام دبیر باید حفظ شود");
 });
