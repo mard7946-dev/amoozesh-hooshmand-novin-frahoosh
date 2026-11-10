@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>کلاس آزمایشی SFU | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--line:#2c3b50;--text:#eef4ff;--muted:#a7b6cc;--accent:#46d6b0;--warn:#ffe2a6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"B Zar",Tahoma,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:#101a2a;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:19px;margin:0}h2{font-size:16px;margin:0 0 8px}
+small,.muted{color:var(--muted)}
+button{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 13px;cursor:pointer}
+button.primary{background:var(--accent);color:#092034;border-color:var(--accent);font-weight:bold}
+button:disabled{opacity:.5;cursor:not-allowed}
+main{max-width:1250px;margin:0 auto;padding:14px;display:grid;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+#roomList{display:grid;gap:8px}
+.room{width:100%;text-align:right;line-height:1.9}
+.notice{padding:12px;border:1px solid #7b6534;border-radius:10px;background:#302817;color:var(--warn);line-height:1.9}
+.hidden{display:none!important}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+#videoGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:12px}
+.tile{min-width:0;background:#07101d;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tile video{display:block;width:100%;aspect-ratio:16/10;background:#02070d;object-fit:cover}
+.tile .person{padding:8px 10px;display:flex;justify-content:space-between;gap:8px;font-size:13px}
+#roomStatus{line-height:1.9;min-height:24px}
+#participants{font-size:13px;color:var(--muted);line-height:2}
+.back{color:var(--accent);text-decoration:none;font-size:13px}
+@media(max-width:640px){main{padding:8px}header{padding:11px}#videoGrid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}}
+</style>
+</head>
+<body>
+<header>
+ <div><h1>فراهوش نوین · کلاس آنلاین آزمایشی</h1><small id="status">در حال بررسی نشست ورود…</small></div>
+ <div class="actions"><button id="back" type="button">بازگشت به پنل</button></div>
+</header>
+<main>
+ <section class="panel" id="selector">
+  <h2>کلاس‌های مجاز</h2>
+  <p class="muted">ورود فقط پس از بررسی نشست، مدرسه، نقش و برنامهٔ هفتگی انجام می‌شود. فقط زنگ فعال قابل انتخاب است.</p>
+  <div id="roomList"></div>
+ </section>
+ <section class="panel hidden" id="meetingPanel">
+  <div class="actions" style="justify-content:space-between;align-items:center">
+   <div><h2 id="meetingTitle">کلاس زنده</h2><small id="meetingDetail"></small></div>
+   <button id="leave" type="button">خروج از کلاس</button>
+  </div>
+  <p id="roomStatus" class="muted" aria-live="polite">اتصال برقرار شد؛ میکروفن و دوربین خاموش هستند.</p>
+  <div class="actions">
+   <button id="mic" type="button">فعال‌سازی میکروفن</button>
+   <button id="camera" type="button">فعال‌سازی دوربین</button>
+  </div>
+  <div id="videoGrid"></div>
+  <div class="panel" style="margin-top:12px">
+   <strong>شرکت‌کنندگان</strong>
+   <div id="participants">هنوز شرکت‌کنندهٔ دیگری وارد نشده است.</div>
+  </div>
+ </section>
+ <div class="notice" id="notice">این مسیر آزمایشی از Cloudflare Realtime SFU استفاده می‌کند و از RealtimeKit جداست. ضبط، گفت‌وگو و تختهٔ مشترک در این نسخه فعال نیستند. میکروفن و دوربین تا اقدام شما خاموش می‌مانند.</div>
+</main>
+<script>
+"use strict";
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
+const $=id=>document.getElementById(id);
+let profile=null,roomState=null,publisherPc=null,consumerPc=null,localStream=null,pollHandle=null;
+let publisherQueue=Promise.resolve(),consumerQueue=Promise.resolve();
+const subscribedKeys=new Set(),midOwners=new Map(),remoteStreams=new Map(),remoteTiles=new Map();
+let currentSnapshot=null;
+
+function say(message){$("status").textContent=message;}
+function roomSay(message){$("roomStatus").textContent=message;}
+function returnToPanel(){
+ if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");
+ else location.href="../index.html";
+}
+$("back").addEventListener("click",returnToPanel);
+
+async function postFunction(name,body){
+ const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{
+  method:"POST",
+  headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},
+  body:JSON.stringify(body)
+ });
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||data.ok===false)throw new Error(data.message||"درخواست به سرور انجام نشد.");
+ return data;
+}
+const callSfu=body=>postFunction("classroom-sfu",body);
+function enqueuePublisher(task){
+ const next=publisherQueue.then(task);
+ publisherQueue=next.catch(()=>{});
+ return next;
+}
+function enqueueConsumer(task){
+ const next=consumerQueue.then(task);
+ consumerQueue=next.catch(()=>{});
+ return next;
+}
+function waitForIce(peer,timeoutMs=10000){
+ if(peer.iceGatheringState==="complete")return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>{peer.removeEventListener("icegatheringstatechange",changed);reject(new Error("آماده‌سازی مسیر شبکه زمان‌بر شد؛ دوباره تلاش کنید."));},timeoutMs);
+  const changed=()=>{
+   if(peer.iceGatheringState!=="complete")return;
+   clearTimeout(timer);peer.removeEventListener("icegatheringstatechange",changed);resolve();
+  };
+  peer.addEventListener("icegatheringstatechange",changed);
+ });
+}
+function waitForConnected(peer,timeoutMs=15000){
+ if(peer.connectionState==="connected")return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>{peer.removeEventListener("connectionstatechange",changed);reject(new Error("اتصال رسانه برقرار نشد؛ ممکن است شبکه نیاز به مسیر ارتباطی دیگری داشته باشد."));},timeoutMs);
+  const changed=()=>{
+   if(peer.connectionState==="connected"){clearTimeout(timer);peer.removeEventListener("connectionstatechange",changed);resolve();}
+   else if(peer.connectionState==="failed"||peer.connectionState==="closed"){clearTimeout(timer);peer.removeEventListener("connectionstatechange",changed);reject(new Error("ارتباط WebRTC قطع شد؛ دوباره وارد کلاس شوید."));}
+  };
+  peer.addEventListener("connectionstatechange",changed);
+ });
+}
+function createPeerConnections(){
+ const config={iceServers:[{urls:"stun:stun.cloudflare.com:3478"}],bundlePolicy:"max-bundle"};
+ publisherPc=new RTCPeerConnection(config);
+ consumerPc=new RTCPeerConnection(config);
+ publisherPc.addEventListener("connectionstatechange",()=>{
+  if(publisherPc.connectionState==="failed")roomSay("اتصال ارسال رسانه با مشکل شبکه روبه‌رو شد.");
+ });
+ consumerPc.addEventListener("connectionstatechange",()=>{
+  if(consumerPc.connectionState==="failed")roomSay("دریافت رسانه قطع شد؛ در حال بررسی اتصال…");
+ });
+ consumerPc.addEventListener("track",event=>{
+  const owner=midOwners.get(event.transceiver.mid);
+  if(!owner)return;
+  let stream=remoteStreams.get(owner.participantId);
+  if(!stream){stream=new MediaStream();remoteStreams.set(owner.participantId,stream);}
+  if(!stream.getTracks().some(track=>track.id===event.track.id))stream.addTrack(event.track);
+  const tile=ensureRemoteTile(owner.participantId,owner.displayName);
+  tile.video.srcObject=stream;
+  event.track.addEventListener("ended",()=>{
+   stream.removeTrack(event.track);
+   if(!stream.getTracks().length){tile.video.srcObject=null;remoteStreams.delete(owner.participantId);}
+  },{once:true});
+ });
+}
+function ensureRemoteTile(participantId,displayName){
+ if(remoteTiles.has(participantId))return remoteTiles.get(participantId);
+ const tile=document.createElement("article");tile.className="tile";
+ const video=document.createElement("video");video.autoplay=true;video.playsInline=true;
+ const person=document.createElement("div");person.className="person";
+ const name=document.createElement("span");name.textContent=displayName||"شرکت‌کننده";
+ const role=document.createElement("span");role.textContent="آنلاین";
+ person.append(name,role);tile.append(video,person);$("videoGrid").append(tile);
+ const item={tile,video,name};remoteTiles.set(participantId,item);return item;
+}
+function renderSnapshot(snapshot){
+ currentSnapshot=snapshot;
+ const participants=Array.isArray(snapshot?.participants)?snapshot.participants:[];
+ const live=participants.filter(item=>!item.isSelf);
+ $("participants").textContent=live.length
+  ?live.map(item=>item.displayName+" · "+({teacher:"دبیر",student:"دانش‌آموز",manager:"مدیر",deputy:"معاون"}[item.role]||"شرکت‌کننده")).join(" | ")
+  :"هنوز شرکت‌کنندهٔ دیگری وارد نشده است.";
+ for(const item of live)ensureRemoteTile(item.id,item.displayName);
+ for(const [id,tile] of remoteTiles){
+  if(!live.some(item=>item.id===id)){
+   tile.video.srcObject=null;tile.tile.remove();remoteTiles.delete(id);remoteStreams.delete(id);
+  }
+ }
+}
+async function publishTrack(kind,track){
+ return enqueuePublisher(async()=>{
+  if(!publisherPc||!roomState)throw new Error("اتصال انتشار رسانه آماده نیست.");
+  const transceiver=publisherPc.addTransceiver(track,{direction:"sendonly"});
+  const offer=await publisherPc.createOffer();
+  await publisherPc.setLocalDescription(offer);
+  await waitForIce(publisherPc);
+  const mid=transceiver.mid;
+  if(mid===null)throw new Error("شناسهٔ مسیر رسانه در مرورگر ساخته نشد.");
+  const result=await callSfu({
+   action:"publish",room_key:roomState.roomKey,generation:roomState.generation,
+   sessionDescription:publisherPc.localDescription,
+   tracks:[{kind,mid}]
+  });
+  await publisherPc.setRemoteDescription(result.sessionDescription);
+  await waitForConnected(publisherPc);
+  roomSay(kind==="audio"?"میکروفن فعال شد.":"دوربین فعال شد.");
+  await refreshRoom();
+ });
+}
+async function enableMedia(kind){
+ const button=$(kind==="audio"?"mic":"camera");
+ button.disabled=true;
+ try{
+  const existing=localStream?.getTracks().find(track=>track.kind===kind);
+  if(existing){
+   existing.enabled=!existing.enabled;
+   button.textContent=kind==="audio"?(existing.enabled?"بی‌صدا کردن میکروفن":"فعال‌سازی میکروفن"):(existing.enabled?"خاموش‌کردن دوربین":"فعال‌سازی دوربین");
+   roomSay(existing.enabled?"رسانه فعال شد.":"رسانه خاموش شد.");
+   return;
+  }
+  const stream=await navigator.mediaDevices.getUserMedia(kind==="audio"?{audio:true,video:false}:{audio:false,video:true});
+  const track=kind==="audio"?stream.getAudioTracks()[0]:stream.getVideoTracks()[0];
+  if(!track)throw new Error("مرورگر مسیر رسانهٔ درخواستی را ایجاد نکرد.");
+  if(!localStream)localStream=new MediaStream();
+  localStream.addTrack(track);
+  await publishTrack(kind,track);
+  $("localVideo").srcObject=localStream;
+  button.textContent=kind==="audio"?"بی‌صدا کردن میکروفن":"خاموش‌کردن دوربین";
+ }catch(error){
+  roomSay(error.message||"فعال‌سازی رسانه انجام نشد.");
+  const track=localStream?.getTracks().find(item=>item.kind===kind);
+  if(track){track.stop();localStream.removeTrack(track);}
+ }finally{button.disabled=false;}
+}
+function addLocalTile(){
+ const tile=document.createElement("article");tile.className="tile";
+ const video=document.createElement("video");video.id="localVideo";video.autoplay=true;video.playsInline=true;video.muted=true;
+ const person=document.createElement("div");person.className="person";
+ const name=document.createElement("span");name.textContent="شما";
+ const label=document.createElement("span");label.textContent="رسانه خاموش";
+ person.append(name,label);tile.append(video,person);$("videoGrid").append(tile);
+}
+async function syncSubscriptions(snapshot){
+ const participants=Array.isArray(snapshot?.participants)?snapshot.participants:[];
+ const pending=[];
+ for(const item of participants){
+  if(item.isSelf)continue;
+  for(const publication of item.publications||[]){
+   const key=item.id+":"+publication.kind;
+   if(!subscribedKeys.has(key))pending.push({key,participantId:item.id,kind:publication.kind,displayName:item.displayName});
+  }
+ }
+ if(!pending.length)return;
+ await enqueueConsumer(async()=>{
+  const stillPending=pending.filter(item=>!subscribedKeys.has(item.key));
+  if(!stillPending.length)return;
+  const result=await callSfu({
+   action:"subscribe",room_key:roomState.roomKey,generation:roomState.generation,
+   track_keys:stillPending.map(item=>item.key)
+  });
+  for(const sub of result.subscriptions||[]){
+   const owner=stillPending.find(item=>item.participantId===sub.participantId&&item.kind===sub.kind);
+   if(owner){midOwners.set(sub.mid,{participantId:owner.participantId,displayName:owner.displayName});subscribedKeys.add(owner.key);}
+  }
+  if(result.requiresImmediateRenegotiation&&result.sessionDescription){
+   await consumerPc.setRemoteDescription(result.sessionDescription);
+   const answer=await consumerPc.createAnswer();
+   await consumerPc.setLocalDescription(answer);
+   await waitForIce(consumerPc);
+   await callSfu({
+    action:"renegotiate",room_key:roomState.roomKey,generation:roomState.generation,
+    sessionDescription:consumerPc.localDescription
+   });
+   await waitForConnected(consumerPc);
+  }else{
+   for(const item of stillPending)if((result.subscriptions||[]).some(sub=>sub.participantId===item.participantId&&sub.kind===item.kind))subscribedKeys.add(item.key);
+  }
+ });
+}
+async function refreshRoom(){
+ if(!roomState)return;
+ const result=await callSfu({action:"snapshot",room_key:roomState.roomKey,generation:roomState.generation});
+ renderSnapshot(result.snapshot);
+ await syncSubscriptions(result.snapshot);
+}
+async function startRoom(room,entryId,adHoc=null){
+ const buttons=$("roomList").querySelectorAll("button");buttons.forEach(button=>button.disabled=true);
+ try{
+  say("در حال بررسی مجوز و ایجاد نشست رسانه…");
+  const result=await callSfu(adHoc
+   ?{action:"join",meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}
+   :{action:"join",room_id:Number(room.id),schedule_entry_id:Number(entryId),active_role:activeRole});
+  roomState={
+   roomKey:result.room_key,participantId:result.participant_id,generation:Number(result.generation),
+   publisherSessionId:result.publisher_session_id,subscriberSessionId:result.subscriber_session_id
+  };
+  createPeerConnections();localStream=new MediaStream();addLocalTile();
+  $("meetingTitle").textContent=result.room?.title||room.title||room.subject||"کلاس آنلاین";
+  $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت": [room.class_name,room.teacher,room.start_time,room.end_time].filter(Boolean).join(" · ");
+  $("selector").classList.add("hidden");$("meetingPanel").classList.remove("hidden");
+  $("notice").textContent="اتصال به اتاق برقرار شد. برای ارسال صدا یا تصویر، دکمهٔ مربوط را انتخاب کنید؛ هیچ رسانه‌ای خودکار فعال نمی‌شود.";
+  say("عضویت تأیید شد · "+(profile?.display_name||"شرکت‌کننده"));
+  roomSay("به کلاس وارد شدید؛ میکروفن و دوربین خاموش هستند.");
+  renderSnapshot(result.snapshot);
+  await syncSubscriptions(result.snapshot);
+  pollHandle=setInterval(()=>refreshRoom().catch(error=>roomSay(error.message||"به‌روزرسانی فهرست شرکت‌کنندگان انجام نشد.")),5000);
+ }catch(error){
+  say(error.message||"ورود به کلاس انجام نشد.");
+  buttons.forEach(button=>button.disabled=false);
+ }
+}
+async function leaveRoom(){
+ $("leave").disabled=true;
+ try{
+  if(roomState)await callSfu({action:"leave",room_key:roomState.roomKey,generation:roomState.generation});
+  cleanupLocal();
+  $("meetingPanel").classList.add("hidden");$("selector").classList.remove("hidden");
+  $("videoGrid").replaceChildren();$("roomList").querySelectorAll("button").forEach(button=>button.disabled=false);
+  say("از کلاس خارج شدید.");
+ }catch(error){
+  roomSay(error.message||"خروج امن انجام نشد؛ دوباره تلاش کنید.");
+ }finally{$("leave").disabled=false;}
+}
+function cleanupLocal(){
+ if(pollHandle)clearInterval(pollHandle);pollHandle=null;
+ try{publisherPc?.close();}catch(_){}
+ try{consumerPc?.close();}catch(_){}
+ publisherPc=null;consumerPc=null;
+ for(const track of localStream?.getTracks()||[])track.stop();
+ localStream=null;roomState=null;publisherQueue=Promise.resolve();consumerQueue=Promise.resolve();
+ subscribedKeys.clear();midOwners.clear();remoteStreams.clear();remoteTiles.clear();
+ $("mic").textContent="فعال‌سازی میکروفن";$("camera").textContent="فعال‌سازی دوربین";
+}
+$("mic").addEventListener("click",()=>enableMedia("audio"));
+$("camera").addEventListener("click",()=>enableMedia("video"));
+$("leave").addEventListener("click",leaveRoom);
+async function boot(){
+ if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
+ try{
+  const query=new URLSearchParams(location.search);
+  const requestedMeetingId=query.get("meeting_id")||"";
+  const requestedJoinCode=query.get("join_code")||"";
+  if(requestedMeetingId){
+   if(!requestedJoinCode)throw new Error("لینک دعوت جلسه ناقص است.");
+   profile={role:activeRole||"participant"};
+   await startRoom({id:requestedMeetingId,title:"جلسه اختصاصی"},0,{id:requestedMeetingId,code:requestedJoinCode});
+   return;
+  }
+  const requestedRoomId=Number(query.get("room_id")||0);
+  const requestedEntryId=Number(query.get("schedule_entry_id")||0);
+  const data=await postFunction("classroom-authorize",requestedRoomId
+   ?{room_id:requestedRoomId,schedule_entry_id:requestedEntryId,active_role:activeRole}
+   :{active_role:activeRole});
+  profile=data.profile||{};
+  if(requestedRoomId){
+   if(!data.room||!requestedEntryId)throw new Error("کلاس یا زنگ انتخاب‌شده معتبر نیست.");
+   await startRoom(data.room,requestedEntryId);
+   return;
+  }
+  const role=String(profile.role||"").toLocaleLowerCase("fa");
+  const staffOrStudent=["teacher","دبیر","معلم","student","دانش‌آموز","دانش آموز"].includes(role);
+  const entries=staffOrStudent?(Array.isArray(data.schedule)?data.schedule:[]):(Array.isArray(data.rooms)?data.rooms:[]);
+  const rooms=entries.filter(entry=>entry.day_enabled===true&&entry.is_active===true&&Number(entry.id)>0&&Number(entry.schedule_entry_id)>0)
+   .map(entry=>({room:{id:entry.id,title:entry.title||entry.subject,subject:entry.subject,class_name:entry.class_name,teacher:entry.teacher,start_time:entry.start_time,end_time:entry.end_time},scheduleEntryId:entry.schedule_entry_id}));
+  $("roomList").replaceChildren();
+  if(!rooms.length){say("در حال حاضر زنگ فعالی برای این حساب وجود ندارد. برنامهٔ روزانه و فعال‌سازی زنگ را بررسی کنید.");return;}
+  for(const item of rooms){
+   const room=item.room,button=document.createElement("button");button.className="room";
+   button.textContent=[room.start_time||"",room.title||room.subject,room.class_name,room.teacher].filter(Boolean).join(" · ");
+   button.addEventListener("click",()=>startRoom(room,item.scheduleEntryId));
+   $("roomList").append(button);
+  }
+  say(rooms.length.toLocaleString("fa-IR")+" زنگ فعال و مجاز نمایش داده شد.");
+ }catch(error){say(error.message||"بررسی نشست و مجوز کلاس انجام نشد.");}
+}
+window.addEventListener("pagehide",()=>{
+ if(pollHandle)clearInterval(pollHandle);
+ for(const track of localStream?.getTracks()||[])track.stop();
+ try{publisherPc?.close();consumerPc?.close();}catch(_){}
+});
+boot();
+</script>
+<script src="../panel-return.js?v=20261106-return"></script>
+</body>
+</html>
