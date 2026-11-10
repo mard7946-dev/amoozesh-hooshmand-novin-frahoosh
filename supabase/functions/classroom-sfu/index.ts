@@ -492,9 +492,9 @@ Deno.serve(async (req: Request) => {
         { tracks: requests },
       );
       const trackResults = Array.isArray(result.tracks) ? result.tracks : [];
-      const subscriptions = trackResults.filter((item: any) =>
-        !item?.errorCode && clean(item?.mid)
-      ).map((item: any, index: number) => {
+      const subscriptions = trackResults.map((item: any, index: number) => ({ item, index }))
+        .filter(({ item }: any) => !item?.errorCode && clean(item?.mid))
+        .map(({ item, index }: any) => {
         const request = requests.find((candidate: any) =>
           candidate.sessionId === clean(item.sessionId) && candidate.trackName === clean(item.trackName)
         ) ?? requests[index];
