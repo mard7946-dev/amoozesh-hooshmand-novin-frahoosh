@@ -89,3 +89,26 @@ export function getSafeSfuError(
 
   return { code: safeCode, retryable, message };
 }
+
+export function buildSfuRoomKey(input: {
+  schoolId: string;
+  onlineClassId?: number | null;
+  scheduleEntryId?: number | null;
+  meetingId?: string | null;
+}): string {
+  const schoolId = clean(input.schoolId);
+  if (!schoolId || schoolId.length > 100) {
+    throw new Error("A valid school identifier is required.");
+  }
+  const hasClass = Number.isInteger(input.onlineClassId) && Number(input.onlineClassId) > 0
+    && Number.isInteger(input.scheduleEntryId) && Number(input.scheduleEntryId) > 0;
+  const hasMeeting = Boolean(clean(input.meetingId));
+  if (hasClass === hasMeeting) {
+    throw new Error("Provide exactly one valid class slot or meeting identifier.");
+  }
+  const key = hasClass
+    ? "school:" + schoolId + ":class:" + input.onlineClassId + ":" + input.scheduleEntryId
+    : "school:" + schoolId + ":meeting:" + clean(input.meetingId);
+  if (key.length > 180) throw new Error("Room identifier is too long.");
+  return key;
+}
