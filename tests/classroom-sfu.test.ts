@@ -85,4 +85,16 @@ Deno.test("rejects ambiguous or incomplete SFU room identity", () => {
     rejected = true;
   }
   if (!rejected) throw new Error("ترکیب هم‌زمان کلاس و جلسه باید رد شود");
+
+  rejected = false;
+  try {
+    buildSfuRoomKey({
+      schoolId: "school-123",
+      onlineClassId: 1,
+      meetingId: "meeting-456",
+    });
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("شناسه ناقص کلاس همراه با جلسه باید رد شود");
 });
