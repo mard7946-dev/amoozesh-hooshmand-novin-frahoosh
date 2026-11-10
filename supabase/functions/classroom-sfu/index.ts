@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildRemoteTrackRequests,
+  buildSfuDisplayName,
   buildSfuRoomKey,
   getSafeSfuError,
   normalizeSfuRole,
@@ -333,7 +334,7 @@ Deno.serve(async (req: Request) => {
         .eq("room_key", admission.roomKey).eq("auth_user_id", user.id).maybeSingle();
       if (oldError) throw oldError;
 
-      const displayName = clean(profile.display_name) || clean(profile.username) || "کاربر فراهوش";
+      const displayName = buildSfuDisplayName(admission.role, user.id, profile.display_name, profile.username);
       const { data: claimRows, error: claimError } = await admin.rpc("claim_classroom_sfu_participant", {
         p_room_key: admission.roomKey,
         p_tenant_school_id: admission.schoolId,
