@@ -83,6 +83,14 @@ begin
      or not has_function_privilege('service_role', 'public.claim_classroom_sfu_participant(text,uuid,integer,bigint,uuid,uuid,text,text)', 'EXECUTE') then
     raise exception 'SFU participant claim RPC grants are not service-role-only';
   end if;
+  if has_function_privilege('anon', 'public.claim_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.claim_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.claim_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.release_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.release_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.release_classroom_sfu_session_mutation(uuid,integer,text,text)', 'EXECUTE') then
+    raise exception 'SFU session mutation RPC grants are not service-role-only';
+  end if;
 
   begin
     insert into public.classroom_sfu_participants (
