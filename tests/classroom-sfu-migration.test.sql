@@ -105,3 +105,67 @@ end
 $$;
 
 select 'classroom SFU migration checks passed' as result;
+
+update public.classroom_sfu_participants
+set status = 'active'
+where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+  and auth_user_id = '00000000-0000-4000-8000-000000000002';
+
+do $$
+declare
+  acquired boolean;
+  released boolean;
+begin
+  select public.claim_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'publisher',
+    'publish-mutation-001'
+  ) into acquired;
+  if not acquired then raise exception 'first publisher mutation lock was not acquired'; end if;
+
+  select public.claim_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'publisher',
+    'publish-mutation-002'
+  ) into acquired;
+  if acquired then raise exception 'concurrent publisher mutation was not blocked'; end if;
+
+  select public.release_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'publisher',
+    'publish-mutation-001'
+  ) into released;
+  if not released then raise exception 'publisher mutation lock was not released'; end if;
+
+  select public.claim_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'subscriber',
+    'subscribe-mutation-001'
+  ) into acquired;
+  if not acquired then raise exception 'subscriber lock should be independent of publisher lock'; end if;
+
+  select public.release_classroom_sfu_session_mutation(
+    (select id from public.classroom_sfu_participants
+      where room_key = 'school:00000000-0000-4000-8000-000000000001:class:17:42'
+        and auth_user_id = '00000000-0000-4000-8000-000000000002'),
+    2,
+    'subscriber',
+    'subscribe-mutation-001'
+  ) into released;
+  if not released then raise exception 'subscriber mutation lock was not released'; end if;
+end
+$$;
+
+select 'classroom SFU mutation lock checks passed' as result;
