@@ -54,7 +54,7 @@ create or replace function public.claim_classroom_sfu_participant(
 )
 returns table (participant_id uuid, generation integer)
 language sql
-security definer
+security invoker
 set search_path = ''
 as $$
   insert into public.classroom_sfu_participants (
@@ -130,7 +130,7 @@ create or replace function public.claim_classroom_sfu_session_mutation(
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
@@ -185,7 +185,7 @@ create or replace function public.release_classroom_sfu_session_mutation(
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
