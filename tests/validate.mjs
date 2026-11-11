@@ -122,7 +122,7 @@ assert.ok(verificationMigration.includes("primary key (tenant_school_id, period)
 assert.ok(adHocMeetingsApi.includes('action === "create"') && adHocMeetingsApi.includes('action === "list"') && adHocMeetingsApi.includes('action === "end"'), "Manager API must create, list, and end ad-hoc meetings");
 assert.ok(adHocMeetingsApi.includes("isManager(profile.role)") && adHocMeetingsApi.includes("createLiveKitRoom"), "Only managers may create LiveKit meetings");
 assert.ok(!livekitHelper.includes("egress") && !livekitHelper.includes("recording"), "LiveKit room creation must not enable recording or transcription");
-assert.ok(adHocMeetingsApi.includes("await deleteLiveKitRoom(clean(meeting.cloudflare_meeting_id));"), "Ending a meeting must delete the LiveKit room before marking it ended");
+assert.ok(adHocMeetingsApi.includes('if (storedRoomName.startsWith("frahoosh-")) await deleteLiveKitRoom(storedRoomName);'), "Ending a meeting must delete a LiveKit room but safely skip legacy RealtimeKit IDs");
 assert.ok(adHocMeetingMigration.includes("classroom_ad_hoc_meetings") && adHocMeetingMigration.includes("enable row level security") && adHocMeetingMigration.includes("revoke all"), "Ad-hoc meeting records must be protected behind server authorization");
 assert.ok(adHocMeetingTokenApi.includes('eq("join_code", joinCode)') && adHocMeetingTokenApi.includes("audience_roles") && adHocMeetingTokenApi.includes("expires_at"), "Ad-hoc meeting token issuance must validate link, audience, school, and expiry");
 assert.ok(realtimeMeetingPage.includes('query.get("meeting_id")') && realtimeMeetingPage.includes('query.get("join_code")') && realtimeMeetingPage.includes('meeting_id:adHoc.id'), "Realtime room must accept manager-issued meeting links");
