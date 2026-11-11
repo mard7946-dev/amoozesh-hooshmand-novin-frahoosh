@@ -23,8 +23,13 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 .participant .avatar{font-size:14px;color:var(--muted);padding:18px;text-align:center}
 .participant audio{display:none}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+.toolbar button svg{width:19px;height:19px;flex:0 0 auto}
 .toolbar button.active{background:#17463f;border-color:var(--accent)}
 .toolbar button.leave{background:#54232b;border-color:#a94b58}
+.media-tools{display:grid;gap:8px}
+.media-help{margin:0;color:var(--muted);font-size:13px;line-height:1.8}
+#mediaStatus{font-size:14px;line-height:1.8}
 .notice{padding:12px;border:1px solid #7b6534;border-radius:10px;background:#302817;color:#ffe7a8;line-height:1.9}
 .hidden{display:none!important}
 @media(max-width:640px){main{padding:8px}#meetingMount{min-height:380px;padding:6px}#participants{grid-template-columns:1fr}.participant{min-height:220px}}
@@ -42,18 +47,32 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
   <p class="muted">ورود فقط برای زنگ فعال و پس از بررسی مجوز حساب، مدرسه و برنامهٔ هفتگی انجام می‌شود.</p>
   <div id="roomList"></div>
  </section>
+ <section class="panel media-tools" id="mediaTools" aria-labelledby="mediaToolsTitle">
+  <strong id="mediaToolsTitle">ابزارهای صدا و تصویر</strong>
+  <p id="mediaStatus" role="status" aria-live="polite">برای استفاده از میکروفن و دوربین، ابتدا وارد یکی از کلاس‌های مجاز شوید. تا برقراری اتصال رسانه‌ای، ابزارها غیرفعال‌اند.</p>
+  <div class="toolbar">
+   <button id="micToggle" type="button" disabled aria-pressed="false" title="پس از اتصال به کلاس فعال می‌شود">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></svg>
+    <span>فعال‌کردن میکروفن</span>
+   </button>
+   <button id="cameraToggle" type="button" disabled aria-pressed="false" title="پس از اتصال به کلاس فعال می‌شود">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>
+    <span>فعال‌کردن دوربین</span>
+   </button>
+   <button id="screenToggle" type="button" disabled title="اشتراک صفحه فقط برای دبیر و مدیر مجاز است">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4m-3-9 3-3 3 3"/></svg>
+    <span>اشتراک‌گذاری صفحه</span>
+   </button>
+   <button id="audioStart" type="button" class="hidden">فعال‌کردن پخش صدای کلاس</button>
+   <button id="leave" class="leave" type="button" disabled>خروج از کلاس</button>
+  </div>
+  <p class="media-help">میکروفن و دوربین فقط با انتخاب شما و پس از اجازهٔ مرورگر فعال می‌شوند. پیش از اتصال، دکمه‌ها دیده می‌شوند اما قابل استفاده نیستند.</p>
+ </section>
  <section class="panel hidden" id="meetingPanel">
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
    <strong id="meetingTitle">کلاس زنده</strong><small id="meetingDetail"></small>
   </div>
   <div id="meetingMount"><div id="participants"></div></div>
-  <div class="toolbar">
-   <button id="micToggle" type="button">فعال‌کردن میکروفن</button>
-   <button id="cameraToggle" type="button">فعال‌کردن دوربین</button>
-   <button id="screenToggle" type="button">اشتراک‌گذاری صفحه</button>
-   <button id="audioStart" type="button" class="hidden">فعال‌کردن پخش صدای کلاس</button>
-   <button id="leave" class="leave" type="button">خروج از کلاس</button>
-  </div>
  </section>
  <div class="notice" id="notice">میکروفن و دوربین در ابتدا خاموش هستند. برای فعال‌کردن هرکدام، دکمهٔ مربوط را بزنید و اجازهٔ مرورگر را صادر کنید. ضبط و گفت‌وگوی متنی در این نسخه غیرفعال است.</div>
 </main>
@@ -140,6 +159,8 @@ function bindRoomEvents(room){
 }
 async function enterRoom(room,scheduleEntryId,adHoc=null){
  const buttons=$("roomList").querySelectorAll("button");buttons.forEach(button=>button.disabled=true);
+ $("micToggle").disabled=true;$("cameraToggle").disabled=true;$("screenToggle").disabled=true;$("leave").disabled=true;
+ $("mediaStatus").textContent="در حال برقراری اتصال امن رسانه‌ای؛ ابزارها تا پایان اتصال غیرفعال‌اند.";
  try{
   say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
   const credentials=await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
@@ -161,24 +182,43 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
   $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
   $("status").textContent="اتصال امن کلاس برقرار شد · "+(labels[profile?.role]||profile?.role||"شرکت‌کننده");
   $("notice").textContent="به کلاس وارد شدید. میکروفن و دوربین خاموش هستند؛ در صورت نیاز آن‌ها را فعال کنید.";
-  $("micToggle").disabled=false;$("cameraToggle").disabled=false;
+  $("micToggle").disabled=false;$("cameraToggle").disabled=false;$("leave").disabled=false;
+  $("micToggle").title="برای درخواست اجازهٔ میکروفن لمس کنید";
+  $("cameraToggle").title="برای درخواست اجازهٔ دوربین لمس کنید";
   $("screenToggle").disabled=!credentials.can_share_screen;
   $("screenToggle").title=credentials.can_share_screen?"اشتراک‌گذاری صفحه":"اشتراک صفحه فقط برای دبیر یا مدیر مجاز است";
+  $("mediaStatus").textContent="اتصال رسانه‌ای برقرار شد. می‌توانید با انتخاب خودتان میکروفن یا دوربین را فعال کنید.";
  }catch(error){
   say(error.message||"اتصال به کلاس انجام نشد.");
+  $("micToggle").disabled=true;$("cameraToggle").disabled=true;$("screenToggle").disabled=true;$("leave").disabled=true;
+  $("mediaStatus").textContent="اتصال رسانه‌ای برقرار نشد؛ میکروفن، دوربین و اشتراک صفحه تا رفع خطا غیرفعال هستند.";
   buttons.forEach(button=>button.disabled=false);
   if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
  }
 }
 $("micToggle").addEventListener("click",async()=>{
- if(!liveRoom)return;
- try{micOn=!micOn;await liveRoom.localParticipant.setMicrophoneEnabled(micOn);$("micToggle").textContent=micOn?"خاموش‌کردن میکروفن":"فعال‌کردن میکروفن";$("micToggle").classList.toggle("active",micOn);}
- catch(error){micOn=false;say("فعال‌سازی میکروفن انجام نشد؛ اجازهٔ مرورگر را بررسی کنید.");}
+ if(!liveRoom||$("micToggle").disabled)return;
+ const nextState=!micOn;
+ try{
+  await liveRoom.localParticipant.setMicrophoneEnabled(nextState);
+  micOn=nextState;
+  $("micToggle").querySelector("span").textContent=micOn?"خاموش‌کردن میکروفن":"فعال‌کردن میکروفن";
+  $("micToggle").classList.toggle("active",micOn);
+  $("micToggle").setAttribute("aria-pressed",String(micOn));
+  say(micOn?"میکروفن با اجازهٔ شما فعال شد.":"میکروفن خاموش شد.");
+ }catch(error){say("فعال‌سازی میکروفن انجام نشد؛ اجازهٔ میکروفن سایت و تنظیمات دستگاه را بررسی کنید.");}
 });
 $("cameraToggle").addEventListener("click",async()=>{
- if(!liveRoom)return;
- try{cameraOn=!cameraOn;await liveRoom.localParticipant.setCameraEnabled(cameraOn);$("cameraToggle").textContent=cameraOn?"خاموش‌کردن دوربین":"فعال‌کردن دوربین";$("cameraToggle").classList.toggle("active",cameraOn);}
- catch(error){cameraOn=false;say("فعال‌سازی دوربین انجام نشد؛ اجازهٔ مرورگر را بررسی کنید.");}
+ if(!liveRoom||$("cameraToggle").disabled)return;
+ const nextState=!cameraOn;
+ try{
+  await liveRoom.localParticipant.setCameraEnabled(nextState);
+  cameraOn=nextState;
+  $("cameraToggle").querySelector("span").textContent=cameraOn?"خاموش‌کردن دوربین":"فعال‌کردن دوربین";
+  $("cameraToggle").classList.toggle("active",cameraOn);
+  $("cameraToggle").setAttribute("aria-pressed",String(cameraOn));
+  say(cameraOn?"دوربین با اجازهٔ شما فعال شد.":"دوربین خاموش شد.");
+ }catch(error){say("فعال‌سازی دوربین انجام نشد؛ اجازهٔ دوربین سایت و تنظیمات دستگاه را بررسی کنید.");}
 });
 $("screenToggle").addEventListener("click",async()=>{
  if(!liveRoom)return;
@@ -191,7 +231,10 @@ async function leaveRoom(){
  $("roomList").querySelectorAll("button").forEach(button=>button.disabled=false);
  for(const identity of [...participantTiles.keys()])removeTile(identity);
  micOn=false;cameraOn=false;screenOn=false;
- $("micToggle").textContent="فعال‌کردن میکروفن";$("cameraToggle").textContent="فعال‌کردن دوربین";$("screenToggle").textContent="اشتراک‌گذاری صفحه";
+ $("micToggle").querySelector("span").textContent="فعال‌کردن میکروفن";$("cameraToggle").querySelector("span").textContent="فعال‌کردن دوربین";$("screenToggle").querySelector("span").textContent="اشتراک‌گذاری صفحه";
+ $("micToggle").disabled=true;$("cameraToggle").disabled=true;$("screenToggle").disabled=true;$("leave").disabled=true;
+ $("micToggle").setAttribute("aria-pressed","false");$("cameraToggle").setAttribute("aria-pressed","false");
+ $("mediaStatus").textContent="از کلاس خارج شده‌اید. برای فعال‌سازی ابزارهای صدا و تصویر، دوباره وارد یک کلاس مجاز شوید.";
  $("micToggle").classList.remove("active");$("cameraToggle").classList.remove("active");$("screenToggle").classList.remove("active");
  $("meetingPanel").classList.add("hidden");$("selector").classList.remove("hidden");
  say("از کلاس خارج شدید.");
