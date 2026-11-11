@@ -415,7 +415,7 @@ Deno.serve(async (req: Request) => {
       const nationalCode = digits(parent.national_code);
       const username = digits(parent.username);
       const authUserId = clean(parent.auth_user_id);
-      if (!authUserId || !/^\\d{10}$/.test(nationalCode) || username !== nationalCode ||
+      if (!authUserId || !/^\d{10}$/.test(nationalCode) || username !== nationalCode ||
           clean(parent.tenant_school_id) !== schoolId || clean(parent.role) !== "parent") {
         counts.skipped++;
         continue;
