@@ -401,6 +401,52 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (action === "reset_all_parent_passwords") {
+    if (body.confirm !== "RESET_ALL_PARENTS") return reply({ message: "تأیید بازنشانی گروهی اولیا معتبر نیست." }, 400);
+    const { data: parents, error: parentsError } = await admin.from("account_settings")
+      .select("auth_user_id,username,national_code,role,tenant_school_id")
+      .eq("tenant_school_id", schoolId).eq("role", "parent").limit(2000);
+    if (parentsError) return reply({ message: "فهرست حساب‌های اولیا دریافت نشد." }, 500);
+    const digits = (value: unknown) => clean(value)
+      .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const counts = { total: (parents ?? []).length, reset: 0, skipped: 0, failed: 0 };
+    for (const parent of parents ?? []) {
+      const nationalCode = digits(parent.national_code);
+      const username = digits(parent.username);
+      const authUserId = clean(parent.auth_user_id);
+      if (!authUserId || !/^\\d{10}$/.test(nationalCode) || username !== nationalCode ||
+          clean(parent.tenant_school_id) !== schoolId || clean(parent.role) !== "parent") {
+        counts.skipped++;
+        continue;
+      }
+      try {
+        const { data: targetAuth, error: targetAuthError } = await admin.auth.admin.getUserById(authUserId);
+        if (targetAuthError || !targetAuth.user) throw new Error("حساب احراز هویت پیدا نشد.");
+        const nextAppMetadata = {
+          ...(targetAuth.user.app_metadata ?? {}),
+          must_change_password: true,
+          password_reset_at: new Date().toISOString(),
+        };
+        const { error: resetError } = await admin.auth.admin.updateUserById(authUserId, {
+          password: nationalCode,
+          app_metadata: nextAppMetadata,
+        });
+        if (resetError) throw resetError;
+        counts.reset++;
+      } catch (error) {
+        counts.failed++;
+        console.error("admin bulk parent password reset failed", JSON.stringify({
+          auth_user_id: authUserId, code: (error as any)?.code ?? null
+        }));
+      }
+    }
+    return reply({
+      success: true, ...counts,
+      message: "رمز اولیه حساب‌های معتبر اولیا به کد ملی بازنشانی شد؛ تغییر رمز در نخستین ورود اجباری است."
+    });
+  }
+
   const targetId = clean(body.auth_user_id);
   if (!targetId || targetId === auth.user.id) return reply({ message: "حساب هدف نامعتبر است." }, 400);
   const { data: target, error: targetError } = await admin.from("account_settings")

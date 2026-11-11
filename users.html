@@ -20,6 +20,13 @@
 <div id="studentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های دانش‌آموزی موجود را نیز بازنشانی می‌کند.</div>
 <small>هشدار امنیتی: کد ملی به‌تنهایی رمز امنی نیست. این روش فقط برای آزمون کنترل‌شده است؛ دانش‌آموز باید بلافاصله رمز مستقل و غیرقابل حدس تعیین کند.</small>
 </section>
+<section class="card" id="parentAccountReset">
+<h2>حساب‌های ورود اولیا</h2>
+<p>فقط حساب‌های ولی همین مدرسه که نام کاربری و کد ملی معتبر و یکسان دارند بازنشانی می‌شوند. رمز موقت برابر کد ملی خواهد شد و تغییر رمز در نخستین ورود اجباری است.</p>
+<div class="actions"><button class="btn primary" id="resetAllParentAccounts" type="button">بازنشانی رمز همه اولیا</button></div>
+<div id="parentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های معتبر اولیا را بازنشانی می‌کند؛ حساب‌های نامعتبر یا ناسازگار بدون تغییر می‌مانند.</div>
+<small>کد ملی رمز امنی نیست؛ این رمز فقط موقت است و ولی باید در نخستین ورود رمز مستقل تعیین کند.</small>
+</section>
 <section class="card" id="parentBulkImport">
 <h2>ورود گروهی اولیا و اتصال خودکار به فرزندان</h2>
 <p>هر ردیف اکسل مربوط به یک دانش‌آموز است. اگر یک ولی چند فرزند دارد، کد ملی و مشخصات همان ولی را در ردیف همه فرزندان تکرار کنید؛ سامانه فقط یک حساب برای او می‌سازد و همه فرزندان را به همان حساب متصل می‌کند.</p>
@@ -165,5 +172,16 @@ document.getElementById("peopleTemplate").addEventListener("click",()=>downloadT
 document.getElementById("importPeople").addEventListener("click",async()=>{const b=document.getElementById("importPeople");b.disabled=true;document.getElementById("importStatus").textContent="در حال خواندن اکسل اطلاعات…";try{const rows=await parseExcel(document.getElementById("peopleExcel"));if(!rows.length)throw new Error("فایل اکسل ردیف اطلاعات ندارد.");reportImport(await api({action:"import_profiles",rows}));await loadProfiles()}catch(e){document.getElementById("importStatus").className="status error";document.getElementById("importStatus").textContent=e.message}finally{b.disabled=false}});
 document.getElementById("importSchedule").addEventListener("click",async()=>{const b=document.getElementById("importSchedule");b.disabled=true;document.getElementById("importStatus").textContent="در حال خواندن اکسل برنامه…";try{const rows=await parseExcel(document.getElementById("scheduleExcel"));if(!rows.length)throw new Error("فایل اکسل برنامه ردیف اطلاعات ندارد.");reportImport(await api({action:"import_schedule",rows}));await loadProfiles()}catch(e){document.getElementById("importStatus").className="status error";document.getElementById("importStatus").textContent=e.message}finally{b.disabled=false}});
 
+document.getElementById("resetAllParentAccounts").addEventListener("click",async()=>{
+ const button=document.getElementById("resetAllParentAccounts"),statusBox=document.getElementById("parentResetStatus");
+ if(!confirm("رمز همه حساب‌های معتبر اولیای همین مدرسه به کد ملی بازنشانی شود؟ در ورود بعدی، تعیین رمز جدید اجباری خواهد بود. این عملیات قابل بازگشت نیست."))return;
+ button.disabled=true;statusBox.className="status";statusBox.textContent="در حال بازنشانی رمز حساب‌های اولیا…";
+ try{
+  const result=await api({action:"reset_all_parent_passwords",confirm:"RESET_ALL_PARENTS"});
+  statusBox.className="status "+(Number(result.failed||0)||Number(result.skipped||0)?"error":"ok");
+  statusBox.textContent=(result.message||"عملیات پایان یافت.")+" تعداد کل: "+(result.total||0)+" · بازنشانی موفق: "+(result.reset||0)+" · ردشده: "+(result.skipped||0)+" · ناموفق: "+(result.failed||0);
+ }catch(error){statusBox.className="status error";statusBox.textContent=error.message||"بازنشانی گروهی اولیا انجام نشد."}
+ finally{button.disabled=false}
+});
 document.getElementById('refresh').addEventListener('click',load);document.getElementById('search').addEventListener('input',render);document.getElementById('back').addEventListener('click',()=>window.frahooshReturnToPanel('manager'));load();loadProfiles();
 </script><script src="panel-return.js?v=20261106-return"></script></body></html>
