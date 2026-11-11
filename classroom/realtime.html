@@ -147,7 +147,7 @@ function bindRoomEvents(room){
  room.on(window.LivekitClient.RoomEvent.TrackUnpublished,(publication)=>{if(publication.track)detachTrack(publication.track);});
  room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>getTile(participant));
  room.on(window.LivekitClient.RoomEvent.ParticipantDisconnected,(participant)=>removeTile(participant.identity));
- room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");});
+ room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");$("micToggle").disabled=true;$("cameraToggle").disabled=true;$("screenToggle").disabled=true;$("leave").disabled=true;$("mediaStatus").textContent="ارتباط کلاس قطع شد؛ ابزارهای صدا و تصویر تا اتصال دوباره غیرفعال‌اند.";});
  room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged,(state)=>{$("status").textContent="وضعیت اتصال: "+state;});
  room.on(window.LivekitClient.RoomEvent.AudioPlaybackStatusChanged,()=>{$("audioStart").classList.toggle("hidden",Boolean(room.canPlaybackAudio));});
  room.on(window.LivekitClient.RoomEvent.LocalTrackPublished,(publication,participant)=>{
