@@ -85,7 +85,9 @@ Deno.serve(async (req: Request) => {
       if (!isAudienceAllowed && !isCreator) return reply({ message: "این جلسه برای گروه کاربری شما دعوت نشده است." }, 403);
 
       const liveKitRoomName = clean(adHocMeeting.cloudflare_meeting_id);
-      if (!liveKitRoomName) return reply({ message: "اتاق رسانه این جلسه آماده نیست." }, 503);
+      if (!liveKitRoomName.startsWith("frahoosh-")) {
+        return reply({ message: "این جلسه پیش از انتقال سرویس ساخته شده است؛ لطفاً مدیر جلسهٔ جدیدی ایجاد کند." }, 409);
+      }
       const isHost = isCreator && requestedRole === "manager";
       const isStudent = requestedRole === "student";
       const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}`
@@ -167,8 +169,39 @@ Deno.serve(async (req: Request) => {
           throw insertError;
         }
         if (winner.cloudflare_meeting_id !== liveKitRoomName) {
-          // Another participant won the first-join race; remove this unused room.
           await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+        }
+        liveKitRoomName = winner.cloudflare_meeting_id;
+      }
+    } else if (!liveKitRoomName.startsWith("frahoosh-")) {
+      // Existing registry rows can contain legacy RealtimeKit IDs. Rotate the
+      // stored room name atomically so the first post-migration join is usable.
+      const previousRoomName = liveKitRoomName;
+      const candidateRoomName = `frahoosh-${String(profile.tenant_school_id).replace(/-/g, "")}-${crypto.randomUUID().replace(/-/g, "")}`;
+      await createLiveKitRoom(candidateRoomName);
+      const { data: updated, error: updateError } = await admin.from("classroom_realtime_meetings")
+        .update({ cloudflare_meeting_id: candidateRoomName })
+        .eq("tenant_school_id", profile.tenant_school_id)
+        .eq("online_class_id", roomId)
+        .eq("cloudflare_meeting_id", previousRoomName)
+        .select("cloudflare_meeting_id").maybeSingle();
+      if (updateError) {
+        await deleteLiveKitRoom(candidateRoomName).catch(() => {});
+        throw updateError;
+      }
+      if (updated?.cloudflare_meeting_id) {
+        liveKitRoomName = updated.cloudflare_meeting_id;
+      } else {
+        const { data: winner, error: winnerError } = await admin.from("classroom_realtime_meetings")
+          .select("cloudflare_meeting_id")
+          .eq("tenant_school_id", profile.tenant_school_id)
+          .eq("online_class_id", roomId).maybeSingle();
+        if (winnerError || !winner?.cloudflare_meeting_id) {
+          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
+          throw new Error("شناسه اتاق کلاس پس از انتقال قابل بازیابی نیست.");
+        }
+        if (winner.cloudflare_meeting_id !== candidateRoomName) {
+          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
         }
         liveKitRoomName = winner.cloudflare_meeting_id;
       }
