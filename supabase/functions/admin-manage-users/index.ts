@@ -302,15 +302,16 @@ Deno.serve(async (req: Request) => {
   }
 
 
-  if (action === "reset_student_accounts") {
-    if (body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
+  const ensureOnly = action === "ensure_student_accounts";
+  if (action === "reset_student_accounts" || ensureOnly) {
+    if (!ensureOnly && body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
     const { data: students, error: studentsError } = await admin.from("students")
       .select("id,first_name,last_name,national_code").eq("tenant_school_id", schoolId).limit(2000);
     if (studentsError) return reply({ message: "فهرست دانش‌آموزان دریافت نشد." }, 500);
     const digits = (v: unknown) => clean(v)
       .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-    const counts = { total: (students ?? []).length, created: 0, reset: 0, skipped: 0, failed: 0 };
+    const counts = { total: (students ?? []).length, created: 0, existing: 0, reset: 0, skipped: 0, failed: 0 };
     const normalized = (students ?? []).map((s: any) => ({ ...s, code: digits(s.national_code) }));
     const byCode = new Map<string, any[]>();
     for (const student of normalized) { const group = byCode.get(student.code) ?? []; group.push(student); byCode.set(student.code, group); }
@@ -351,6 +352,10 @@ Deno.serve(async (req: Request) => {
             ? await admin.from("school_memberships").update({ is_active: true, updated_at: new Date().toISOString() }).eq("id", membership.id)
             : await admin.from("school_memberships").insert({ auth_user_id: authUserId, school_id: schoolId, role: "student", is_active: true });
           if (membershipWrite.error) throw membershipWrite.error;
+          if (ensureOnly) {
+            counts.existing++;
+            continue;
+          }
           const nextMetadata = { ...(authRow.user.app_metadata ?? {}), must_change_password: true, password_reset_at: new Date().toISOString() };
           const { error: resetError } = await admin.auth.admin.updateUserById(authUserId, { password: code, app_metadata: nextMetadata });
           if (resetError) throw resetError;
@@ -397,7 +402,9 @@ Deno.serve(async (req: Request) => {
       }
     }
     return reply({ success: true, ...counts,
-      message: "عملیات حساب‌های دانش‌آموزی پایان یافت. نام کاربری و رمز موقت برای موارد موفق، کد ملی ۱۰ رقمی است و تغییر رمز در نخستین ورود اجباری خواهد بود."
+      message: ensureOnly
+        ? "حساب‌های فاقد ورود ساخته شدند؛ حساب‌ها و رمزهای قبلی تغییر نکردند. تغییر رمز حساب‌های تازه در نخستین ورود اجباری است."
+        : "عملیات بازنشانی حساب‌های دانش‌آموزی پایان یافت. رمز موقت موارد موفق کد ملی ۱۰ رقمی است و تغییر رمز در نخستین ورود اجباری خواهد بود."
     });
   }
 

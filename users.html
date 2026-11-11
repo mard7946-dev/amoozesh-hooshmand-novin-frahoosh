@@ -15,10 +15,10 @@
 
 <section class="card" id="studentAccountReset">
 <h2>حساب‌های ورود دانش‌آموزان</h2>
-<p>فقط دانش‌آموزان همین مدرسه بررسی می‌شوند. برای هر پروندهٔ یکتا با کد ملی ۱۰ رقمی، نام کاربری و رمز موقت برابر کد ملی ثبت می‌شود؛ تغییر رمز در نخستین ورود اجباری است.</p>
-<div class="actions"><button class="btn primary" id="resetAllStudentAccounts" type="button">بازنشانی حساب همه دانش‌آموزان</button></div>
-<div id="studentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های دانش‌آموزی موجود را نیز بازنشانی می‌کند.</div>
-<small>هشدار امنیتی: کد ملی به‌تنهایی رمز امنی نیست. این روش فقط برای آزمون کنترل‌شده است؛ دانش‌آموز باید بلافاصله رمز مستقل و غیرقابل حدس تعیین کند.</small>
+<p>فقط دانش‌آموزان همین مدرسه بررسی می‌شوند. برای هر پروندهٔ یکتا با کد ملی ۱۰ رقمی که هنوز حساب ورود ندارد، حساب ساخته می‌شود. حساب‌های موجود و رمزهای فعلی آن‌ها دست‌نخورده می‌ماند.</p>
+<div class="actions"><button class="btn primary" id="resetAllStudentAccounts" type="button">ساخت حساب‌های ورودِ ایجادنشده</button></div>
+<div id="studentResetStatus" class="status" role="status" aria-live="polite">فقط حساب‌های فاقد ورود ساخته می‌شوند؛ رمز حساب‌های موجود تغییر نمی‌کند.</div>
+<small>رمز موقت حساب تازه برابر کد ملی است؛ دانش‌آموز باید در نخستین ورود آن را با رمز مستقل و غیرقابل حدس جایگزین کند.</small>
 </section>
 <section class="card" id="parentBulkImport">
 <h2>ورود گروهی اولیا و اتصال خودکار به فرزندان</h2>
@@ -68,13 +68,12 @@ function reportImport(data){const n=document.getElementById("importStatus");n.cl
 document.querySelectorAll(".profile-group").forEach(b=>b.addEventListener("click",()=>{selectedCategory=b.dataset.category;selectedProfile=null;document.querySelectorAll(".profile-group").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));document.getElementById("profileDetail").hidden=true;renderProfiles()}));document.getElementById("profileSearch").addEventListener("input",renderProfiles);
 document.getElementById("resetAllStudentAccounts").addEventListener("click",async()=>{
  const status=document.getElementById("studentResetStatus");
- if(!confirm("هشدار: رمز همه حساب‌های دانش‌آموزی این مدرسه بازنشانی می‌شود و رمزهای فعلی دیگر کار نمی‌کنند. ادامه می‌دهید؟"))return;
- if(!confirm("برای تأیید نهایی، همه دانش‌آموزان واجد شرایط با رمز موقت کد ملی فعال می‌شوند. مطمئن هستید؟"))return;
+ if(!confirm("فقط برای دانش‌آموزانی که هنوز حساب ورود ندارند، حساب جدید ساخته می‌شود. رمز و دسترسی حساب‌های موجود تغییر نمی‌کند. ادامه می‌دهید؟"))return;
  const button=document.getElementById("resetAllStudentAccounts");button.disabled=true;status.className="status";status.textContent="در حال بررسی پرونده‌ها و بازنشانی حساب‌ها…";
  try{
-  const result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS"});
+  const result=await api({action:"ensure_student_accounts"});
   status.className="status "+(result.failed?"error":"ok");
-  status.textContent="پایان عملیات — کل پرونده‌ها: "+result.total+"، حساب جدید: "+result.created+"، رمز بازنشانی‌شده: "+result.reset+"، ردشده: "+result.skipped+"، خطا: "+result.failed+". "+(result.message||"");
+  status.textContent="پایان عملیات — کل پرونده‌ها: "+result.total+"، حساب جدید: "+result.created+"، حساب موجود: "+result.existing+"، ردشده: "+result.skipped+"، خطا: "+result.failed+". "+(result.message||"");
  }catch(error){status.className="status error";status.textContent=error.message||"بازنشانی حساب دانش‌آموزان ناموفق بود."}
  finally{button.disabled=false}
 });
