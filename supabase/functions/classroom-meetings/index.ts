@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { createLiveKitRoom, deleteLiveKitRoom } from "../_shared/livekit.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,9 +11,6 @@ const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body)
 });
 const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (value: unknown) => clean(value).replace(/[يى]/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
-const ACCOUNT_ID = "f8543e56a787c242f86ec4b0b69907b8";
-const APP_ID = "409805e3-3e16-4698-8e01-2140f7273084";
-const CF_BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/realtime/kit/${APP_ID}`;
 
 function serviceClient() {
   const url = clean(Deno.env.get("SUPABASE_URL"));
@@ -29,21 +27,6 @@ function serviceClient() {
   }
   if (!url || !key) throw new Error("اتصال امن پایگاه داده تنظیم نشده است.");
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-async function cloudflare(path: string, method = "GET", body?: unknown) {
-  const apiToken = clean(Deno.env.get("CLOUDFLARE_REALTIME_API_TOKEN"));
-  if (!apiToken) throw new Error("کلید امن سرویس صوت و تصویر تنظیم نشده است.");
-  const response = await fetch(CF_BASE + path, {
-    method,
-    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.success === false) {
-    console.error("RealtimeKit meeting API error", response.status, JSON.stringify(data?.errors ?? {}));
-    throw new Error("ساخت یا مدیریت اتاق صوتی‌ـ‌تصویری انجام نشد.");
-  }
-  return data?.data ?? {};
 }
 function isManager(role: unknown) {
   const value = norm(role);
@@ -90,16 +73,8 @@ Deno.serve(async (req: Request) => {
       if (!Number.isInteger(duration) || duration < 15 || duration > 240) return reply({ message: "مدت جلسه باید بین ۱۵ تا ۲۴۰ دقیقه باشد." }, 400);
       if (!["all_school", "roles"].includes(audienceType)) return reply({ message: "مخاطبان جلسه معتبر نیستند." }, 400);
       if (audienceType === "roles" && !roles.length) return reply({ message: "حداقل یک گروه مخاطب انتخاب کنید." }, 400);
-      const meeting = await cloudflare("/meetings", "POST", {
-        title,
-        persist_chat: false,
-        record_on_start: false,
-        live_stream_on_start: false,
-        summarize_on_end: false,
-        transcribe_on_end: false,
-      });
-      const cloudflareMeetingId = clean(meeting?.id);
-      if (!cloudflareMeetingId) throw new Error("شناسه اتاق رسانه دریافت نشد.");
+      const liveKitRoomName = `frahoosh-${schoolId.replace(/-/g, "")}-${crypto.randomUUID().replace(/-/g, "")}`;
+      await createLiveKitRoom(liveKitRoomName);
       const expiresAt = new Date(Date.now() + duration * 60_000).toISOString();
       const { data, error } = await admin.from("classroom_ad_hoc_meetings").insert({
         tenant_school_id: schoolId,
@@ -108,12 +83,13 @@ Deno.serve(async (req: Request) => {
         description,
         audience_type: audienceType,
         audience_roles: audienceType === "roles" ? roles : [],
-        cloudflare_meeting_id: cloudflareMeetingId,
+        // Legacy column name retained for compatibility; it now stores an opaque LiveKit room name.
+        cloudflare_meeting_id: liveKitRoomName,
         expires_at: expiresAt,
         status: "active",
       }).select("id,title,description,audience_type,audience_roles,join_code,status,expires_at,created_at").single();
       if (error) {
-        await cloudflare(`/meetings/${cloudflareMeetingId}`, "PATCH", { status: "INACTIVE" }).catch(() => {});
+        await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
         throw error;
       }
       return reply({ ok: true, meeting: data });
@@ -127,9 +103,12 @@ Deno.serve(async (req: Request) => {
       if (lookupError) throw lookupError;
       if (!meeting) return reply({ message: "جلسه پیدا نشد." }, 404);
       if (meeting.status !== "active") return reply({ ok: true, already_ended: true });
-      // Disable the RealtimeKit meeting first: this also removes active participants
+      // Delete the LiveKit room first: this disconnects active participants
       // and prevents valid-but-unexpired tokens from starting another session.
-      await cloudflare(`/meetings/${clean(meeting.cloudflare_meeting_id)}`, "PATCH", { status: "INACTIVE" });
+      const storedRoomName = clean(meeting.cloudflare_meeting_id);
+      // Older active rows may still point at a RealtimeKit meeting ID. They are
+      // not valid LiveKit room names, so end the legacy record without calling LiveKit.
+      if (storedRoomName.startsWith("frahoosh-")) await deleteLiveKitRoom(storedRoomName);
       const { error } = await admin.from("classroom_ad_hoc_meetings")
         .update({ status: "ended", ended_at: new Date().toISOString() })
         .eq("id", id).eq("tenant_school_id", schoolId).eq("status", "active");

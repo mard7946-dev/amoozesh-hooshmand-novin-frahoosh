@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { createLiveKitRoom, createLiveKitParticipantToken, deleteLiveKitRoom } from "../_shared/livekit.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -12,49 +13,8 @@ const clean = (value: unknown) => String(value ?? "").trim();
 const norm = (value: unknown) => clean(value).toLocaleLowerCase("fa")
   .replace(/[يى]/g, "ی").replace(/ك/g, "ک");
 
-const ACCOUNT_ID = "f8543e56a787c242f86ec4b0b69907b8";
-const APP_ID = "409805e3-3e16-4698-8e01-2140f7273084";
-const CF_BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/realtime/kit/${APP_ID}`;
 const PUBLISHABLE_KEY = "sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 
-async function cloudflare(path: string, method = "GET", body?: unknown) {
-  const apiToken = clean(Deno.env.get("CLOUDFLARE_REALTIME_API_TOKEN"));
-  if (!apiToken) throw new Error("RealtimeKit server credential is not configured.");
-  const response = await fetch(CF_BASE + path, {
-    method,
-    headers: {
-      "Authorization": `Bearer ${apiToken}`,
-      "Content-Type": "application/json",
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.success === false) {
-    const apiErrors = Array.isArray(data?.errors) ? data.errors : [];
-    if (response.status === 400 && apiErrors.some((item: any) => String(item?.code) === "9106")) {
-      try {
-        const verifyResponse = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
-          method: "GET",
-          headers: { "Authorization": `Bearer ${apiToken}`, "Content-Type": "application/json" },
-        });
-        const verifyData = await verifyResponse.json().catch(() => ({}));
-        console.error("Cloudflare API token verification", verifyResponse.status, JSON.stringify({
-          success: verifyData?.success === true,
-          status: verifyData?.result?.status ?? null,
-          expires_on: verifyData?.result?.expires_on ?? null,
-          errors: Array.isArray(verifyData?.errors)
-            ? verifyData.errors.map((item: any) => ({ code: item?.code, message: item?.message }))
-            : [],
-        }));
-      } catch (verificationError) {
-        console.error("Cloudflare API token verification request failed", String(verificationError).slice(0, 240));
-      }
-    }
-    console.error("RealtimeKit API error", response.status, JSON.stringify(apiErrors.length ? apiErrors : data?.error ?? {}));
-    throw new Error("سرویس رسانه کلاس آنلاین پاسخ معتبر نداد.");
-  }
-  return data?.data ?? {};
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -76,10 +36,6 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (!url || !serviceKey) return reply({ message: "اتصال امن پایگاه داده تنظیم نشده است." }, 503);
-  if (!clean(Deno.env.get("CLOUDFLARE_REALTIME_API_TOKEN"))) {
-    return reply({ message: "راه‌اندازی امن سرویس صوت و تصویر هنوز کامل نشده است؛ مدیر سامانه باید کلید محدود RealtimeKit را در اسرار Edge Function ثبت کند." }, 503);
-  }
-
   try {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: authData, error: authError } = await admin.auth.getUser(bearer);
@@ -120,7 +76,7 @@ Deno.serve(async (req: Request) => {
       const activeRoles = new Set((memberships ?? []).map((item: any) => roleKey(item.role)));
       const requestedRole = roleKey(body?.active_role || adHocProfile.role);
       const isCreator = adHocMeeting.created_by === authData.user.id;
-      if (!activeRoles.has(requestedRole) && !(isCreator && requestedRole === "manager" && roleKey(adHocProfile.role) === "manager")) {
+      if (!activeRoles.has(requestedRole)) {
         return reply({ message: "سمت فعال این حساب در مدرسه تأیید نشد." }, 403);
       }
       const isAudienceAllowed = adHocMeeting.audience_type === "all_school"
@@ -128,39 +84,25 @@ Deno.serve(async (req: Request) => {
         : (Array.isArray(adHocMeeting.audience_roles) && adHocMeeting.audience_roles.map(roleKey).includes(requestedRole));
       if (!isAudienceAllowed && !isCreator) return reply({ message: "این جلسه برای گروه کاربری شما دعوت نشده است." }, 403);
 
-      const cloudMeetingId = clean(adHocMeeting.cloudflare_meeting_id);
-      if (!cloudMeetingId) return reply({ message: "اتاق رسانه این جلسه آماده نیست." }, 503);
+      const liveKitRoomName = clean(adHocMeeting.cloudflare_meeting_id);
+      if (!liveKitRoomName.startsWith("frahoosh-")) {
+        return reply({ message: "این جلسه پیش از انتقال سرویس ساخته شده است؛ لطفاً مدیر جلسهٔ جدیدی ایجاد کند." }, 409);
+      }
       const isHost = isCreator && requestedRole === "manager";
-      const presetName = isHost ? "group_call_host" : "group_call_guest";
-      const participantsData = await cloudflare(`/meetings/${cloudMeetingId}/participants?limit=1000`);
-      const participants = Array.isArray(participantsData) ? participantsData : participantsData?.data ?? [];
-      let participant = participants.find((item: any) => item.custom_participant_id === authData.user.id);
       const isStudent = requestedRole === "student";
       const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}`
         : (clean(adHocProfile.display_name) || clean(adHocProfile.username) || "کاربر فراهوش");
-      const expiresOn = new Date(Math.min(Date.now() + 60 * 60 * 1000, new Date(adHocMeeting.expires_at).getTime())).toISOString();
-      let participantToken = "";
-      if (participant && participant.preset_name !== presetName) {
-        await cloudflare(`/meetings/${cloudMeetingId}/participants/${participant.id}`, "DELETE");
-        participant = null;
-      }
-      if (participant) {
-        const refreshed = await cloudflare(`/meetings/${cloudMeetingId}/participants/${participant.id}/token`, "POST", { expires_on: expiresOn });
-        participantToken = clean(refreshed?.token);
-      } else {
-        const created = await cloudflare(`/meetings/${cloudMeetingId}/participants`, "POST", {
-          name: displayName,
-          preset_name: presetName,
-          custom_participant_id: authData.user.id,
-          token: { expires_on: expiresOn },
-        });
-        participantToken = clean(created?.token);
-      }
-      if (!participantToken) throw new Error("توکن ورود به جلسه دریافت نشد.");
+      const remainingSeconds = Math.floor((new Date(adHocMeeting.expires_at).getTime() - Date.now()) / 1000);
+      const credentials = await createLiveKitParticipantToken(
+        liveKitRoomName,
+        authData.user.id,
+        displayName,
+        { host: isHost, screenShare: isHost, role: requestedRole, ttlSeconds: Math.min(3600, remainingSeconds) },
+      );
       return reply({
         ok: true,
-        token: participantToken,
-        expires_on: expiresOn,
+        ...credentials,
+        expires_on: credentials.expires_at,
         room: { id: adHocMeeting.id, title: adHocMeeting.title, subject: "جلسه اختصاصی", class_name: "", teacher: adHocProfile.display_name || adHocProfile.username || "مدیریت مدرسه" },
       });
     }
@@ -197,32 +139,24 @@ Deno.serve(async (req: Request) => {
     const isTeacher = ["teacher", "دبیر", "معلم"].includes(role);
     const isManager = ["manager", "مدیر", "مدیریت"].includes(role);
     const isStudent = ["student", "دانش‌آموز", "دانش آموز"].includes(role);
-    const presetName = isTeacher || isManager ? "group_call_host" : "group_call_guest";
     const room = authorization.room;
 
-    let meetingId = "";
+    let liveKitRoomName = "";
     const { data: registry, error: registryError } = await admin.from("classroom_realtime_meetings")
       .select("cloudflare_meeting_id")
       .eq("tenant_school_id", profile.tenant_school_id)
       .eq("online_class_id", roomId).maybeSingle();
     if (registryError) throw registryError;
-    meetingId = clean(registry?.cloudflare_meeting_id);
+    liveKitRoomName = clean(registry?.cloudflare_meeting_id);
 
-    if (!meetingId) {
-      const meeting = await cloudflare("/meetings", "POST", {
-        title: [clean(room.subject), clean(room.class_name)].filter(Boolean).join(" · ") || "کلاس آنلاین فراهوش نوین",
-        persist_chat: false,
-        record_on_start: false,
-        live_stream_on_start: false,
-        summarize_on_end: false,
-        transcribe_on_end: false,
-      });
-      meetingId = clean(meeting?.id);
-      if (!meetingId) throw new Error("شناسه اتاق رسانه دریافت نشد.");
+    if (!liveKitRoomName) {
+      liveKitRoomName = `frahoosh-${String(profile.tenant_school_id).replace(/-/g, "")}-class-${roomId}`;
+      await createLiveKitRoom(liveKitRoomName);
       const { error: insertError } = await admin.from("classroom_realtime_meetings").insert({
         tenant_school_id: profile.tenant_school_id,
         online_class_id: roomId,
-        cloudflare_meeting_id: meetingId,
+        // Legacy column name retained for compatibility; it now stores an opaque LiveKit room name.
+        cloudflare_meeting_id: liveKitRoomName,
         created_by: authData.user.id,
       });
       if (insertError) {
@@ -230,46 +164,61 @@ Deno.serve(async (req: Request) => {
           .select("cloudflare_meeting_id")
           .eq("tenant_school_id", profile.tenant_school_id)
           .eq("online_class_id", roomId).maybeSingle();
-        if (winnerError || !winner?.cloudflare_meeting_id) throw insertError;
-        // Concurrent first joins may create an unused meeting; deactivate our orphan.
-        if (winner.cloudflare_meeting_id !== meetingId) {
-          await cloudflare(`/meetings/${meetingId}`, "PATCH", { status: "INACTIVE" }).catch(() => {});
+        if (winnerError || !winner?.cloudflare_meeting_id) {
+          await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+          throw insertError;
         }
-        meetingId = winner.cloudflare_meeting_id;
+        if (winner.cloudflare_meeting_id !== liveKitRoomName) {
+          await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+        }
+        liveKitRoomName = winner.cloudflare_meeting_id;
+      }
+    } else if (!liveKitRoomName.startsWith("frahoosh-")) {
+      // Existing registry rows can contain legacy RealtimeKit IDs. Rotate the
+      // stored room name atomically so the first post-migration join is usable.
+      const previousRoomName = liveKitRoomName;
+      const candidateRoomName = `frahoosh-${String(profile.tenant_school_id).replace(/-/g, "")}-${crypto.randomUUID().replace(/-/g, "")}`;
+      await createLiveKitRoom(candidateRoomName);
+      const { data: updated, error: updateError } = await admin.from("classroom_realtime_meetings")
+        .update({ cloudflare_meeting_id: candidateRoomName })
+        .eq("tenant_school_id", profile.tenant_school_id)
+        .eq("online_class_id", roomId)
+        .eq("cloudflare_meeting_id", previousRoomName)
+        .select("cloudflare_meeting_id").maybeSingle();
+      if (updateError) {
+        await deleteLiveKitRoom(candidateRoomName).catch(() => {});
+        throw updateError;
+      }
+      if (updated?.cloudflare_meeting_id) {
+        liveKitRoomName = updated.cloudflare_meeting_id;
+      } else {
+        const { data: winner, error: winnerError } = await admin.from("classroom_realtime_meetings")
+          .select("cloudflare_meeting_id")
+          .eq("tenant_school_id", profile.tenant_school_id)
+          .eq("online_class_id", roomId).maybeSingle();
+        if (winnerError || !winner?.cloudflare_meeting_id) {
+          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
+          throw new Error("شناسه اتاق کلاس پس از انتقال قابل بازیابی نیست.");
+        }
+        if (winner.cloudflare_meeting_id !== candidateRoomName) {
+          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
+        }
+        liveKitRoomName = winner.cloudflare_meeting_id;
       }
     }
 
-    const participantsData = await cloudflare(`/meetings/${meetingId}/participants?limit=1000`);
-    const participants = Array.isArray(participantsData) ? participantsData : participantsData?.data ?? [];
-    let participant = participants.find((item: any) => item.custom_participant_id === authData.user.id);
     const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}` : (clean(profile.display_name) || clean(profile.username) || "کاربر فراهوش");
-    const expiresOn = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    let participantToken = "";
-
-    if (participant && participant.preset_name !== presetName) {
-      await cloudflare(`/meetings/${meetingId}/participants/${participant.id}`, "DELETE");
-      participant = null;
-    }
-    if (participant) {
-      const refreshed = await cloudflare(`/meetings/${meetingId}/participants/${participant.id}/token`, "POST", {
-        expires_on: expiresOn,
-      });
-      participantToken = clean(refreshed?.token);
-    } else {
-      const created = await cloudflare(`/meetings/${meetingId}/participants`, "POST", {
-        name: displayName,
-        preset_name: presetName,
-        custom_participant_id: authData.user.id,
-        token: { expires_on: expiresOn },
-      });
-      participantToken = clean(created?.token);
-    }
-    if (!participantToken) throw new Error("توکن ورود به کلاس دریافت نشد.");
+    const credentials = await createLiveKitParticipantToken(
+      liveKitRoomName,
+      authData.user.id,
+      displayName,
+      { host: isTeacher || isManager, screenShare: isTeacher || isManager, role, ttlSeconds: 3600 },
+    );
 
     return reply({
       ok: true,
-      token: participantToken,
-      expires_on: expiresOn,
+      ...credentials,
+      expires_on: credentials.expires_at,
       room: {
         id: room.id,
         title: room.title,
@@ -281,8 +230,8 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("classroom-realtime-token failed", String(error));
     return reply({
-      message: String(error).includes("RealtimeKit server credential")
-        ? "کلید امن سرویس رسانه تنظیم نشده است."
+      message: String(error).includes("تنظیمات امن سرویس کلاس آنلاین")
+        ? "تنظیمات امن سرویس جایگزین کلاس آنلاین در سرور ثبت نشده است."
         : "اتصال امن به سرویس صوت و تصویر انجام نشد؛ تنظیمات سرور را بررسی کنید.",
     }, 503);
   }
