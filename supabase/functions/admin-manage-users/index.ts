@@ -313,7 +313,7 @@ Deno.serve(async (req: Request) => {
     const digits = (v: unknown) => clean(v)
       .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-    const counts = { total: (students ?? []).length, created: 0, reset: 0, skipped: 0, failed: 0 };
+    const counts = { total: (allStudents ?? []).length, created: 0, reset: 0, skipped: 0, failed: 0 };
     const allNormalized = (allStudents ?? []).map((s: any) => ({ ...s, code: digits(s.national_code) }));
     const normalized = allNormalized.slice(offset, offset + batchSize);
     const byCode = new Map<string, any[]>();
