@@ -89,6 +89,7 @@ Deno.serve(async (req: Request) => {
         return reply({ message: "این جلسه پیش از انتقال سرویس ساخته شده است؛ لطفاً مدیر جلسهٔ جدیدی ایجاد کند." }, 409);
       }
       const isHost = isCreator && requestedRole === "manager";
+      const canShareScreen = requestedRole === "manager" || requestedRole === "teacher";
       const isStudent = requestedRole === "student";
       const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}`
         : (clean(adHocProfile.display_name) || clean(adHocProfile.username) || "کاربر فراهوش");
@@ -97,7 +98,7 @@ Deno.serve(async (req: Request) => {
         liveKitRoomName,
         authData.user.id,
         displayName,
-        { host: isHost, screenShare: isHost, role: requestedRole, ttlSeconds: Math.min(3600, remainingSeconds) },
+        { host: isHost, screenShare: canShareScreen, role: requestedRole, ttlSeconds: Math.min(3600, remainingSeconds) },
       );
       return reply({
         ok: true,
