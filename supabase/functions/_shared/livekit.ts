@@ -1,4 +1,5 @@
 import { AccessToken } from "npm:livekit-server-sdk@2.19.2";
+import { TrackSource } from "npm:@livekit/protocol@1.51.0";
 
 const clean = (value: unknown) => String(value ?? "").trim();
 
@@ -131,13 +132,16 @@ export async function createLiveKitParticipantToken(
     metadata: JSON.stringify({ role: clean(options.role).slice(0, 40) }),
     ttl: `${ttl}s`,
   });
+  const publishSources = options.screenShare
+    ? [TrackSource.CAMERA, TrackSource.MICROPHONE, TrackSource.SCREEN_SHARE]
+    : [TrackSource.CAMERA, TrackSource.MICROPHONE];
   tokenBuilder.addGrant({
     roomJoin: true,
     room: roomName,
     canPublish: true,
     canSubscribe: true,
     canPublishData: false,
-    canPublishSources: (options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"]) as ("camera" | "microphone" | "screen_share")[],
+    canPublishSources: publishSources,
     ...(options.host ? { roomAdmin: true } : {}),
   });
   const token = await tokenBuilder.toJwt();
