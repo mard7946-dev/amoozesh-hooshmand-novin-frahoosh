@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { createLiveKitRoom, createLiveKitParticipantToken, deleteLiveKitRoom } from "../_shared/livekit.ts";
+import { createLiveKitParticipantToken } from "../_shared/livekit.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -151,7 +151,8 @@ Deno.serve(async (req: Request) => {
 
     if (!liveKitRoomName) {
       liveKitRoomName = `frahoosh-${String(profile.tenant_school_id).replace(/-/g, "")}-class-${roomId}`;
-      await createLiveKitRoom(liveKitRoomName);
+      // LiveKit creates a room automatically when the first participant joins.
+      // Persist the stable room name here; do not call RoomService CreateRoom.
       const { error: insertError } = await admin.from("classroom_realtime_meetings").insert({
         tenant_school_id: profile.tenant_school_id,
         online_class_id: roomId,
@@ -164,13 +165,7 @@ Deno.serve(async (req: Request) => {
           .select("cloudflare_meeting_id")
           .eq("tenant_school_id", profile.tenant_school_id)
           .eq("online_class_id", roomId).maybeSingle();
-        if (winnerError || !winner?.cloudflare_meeting_id) {
-          await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
-          throw insertError;
-        }
-        if (winner.cloudflare_meeting_id !== liveKitRoomName) {
-          await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
-        }
+        if (winnerError || !winner?.cloudflare_meeting_id) throw insertError;
         liveKitRoomName = winner.cloudflare_meeting_id;
       }
     } else if (!liveKitRoomName.startsWith("frahoosh-")) {
@@ -178,17 +173,15 @@ Deno.serve(async (req: Request) => {
       // stored room name atomically so the first post-migration join is usable.
       const previousRoomName = liveKitRoomName;
       const candidateRoomName = `frahoosh-${String(profile.tenant_school_id).replace(/-/g, "")}-${crypto.randomUUID().replace(/-/g, "")}`;
-      await createLiveKitRoom(candidateRoomName);
+      // Replace the legacy RealtimeKit identifier with a stable LiveKit room name.
+      // The room itself is created on the first successful participant join.
       const { data: updated, error: updateError } = await admin.from("classroom_realtime_meetings")
         .update({ cloudflare_meeting_id: candidateRoomName })
         .eq("tenant_school_id", profile.tenant_school_id)
         .eq("online_class_id", roomId)
         .eq("cloudflare_meeting_id", previousRoomName)
         .select("cloudflare_meeting_id").maybeSingle();
-      if (updateError) {
-        await deleteLiveKitRoom(candidateRoomName).catch(() => {});
-        throw updateError;
-      }
+      if (updateError) throw updateError;
       if (updated?.cloudflare_meeting_id) {
         liveKitRoomName = updated.cloudflare_meeting_id;
       } else {
@@ -197,11 +190,7 @@ Deno.serve(async (req: Request) => {
           .eq("tenant_school_id", profile.tenant_school_id)
           .eq("online_class_id", roomId).maybeSingle();
         if (winnerError || !winner?.cloudflare_meeting_id) {
-          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
           throw new Error("شناسه اتاق کلاس پس از انتقال قابل بازیابی نیست.");
-        }
-        if (winner.cloudflare_meeting_id !== candidateRoomName) {
-          await deleteLiveKitRoom(candidateRoomName).catch(() => {});
         }
         liveKitRoomName = winner.cloudflare_meeting_id;
       }
