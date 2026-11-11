@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 
 const html = readFileSync("classroom/realtime.html", "utf8");
 assert.match(html, /livekit-client@2\.23\.0/);
+assert.match(html, /id="audioStart"/, "The room must offer a user-gesture audio playback fallback");
+assert.match(html, /AudioPlaybackStatusChanged/, "The room must detect blocked browser audio playback");
+assert.match(html, /querySelectorAll\("button"\)\.forEach\(button=>button.disabled=false\)/, "Leaving a room must allow users to re-enter");
 assert.doesNotMatch(html, /@cloudflare\/realtimekit/i);
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1])
