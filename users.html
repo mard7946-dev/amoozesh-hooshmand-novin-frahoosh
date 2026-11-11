@@ -81,7 +81,19 @@ document.getElementById("resetAllStudentAccounts").addEventListener("click",asyn
  const totals={total:0,created:0,reset:0,skipped:0,failed:0};let offset=0,done=false;
  try{
   while(!done){
-   const result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS",offset,batch_size:8});
+   let result;
+   for(let attempt=0;;attempt++){
+    try{
+     result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS",offset,batch_size:8});
+     break;
+    }catch(error){
+     const message=String(error&&error.message||"");
+     const transient=error instanceof TypeError||/Failed to fetch|NetworkError|Load failed|درخواست انجام نشد \((502|503|504)\)/i.test(message);
+     if(!transient||attempt>=2)throw error;
+     status.textContent="ارتباط موقت قطع شد؛ همان بسته بدون جابه‌جایی شماره پرونده دوباره بررسی می‌شود ("+(attempt+2)+" از 3)…";
+     await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+    }
+   }
    totals.total=Math.max(totals.total,Number(result.total||0));
    for(const key of ["created","reset","skipped","failed"])totals[key]+=Number(result[key]||0);
    offset=Number(result.next_offset||offset);
