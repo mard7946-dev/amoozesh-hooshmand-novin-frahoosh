@@ -51,6 +51,7 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
    <button id="micToggle" type="button">فعال‌کردن میکروفن</button>
    <button id="cameraToggle" type="button">فعال‌کردن دوربین</button>
    <button id="screenToggle" type="button">اشتراک‌گذاری صفحه</button>
+   <button id="audioStart" type="button" class="hidden">فعال‌کردن پخش صدای کلاس</button>
    <button id="leave" class="leave" type="button">خروج از کلاس</button>
   </div>
  </section>
@@ -129,6 +130,7 @@ function bindRoomEvents(room){
  room.on(window.LivekitClient.RoomEvent.ParticipantDisconnected,(participant)=>removeTile(participant.identity));
  room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");});
  room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged,(state)=>{$("status").textContent="وضعیت اتصال: "+state;});
+ room.on(window.LivekitClient.RoomEvent.AudioPlaybackStatusChanged,()=>{$("audioStart").classList.toggle("hidden",Boolean(room.canPlaybackAudio));});
  room.on(window.LivekitClient.RoomEvent.LocalTrackPublished,(publication,participant)=>{
   if(publication.track&&publication.track.kind===window.LivekitClient.Track.Kind.Video)attachTrack(publication.track,participant);
  });
@@ -185,6 +187,8 @@ $("screenToggle").addEventListener("click",async()=>{
 });
 async function leaveRoom(){
  if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
+ $("audioStart").classList.add("hidden");
+ $("roomList").querySelectorAll("button").forEach(button=>button.disabled=false);
  for(const identity of [...participantTiles.keys()])removeTile(identity);
  micOn=false;cameraOn=false;screenOn=false;
  $("micToggle").textContent="فعال‌کردن میکروفن";$("cameraToggle").textContent="فعال‌کردن دوربین";$("screenToggle").textContent="اشتراک‌گذاری صفحه";
@@ -193,6 +197,11 @@ async function leaveRoom(){
  say("از کلاس خارج شدید.");
 }
 $("leave").addEventListener("click",leaveRoom);
+$("audioStart").addEventListener("click",async()=>{
+ if(!liveRoom)return;
+ try{await liveRoom.startAudio();$("audioStart").classList.add("hidden");say("پخش صدای کلاس فعال شد.");}
+ catch(error){say("پخش صدا فعال نشد؛ تنظیم صدای مرورگر و دستگاه را بررسی کنید.");}
+});
 async function boot(){
  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
  try{
