@@ -221,9 +221,15 @@ $("cameraToggle").addEventListener("click",async()=>{
  }catch(error){say("فعال‌سازی دوربین انجام نشد؛ اجازهٔ دوربین سایت و تنظیمات دستگاه را بررسی کنید.");}
 });
 $("screenToggle").addEventListener("click",async()=>{
- if(!liveRoom)return;
- try{screenOn=!screenOn;await liveRoom.localParticipant.setScreenShareEnabled(screenOn);$("screenToggle").textContent=screenOn?"توقف اشتراک صفحه":"اشتراک‌گذاری صفحه";$("screenToggle").classList.toggle("active",screenOn);}
- catch(error){screenOn=false;say("اشتراک‌گذاری صفحه در این مرورگر یا دستگاه در دسترس نیست.");}
+ if(!liveRoom||$("screenToggle").disabled)return;
+ const nextState=!screenOn;
+ try{
+  await liveRoom.localParticipant.setScreenShareEnabled(nextState);
+  screenOn=nextState;
+  $("screenToggle").querySelector("span").textContent=screenOn?"توقف اشتراک صفحه":"اشتراک‌گذاری صفحه";
+  $("screenToggle").classList.toggle("active",screenOn);
+  say(screenOn?"اشتراک‌گذاری صفحه فعال شد.":"اشتراک‌گذاری صفحه متوقف شد.");
+ }catch(error){say("اشتراک‌گذاری صفحه در این مرورگر یا دستگاه در دسترس نیست یا مجوز آن صادر نشده است.");}
 });
 async function leaveRoom(){
  if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
