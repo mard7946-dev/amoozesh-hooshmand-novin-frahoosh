@@ -105,7 +105,10 @@ Deno.serve(async (req: Request) => {
       if (meeting.status !== "active") return reply({ ok: true, already_ended: true });
       // Delete the LiveKit room first: this disconnects active participants
       // and prevents valid-but-unexpired tokens from starting another session.
-      await deleteLiveKitRoom(clean(meeting.cloudflare_meeting_id));
+      const storedRoomName = clean(meeting.cloudflare_meeting_id);
+      // Older active rows may still point at a RealtimeKit meeting ID. They are
+      // not valid LiveKit room names, so end the legacy record without calling LiveKit.
+      if (storedRoomName.startsWith("frahoosh-")) await deleteLiveKitRoom(storedRoomName);
       const { error } = await admin.from("classroom_ad_hoc_meetings")
         .update({ status: "ended", ended_at: new Date().toISOString() })
         .eq("id", id).eq("tenant_school_id", schoolId).eq("status", "active");
