@@ -1,3 +1,5 @@
+import { AccessToken } from "npm:livekit-server-sdk@2.19.2";
+
 const clean = (value: unknown) => String(value ?? "").trim();
 
 function base64Url(bytes: Uint8Array): string {
@@ -115,23 +117,30 @@ export async function createLiveKitParticipantToken(
   options: { host?: boolean; screenShare?: boolean; ttlSeconds?: number; role?: string } = {},
 ): Promise<{ token: string; server_url: string; expires_at: string; can_share_screen: boolean }> {
   if (!roomName || !identity) throw new Error("اطلاعات ورود به اتاق کامل نیست.");
+  const apiKey = clean(Deno.env.get("LIVEKIT_API_KEY"));
+  const apiSecret = clean(Deno.env.get("LIVEKIT_API_SECRET"));
+  if (!apiKey || !apiSecret) {
+    throw new Error("تنظیمات امن سرویس کلاس آنلاین (LiveKit) هنوز در سرور ثبت نشده است.");
+  }
+
   const ttl = Math.max(60, Math.min(Number(options.ttlSeconds) || 3600, 4 * 3600));
   const now = Math.floor(Date.now() / 1000);
-  const token = await signJwt({
-    sub: identity,
+  const tokenBuilder = new AccessToken(apiKey, apiSecret, {
+    identity,
     name: clean(displayName).slice(0, 120),
     metadata: JSON.stringify({ role: clean(options.role).slice(0, 40) }),
-    exp: now + ttl,
-    video: {
-      room: roomName,
-      roomJoin: true,
-      canPublish: true,
-      canSubscribe: true,
-      canPublishData: false,
-      canPublishSources: options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"],
-      ...(options.host ? { roomAdmin: true } : {}),
-    },
+    ttl: `${ttl}s`,
   });
+  tokenBuilder.addGrant({
+    roomJoin: true,
+    room: roomName,
+    canPublish: true,
+    canSubscribe: true,
+    canPublishData: false,
+    canPublishSources: options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"],
+    ...(options.host ? { roomAdmin: true } : {}),
+  });
+  const token = await tokenBuilder.toJwt();
   return {
     token,
     server_url: getLiveKitWsUrl(),
