@@ -348,13 +348,8 @@ Deno.serve(async (req: Request) => {
             username: code, national_code: code, email: clean(authRow.user.email), updated_at: new Date().toISOString()
           }).eq("auth_user_id", authUserId).eq("tenant_school_id", schoolId);
           if (accountUpdateError) throw accountUpdateError;
-          const { data: membership, error: membershipReadError } = await admin.from("school_memberships")
-            .select("id").eq("auth_user_id", authUserId).eq("school_id", schoolId).eq("role", "student").maybeSingle();
-          if (membershipReadError) throw membershipReadError;
-          const membershipWrite = membership
-            ? await admin.from("school_memberships").update({ is_active: true, updated_at: new Date().toISOString() }).eq("id", membership.id)
-            : await admin.from("school_memberships").insert({ auth_user_id: authUserId, school_id: schoolId, role: "student", is_active: true });
-          if (membershipWrite.error) throw membershipWrite.error;
+          // The account_settings UPDATE trigger reactivates/creates the school membership.
+          // Do not write school_memberships here; the trigger owns this synchronization.
           const nextMetadata = { ...(authRow.user.app_metadata ?? {}), must_change_password: true, password_reset_at: new Date().toISOString() };
           const { error: resetError } = await admin.auth.admin.updateUserById(authUserId, { password: code, app_metadata: nextMetadata });
           if (resetError) throw resetError;
@@ -385,10 +380,8 @@ Deno.serve(async (req: Request) => {
           });
           if (error) throw error;
         }
-        const { error: membershipError } = await admin.from("school_memberships").insert({
-          auth_user_id: authUserId, school_id: schoolId, role: "student", is_active: true
-        });
-        if (membershipError) throw membershipError;
+        // The account_settings INSERT trigger creates the school membership.
+        // Avoid a second INSERT here: the unique membership key would reject it.
         counts.created++;
       } catch (error) {
         if (createdAuthId) {
