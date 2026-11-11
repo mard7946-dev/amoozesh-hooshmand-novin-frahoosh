@@ -304,16 +304,20 @@ Deno.serve(async (req: Request) => {
 
   if (action === "reset_student_accounts") {
     if (body.confirm !== "RESET_ALL_STUDENTS") return reply({ message: "تأیید بازنشانی گروهی معتبر نیست." }, 400);
-    const { data: students, error: studentsError } = await admin.from("students")
-      .select("id,first_name,last_name,national_code").eq("tenant_school_id", schoolId).limit(2000);
+    const { data: allStudents, error: studentsError } = await admin.from("students")
+      .select("id,first_name,last_name,national_code").eq("tenant_school_id", schoolId).order("id").limit(2000);
     if (studentsError) return reply({ message: "فهرست دانش‌آموزان دریافت نشد." }, 500);
+    const offset = Math.max(0, Math.floor(Number(body.offset) || 0));
+    const batchSize = Math.min(10, Math.max(1, Math.floor(Number(body.batch_size) || 8)));
+    const students = (allStudents ?? []).slice(offset, offset + batchSize);
     const digits = (v: unknown) => clean(v)
       .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
     const counts = { total: (students ?? []).length, created: 0, reset: 0, skipped: 0, failed: 0 };
-    const normalized = (students ?? []).map((s: any) => ({ ...s, code: digits(s.national_code) }));
+    const allNormalized = (allStudents ?? []).map((s: any) => ({ ...s, code: digits(s.national_code) }));
+    const normalized = allNormalized.slice(offset, offset + batchSize);
     const byCode = new Map<string, any[]>();
-    for (const student of normalized) { const group = byCode.get(student.code) ?? []; group.push(student); byCode.set(student.code, group); }
+    for (const student of allNormalized) { const group = byCode.get(student.code) ?? []; group.push(student); byCode.set(student.code, group); }
     for (const student of normalized) {
       const code = student.code;
       if (!/^\d{10}$/.test(code) || (byCode.get(code)?.length ?? 0) !== 1) { counts.skipped++; continue; }
@@ -396,8 +400,10 @@ Deno.serve(async (req: Request) => {
         console.error("admin student account reset failed", JSON.stringify({ student_id: student.id, code: (error as any)?.code ?? null }));
       }
     }
-    return reply({ success: true, ...counts,
-      message: "عملیات حساب‌های دانش‌آموزی پایان یافت. نام کاربری و رمز موقت برای موارد موفق، کد ملی ۱۰ رقمی است و تغییر رمز در نخستین ورود اجباری خواهد بود."
+    const nextOffset = offset + normalized.length;
+    return reply({ success: true, ...counts, processed: normalized.length,
+      next_offset: nextOffset, done: nextOffset >= (allStudents ?? []).length,
+      message: "بخش فعلی عملیات حساب‌های دانش‌آموزی انجام شد. نام کاربری و رمز موقت موارد موفق برابر کد ملی ۱۰ رقمی است و تغییر رمز در نخستین ورود اجباری خواهد بود."
     });
   }
 

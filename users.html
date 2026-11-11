@@ -75,14 +75,24 @@ function reportImport(data){const n=document.getElementById("importStatus");n.cl
 document.querySelectorAll(".profile-group").forEach(b=>b.addEventListener("click",()=>{selectedCategory=b.dataset.category;selectedProfile=null;document.querySelectorAll(".profile-group").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));document.getElementById("profileDetail").hidden=true;renderProfiles()}));document.getElementById("profileSearch").addEventListener("input",renderProfiles);
 document.getElementById("resetAllStudentAccounts").addEventListener("click",async()=>{
  const status=document.getElementById("studentResetStatus");
- if(!confirm("هشدار: رمز همه حساب‌های دانش‌آموزی این مدرسه بازنشانی می‌شود و رمزهای فعلی دیگر کار نمی‌کنند. ادامه می‌دهید؟"))return;
+ if(!confirm("هشدار: رمز همه حساب‌های دانش‌آموزی این مدرسه بازنشانی می‌شود و رمزهای فعلی دیگر کار نمی‌کنند. عملیات در بسته‌های کوچک انجام خواهد شد. ادامه می‌دهید؟"))return;
  if(!confirm("برای تأیید نهایی، همه دانش‌آموزان واجد شرایط با رمز موقت کد ملی فعال می‌شوند. مطمئن هستید؟"))return;
- const button=document.getElementById("resetAllStudentAccounts");button.disabled=true;status.className="status";status.textContent="در حال بررسی پرونده‌ها و بازنشانی حساب‌ها…";
+ const button=document.getElementById("resetAllStudentAccounts");button.disabled=true;status.className="status";status.textContent="در حال آماده‌سازی بازنشانی مرحله‌ای…";
+ const totals={total:0,created:0,reset:0,skipped:0,failed:0};let offset=0,done=false;
  try{
-  const result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS"});
-  status.className="status "+(result.failed?"error":"ok");
-  status.textContent="پایان عملیات — کل پرونده‌ها: "+result.total+"، حساب جدید: "+result.created+"، رمز بازنشانی‌شده: "+result.reset+"، ردشده: "+result.skipped+"، خطا: "+result.failed+". "+(result.message||"");
- }catch(error){status.className="status error";status.textContent=error.message||"بازنشانی حساب دانش‌آموزان ناموفق بود."}
+  while(!done){
+   const result=await api({action:"reset_student_accounts",confirm:"RESET_ALL_STUDENTS",offset,batch_size:8});
+   totals.total=Number(result.total||0);
+   for(const key of ["created","reset","skipped","failed"])totals[key]+=Number(result[key]||0);
+   offset=Number(result.next_offset||offset);
+   done=result.done===true;
+   status.className="status";
+   status.textContent="در حال انجام مرحله‌ای: "+Math.min(offset,totals.total)+" از "+totals.total+" پرونده بررسی شد؛ حساب جدید: "+totals.created+"، رمز بازنشانی‌شده: "+totals.reset+"، ردشده: "+totals.skipped+"، خطا: "+totals.failed+"…";
+   if(!done&&Number(result.processed||0)===0)throw new Error("پردازش متوقف شد؛ ادامه عملیات در مرحله بعدی ممکن است.");
+  }
+  status.className="status "+(totals.failed?"error":"ok");
+  status.textContent="پایان عملیات — کل پرونده‌ها: "+totals.total+"، حساب جدید: "+totals.created+"، رمز بازنشانی‌شده: "+totals.reset+"، ردشده: "+totals.skipped+"، خطا: "+totals.failed+". همه مراحل با موفقیت پاسخ دادند؛ "+(totals.failed?"موارد خطادار نیازمند بررسی هستند.":"")+" تغییر رمز در نخستین ورود اجباری است.";
+ }catch(error){status.className="status error";status.textContent="عملیات تا پرونده "+offset+" از "+totals.total+" پیش رفت. نتیجه موقت — حساب جدید: "+totals.created+"، بازنشانی‌شده: "+totals.reset+"، ردشده: "+totals.skipped+"، خطا: "+totals.failed+". پیام: "+(error.message||"خطای نامشخص")+"؛ لطفاً برای ادامه، وضعیت را بررسی کنیم."}
  finally{button.disabled=false}
 });
 document.getElementById("reloadProfiles").addEventListener("click",loadProfiles);
