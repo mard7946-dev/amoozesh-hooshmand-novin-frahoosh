@@ -137,7 +137,7 @@ export async function createLiveKitParticipantToken(
     canPublish: true,
     canSubscribe: true,
     canPublishData: false,
-    canPublishSources: options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"],
+    canPublishSources: (options.screenShare ? ["camera", "microphone", "screen_share"] : ["camera", "microphone"]) as ("camera" | "microphone" | "screen_share")[],
     ...(options.host ? { roomAdmin: true } : {}),
   });
   const token = await tokenBuilder.toJwt();
