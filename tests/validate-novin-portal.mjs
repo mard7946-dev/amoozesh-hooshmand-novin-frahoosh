@@ -18,6 +18,14 @@ const schoolNameWithZwnj = "دبیرستان سردار شهید حاجی\u200c�
 const schoolNameForDisplay = schoolNameWithZwnj.replace(/[\u200f\u202a-\u202e]/g, "").trim();
 assert.equal(schoolNameForDisplay, schoolNameWithZwnj, "School login display name must preserve the Persian ZWNJ in حاجی‌زاده");
 assert.ok(schoolLogin.includes('school_name: String(school.name ?? "").replace(/[\\u200f\\u202a-\\u202e]/g, "").trim()'), "School login must preserve the stored Persian school-name formatting");
+const schoolNameNormalizerSource = html.match(/function normalizeSchoolDisplayName\\(value\\)\\{[\\s\\S]*?\\}/)?.[0];
+assert.ok(schoolNameNormalizerSource, "Portal must normalize known school-name variants before display");
+const normalizeSchoolDisplayName = new Function(schoolNameNormalizerSource + "; return normalizeSchoolDisplayName;")();
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجیزاده ۲"), schoolNameWithZwnj, "Login must restore the ZWNJ and exact canonical school name when profile metadata is compacted");
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجی‌زاده ۲"), schoolNameWithZwnj, "Canonical school name must remain unchanged");
+assert.equal(normalizeSchoolDisplayName("مدرسه نمونه"), "مدرسه نمونه", "Other school names must not be rewritten");
+assert.ok(html.includes("normalizeSchoolDisplayName(schoolName)"), "Fresh login must display the normalized school name");
+assert.ok(html.includes("normalizeSchoolDisplayName(user.user_metadata?.school_name)"), "Restored sessions must display the normalized school name too");
 const usernameLogin = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
 assert.ok(usernameLogin.includes("must_change_password"), "Username login must enforce the server-side first-login password gate");
 assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLogin.includes("password_changed: true"), "Username login must change the initial parent password without returning a session");
