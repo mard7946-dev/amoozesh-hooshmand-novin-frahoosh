@@ -74,6 +74,22 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "این حساب مجوز ورود به بخش انتخاب‌شده را ندارد." }, 403);
     }
 
+    if (!profile.tenant_school_id) {
+      return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست." }, 403);
+    }
+    const { data: memberships, error: membershipError } = await admin.from("school_memberships")
+      .select("role")
+      .eq("school_id", profile.tenant_school_id)
+      .eq("auth_user_id", login.user.id)
+      .eq("is_active", true);
+    if (membershipError) {
+      console.error("classroom-login membership lookup failed", JSON.stringify({ code: membershipError.code ?? null }));
+      return reply({ message: "بررسی عضویت فعال مدرسه انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
+    }
+    if (!(memberships ?? []).some((item: any) => roleAllowed(item.role, expectedRole))) {
+      return reply({ message: "عضویت فعال این حساب در مدرسه برای ورود به کلاس تأیید نشد." }, 403);
+    }
+
     let className = "";
     if (expectedRole === "student") {
       if (!profile.tenant_school_id) {

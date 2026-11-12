@@ -53,6 +53,25 @@ Deno.serve(async (req: Request) => {
     }
 
     const role = norm(profile.role);
+    const expectedMembershipRoles = role === "teacher"
+      ? ["teacher", "دبیر", "معلم"]
+      : role === "student"
+        ? ["student", "دانش آموز", "دانش‌آموز"]
+        : [];
+    if (!expectedMembershipRoles.length) {
+      return reply({ message: "این نقش مجوز استفاده از سامانه آزمون را ندارد." }, 403);
+    }
+    const { data: activeMemberships, error: membershipError } = await admin.from("school_memberships")
+      .select("role")
+      .eq("school_id", profile.tenant_school_id)
+      .eq("auth_user_id", authData.user.id)
+      .eq("is_active", true);
+    if (membershipError) return reply({ message: "بررسی عضویت فعال مدرسه انجام نشد؛ دوباره تلاش کنید." }, 503);
+    if (!(activeMemberships ?? []).some((item: any) =>
+      expectedMembershipRoles.some(expected => norm(item.role) === norm(expected))
+    )) {
+      return reply({ message: "عضویت فعال این حساب در مدرسه برای استفاده از آزمون تأیید نشد." }, 403);
+    }
     const username = clean(profile.username);
     const nationalCode = clean(profile.national_code);
     const schoolId = profile.tenant_school_id;

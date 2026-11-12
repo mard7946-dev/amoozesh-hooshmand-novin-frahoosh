@@ -18,6 +18,14 @@ const schoolNameWithZwnj = "دبیرستان سردار شهید حاجی\u200c�
 const schoolNameForDisplay = schoolNameWithZwnj.replace(/[\u200f\u202a-\u202e]/g, "").trim();
 assert.equal(schoolNameForDisplay, schoolNameWithZwnj, "School login display name must preserve the Persian ZWNJ in حاجی‌زاده");
 assert.ok(schoolLogin.includes('school_name: String(school.name ?? "").replace(/[\\u200f\\u202a-\\u202e]/g, "").trim()'), "School login must preserve the stored Persian school-name formatting");
+const schoolNameNormalizerSource = html.match(/function normalizeSchoolDisplayName\(value\)\{[\s\S]*?\}/)?.[0];
+assert.ok(schoolNameNormalizerSource, "Portal must normalize known school-name variants before display");
+const normalizeSchoolDisplayName = new Function(schoolNameNormalizerSource + "; return normalizeSchoolDisplayName;")();
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجیزاده ۲"), schoolNameWithZwnj, "Login must restore the ZWNJ and exact canonical school name when profile metadata is compacted");
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجی‌زاده ۲"), schoolNameWithZwnj, "Canonical school name must remain unchanged");
+assert.equal(normalizeSchoolDisplayName("مدرسه نمونه"), "مدرسه نمونه", "Other school names must not be rewritten");
+assert.ok(html.includes("normalizeSchoolDisplayName(schoolName)"), "Fresh login must display the normalized school name");
+assert.ok(html.includes("normalizeSchoolDisplayName(user.user_metadata?.school_name)"), "Restored sessions must display the normalized school name too");
 const usernameLogin = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
 assert.ok(usernameLogin.includes("must_change_password"), "Username login must enforce the server-side first-login password gate");
 assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLogin.includes("password_changed: true"), "Username login must change the initial parent password without returning a session");
@@ -255,6 +263,11 @@ for (const source of examScripts) assert.doesNotThrow(() => new Function(source)
 const assessmentFunction = readFileSync("supabase/functions/assessment-center/index.ts", "utf8");
 assert.ok(assessmentFunction.includes('action === "create_exam"') && assessmentFunction.includes('action === "start_exam"') && assessmentFunction.includes('action === "submit_exam"'), "Assessment API must support authoring, starting, and submitting exams");
 assert.ok(assessmentFunction.includes('.eq("teacher_id", teacher.id)') && assessmentFunction.includes("classAllowed"), "Assessment API must restrict teachers to their own assigned classes");
+assert.ok(assessmentFunction.includes('.from("school_memberships")') && assessmentFunction.includes('.eq("is_active", true)') && assessmentFunction.includes("expectedMembershipRoles"), "Assessment API must require an active membership with the matching school role");
+const classroomLoginFunction = readFileSync("supabase/functions/classroom-login/index.ts", "utf8");
+assert.ok(classroomLoginFunction.includes('.from("school_memberships")') && classroomLoginFunction.includes('.eq("is_active", true)'), "Legacy classroom login must reject users without an active school membership");
+assert.ok(classroomLoginFunction.includes('.eq("tenant_school_id", profile.tenant_school_id)'), "Classroom student lookup must remain scoped to the authenticated user's school");
+
 const assessmentMigration = readFileSync("supabase/migrations/20261030160000_independent_assessment_builder.sql", "utf8");
 for (const table of ["assessment_exams", "assessment_questions", "assessment_attempts", "assessment_answers"]) {
   assert.ok(assessmentMigration.includes("public." + table), "Assessment migration missing table: " + table);
