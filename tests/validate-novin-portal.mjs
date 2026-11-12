@@ -14,6 +14,10 @@ assert.ok(schoolLogin.includes("body?.school_code") && schoolLogin.includes("pro
 assert.ok(schoolLogin.includes('normalize(school.school_code) !== normalize(schoolCode)'), "School login must reject a mismatched school code");
 assert.ok(schoolLogin.includes('.eq("tenant_school_id", school.id)'), "Student lookup must be restricted to the selected school");
 assert.ok(schoolLogin.includes("hasActiveSubscription"), "School login must require an active school subscription");
+const schoolNameWithZwnj = "دبیرستان سردار شهید حاجی\u200cزاده ۲";
+const schoolNameForDisplay = schoolNameWithZwnj.replace(/[\u200f\u202a-\u202e]/g, "").trim();
+assert.equal(schoolNameForDisplay, schoolNameWithZwnj, "School login display name must preserve the Persian ZWNJ in حاجی‌زاده");
+assert.ok(schoolLogin.includes('school_name: String(school.name ?? "").replace(/[\\u200f\\u202a-\\u202e]/g, "").trim()'), "School login must preserve the stored Persian school-name formatting");
 const usernameLogin = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
 assert.ok(usernameLogin.includes("must_change_password"), "Username login must enforce the server-side first-login password gate");
 assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLogin.includes("password_changed: true"), "Username login must change the initial parent password without returning a session");
