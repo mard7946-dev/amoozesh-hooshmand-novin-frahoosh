@@ -18,7 +18,7 @@ const schoolNameWithZwnj = "دبیرستان سردار شهید حاجی\u200c�
 const schoolNameForDisplay = schoolNameWithZwnj.replace(/[\u200f\u202a-\u202e]/g, "").trim();
 assert.equal(schoolNameForDisplay, schoolNameWithZwnj, "School login display name must preserve the Persian ZWNJ in حاجی‌زاده");
 assert.ok(schoolLogin.includes('school_name: String(school.name ?? "").replace(/[\\u200f\\u202a-\\u202e]/g, "").trim()'), "School login must preserve the stored Persian school-name formatting");
-const schoolNameNormalizerSource = html.match(/function normalizeSchoolDisplayName\\(value\\)\\{[\\s\\S]*?\\}/)?.[0];
+const schoolNameNormalizerSource = html.match(/function normalizeSchoolDisplayName\(value\)\{[\s\S]*?\}/)?.[0];
 assert.ok(schoolNameNormalizerSource, "Portal must normalize known school-name variants before display");
 const normalizeSchoolDisplayName = new Function(schoolNameNormalizerSource + "; return normalizeSchoolDisplayName;")();
 assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجیزاده ۲"), schoolNameWithZwnj, "Login must restore the ZWNJ and exact canonical school name when profile metadata is compacted");
