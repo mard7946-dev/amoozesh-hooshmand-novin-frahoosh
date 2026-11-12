@@ -97,7 +97,7 @@ for(const [searchId,selectId,targetRole] of [
 async function resetSelectedAccount(selectId,buttonId,statusId,targetRole){
  const select=document.getElementById(selectId),button=document.getElementById(buttonId),statusBox=document.getElementById(statusId);
  const selected=users.find(u=>u.auth_user_id===select.value&&u.role===targetRole);
- if(!selected){statusBox.className="status error";statusBox.textContent="ابتدا یک "+(targetRole==="student"?"دانش‌آموز":"ولی")+" را انتخاب کنید.";return}
+ if(!selected){statusBox.className="status error";statusBox.textContent="ابتدا یک "+(targetRole==="student"?"دانش‌آموز":targetRole==="teacher"?"دبیر":"ولی")+" را انتخاب کنید.";return}
  const label=targetRole==="student"?"دانش‌آموز":targetRole==="teacher"?"دبیر":"ولی",name=selected.display_name||selected.username||"کاربر انتخاب‌شده";
  if(!confirm("فقط رمز حساب «"+name+"» بازیابی شود؟ رمز حساب سایر افراد تغییر نمی‌کند و تعیین رمز جدید در ورود بعدی اجباری است."))return;
  button.disabled=true;statusBox.className="status";statusBox.textContent="در حال بازیابی رمز حساب "+name+"…";
