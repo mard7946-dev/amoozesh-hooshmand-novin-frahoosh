@@ -263,6 +263,11 @@ for (const source of examScripts) assert.doesNotThrow(() => new Function(source)
 const assessmentFunction = readFileSync("supabase/functions/assessment-center/index.ts", "utf8");
 assert.ok(assessmentFunction.includes('action === "create_exam"') && assessmentFunction.includes('action === "start_exam"') && assessmentFunction.includes('action === "submit_exam"'), "Assessment API must support authoring, starting, and submitting exams");
 assert.ok(assessmentFunction.includes('.eq("teacher_id", teacher.id)') && assessmentFunction.includes("classAllowed"), "Assessment API must restrict teachers to their own assigned classes");
+assert.ok(assessmentFunction.includes('.from("school_memberships")') && assessmentFunction.includes('.eq("is_active", true)') && assessmentFunction.includes("expectedMembershipRoles"), "Assessment API must require an active membership with the matching school role");
+const classroomLoginFunction = readFileSync("supabase/functions/classroom-login/index.ts", "utf8");
+assert.ok(classroomLoginFunction.includes('.from("school_memberships")') && classroomLoginFunction.includes('.eq("is_active", true)'), "Legacy classroom login must reject users without an active school membership");
+assert.ok(classroomLoginFunction.includes('.eq("tenant_school_id", profile.tenant_school_id)'), "Classroom student lookup must remain scoped to the authenticated user's school");
+
 const assessmentMigration = readFileSync("supabase/migrations/20261030160000_independent_assessment_builder.sql", "utf8");
 for (const table of ["assessment_exams", "assessment_questions", "assessment_attempts", "assessment_answers"]) {
   assert.ok(assessmentMigration.includes("public." + table), "Assessment migration missing table: " + table);
