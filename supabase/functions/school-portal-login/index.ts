@@ -225,7 +225,7 @@ Deno.serve(async (req: Request) => {
         role: clean(profile.role),
         class_name: className,
         school_id: school.id,
-        school_name: clean(school.name),
+        school_name: String(school.name ?? "").replace(/[\u200f\u202a-\u202e]/g, "").trim(),
         available_roles: availableRoles,
       },
     });
