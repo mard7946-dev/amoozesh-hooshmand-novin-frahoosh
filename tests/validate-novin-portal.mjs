@@ -151,6 +151,50 @@ assert.ok(userAdminPage.includes("frahooshReturnToPanel('manager')"), "User admi
 assert.ok(counselingPage.includes("frahooshReturnToPanel('counselor')"), "Counseling back button must preserve the signed-in role");
 assert.ok(examPage.includes("frahooshReturnToPanel('teacher')"), "Exam center back button must preserve the signed-in role");
 const parentPage = readFileSync("parent-management.html", "utf8");
+
+const parentImportPage = readFileSync("users.html", "utf8");
+const parentNormalizerStart = parentImportPage.indexOf("function normalizeParentHeader(value){");
+const parentNormalizerEnd = parentImportPage.indexOf('document.getElementById("importParents").addEventListener', parentNormalizerStart);
+assert.ok(parentNormalizerStart >= 0 && parentNormalizerEnd > parentNormalizerStart, "User management page must expose the Digiform/standard Excel normalization helper before import");
+const parentNormalizerSource = parentImportPage.slice(parentNormalizerStart, parentNormalizerEnd);
+const normalizeParentRows = new Function(parentNormalizerSource + "; return normalizeParentRows;")();
+const digiformRows = normalizeParentRows([{
+  "نام پدر": "پدر آزمایشی",
+  "کد ملی 1": "0012345678",
+  "موبایل 1": "09120000000",
+  "نام نام خانوادگی مادر": "مادر آزمایشی",
+  "کد ملی 2": "۰۰۲۳۴۵۶۷۸۹",
+  "موبایل 2": "۰۹۱۲۱۱۱۱۱۱۱",
+  "نام و نام خانوادگی": "دانش‌آموز آزمایشی",
+  "کد ملی 3": "0034567890"
+}]);
+assert.equal(digiformRows.length, 2, "One Digiform student row must expand to separate father and mother links");
+assert.deepEqual(digiformRows.map(row => row.relationship_type), ["father", "mother"], "Digiform parent relationships must remain distinct");
+assert.deepEqual(digiformRows.map(row => row.parent_national_code), ["0012345678", "0023456789"], "Parent national codes must normalize Persian digits without losing leading zeroes");
+assert.ok(digiformRows.every(row => row.student_national_code === "0034567890"), "Both parent links must target the same exact student record");
+assert.deepEqual(digiformRows.map(row => row.parent_name), ["پدر آزمایشی", "مادر آزمایشی"], "Father and mother names must map from their distinct Digiform columns");
+assert.ok(digiformRows.every(row => row.parent_phone.length === 11), "Parent phone numbers must normalize Persian digits");
+const standardParentRows = normalizeParentRows([{
+  "کد ملی ولی": "0045678901",
+  "نام ولی": "سرپرست آزمایشی",
+  "شماره تماس ولی": "09123334455",
+  "نسبت با دانش‌آموز": "سرپرست",
+  "کد ملی دانش‌آموز": "0056789012",
+  "نام دانش‌آموز": "دانش‌آموز",
+  "نام خانوادگی دانش‌آموز": "آزمایشی"
+}]);
+assert.equal(standardParentRows.length, 1, "The existing one-parent-per-row template must remain supported");
+assert.equal(standardParentRows[0].relationship_type, "سرپرست", "The standard template must preserve the supplied relationship");
+assert.equal(standardParentRows[0].student_national_code, "0056789012", "The standard template must preserve the child identity");
+
+
+const parentAccountImportFunction = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(parentAccountImportFunction.includes('if (action === "import_parents")'), "Manager API must implement the parent Excel import action");
+assert.ok(parentAccountImportFunction.includes('.eq("tenant_school_id", schoolId).in("national_code", allChildCodes)'), "Parent import must resolve children only inside the active school");
+assert.ok(parentAccountImportFunction.includes('app_metadata: { must_change_password: true }'), "New parent accounts must require a password change at first login");
+assert.ok(parentAccountImportFunction.includes('relationship_type: group.children[index].relationship'), "Parent import must persist father/mother/guardian relationship types");
+assert.ok(parentAccountImportFunction.includes('onConflict: "parent_username,student_id", ignoreDuplicates: true'), "Repeated parent imports must not duplicate existing parent-child links");
+
 const parentFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
 assert.ok(html.includes("const parentTabs={") && html.includes("'درخواست انجمن اولیا و مربیان':'associations'"), "Parent menu entries must route to their matching operational tabs");
 assert.ok(html.includes("location.href='parent-meetings.html?v=20261030-2'"), "Parent meetings must route to the operational request form with cache refresh");
