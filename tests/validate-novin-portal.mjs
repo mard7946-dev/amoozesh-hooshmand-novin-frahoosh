@@ -187,6 +187,14 @@ assert.equal(standardParentRows.length, 1, "The existing one-parent-per-row temp
 assert.equal(standardParentRows[0].relationship_type, "سرپرست", "The standard template must preserve the supplied relationship");
 assert.equal(standardParentRows[0].student_national_code, "0056789012", "The standard template must preserve the child identity");
 
+
+const parentAccountImportFunction = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(parentAccountImportFunction.includes('if (action === "import_parents")'), "Manager API must implement the parent Excel import action");
+assert.ok(parentAccountImportFunction.includes('.eq("tenant_school_id", schoolId).in("national_code", allChildCodes)'), "Parent import must resolve children only inside the active school");
+assert.ok(parentAccountImportFunction.includes('app_metadata: { must_change_password: true }'), "New parent accounts must require a password change at first login");
+assert.ok(parentAccountImportFunction.includes('relationship_type: group.children[index].relationship'), "Parent import must persist father/mother/guardian relationship types");
+assert.ok(parentAccountImportFunction.includes('onConflict: "parent_username,student_id", ignoreDuplicates: true'), "Repeated parent imports must not duplicate existing parent-child links");
+
 const parentFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
 assert.ok(html.includes("const parentTabs={") && html.includes("'درخواست انجمن اولیا و مربیان':'associations'"), "Parent menu entries must route to their matching operational tabs");
 assert.ok(html.includes("location.href='parent-meetings.html?v=20261030-2'"), "Parent meetings must route to the operational request form with cache refresh");
