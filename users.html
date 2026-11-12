@@ -11,19 +11,19 @@
 </style></head>
 <body><main>
 <header><div><h1>مدیریت کاربران و نقش‌ها</h1><p>نقش و عضویت کاربران از پایگاه داده مدرسه خوانده و همان‌جا ذخیره می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
-<section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="actions"><select id="teacherAccountPicker" aria-label="انتخاب دبیر برای بازیابی فردی"><option value="">انتخاب دبیر برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedTeacherAccount" type="button" disabled>بازیابی رمز دبیر انتخاب‌شده</button></div><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
+<section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="actions"><input id="teacherAccountSearch" type="search" placeholder="جست‌وجوی نام، نام خانوادگی یا کد دبیر" aria-label="جست‌وجوی دبیر برای بازیابی فردی"><select id="teacherAccountPicker" aria-label="انتخاب دبیر برای بازیابی فردی"><option value="">انتخاب دبیر برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedTeacherAccount" type="button" disabled>بازیابی رمز دبیر انتخاب‌شده</button></div><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
 
 <section class="card" id="studentAccountReset">
 <h2>حساب‌های ورود دانش‌آموزان</h2>
 <p>فقط دانش‌آموزان همین مدرسه بررسی می‌شوند. برای هر پروندهٔ یکتا با کد ملی ۱۰ رقمی، نام کاربری و رمز موقت برابر کد ملی ثبت می‌شود؛ تغییر رمز در نخستین ورود اجباری است.</p>
-<div class="actions"><select id="studentAccountPicker" aria-label="انتخاب دانش‌آموز برای بازیابی فردی"><option value="">انتخاب دانش‌آموز برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedStudentAccount" type="button" disabled>بازیابی رمز دانش‌آموز انتخاب‌شده</button><button class="btn primary" id="resetAllStudentAccounts" type="button">بازنشانی حساب همه دانش‌آموزان</button></div>
+<div class="actions"><input id="studentAccountSearch" type="search" placeholder="جست‌وجوی نام، نام خانوادگی یا کد دانش‌آموز" aria-label="جست‌وجوی دانش‌آموز برای بازیابی فردی"><select id="studentAccountPicker" aria-label="انتخاب دانش‌آموز برای بازیابی فردی"><option value="">انتخاب دانش‌آموز برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedStudentAccount" type="button" disabled>بازیابی رمز دانش‌آموز انتخاب‌شده</button><button class="btn primary" id="resetAllStudentAccounts" type="button">بازنشانی حساب همه دانش‌آموزان</button></div>
 <div id="studentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های دانش‌آموزی موجود را نیز بازنشانی می‌کند.</div>
 <small>هشدار امنیتی: کد ملی به‌تنهایی رمز امنی نیست. این روش فقط برای آزمون کنترل‌شده است؛ دانش‌آموز باید بلافاصله رمز مستقل و غیرقابل حدس تعیین کند.</small>
 </section>
 <section class="card" id="parentAccountReset">
 <h2>حساب‌های ورود اولیا</h2>
 <p>فقط حساب‌های ولی همین مدرسه که نام کاربری و کد ملی معتبر و یکسان دارند بازنشانی می‌شوند. رمز موقت برابر کد ملی خواهد شد و تغییر رمز در نخستین ورود اجباری است.</p>
-<div class="actions"><select id="parentAccountPicker" aria-label="انتخاب ولی برای بازیابی فردی"><option value="">انتخاب ولی برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedParentAccount" type="button" disabled>بازیابی رمز ولی انتخاب‌شده</button><button class="btn primary" id="resetAllParentAccounts" type="button">بازنشانی رمز همه اولیا</button></div>
+<div class="actions"><input id="parentAccountSearch" type="search" placeholder="جست‌وجوی نام، نام خانوادگی یا کد ملی ولی" aria-label="جست‌وجوی ولی برای بازیابی فردی"><select id="parentAccountPicker" aria-label="انتخاب ولی برای بازیابی فردی"><option value="">انتخاب ولی برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedParentAccount" type="button" disabled>بازیابی رمز ولی انتخاب‌شده</button><button class="btn primary" id="resetAllParentAccounts" type="button">بازنشانی رمز همه اولیا</button></div>
 <div id="parentResetStatus" class="status" role="status" aria-live="polite">این عملیات رمز حساب‌های معتبر اولیا را بازنشانی می‌کند؛ حساب‌های نامعتبر یا ناسازگار بدون تغییر می‌مانند.</div>
 <small>کد ملی رمز امنی نیست؛ این رمز فقط موقت است و ولی باید در نخستین ورود رمز مستقل تعیین کند.</small>
 </section>
@@ -61,23 +61,36 @@ const ops=el('td');const save=el('button','btn primary','ذخیره نقش');sav
 const toggle=el('button','btn',user.is_active?'غیرفعال‌سازی':'فعال‌سازی');toggle.disabled=roleIsManager;toggle.addEventListener('click',async()=>{if(!confirm('آیا از '+(user.is_active?'غیرفعال‌سازی':'فعال‌سازی')+' دسترسی '+(user.display_name||user.username)+' مطمئن هستید؟'))return;toggle.disabled=true;try{await api({action:'set_active',auth_user_id:user.auth_user_id,is_active:!user.is_active});status('وضعیت دسترسی ذخیره شد.');await load()}catch(e){status(e.message,true)}finally{toggle.disabled=roleIsManager}});
 if(['parent','teacher','student'].includes(user.role)){const label=user.role==='teacher'?'دبیر':user.role==='student'?'دانش‌آموز':'ولی';const reset=el('button','btn', 'بازیابی رمز همین '+label);reset.disabled=!user.auth_user_id;reset.addEventListener('click',async()=>{if(!confirm('فقط رمز حساب «'+(user.display_name||user.username)+'» بازیابی شود؟ در ورود بعدی تعیین رمز جدید اجباری خواهد بود.'))return;reset.disabled=true;try{const result=await api({action:'reset_individual_password',auth_user_id:user.auth_user_id});status(result.message||'رمز همین '+label+' بازیابی شد.');}catch(e){status(e.message,true)}finally{reset.disabled=false}});ops.append(reset,document.createTextNode(' '));}ops.append(save,document.createTextNode(' '),toggle);tr.append(who,username,roleCell,activeCell,ops);rowsNode.append(tr)}
 }
-function fillRecoveryPicker(selectId, targetRole){
- const select=document.getElementById(selectId),previous=select.value;
+function normalizeRecoverySearch(value){
+ return String(value||"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[۰-۹]/g,x=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(x))).replace(/[٠-٩]/g,x=>String("٠١٢٣٤٥٦٧٨٩".indexOf(x))).toLocaleLowerCase("fa").trim();
+}
+function fillRecoveryPicker(selectId, searchId, targetRole){
+ const select=document.getElementById(selectId),search=document.getElementById(searchId),previous=select.value;
+ const q=normalizeRecoverySearch(search.value);
  select.replaceChildren();
- const placeholder=el("option","","انتخاب "+(targetRole==="student"?"دانش‌آموز":"ولی")+" برای بازیابی فردی…");
+ const placeholder=el("option","","انتخاب "+(targetRole==="student"?"دانش‌آموز":targetRole==="teacher"?"دبیر":"ولی")+" برای بازیابی فردی…");
  placeholder.value="";select.append(placeholder);
- const candidates=users.filter(u=>u.role===targetRole&&u.auth_user_id);
+ const candidates=users.filter(u=>u.role===targetRole&&u.auth_user_id&&
+  [u.display_name,u.username,u.national_code,u.phone].some(v=>normalizeRecoverySearch(v).includes(q)));
  for(const user of candidates){
   const option=el("option","",(user.display_name||user.username||"بدون نام")+(user.username?" · "+user.username:""));
   option.value=user.auth_user_id;select.append(option);
  }
  if(candidates.some(u=>u.auth_user_id===previous))select.value=previous;
- document.getElementById(targetRole==="student"?"resetSelectedStudentAccount":"resetSelectedParentAccount").disabled=!select.value;
+ const buttonId=targetRole==="student"?"resetSelectedStudentAccount":targetRole==="teacher"?"resetSelectedTeacherAccount":"resetSelectedParentAccount";
+ document.getElementById(buttonId).disabled=!select.value;
 }
 function renderRecoveryPickers(){
- fillRecoveryPicker("studentAccountPicker","student");
- fillRecoveryPicker("parentAccountPicker","parent");
- fillRecoveryPicker("teacherAccountPicker","teacher");
+ fillRecoveryPicker("studentAccountPicker","studentAccountSearch","student");
+ fillRecoveryPicker("parentAccountPicker","parentAccountSearch","parent");
+ fillRecoveryPicker("teacherAccountPicker","teacherAccountSearch","teacher");
+}
+for(const [searchId,selectId,targetRole] of [
+ ["studentAccountSearch","studentAccountPicker","student"],
+ ["parentAccountSearch","parentAccountPicker","parent"],
+ ["teacherAccountSearch","teacherAccountPicker","teacher"]
+]){
+ document.getElementById(searchId).addEventListener("input",()=>fillRecoveryPicker(selectId,searchId,targetRole));
 }
 async function resetSelectedAccount(selectId,buttonId,statusId,targetRole){
  const select=document.getElementById(selectId),button=document.getElementById(buttonId),statusBox=document.getElementById(statusId);
