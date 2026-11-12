@@ -449,7 +449,7 @@ Deno.serve(async (req: Request) => {
   const targetId = clean(body.auth_user_id);
   if (!targetId || targetId === auth.user.id) return reply({ message: "حساب هدف نامعتبر است." }, 400);
   const { data: target, error: targetError } = await admin.from("account_settings")
-    .select("auth_user_id,role,tenant_school_id,username,national_code").eq("auth_user_id", targetId).maybeSingle();
+    .select("auth_user_id,role,tenant_school_id,username,national_code,phone").eq("auth_user_id", targetId).maybeSingle();
   if (targetError || !target) return reply({ message: "کاربر هدف پیدا نشد." }, 404);
   if (clean(target.tenant_school_id) !== schoolId) return reply({ message: "امکان تغییر کاربران مدرسه دیگر وجود ندارد." }, 403);
   if (managerRoles.includes(clean(target.role).toLowerCase())) return reply({ message: "تغییر یا غیرفعال‌سازی حساب مدیریتی از این بخش مجاز نیست." }, 403);
@@ -462,24 +462,34 @@ Deno.serve(async (req: Request) => {
     const digits = (value: unknown) => clean(value)
       .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-    const nationalCode = digits(target.national_code);
-    if (!/^\d{10}$/.test(nationalCode)) {
-      return reply({ message: "کد ملی ثبت‌شده برای این حساب معتبر نیست؛ برای جلوگیری از بازنشانی حساب اشتباه، تغییری انجام نشد." }, 409);
-    }
-    if (role === "parent" && digits(target.username) !== nationalCode) {
-      return reply({ message: "نام کاربری و کد ملی ولی یکسان نیست؛ بازنشانی خودکار انجام نشد." }, 409);
-    }
-    if (role === "student" || role === "teacher") {
-      const table = role === "student" ? "students" : "teachers";
-      const { data: matchingProfiles, error: profileError } = await admin.from(table)
-        .select("id").eq("tenant_school_id", schoolId).eq("national_code", nationalCode).limit(2);
-      if (profileError) {
-        console.error("admin individual account profile lookup failed", profileError.code);
-        return reply({ message: "پرونده فرد برای تأیید هویت دریافت نشد." }, 500);
+    let temporaryPassword = "";
+    if (role === "teacher") {
+      let phone = digits(target.phone).replace(/\D/g, "");
+      if (phone.length === 10 && phone.startsWith("9")) phone = "0" + phone;
+      if (!/^09\d{9}$/.test(phone)) {
+        return reply({ message: "شماره همراه ثبت‌شده برای این دبیر معتبر نیست؛ رمز تغییر نکرد." }, 409);
       }
-      if ((matchingProfiles ?? []).length !== 1) {
-        return reply({ message: "برای این کد ملی دقیقاً یک پرونده در همین مدرسه پیدا نشد؛ رمز تغییر نکرد." }, 409);
+      temporaryPassword = phone;
+    } else {
+      const nationalCode = digits(target.national_code);
+      if (!/^\d{10}$/.test(nationalCode)) {
+        return reply({ message: "کد ملی ثبت‌شده برای این حساب معتبر نیست؛ برای جلوگیری از بازنشانی حساب اشتباه، تغییری انجام نشد." }, 409);
       }
+      if (role === "parent" && digits(target.username) !== nationalCode) {
+        return reply({ message: "نام کاربری و کد ملی ولی یکسان نیست؛ بازنشانی خودکار انجام نشد." }, 409);
+      }
+      if (role === "student") {
+        const { data: matchingProfiles, error: profileError } = await admin.from("students")
+          .select("id").eq("tenant_school_id", schoolId).eq("national_code", nationalCode).limit(2);
+        if (profileError) {
+          console.error("admin individual account profile lookup failed", profileError.code);
+          return reply({ message: "پرونده دانش‌آموز برای تأیید هویت دریافت نشد." }, 500);
+        }
+        if ((matchingProfiles ?? []).length !== 1) {
+          return reply({ message: "برای این کد ملی دقیقاً یک پرونده دانش‌آموز در همین مدرسه پیدا نشد؛ رمز تغییر نکرد." }, 409);
+        }
+      }
+      temporaryPassword = nationalCode;
     }
     const { data: targetAuth, error: targetAuthError } = await admin.auth.admin.getUserById(targetId);
     if (targetAuthError || !targetAuth.user) return reply({ message: "حساب ورود فرد پیدا نشد." }, 404);
@@ -489,7 +499,7 @@ Deno.serve(async (req: Request) => {
       password_reset_at: new Date().toISOString(),
     };
     const { error: resetError } = await admin.auth.admin.updateUserById(targetId, {
-      password: nationalCode,
+      password: temporaryPassword,
       app_metadata: nextAppMetadata,
     });
     if (resetError) {
@@ -497,7 +507,8 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "بازیابی رمز حساب فرد انجام نشد." }, 500);
     }
     const roleLabel = role === "teacher" ? "دبیر" : role === "student" ? "دانش‌آموز" : "ولی";
-    return reply({ success: true, message: "رمز فقط حساب همین " + roleLabel + " بازیابی شد؛ تغییر رمز در ورود بعدی اجباری است." });
+    const credentialLabel = role === "teacher" ? "شماره همراه ثبت‌شده" : "کد ملی ثبت‌شده";
+    return reply({ success: true, message: "رمز فقط حساب همین " + roleLabel + " به " + credentialLabel + " بازنشانی شد؛ تغییر رمز در ورود بعدی اجباری است." });
   }
 
   if (action === "reset_parent_password") {
