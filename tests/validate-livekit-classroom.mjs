@@ -17,8 +17,8 @@ const tokenFunction = readFileSync("supabase/functions/classroom-realtime-token/
 const meetingsFunction = readFileSync("supabase/functions/classroom-meetings/index.ts", "utf8");
 const livekitHelper = readFileSync("supabase/functions/_shared/livekit.ts", "utf8");
 const legacyClassroomRpcMigration = readFileSync("supabase/migrations/20261112081242_revoke_legacy_classroom_student_rpcs.sql", "utf8");
-assert.match(legacyClassroomRpcMigration, /REVOKE EXECUTE ON FUNCTION public\\.verify_online_class_student\\([^;]+ FROM PUBLIC, anon, authenticated/i);
-assert.match(legacyClassroomRpcMigration, /REVOKE EXECUTE ON FUNCTION public\\.register_online_class_student_guest\\([^;]+ FROM PUBLIC, anon, authenticated/i);
+assert.match(legacyClassroomRpcMigration, /REVOKE EXECUTE ON FUNCTION public\.verify_online_class_student\([^;]+ FROM PUBLIC, anon, authenticated/i);
+assert.match(legacyClassroomRpcMigration, /REVOKE EXECUTE ON FUNCTION public\.register_online_class_student_guest\([^;]+ FROM PUBLIC, anon, authenticated/i);
 
 
 assert.match(tokenFunction, /createLiveKitParticipantToken/);
