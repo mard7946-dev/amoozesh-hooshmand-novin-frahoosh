@@ -11,7 +11,9 @@
 </style></head>
 <body><main>
 <header><div><h1>مدیریت کاربران و نقش‌ها</h1><p>نقش و عضویت کاربران از پایگاه داده مدرسه خوانده و همان‌جا ذخیره می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
-<section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="actions"><input id="teacherAccountSearch" type="search" placeholder="جست‌وجوی نام، نام خانوادگی یا کد دبیر" aria-label="جست‌وجوی دبیر برای بازیابی فردی"><select id="teacherAccountPicker" aria-label="انتخاب دبیر برای بازیابی فردی"><option value="">انتخاب دبیر برای بازیابی فردی…</option></select><button class="btn" id="resetSelectedTeacherAccount" type="button" disabled>بازیابی رمز دبیر انتخاب‌شده</button></div><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
+<section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
+
+<section class="card" id="teacherAccountRecovery"><h2>بازیابی رمز فردی دبیران</h2><p>نام یا نام خانوادگی دبیر را جست‌وجو کنید، حساب درست را انتخاب کنید و فقط رمز همان حساب را بازیابی کنید.</p><div class="actions"><input id="teacherAccountSearch" type="search" placeholder="جست‌وجوی نام یا نام خانوادگی دبیر" aria-label="جست‌وجوی دبیر برای بازیابی رمز فردی"><select id="teacherAccountPicker" aria-label="انتخاب دبیر برای بازیابی رمز فردی"><option value="">انتخاب دبیر…</option></select><button class="btn" id="resetSelectedTeacherAccount" type="button" disabled>بازیابی رمز همین دبیر</button></div><div id="teacherResetStatus" class="status" role="status" aria-live="polite">با انتخاب دبیر، دکمهٔ بازیابی فعال می‌شود.</div></section>
 
 <section class="card" id="studentAccountReset">
 <h2>حساب‌های ورود دانش‌آموزان</h2>
@@ -95,8 +97,8 @@ for(const [searchId,selectId,targetRole] of [
 async function resetSelectedAccount(selectId,buttonId,statusId,targetRole){
  const select=document.getElementById(selectId),button=document.getElementById(buttonId),statusBox=document.getElementById(statusId);
  const selected=users.find(u=>u.auth_user_id===select.value&&u.role===targetRole);
- if(!selected){statusBox.className="status error";statusBox.textContent="ابتدا یک "+(targetRole==="student"?"دانش‌آموز":"ولی")+" را انتخاب کنید.";return}
- const label=targetRole==="student"?"دانش‌آموز":"ولی",name=selected.display_name||selected.username||"کاربر انتخاب‌شده";
+ if(!selected){statusBox.className="status error";statusBox.textContent="ابتدا یک "+(targetRole==="student"?"دانش‌آموز":targetRole==="teacher"?"دبیر":"ولی")+" را انتخاب کنید.";return}
+ const label=targetRole==="student"?"دانش‌آموز":targetRole==="teacher"?"دبیر":"ولی",name=selected.display_name||selected.username||"کاربر انتخاب‌شده";
  if(!confirm("فقط رمز حساب «"+name+"» بازیابی شود؟ رمز حساب سایر افراد تغییر نمی‌کند و تعیین رمز جدید در ورود بعدی اجباری است."))return;
  button.disabled=true;statusBox.className="status";statusBox.textContent="در حال بازیابی رمز حساب "+name+"…";
  try{
@@ -106,7 +108,7 @@ async function resetSelectedAccount(selectId,buttonId,statusId,targetRole){
  finally{button.disabled=!select.value}
 }
 document.getElementById("teacherAccountPicker").addEventListener("change",e=>{document.getElementById("resetSelectedTeacherAccount").disabled=!e.target.value});
-document.getElementById("resetSelectedTeacherAccount").addEventListener("click",()=>resetSelectedAccount("teacherAccountPicker","resetSelectedTeacherAccount","profileStatus","teacher"));
+document.getElementById("resetSelectedTeacherAccount").addEventListener("click",()=>resetSelectedAccount("teacherAccountPicker","resetSelectedTeacherAccount","teacherResetStatus","teacher"));
 document.getElementById("studentAccountPicker").addEventListener("change",e=>{document.getElementById("resetSelectedStudentAccount").disabled=!e.target.value});
 document.getElementById("parentAccountPicker").addEventListener("change",e=>{document.getElementById("resetSelectedParentAccount").disabled=!e.target.value});
 document.getElementById("resetSelectedStudentAccount").addEventListener("click",()=>resetSelectedAccount("studentAccountPicker","resetSelectedStudentAccount","studentResetStatus","student"));
