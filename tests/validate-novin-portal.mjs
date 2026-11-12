@@ -18,6 +18,14 @@ const schoolNameWithZwnj = "دبیرستان سردار شهید حاجی\u200c�
 const schoolNameForDisplay = schoolNameWithZwnj.replace(/[\u200f\u202a-\u202e]/g, "").trim();
 assert.equal(schoolNameForDisplay, schoolNameWithZwnj, "School login display name must preserve the Persian ZWNJ in حاجی‌زاده");
 assert.ok(schoolLogin.includes('school_name: String(school.name ?? "").replace(/[\\u200f\\u202a-\\u202e]/g, "").trim()'), "School login must preserve the stored Persian school-name formatting");
+const normalizerStart = html.indexOf("function normalizeSchoolDisplayName(value){");
+const panelFunctionStart = html.indexOf("function openAuthenticatedPanel(", normalizerStart);
+assert.ok(normalizerStart >= 0 && panelFunctionStart > normalizerStart, "Portal must normalize Persian school-name spacing before display");
+const normalizerSource = html.slice(normalizerStart, panelFunctionStart).trim();
+const normalizeSchoolDisplayName = new Function(normalizerSource + "; return normalizeSchoolDisplayName;")();
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجیزاده ۲"), schoolNameWithZwnj, "Joined حاجیزاده must display with the correct ZWNJ");
+assert.equal(normalizeSchoolDisplayName("دبیرستان سردار شهید حاجی زاده ۲"), schoolNameWithZwnj, "Separated حاجی زاده must display with the correct ZWNJ");
+assert.equal(normalizeSchoolDisplayName(schoolNameWithZwnj), schoolNameWithZwnj, "Already-correct school name must remain unchanged");
 const usernameLogin = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
 assert.ok(usernameLogin.includes("must_change_password"), "Username login must enforce the server-side first-login password gate");
 assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLogin.includes("password_changed: true"), "Username login must change the initial parent password without returning a session");
