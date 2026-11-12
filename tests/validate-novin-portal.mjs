@@ -152,10 +152,11 @@ assert.ok(counselingPage.includes("frahooshReturnToPanel('counselor')"), "Counse
 assert.ok(examPage.includes("frahooshReturnToPanel('teacher')"), "Exam center back button must preserve the signed-in role");
 const parentPage = readFileSync("parent-management.html", "utf8");
 
-const parentNormalizerStart = parentPage.indexOf("function normalizeParentHeader(value){");
-const parentNormalizerEnd = parentPage.indexOf('document.getElementById("importParents").addEventListener', parentNormalizerStart);
-assert.ok(parentNormalizerStart >= 0 && parentNormalizerEnd > parentNormalizerStart, "Parent panel must expose the Digiform/standard Excel normalization helper before import");
-const parentNormalizerSource = parentPage.slice(parentNormalizerStart, parentNormalizerEnd);
+const parentImportPage = readFileSync("users.html", "utf8");
+const parentNormalizerStart = parentImportPage.indexOf("function normalizeParentHeader(value){");
+const parentNormalizerEnd = parentImportPage.indexOf('document.getElementById("importParents").addEventListener', parentNormalizerStart);
+assert.ok(parentNormalizerStart >= 0 && parentNormalizerEnd > parentNormalizerStart, "User management page must expose the Digiform/standard Excel normalization helper before import");
+const parentNormalizerSource = parentImportPage.slice(parentNormalizerStart, parentNormalizerEnd);
 const normalizeParentRows = new Function(parentNormalizerSource + "; return normalizeParentRows;")();
 const digiformRows = normalizeParentRows([{
   "نام پدر": "پدر آزمایشی",
