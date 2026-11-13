@@ -36,9 +36,8 @@ Deno.serve(async (req: Request) => {
     .select("role").eq("school_id", profile.tenant_school_id).eq("auth_user_id", userId).eq("is_active", true);
   if (membershipError) return reply({ message: "بررسی سمت سازمانی انجام نشد." }, 503);
   const roles = new Set((memberships ?? []).map((m: any) => String(m.role ?? "").trim().toLowerCase()));
-  if (!allowedRoles.has(String(profile.role ?? "").trim().toLowerCase()) &&
-      ![...roles].some(r => allowedRoles.has(r))) {
-    return reply({ message: "صدور کارت آزمون فقط برای معاون اجرایی و مدیر مدرسه مجاز است." }, 403);
+  if (![...roles].some(r => allowedRoles.has(r))) {
+    return reply({ message: "عضویت فعال با سمت معاون اجرایی یا مدیر مدرسه برای این عملیات تأیید نشد." }, 403);
   }
 
   const body = await req.json().catch(() => ({}));
