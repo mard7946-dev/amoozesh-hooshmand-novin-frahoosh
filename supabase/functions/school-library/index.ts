@@ -19,13 +19,13 @@ Deno.serve(async(req:Request)=>{
   const {data:p,error:pErr}=await db.from("account_settings").select("role,tenant_school_id").eq("auth_user_id",auth.user.id).maybeSingle();
   if(pErr||!p?.tenant_school_id)return reply({message:"پروفایل مدرسه تأیید نشد."},403);
   const role=norm(p.role),manager=["manager","مدیر","school_manager"].includes(role);
-  const deputy=["deputy","educational_deputy","معاون","معاون آموزشی"].includes(role);
+  const deputy=["deputy","educational_deputy","educational","معاون","معاون آموزشی"].includes(role);
   const teacher=["teacher","دبیر","معلم"].includes(role);
   if(!manager&&!deputy&&!teacher)return reply({message:"این نقش به کتابخانه دسترسی ندارد."},403);
   const {data:members,error:mErr}=await db.from("school_memberships").select("role").eq("school_id",p.tenant_school_id).eq("auth_user_id",auth.user.id).eq("is_active",true);
   if(mErr)return reply({message:"بررسی عضویت مدرسه ناموفق بود."},503);
   const memberRoles=(members||[]).map(x=>norm(x.role));
-  const allowed=manager?memberRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?memberRoles.some(x=>["deputy","معاون","معاون آموزشی","educational_deputy"].includes(x)):memberRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
+  const allowed=manager?memberRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?memberRoles.some(x=>["deputy","معاون","معاون آموزشی","educational_deputy","educational"].includes(x)):memberRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
   if(!allowed)return reply({message:"عضویت فعال این نقش در مدرسه تأیید نشد."},403);
   const body=await req.json().catch(()=>({})),action=clean(body.action,50),school=p.tenant_school_id;
   if(action==="list"){
@@ -41,9 +41,10 @@ Deno.serve(async(req:Request)=>{
   if(action==="add_link"&&manager){
    const title=clean(body.title,240),raw=clean(body.source_url,2000);
    if(title.length<2||!raw)return reply({message:"عنوان و نشانی منبع الزامی است."},400);
+   if(body.permission_confirmed!==true)return reply({message:"برای ثبت لینک باید تأیید کنید مجوز یا اجازهٔ انتشار این منبع را دارید."},400);
    let parsed:URL;try{parsed=new URL(raw)}catch{return reply({message:"نشانی اینترنتی معتبر نیست."},400)}
    if(parsed.protocol!=="https:"||privateHost(parsed.hostname)||parsed.username||parsed.password)return reply({message:"فقط پیوند عمومی HTTPS پذیرفته می‌شود."},400);
-   const {data,error}=await db.from("school_library_resources").insert({school_id:school,created_by:auth.user.id,title,description:clean(body.description),resource_type:types.includes(body.resource_type)?body.resource_type:"other",subject:clean(body.subject,80),grade:clean(body.grade,80),chapter:clean(body.chapter,120),source_url:parsed.toString(),source_title:clean(body.source_title,240)||parsed.hostname,source_license:clean(body.source_license,240),permission_confirmed:body.permission_confirmed===true,status:"published"}).select("id").single();
+   const {data,error}=await db.from("school_library_resources").insert({school_id:school,created_by:auth.user.id,title,description:clean(body.description),resource_type:types.includes(body.resource_type)?body.resource_type:"other",subject:clean(body.subject,80),grade:clean(body.grade,80),chapter:clean(body.chapter,120),source_url:parsed.toString(),source_title:clean(body.source_title,240)||parsed.hostname,source_license:clean(body.source_license,240),permission_confirmed:true,status:"published"}).select("id").single();
    if(error)throw error;return reply({ok:true,id:data.id,message:"پیوند به کتابخانه اضافه شد."});
   }
   if(action==="upload_pdf"&&manager){
