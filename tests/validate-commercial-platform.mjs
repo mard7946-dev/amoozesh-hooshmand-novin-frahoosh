@@ -68,7 +68,8 @@ for (const marker of [
   'action === "set_school_status"',
   'action === "set_subscription"',
   'action === "invite_school_manager"',
-  "inviteUserByEmail",
+  "admin.auth.admin.createUser",
+  "must_change_password: true",
   "frahoosh_platform_attach_school_manager",
   "admin.auth.admin.deleteUser",
   'rpc("frahoosh_platform_create_school"',
@@ -82,11 +83,15 @@ assert.ok(fn.includes("req.headers.get(\"apikey\")") || fn.includes("SUPABASE_AN
 assert.ok(!fn.includes("body?.is_admin") && !fn.includes("body?.platform_admin"), "Platform management API must not trust a client-supplied admin flag");
 assert.ok(fn.includes("auth.user.id"), "Platform admin access must be bound to the authenticated user");
 assert.ok(fn.includes(".replace(/\\D/g") && fn.includes("/^09\\d{9}$/") && fn.includes("/^\\d{10}$/"), "Manager contact validation must use digit regexes");
-assert.ok(fn.includes("@[^\\s@]+\\.[^\\s@]+$/"), "Manager email validation must escape the domain separator correctly");
+assert.ok(fn.includes("frahoosh.invalid") && fn.includes("initial_password"), "Manager accounts must use a reserved internal identity and an initial password, without email delivery");
 assert.ok(fn.includes("userClient.rpc"), "Privileged SQL RPCs must receive the authenticated caller JWT, not the service-role identity.");
+
+const internalManagerMigration = readFileSync("supabase/migrations/20261113170000_allow_internal_manager_auth_identity.sql", "utf8");
+assert.ok(internalManagerMigration.includes("manager[+]") && internalManagerMigration.includes("frahoosh[.]invalid") && internalManagerMigration.includes("current_user <> 'service_role'"), "Internal manager identity migration must narrowly validate .invalid aliases and remain service-role-only");
 
 const page = readFileSync("platform-admin.html", "utf8");
 assert.ok(page.includes("invite_school_manager") && page.includes("دعوت مدیر مدرسه"), "Platform admin UI must provide school-manager invitations");
+assert.ok(page.includes("managerInitialPassword") && !page.includes("managerEmail"), "Manager creation form must request an initial password and contain no email field");
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
 assert.ok(page.includes("frahoosh_novin_access_token"), "Platform admin UI must reuse the authenticated session token");
 assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No service-role or secret key may appear in the browser");
