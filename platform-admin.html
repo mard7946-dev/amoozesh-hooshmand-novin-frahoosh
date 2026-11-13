@@ -112,7 +112,7 @@ function fillPlans(){
 }
 function fillManagerSchools(){
  const select=$("managerSchool");select.replaceChildren();
- const eligible=state.schools.filter(s=>s.status==="active"&&!s.owner_auth_user_id);
+ const eligible=state.schools.filter(s=>s.status==="active"&&!s.owner_auth_user_id&&(!s.subscription||Date.parse(s.subscription.ends_at)>Date.now()));
  if(!eligible.length){
   const option=node("option","","مدرسه فعالِ بدون مدیر اصلی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
  }
@@ -132,12 +132,13 @@ function renderSchools(){
   const card=node("article","school");
   const head=node("div","school-head");
   const title=node("div");title.append(node("strong","",school.name),node("div","muted",school.slug+" · کد "+(school.school_code||"—")));
-  const pill=node("span","pill "+(school.status==="active"?"active":"suspended"),school.status==="active"?"فعال":school.status==="suspended"?"تعلیق‌شده":"بایگانی‌شده");
+  const trialExpired=!!(school.subscription&&!school.subscription.plan_id&&Date.parse(school.subscription.ends_at)<=Date.now());
+  const pill=node("span","pill "+(school.status==="active"&&!trialExpired?"active":"suspended"),trialExpired?"پایان دوره آزمایشی":school.status==="active"?"فعال":school.status==="suspended"?"تعلیق‌شده":"بایگانی‌شده");
   head.append(title,pill);card.append(head);
   const sub=school.subscription;
   const summary=sub?(sub.plan_id
    ?("اشتراک: "+(state.plans.find(p=>p.id===sub.plan_id)?.name||"طرح ثبت‌شده")+" · ظرفیت "+new Intl.NumberFormat("fa-IR").format(sub.student_limit)+" دانش‌آموز · پایان "+date(sub.ends_at))
-   :("دوره آزمایشی رایگان ۷ روزه · پایان "+date(sub.ends_at))):"بدون اشتراک";
+   :(trialExpired?"دوره آزمایشی رایگان ۷ روزه پایان یافته · تاریخ پایان "+date(sub.ends_at):"دوره آزمایشی رایگان ۷ روزه · پایان "+date(sub.ends_at))):"بدون اشتراک";
   card.append(node("p","muted",summary));
   card.append(node("p","muted","اعضای فعال: "+new Intl.NumberFormat("fa-IR").format(school.active_members)+" · شناسه: "+school.id));
   const tools=node("div","school-tools");
@@ -205,7 +206,7 @@ $("classroomServiceToggle").onclick=async()=>{
  const next=!state.classroomServiceEnabled;
  if(!confirm(next?"سرویس کلاس آنلاین برای همه مدارس فعال شود؟":"تمام کلاس‌های آنلاین در همه مدارس غیرفعال شوند؟"))return;
  const button=$("classroomServiceToggle");button.disabled=true;
- try{const result=await api({action:"set_classroom_service",enabled:next});state.classroomServiceEnabled=result.classroom_service_enabled===true;renderClassroomService();show(state.classroomServiceEnabled?"سرویس کلاس آنلاین برای همه مدارس فعال شد.":"تمام کلاس‌های آنلاین برای همه مدارس غیرفعال شدند.","success");}
+ try{const result=await api({action:"set_classroom_service",enabled:next});state.classroomServiceEnabled=result.classroom_service_enabled===true;renderClassroomService();show(result.warning|| (state.classroomServiceEnabled?"سرویس کلاس آنلاین برای همه مدارس فعال شد.":"تمام کلاس‌های آنلاین برای همه مدارس غیرفعال شدند."),result.warning?"error":"success");}
  catch(error){show(error.message||"تغییر وضعیت سراسری کلاس آنلاین انجام نشد.","error");button.disabled=false;}
 };
 $("platformLoginForm").onsubmit=async event=>{
