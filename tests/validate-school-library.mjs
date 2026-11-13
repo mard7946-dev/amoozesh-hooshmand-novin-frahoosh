@@ -1,0 +1,18 @@
+import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
+const page=readFileSync("school-library.html","utf8");
+const api=readFileSync("supabase/functions/school-library/index.ts","utf8");
+const portal=readFileSync("portal.html","utf8");
+const migration=readFileSync("supabase/migrations/20261113200000_school_learning_library.sql","utf8");
+assert.ok(portal.includes("roleItems.push(['📖','کتابخانه آموزشی'"),"Library must appear in manager, deputy and teacher panels");
+assert.ok(portal.includes("school-library.html"),"Portal must route to school library");
+assert.ok(page.includes("upload_pdf")&&page.includes("add_link"),"Library must support PDF upload and URL registration");
+assert.ok(page.includes('accept="application/pdf,.pdf"'),"Upload picker must restrict to PDFs");
+assert.ok(api.includes('action==="add_link"&&manager'),"Only manager can add external resources");
+assert.ok(api.includes('action==="upload_pdf"&&manager'),"Only manager can upload PDFs");
+assert.ok(api.includes('action==="archive"&&manager'),"Only manager can archive resources");
+assert.ok(api.includes('createSignedUrl')&&api.includes('school-library-files'),"Private PDFs must be served with signed URLs");
+assert.ok(api.includes('new TextDecoder().decode(bytes.slice(0,5))!=="%PDF-"'),"Uploaded file must be validated as PDF");
+assert.ok(api.includes('parsed.protocol!=="https:"'),"External links must require HTTPS");
+assert.ok(migration.includes("public=false")&&migration.includes("enable row level security")&&migration.includes("revoke all"),"Library storage and records must be private and protected by RLS");
+console.log("School learning library checks passed.");

@@ -6,6 +6,14 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'question-bank.html'
+      - 'school-library.html'
+      - 'supabase/functions/school-library/index.ts'
+      - 'supabase/migrations/20261113200000_school_learning_library.sql'
+      - 'tests/validate-school-library.mjs'
+      - 'supabase/functions/question-bank/index.ts'
+      - 'supabase/migrations/20261113190000_central_question_bank.sql'
+      - 'tests/validate-question-bank.mjs'
       - 'users.html'
       - 'platform-admin.html'
       - 'accept-invite.html'
@@ -91,6 +99,10 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate central question bank role boundaries and ingestion
+        run: node tests/validate-question-bank.mjs
+      - name: Validate school learning library access and PDF handling
+        run: node tests/validate-school-library.mjs
       - name: Validate commercial platform security and dashboard
         if: always()
         run: node tests/validate-commercial-platform.mjs
@@ -112,6 +124,10 @@ jobs:
           deno check supabase/functions/parent-management/index.ts
           deno check supabase/functions/parent-meetings/index.ts
           deno check supabase/functions/family-education/index.ts
+      - name: Type-check central question bank Edge Function
+        run: deno check supabase/functions/question-bank/index.ts
+      - name: Type-check school library Edge Function
+        run: deno check supabase/functions/school-library/index.ts
       - name: Type-check assessment and legacy classroom login Edge Functions
         run: |
           deno check supabase/functions/assessment-center/index.ts
