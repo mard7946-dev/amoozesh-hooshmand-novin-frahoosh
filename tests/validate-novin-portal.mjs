@@ -37,8 +37,9 @@ assert.ok(parentAdmin.includes("action === \"reset_parent_password\"") && parent
 assert.ok(parentAdmin.includes('action === "reset_student_accounts"') && parentAdmin.includes('"RESET_ALL_STUDENTS"'), "Manager-only bulk student reset must require explicit confirmation");
 assert.ok(parentAdmin.includes('eq("tenant_school_id", schoolId)') && parentAdmin.includes('must_change_password: true'), "Student accounts must be limited to the current school and forced to change their temporary password");
 assert.ok(usernameLogin.includes("change_student_initial_password") && usernameLogin.includes('accountRole === "student"'), "Student first login must be forced through a server-side password change");
+assert.ok(usernameLogin.includes("change_manager_initial_password") && usernameLogin.includes('accountRole === "manager"') && usernameLogin.includes("owner_auth_user_id"), "Manager first login must validate school ownership before changing the initial password");
 assert.ok(schoolLogin.includes('"change_student_initial_password"'), "School portal login must relay the student password-change completion response");
-assert.ok(html.includes('requestedRole===\'student\'') && html.includes('change_student_initial_password'), "Student portal must show and submit the first-login password change form");
+assert.ok(html.includes("change_student_initial_password") && html.includes("change_manager_initial_password") && html.includes("requestedRole"), "Student and manager portals must show and submit first-login password changes");
 const usersPage = readFileSync("users.html", "utf8");
 assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"reset_student_accounts"'), "Manager user page must expose the confirmed bulk student reset control");
 

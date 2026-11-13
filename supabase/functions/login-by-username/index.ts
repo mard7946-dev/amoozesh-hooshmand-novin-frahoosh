@@ -178,6 +178,20 @@ Deno.serve(async (req: Request) => {
   const mustChange = data.user.app_metadata?.must_change_password === true;
   if (mustChange) {
     const accountRole = clean(account.data?.role).toLowerCase();
+    if (accountRole === "manager" && requestedRole === "manager") {
+      if (action !== "change_manager_initial_password") return respond({ message: "برای نخستین ورود مدیر، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
+      if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
+      const schoolCode = clean(body?.school_code).toUpperCase();
+      if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
+      const school = await admin.from("schools").select("school_code,status,owner_auth_user_id").eq("id", account.data?.tenant_school_id).maybeSingle();
+      if (school.error || !school.data || school.data.status !== "active" || school.data.owner_auth_user_id !== data.user.id || clean(school.data.school_code).toUpperCase() !== schoolCode) return respond({ message: "مدرسه یا مالکیت حساب مدیر تأیید نشد." }, 403);
+      const membership = await admin.from("school_memberships").select("id").eq("school_id", account.data?.tenant_school_id).eq("auth_user_id", data.user.id).eq("role", "manager").eq("is_active", true).maybeSingle();
+      if (membership.error || !membership.data) return respond({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
+      const nextAppMetadata = { ...(data.user.app_metadata ?? {}), must_change_password: false, password_changed_at: new Date().toISOString() };
+      const { error: updateError } = await admin.auth.admin.updateUserById(data.user.id, { password: newPassword, app_metadata: nextAppMetadata });
+      if (updateError) { console.error("manager initial password update failed", updateError.message); return respond({ message: "ثبت رمز جدید انجام نشد؛ دوباره تلاش کنید." }, 500); }
+      return respond({ password_changed: true, message: "رمز اولیه مدیر تغییر کرد. اکنون با رمز جدید وارد شوید." });
+    }
     if (accountRole === "student" && requestedRole === "student") {
       if (action !== "change_student_initial_password") {
         return respond({ message: "برای نخستین ورود دانش‌آموز، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
