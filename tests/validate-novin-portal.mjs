@@ -181,7 +181,7 @@ assert.ok(parentFunction.includes('action==="review_association"'), "Manager mus
 
 const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(publishWorkflow.includes("- 'directory.html'"), "Changes to directory.html must trigger GitHub Pages deployment");
-assert.ok(publishWorkflow.includes("bulletin.html directory.html counseling.html exam-center.html _site/"), "GitHub Pages artifact must include directory.html");
+assert.ok(publishWorkflow.includes("bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html _site/"), "GitHub Pages artifact must include directory.html");
 assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کارکنان"), "Staff directory page must exist in the repository");
 const directory = readFileSync("directory.html", "utf8");
 assert.ok(directory.includes("/rest/v1/teacher_classes?"), "Directory must read teacher assignments from Supabase REST");
