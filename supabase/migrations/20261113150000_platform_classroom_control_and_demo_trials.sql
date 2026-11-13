@@ -120,3 +120,42 @@ $function$;
 
 revoke all on function public.frahoosh_platform_create_demo_school(text,text,text) from public, anon;
 grant execute on function public.frahoosh_platform_create_demo_school(text,text,text) to authenticated;
+
+-- Expired trial/paid access must also fail closed for every RLS policy that
+-- relies on the authenticated user's current school id.
+create or replace function private.frahoosh_current_school_id()
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $function$
+declare
+  v_school_id uuid;
+begin
+  if private.frahoosh_parent_password_change_required() then
+    return null;
+  end if;
+
+  select a.tenant_school_id into v_school_id
+  from public.account_settings a
+  where a.auth_user_id = auth.uid()
+  order by a.updated_at desc nulls last
+  limit 1;
+
+  if v_school_id is null then
+    select oc.tenant_school_id into v_school_id
+    from public.guest_online_members gm
+    join public.online_classes oc on oc.id::text = gm.class_id::text
+    where gm.user_id = auth.uid() and gm.left_at is null
+    order by gm.joined_at desc
+    limit 1;
+  end if;
+
+  if v_school_id is null or not private.frahoosh_school_access_active(v_school_id) then
+    return null;
+  end if;
+
+  return v_school_id;
+end;
+$function$;
