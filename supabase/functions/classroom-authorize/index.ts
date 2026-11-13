@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
     }
     if (classroomFlag?.enabled !== true) {
-      const message = role === "teacher"
+      const message = ["teacher", "دبیر", "معلم"].includes(role)
         ? "این سرویس در زمان غیرحضوری فعال خواهد شد."
         : "این سرویس با خرید سرور بیرونی فعال خواهد شد.";
       return reply({ ok: false, service_disabled: true, message }, 403);
