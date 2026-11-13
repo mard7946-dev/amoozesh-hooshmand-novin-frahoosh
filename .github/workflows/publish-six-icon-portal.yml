@@ -9,6 +9,7 @@ on:
       - 'manifest.webmanifest'
       - 'service-worker.js'
       - 'icons/**'
+      - 'assets/**'
       - 'about.html'
       - 'finance.html'
       - 'portal.html'
@@ -72,6 +73,8 @@ jobs:
           cp finance.html about.html _site/
           printf '%s' "{\\\"build\\\":\\\"$GITHUB_RUN_NUMBER\\\",\\\"commit\\\":\\\"\${GITHUB_SHA:0:7}\\\",\\\"built_at\\\":\\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"}" > _site/build-info.json
           cp jalali-date.js reports-utils.js _site/
+          mkdir -p _site/assets
+          cp assets/school-logo.svg _site/assets/
           mkdir -p _site/icons
           cp icons/frahoosh-192.svg icons/frahoosh-512.svg _site/icons/
           python -m pip install --quiet cairosvg
