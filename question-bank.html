@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>بانک سؤال فراهوش نوین</title>
 <style>
 :root{font-family:Tahoma,Arial,sans-serif;color:#182235;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:18px}.head{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.head h1{margin:0 0 8px;font-size:22px}.muted{color:#64748b;font-size:13px}.head .muted{color:#d2dbea}.panel{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}label{display:block;font-size:13px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}textarea{min-height:85px}button{border:0;border-radius:9px;padding:11px 15px;background:#166534;color:white;font:inherit;cursor:pointer;margin:5px 3px}button.secondary{background:#e8eef7;color:#17243a}button:disabled{opacity:.5}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.item{border:1px solid #e1e8f0;border-radius:12px;padding:13px;margin:10px 0}.tag{font-size:12px;color:#475569}.notice{padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.hidden{display:none}.actions{display:flex;gap:6px;flex-wrap:wrap}.danger{background:#9f1239}
-</style></head><body><main class="wrap">
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head><body><main class="wrap">
 <header class="head"><h1>بانک سؤال فراهوش نوین</h1><div class="muted" id="roleText">بانک مرکزی مدرسه و مجموعه شخصی سؤال‌ها</div></header>
 <div id="notice" class="notice">در حال دریافت اطلاعات بانک سؤال…</div>
 <section id="managerTools" class="panel hidden"><h2>مدیریت بانک مرکزی</h2>
@@ -50,6 +50,7 @@ $("pdfImportBtn").onclick=async()=>{
   note("در حال استخراج متن PDF…");
   if(!window.pdfjsLib)throw new Error("ابزار خواندن PDF بارگذاری نشد؛ اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.");
   const data=await file.arrayBuffer();
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const pdf=await pdfjsLib.getDocument({data}).promise;
   let pages=[];
   for(let i=1;i<=pdf.numPages;i++){
@@ -64,4 +65,4 @@ $("pdfImportBtn").onclick=async()=>{
  }catch(e){note(e.message||"ورود PDF انجام نشد.")}
 };
 if(!token){note("نشست ورود پیدا نشد؛ از پنل مدرسه دوباره وارد شوید.")}else refresh().catch(e=>note(e.message));
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script></script></body></html>
+</script></body></html>
