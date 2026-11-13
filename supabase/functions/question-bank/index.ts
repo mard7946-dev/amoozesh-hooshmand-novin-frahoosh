@@ -80,6 +80,29 @@ Deno.serve(async(req:Request)=>{
    if(cErr)throw cErr;if(!c)return reply({ok:true});
    const {error}=await db.from("question_collection_items").delete().eq("collection_id",c.id).eq("question_id",questionId);if(error)throw error;return reply({ok:true});
   }
+  if(action==="import_pdf"&&manager){
+   if(body.source_permission_confirmed!==true)return reply({message:"برای ورود PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
+   const sourceText=String(body.text||"").slice(0,180000);
+   const subject=clean(body.subject);
+   if(!subject)return reply({message:"نام درس الزامی است."},400);
+   if(sourceText.length<20)return reply({message:"متن قابل استفاده‌ای از PDF دریافت نشد."},422);
+   // Split only at explicit numbered-question boundaries; do not invent question boundaries.
+   const normalized=sourceText.replace(/\r/g,"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+   const starts=[...normalized.matchAll(/(?:^|\n)\s*(?:سؤال\s*)?\d{1,3}\s*[.)ـ:\-]\s*/g)];
+   if(!starts.length)return reply({message:"شماره‌گذاری سؤال‌ها در متن PDF تشخیص داده نشد. برای جلوگیری از ورود اشتباه، چیزی ذخیره نشد؛ شماره‌گذاری سؤال‌ها را بررسی کنید.",imported:0},422);
+   const chunks=[];
+   for(let i=0;i<starts.length&&chunks.length<100;i++){
+    const start=starts[i].index+(starts[i][0].startsWith("\n")?1:0)+starts[i][0].length-(starts[i][0].startsWith("\n")?1:0);
+    const end=i+1<starts.length?starts[i+1].index:normalized.length;
+    const prompt=clean(normalized.slice(start,end).replace(/\s+/g," "));
+    if(prompt.length>=8)chunks.push(prompt);
+   }
+   if(!chunks.length)return reply({message:"سؤال قابل ذخیره‌ای از متن PDF استخراج نشد."},422);
+   const rows=chunks.map(prompt=>({tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(body.grade),prompt,question_type:"essay",options:[],correct_answer:"",source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"}));
+   const {data,error}=await db.from("question_bank").insert(rows).select("id");
+   if(error)throw error;
+   return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال به‌صورت پیش‌نویس وارد شد. متن، گزینه‌ها و پاسخ‌ها را بازبینی و تکمیل کنید؛ هیچ‌کدام خودکار منتشر نشده‌اند."});
+  }
   if(action==="import_url"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت محتوا باید مجوز استفاده از منبع را تأیید کنید."},400);
    let parsed:URL;try{parsed=new URL(clean(body.source_url));}catch{return reply({message:"نشانی اینترنتی معتبر نیست."},400);}
