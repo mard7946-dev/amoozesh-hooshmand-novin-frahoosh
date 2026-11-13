@@ -11,7 +11,7 @@ assert.ok(page.includes('accept="application/pdf,.pdf"'),"Upload picker must res
 assert.ok(api.includes('action==="add_link"&&manager'),"Only manager can add external resources");
 assert.ok(api.includes('"educational"'),"Actual educational role must be recognized");
 assert.ok(api.includes("body.permission_confirmed!==true"),"External links must require explicit permission confirmation");
-assert.ok(page.includes("linkPermission")&&page.includes("permission_confirmed: $(\\"linkPermission\\").checked"),"Link permission confirmation must be wired from UI");
+assert.ok(page.includes("linkPermission")&&page.includes('permission_confirmed:$("linkPermission").checked'),"Link permission confirmation must be wired from UI");
 assert.ok(api.includes('action==="upload_pdf"&&manager'),"Only manager can upload PDFs");
 assert.ok(api.includes('action==="archive"&&manager'),"Only manager can archive resources");
 assert.ok(api.includes('createSignedUrl')&&api.includes('school-library-files'),"Private PDFs must be served with signed URLs");
