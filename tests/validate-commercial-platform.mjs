@@ -29,7 +29,7 @@ for (const marker of [
   "revoke all on function",
   "grant execute"
 ]) assert.ok(featureMigration.includes(marker), "Platform feature migration missing marker: " + marker);
-assert.ok(!/grant\\s+execute\\s+on\\s+function[^;]+\\s+to\\s+anon/i.test(featureMigration), "Platform feature RPCs must never be executable by anon");
+assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+anon/i.test(featureMigration), "Platform feature RPCs must never be executable by anon");
 assert.ok(featureMigration.includes("security definer") && featureMigration.includes("set search_path = ''"), "Platform feature RPCs must pin an empty search_path");
 
 const managerMigration = readFileSync("supabase/migrations/20261031190000_school_manager_invitation.sql", "utf8");
