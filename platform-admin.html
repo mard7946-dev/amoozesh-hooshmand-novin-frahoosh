@@ -30,6 +30,12 @@
 <section id="app" hidden>
 <div class="grid" id="metrics"></div>
 <section class="card">
+<h2>کنترل سراسری کلاس آنلاین</h2>
+<p class="muted">این کلید فقط در اختیار مدیر کل پروژه است و وضعیت کلاس آنلاین را برای تمام مدارس یکسان تغییر می‌دهد.</p>
+<div class="row"><span id="classroomServiceStatus" class="pill suspended">در حال بررسی وضعیت…</span><button id="classroomServiceToggle" class="primary" type="button" disabled>در حال دریافت وضعیت…</button></div>
+<p id="classroomServiceHelp" class="muted">با غیرفعال‌سازی، ورود به همه کلاس‌ها و جلسه‌های آنلاین از سمت سرور مسدود می‌شود.</p>
+</section>
+<section class="card">
 <h2>ثبت مدرسه جدید</h2>
 <p class="muted">با ثبت مدرسه، یک فضای مستقل و اشتراک اولیه ساخته می‌شود. ساخت حساب مدیر مدرسه و دعوت‌نامه ورود، مرحله بعدی راه‌اندازی مشتری است.</p>
 <form id="createSchool">
@@ -41,6 +47,18 @@
 <div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
 </div>
 <div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه و ایجاد اشتراک</button></div>
+</form>
+</section>
+<section class="card">
+<h2>ایجاد نسخه آزمایشی رایگان ۷ روزه</h2>
+<p class="muted">برای هر مدرسه یک فضای مستقل با کد و شناسه جداگانه ساخته می‌شود. زمان آزمایش از لحظه ایجاد مدرسه آغاز می‌شود و پس از ۷ روز دسترسی آن پایان می‌یابد. برای ورود مدیر، سپس از بخش «دعوت مدیر مدرسه» استفاده کنید.</p>
+<form id="createDemoSchool">
+<div class="grid">
+<div><label for="demoSchoolName">نام مدرسه</label><input id="demoSchoolName" required maxlength="180" placeholder="نام مدرسه"></div>
+<div><label for="demoSchoolSlug">شناسه لاتین مدرسه</label><input id="demoSchoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="demo-school" dir="ltr"></div>
+<div><label for="demoSchoolCode">کد مدرسه</label><input id="demoSchoolCode" required maxlength="40" placeholder="DEMO001" dir="ltr"></div>
+</div>
+<div style="margin-top:14px"><button class="primary" type="submit">ایجاد مدرسه آزمایشی ۷ روزه</button></div>
 </form>
 </section>
 <section class="card">
@@ -78,7 +96,7 @@ const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 let token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const $=id=>document.getElementById(id);
-let state={plans:[],schools:[],drafts:[]};
+let state={plans:[],schools:[],drafts:[],classroomServiceEnabled:false};
 function show(message,kind=""){const el=$("status");el.textContent=message;el.className="status"+(kind?" "+kind:"");}
 async function api(body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/platform-management",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});
@@ -86,12 +104,11 @@ async function api(body){
  if(!response.ok)throw new Error(data.message||"درخواست مدیریت انجام نشد.");
  return data;
 }
-const money=value=>new Intl.NumberFormat("fa-IR").format(Number(value||0))+" ریال";
 const date=value=>value?new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"medium",timeZone:"Asia/Tehran"}).format(new Date(value)):"—";
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
 function fillPlans(){
  const selects=[$("newPlan"),...document.querySelectorAll("[data-plan-select]")];
- for(const select of selects){const current=select.value;select.replaceChildren();for(const plan of state.plans.filter(x=>x.is_active)){const option=node("option","",plan.name+" · "+money(plan.price_irr));option.value=plan.id;select.append(option);}if(current&&state.plans.some(x=>x.id===current))select.value=current;}
+ for(const select of selects){const current=select.value;select.replaceChildren();for(const plan of state.plans.filter(x=>x.is_active)){const option=node("option","",plan.name);option.value=plan.id;select.append(option);}if(current&&state.plans.some(x=>x.id===current))select.value=current;}
 }
 function fillManagerSchools(){
  const select=$("managerSchool");select.replaceChildren();
@@ -118,16 +135,29 @@ function renderSchools(){
   const pill=node("span","pill "+(school.status==="active"?"active":"suspended"),school.status==="active"?"فعال":school.status==="suspended"?"تعلیق‌شده":"بایگانی‌شده");
   head.append(title,pill);card.append(head);
   const sub=school.subscription;
-  const summary=sub?("اشتراک: "+(state.plans.find(p=>p.id===sub.plan_id)?.name||"طرح نامشخص")+" · ظرفیت "+new Intl.NumberFormat("fa-IR").format(sub.student_limit)+" دانش‌آموز · پایان "+date(sub.ends_at)+" · "+money(sub.price_irr)):"بدون اشتراک";
+  const summary=sub?(sub.plan_id
+   ?("اشتراک: "+(state.plans.find(p=>p.id===sub.plan_id)?.name||"طرح ثبت‌شده")+" · ظرفیت "+new Intl.NumberFormat("fa-IR").format(sub.student_limit)+" دانش‌آموز · پایان "+date(sub.ends_at))
+   :("دوره آزمایشی رایگان ۷ روزه · پایان "+date(sub.ends_at))):"بدون اشتراک";
   card.append(node("p","muted",summary));
   card.append(node("p","muted","اعضای فعال: "+new Intl.NumberFormat("fa-IR").format(school.active_members)+" · شناسه: "+school.id));
   const tools=node("div","school-tools");
   const statusWrap=node("div");const statusLabel=node("label","","وضعیت مدرسه");const statusSelect=node("select");for(const [value,label] of [["active","فعال"],["suspended","تعلیق"],["archived","بایگانی"]]){const op=node("option","",label);op.value=value;statusSelect.append(op);}statusSelect.value=school.status;const statusButton=node("button","","ذخیره وضعیت");statusButton.onclick=async()=>{statusButton.disabled=true;try{await api({action:"set_school_status",school_id:school.id,status:statusSelect.value});show("وضعیت مدرسه به‌روزرسانی شد.","success");await load();}catch(e){show(e.message,"error");}finally{statusButton.disabled=false;}};statusWrap.append(statusLabel,statusSelect,statusButton);
-  const planWrap=node("div");const planLabel=node("label","","تمدید یا تغییر اشتراک");const planSelect=node("select");planSelect.dataset.planSelect="1";for(const plan of state.plans.filter(x=>x.is_active)){const op=node("option","",plan.name+" · "+money(plan.price_irr));op.value=plan.id;planSelect.append(op);}if(sub?.plan_id)planSelect.value=sub.plan_id;const planButton=node("button","","ثبت اشتراک جدید");planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
+  const planWrap=node("div");const planLabel=node("label","","تمدید یا تغییر اشتراک");const planSelect=node("select");planSelect.dataset.planSelect="1";for(const plan of state.plans.filter(x=>x.is_active)){const op=node("option","",plan.name);op.value=plan.id;planSelect.append(op);}if(sub?.plan_id)planSelect.value=sub.plan_id;const planButton=node("button","","ثبت اشتراک جدید");planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
   tools.append(statusWrap,planWrap);card.append(tools);
   card.append(node("p","muted",school.owner_auth_user_id?"مدیر اصلی مدرسه معرفی و به عضویت مدیریتی متصل شده است.":"مدیر اصلی مدرسه هنوز معرفی نشده است."));
   root.append(card);
  }
+}
+function renderClassroomService(){
+ const enabled=state.classroomServiceEnabled;
+ const status=$("classroomServiceStatus"),button=$("classroomServiceToggle");
+ status.textContent=enabled?"سرویس فعال است":"سرویس غیرفعال است";
+ status.className="pill "+(enabled?"active":"suspended");
+ button.disabled=false;
+ button.textContent=enabled?"غیرفعال‌کردن همه کلاس‌ها":"فعال‌سازی کلاس آنلاین";
+ $("classroomServiceHelp").textContent=enabled
+  ?"کلاس آنلاین در همه مدارس در دسترس است. با غیرفعال‌سازی، ورود و دریافت توکن جلسه از سمت سرور مسدود می‌شود."
+  :"کلاس آنلاین برای همه مدارس بسته است؛ مدیر مدرسه پیام نیاز به سرور بیرونی و دبیر پیام فعال‌شدن در زمان غیرحضوری را می‌بیند.";
 }
 function renderDrafts(){
  const root=$("schoolDrafts");root.replaceChildren();
@@ -165,12 +195,19 @@ async function load(){
  if(!token){$("app").hidden=true;$("platformLogin").hidden=false;show("برای ورود، اطلاعات حساب مدیر کل را وارد کنید.");return;}
  $("refresh").disabled=true;
  try{
-  const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];state.drafts=data.drafts||[];
-  $("app").hidden=false;$("platformLogin").hidden=true;renderMetrics(data.metrics||{});fillPlans();fillManagerSchools();renderSchools();renderDrafts();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
+  const data=await api({action:"overview"});state.plans=data.plans||[];state.schools=data.schools||[];state.drafts=data.drafts||[];state.classroomServiceEnabled=data.classroom_service_enabled===true;
+  $("app").hidden=false;$("platformLogin").hidden=true;renderMetrics(data.metrics||{});renderClassroomService();fillPlans();fillManagerSchools();renderSchools();renderDrafts();renderAudit(data.audit||[]);show("دسترسی مدیریت کل تأیید شد.","success");
  }catch(error){token="";sessionStorage.removeItem("frahoosh_novin_access_token");$("app").hidden=true;$("platformLogin").hidden=false;show(error.message||"دریافت اطلاعات ناموفق بود.","error");}
  finally{$("refresh").disabled=false;}
 }
 $("refresh").onclick=load;
+$("classroomServiceToggle").onclick=async()=>{
+ const next=!state.classroomServiceEnabled;
+ if(!confirm(next?"سرویس کلاس آنلاین برای همه مدارس فعال شود؟":"تمام کلاس‌های آنلاین در همه مدارس غیرفعال شوند؟"))return;
+ const button=$("classroomServiceToggle");button.disabled=true;
+ try{const result=await api({action:"set_classroom_service",enabled:next});state.classroomServiceEnabled=result.classroom_service_enabled===true;renderClassroomService();show(state.classroomServiceEnabled?"سرویس کلاس آنلاین برای همه مدارس فعال شد.":"تمام کلاس‌های آنلاین برای همه مدارس غیرفعال شدند.","success");}
+ catch(error){show(error.message||"تغییر وضعیت سراسری کلاس آنلاین انجام نشد.","error");button.disabled=false;}
+};
 $("platformLoginForm").onsubmit=async event=>{
  event.preventDefault();const button=$("platformLoginSubmit");button.disabled=true;show("در حال بررسی حساب مدیر کل…");
  try{
@@ -187,6 +224,16 @@ $("createSchool").onsubmit=async event=>{
   await api({action:"create_school",name:$("schoolName").value.trim(),slug:$("schoolSlug").value.trim(),school_code:$("schoolCode").value.trim(),plan_id:$("newPlan").value,grace_days:Number($("graceDays").value)});
   $("createSchool").reset();$("graceDays").value="7";show("مدرسه و اشتراک اولیه با موفقیت ثبت شدند. برای ورود کاربران مدرسه باید حساب مدیر آن مدرسه نیز ساخته شود.","success");await load();
  }catch(error){show(error.message||"ثبت مدرسه انجام نشد.","error");}
+ finally{button.disabled=false;}
+};
+$("createDemoSchool").onsubmit=async event=>{
+ event.preventDefault();const button=$("createDemoSchool").querySelector('button[type="submit"]');button.disabled=true;
+ try{
+  await api({action:"create_demo_school",name:$("demoSchoolName").value.trim(),slug:$("demoSchoolSlug").value.trim(),school_code:$("demoSchoolCode").value.trim()});
+  $("createDemoSchool").reset();
+  show("مدرسه آزمایشی با دسترسی رایگان ۷ روزه ساخته شد. اکنون مدیر آن را از بخش دعوت مدیر مدرسه معرفی کنید.","success");
+  await load();
+ }catch(error){show(error.message||"ایجاد مدرسه آزمایشی انجام نشد.","error");}
  finally{button.disabled=false;}
 };
 $("inviteManager").onsubmit=async event=>{
