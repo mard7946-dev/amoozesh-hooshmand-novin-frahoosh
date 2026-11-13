@@ -62,7 +62,7 @@ $("pdfImportBtn").onclick=async()=>{
     line+=(line?" ":"")+value;lastY=y;
    }
    if(line.trim())lines.push(line.trim());
-   pages.push(lines.join("\\n"));
+   pages.push(lines.join("\n"));
   }
   const extracted=pages.join("\n").replace(/[ \t]+/g," ").trim();
   if(!extracted)throw new Error("متنی از PDF استخراج نشد؛ احتمالاً فایل اسکن‌شده است.");
