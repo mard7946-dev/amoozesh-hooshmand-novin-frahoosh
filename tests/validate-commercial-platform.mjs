@@ -16,6 +16,24 @@ assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+anon/i.test(migration), 
 assert.ok(migration.includes("security definer") && migration.includes("set search_path = ''"), "Privileged SQL functions must pin an empty search_path");
 assert.ok(migration.includes("school.created") && migration.includes("school.status_changed") && migration.includes("subscription.created"), "All privileged school and subscription changes must be audited");
 
+const featureMigration = readFileSync("supabase/migrations/20261113150000_platform_classroom_control_and_demo_trials.sql", "utf8");
+for (const marker of [
+  "platform_feature_flags",
+  "classroom_online_enabled",
+  "frahoosh_platform_set_classroom_service_enabled",
+  "frahoosh_platform_create_demo_school",
+  "interval '7 days'",
+  "private.frahoosh_is_platform_admin()",
+  "school.demo_created",
+  "classroom.service_toggled",
+  "private.frahoosh_current_school_id()",
+  "private.frahoosh_school_access_active(v_school_id)",
+  "revoke all on function",
+  "grant execute"
+]) assert.ok(featureMigration.includes(marker), "Platform feature migration missing marker: " + marker);
+assert.ok(!/grant\s+execute\s+on\s+function[^;]+\s+to\s+anon/i.test(featureMigration), "Platform feature RPCs must never be executable by anon");
+assert.ok(featureMigration.includes("security definer") && featureMigration.includes("set search_path = ''"), "Platform feature RPCs must pin an empty search_path");
+
 const managerMigration = readFileSync("supabase/migrations/20261031190000_school_manager_invitation.sql", "utf8");
 for (const marker of [
   "frahoosh_platform_attach_school_manager",
@@ -44,6 +62,8 @@ for (const marker of [
   "admin.auth.getUser",
   'from("platform_admins")',
   'action === "overview"',
+  'action === "set_classroom_service"',
+  'action === "create_demo_school"',
   'action === "create_school"',
   'action === "set_school_status"',
   'action === "set_subscription"',
@@ -53,7 +73,10 @@ for (const marker of [
   "admin.auth.admin.deleteUser",
   'rpc("frahoosh_platform_create_school"',
   'rpc("frahoosh_platform_set_school_status"',
-  'rpc("frahoosh_platform_set_subscription"'
+  'rpc("frahoosh_platform_set_subscription"',
+  'frahoosh_platform_set_classroom_service_enabled',
+  'frahoosh_platform_create_demo_school',
+  'classroom_service_enabled'
 ]) assert.ok(fn.includes(marker), "Platform management API missing marker: " + marker);
 assert.ok(fn.includes("req.headers.get(\"apikey\")") || fn.includes("SUPABASE_ANON_KEY"), "Platform management API must initialize its user-scoped RPC client with the public key");
 assert.ok(!fn.includes("body?.is_admin") && !fn.includes("body?.platform_admin"), "Platform management API must not trust a client-supplied admin flag");
@@ -67,7 +90,8 @@ assert.ok(page.includes("invite_school_manager") && page.includes("دعوت مد
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
 assert.ok(page.includes("frahoosh_novin_access_token"), "Platform admin UI must reuse the authenticated session token");
 assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No service-role or secret key may appear in the browser");
-for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق"]) {
+assert.ok(!page.includes("money(plan.price_irr)") && !page.includes("money(sub.price_irr)") && !page.includes("ریال"), "Unverified subscription prices must not be displayed in the platform dashboard");
+for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق", "کنترل سراسری کلاس آنلاین", "ایجاد نسخه آزمایشی رایگان ۷ روزه"]) {
   assert.ok(page.includes(feature), "Platform admin UI missing feature: " + feature);
 }
 const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x => x[1]).filter(x => x.trim());
@@ -94,3 +118,15 @@ assert.ok(rosterPolicyMigration.includes('DROP POLICY IF EXISTS "staff students 
 assert.ok(rosterPolicyMigration.includes("public.weekly_schedule_entries") && rosterPolicyMigration.includes("w.teacher_username") && rosterPolicyMigration.includes("private.frahoosh_current_school_id()"), "Teacher student visibility must be derived from the authenticated teacher's school-scoped weekly schedule");
 assert.ok(rosterPolicyMigration.includes("students_teacher_assigned_read") && rosterPolicyMigration.includes("students_management_read"), "Student roster read access must distinguish assigned teachers from school management");
 console.log("Student roster RLS checks passed: teachers are limited to students in their assigned weekly schedule.");
+
+const classroomAuthorize = readFileSync("supabase/functions/classroom-authorize/index.ts", "utf8");
+const classroomRealtime = readFileSync("supabase/functions/classroom-realtime-token/index.ts", "utf8");
+const classroomMeetings = readFileSync("supabase/functions/classroom-meetings/index.ts", "utf8");
+for (const source of [classroomAuthorize, classroomRealtime, classroomMeetings]) {
+  assert.ok(source.includes('from("platform_feature_flags")'), "Every online classroom entry path must check the global platform switch");
+  assert.ok(source.includes("classroom_online_enabled"), "Global classroom switch key is missing");
+}
+assert.ok(classroomAuthorize.includes("این سرویس در زمان غیرحضوری فعال خواهد شد."), "Teachers must receive the non-attendance mode message");
+assert.ok(classroomAuthorize.includes("این سرویس با خرید سرور بیرونی فعال خواهد شد."), "School managers must receive the external-server message");
+assert.ok(featureMigration.includes("student_limit, price_irr") && featureMigration.includes("2147483647, 0"), "Seven-day demo subscriptions must be free and must not impose the incorrect small student cap");
+console.log("Global classroom control and seven-day isolated trial checks passed.");

@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deleteLiveKitRoom } from "../_shared/livekit.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -62,23 +63,25 @@ Deno.serve(async (req: Request) => {
     const action = clean(body?.action, 40);
 
     if (action === "overview") {
-      const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult] = await Promise.all([
+      const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult] = await Promise.all([
         admin.from("schools")
           .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500),
         admin.from("school_subscriptions")
-          .select("id,school_id,plan_id,status,starts_at,ends_at,grace_days,student_min,student_limit,price_irr,created_at")
+          .select("id,school_id,plan_id,status,starts_at,ends_at,grace_days,student_min,student_limit,notes,created_at")
           .order("created_at", { ascending: false }).limit(2000),
         admin.from("subscription_plans")
-          .select("id,plan_code,name,duration_months,student_min,student_limit,price_irr,is_active")
+          .select("id,plan_code,name,duration_months,student_min,student_limit,is_active")
           .order("duration_months", { ascending: true }).order("student_limit", { ascending: true }),
         admin.from("school_memberships")
           .select("school_id,auth_user_id,role,is_active").eq("is_active", true).limit(10000),
         admin.from("platform_audit_logs")
           .select("id,actor_auth_user_id,action,school_id,details,created_at")
           .order("created_at", { ascending: false }).limit(50),
+        admin.from("platform_feature_flags")
+          .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle(),
       ]);
-      const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult].find(x => x.error);
+      const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult].find(x => x.error);
       if (failed) return reply({ message: "دریافت اطلاعات مدیریت کل ناموفق بود." }, 500);
 
       const schools = schoolsResult.data ?? [];
@@ -112,7 +115,68 @@ Deno.serve(async (req: Request) => {
         })),
         plans,
         audit: auditResult.data ?? [],
+        classroom_service_enabled: classroomFlagResult.data?.enabled === true,
       });
+    }
+
+    if (action === "set_classroom_service") {
+      if (typeof body?.enabled !== "boolean") return reply({ message: "وضعیت سرویس معتبر نیست." }, 400);
+      const { data, error } = await userClient.rpc("frahoosh_platform_set_classroom_service_enabled", {
+        p_enabled: body.enabled,
+      });
+      if (error) return reply({ message: error.message || "تغییر وضعیت کلاس آنلاین انجام نشد." }, 400);
+      let disconnectedRooms = 0;
+      let disconnectFailures = 0;
+      if (body.enabled === false) {
+        const [classMeetings, adHocMeetings] = await Promise.all([
+          admin.from("classroom_realtime_meetings").select("cloudflare_meeting_id").limit(5000),
+          admin.from("classroom_ad_hoc_meetings").select("id,cloudflare_meeting_id")
+            .eq("status", "active").limit(5000),
+        ]);
+        if (classMeetings.error || adHocMeetings.error) {
+          console.error("classroom shutdown registry lookup failed", classMeetings.error?.message, adHocMeetings.error?.message);
+          return reply({
+            success: true, classroom_service_enabled: false,
+            warning: "سرویس جدید غیرفعال شد، اما فهرست اتاق‌های فعال برای قطع اتصال کامل دریافت نشد.",
+          });
+        }
+        const rooms = [...new Set([
+          ...(classMeetings.data ?? []).map((row: any) => clean(row.cloudflare_meeting_id, 200)),
+          ...(adHocMeetings.data ?? []).map((row: any) => clean(row.cloudflare_meeting_id, 200)),
+        ].filter((name: string) => name.startsWith("frahoosh-")))];
+        const results = await Promise.allSettled(rooms.map((room: string) => deleteLiveKitRoom(room)));
+        disconnectedRooms = results.filter(result => result.status === "fulfilled").length;
+        disconnectFailures = results.length - disconnectedRooms;
+        const { error: endMeetingsError } = await admin.from("classroom_ad_hoc_meetings")
+          .update({ status: "ended", ended_at: new Date().toISOString() }).eq("status", "active");
+        if (endMeetingsError) {
+          console.error("classroom ad-hoc shutdown update failed", endMeetingsError.message);
+          disconnectFailures++;
+        }
+      }
+      return reply({
+        success: true,
+        classroom_service_enabled: data?.enabled === true,
+        disconnected_rooms: disconnectedRooms,
+        disconnect_failures: disconnectFailures,
+        warning: disconnectFailures
+          ? "سرویس غیرفعال شد، اما قطع اتصال تعدادی از اتاق‌های قبلی تأیید نشد."
+          : null,
+      });
+    }
+
+    if (action === "create_demo_school") {
+      const name = clean(body?.name, 180);
+      const slug = clean(body?.slug, 80).toLowerCase();
+      const schoolCode = clean(body?.school_code, 40).toUpperCase();
+      if (!name || !slug || !schoolCode) {
+        return reply({ message: "نام مدرسه، شناسه لاتین و کد مدرسه را کامل وارد کنید." }, 400);
+      }
+      const { data, error } = await userClient.rpc("frahoosh_platform_create_demo_school", {
+        p_name: name, p_slug: slug, p_school_code: schoolCode,
+      });
+      if (error) return reply({ message: error.message || "ایجاد مدرسه آزمایشی انجام نشد." }, 400);
+      return reply({ success: true, result: data }, 201);
     }
 
     if (action === "create_school") {

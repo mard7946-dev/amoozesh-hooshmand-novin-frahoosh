@@ -41,6 +41,19 @@ Deno.serve(async (req: Request) => {
     const { data: authData, error: authError } = await admin.auth.getUser(bearer);
     if (authError || !authData.user) return reply({ message: "نشست معتبر نیست؛ دوباره وارد سامانه شوید." }, 401);
 
+    const { data: classroomFlag, error: classroomFlagError } = await admin.from("platform_feature_flags")
+      .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
+    if (classroomFlagError) return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد." }, 503);
+    if (classroomFlag?.enabled !== true) {
+      const { data: account } = await admin.from("account_settings").select("role")
+        .eq("auth_user_id", authData.user.id).maybeSingle();
+      const role = norm(account?.role);
+      const message = role === "teacher" || role === "دبیر" || role === "معلم"
+        ? "این سرویس در زمان غیرحضوری فعال خواهد شد."
+        : "این سرویس با خرید سرور بیرونی فعال خواهد شد.";
+      return reply({ message, service_disabled: true }, 403);
+    }
+
     const body = await req.json().catch(() => ({}));
     const adHocMeetingId = clean(body?.meeting_id);
     if (adHocMeetingId) {
