@@ -55,7 +55,14 @@ $("pdfImportBtn").onclick=async()=>{
   let pages=[];
   for(let i=1;i<=pdf.numPages;i++){
    const page=await pdf.getPage(i),content=await page.getTextContent();
-   pages.push(content.items.map(x=>x.str||"").join(" "));
+   let lines=[],line="",lastY=null;
+   for(const item of content.items){
+    const value=item.str||"",y=item.transform?.[5]??lastY??0;
+    if(lastY!==null&&Math.abs(y-lastY)>3){if(line.trim())lines.push(line.trim());line="";}
+    line+=(line?" ":"")+value;lastY=y;
+   }
+   if(line.trim())lines.push(line.trim());
+   pages.push(lines.join("\\n"));
   }
   const extracted=pages.join("\n").replace(/[ \t]+/g," ").trim();
   if(!extracted)throw new Error("متنی از PDF استخراج نشد؛ احتمالاً فایل اسکن‌شده است.");
