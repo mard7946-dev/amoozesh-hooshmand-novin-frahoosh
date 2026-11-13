@@ -26,6 +26,8 @@ for (const marker of [
   "private.frahoosh_is_platform_admin()",
   "school.demo_created",
   "classroom.service_toggled",
+  "private.frahoosh_current_school_id()",
+  "private.frahoosh_school_access_active(v_school_id)",
   "revoke all on function",
   "grant execute"
 ]) assert.ok(featureMigration.includes(marker), "Platform feature migration missing marker: " + marker);
