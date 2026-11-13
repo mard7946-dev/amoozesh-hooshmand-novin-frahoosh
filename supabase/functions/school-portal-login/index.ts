@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
     if (loginResponse.status === 428 && login.must_change_password) {
       return reply({ must_change_password: true, message: login.message || "برای نخستین ورود، ابتدا باید رمز عبور اولیه را تغییر دهید." }, 428);
     }
-    if (loginResponse.ok && login.password_changed === true && ["change_parent_initial_password", "change_student_initial_password"].includes(action)) {
+    if (loginResponse.ok && login.password_changed === true && ["change_parent_initial_password", "change_student_initial_password", "change_manager_initial_password"].includes(action)) {
       return reply({ password_changed: true, message: login.message || "رمز عبور با موفقیت تغییر کرد." });
     }
     if (!loginResponse.ok || !login.session?.access_token || !login.user?.id) {
