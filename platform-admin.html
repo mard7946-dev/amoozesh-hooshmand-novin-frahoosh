@@ -72,17 +72,17 @@
 </section>
 <section class="card">
 <h2>دعوت مدیر مدرسه</h2>
-<p class="muted">برای هر مدرسه یک مدیر اصلی معرفی کنید. دعوت‌نامه به ایمیل مدیر ارسال می‌شود و او رمز عبور خود را در صفحه امن فراهوش تعیین می‌کند.</p>
+<p class="muted">برای هر مدرسه یک مدیر اصلی بسازید. نام کاربری و رمز اولیه را شما تعیین می‌کنید؛ مدیر در نخستین ورود باید رمز را تغییر دهد.</p>
 <form id="inviteManager">
 <div class="grid">
 <div><label for="managerSchool">مدرسه</label><select id="managerSchool" required></select></div>
 <div><label for="managerName">نام و نام خانوادگی مدیر</label><input id="managerName" required maxlength="120"></div>
-<div><label for="managerEmail">ایمیل مدیر</label><input id="managerEmail" type="email" required maxlength="254" dir="ltr" autocomplete="email"></div>
+<div><label for="managerInitialPassword">رمز اولیه مدیر</label><input id="managerInitialPassword" type="password" required minlength="10" maxlength="128" dir="ltr" autocomplete="new-password"></div>
 <div><label for="managerUsername">نام کاربری ورود</label><input id="managerUsername" required minlength="4" maxlength="40" pattern="[A-Za-z0-9._-]{4,40}" dir="ltr" autocomplete="username"></div>
 <div><label for="managerPhone">شماره همراه (اختیاری)</label><input id="managerPhone" inputmode="numeric" maxlength="11" placeholder="09123456789" dir="ltr"></div>
 <div><label for="managerNationalCode">کد ملی (اختیاری)</label><input id="managerNationalCode" inputmode="numeric" maxlength="10" dir="ltr"></div>
 </div>
-<div style="margin-top:14px"><button class="primary" id="inviteManagerSubmit" type="submit">ارسال دعوت‌نامه و اتصال مدیر به مدرسه</button></div>
+<div style="margin-top:14px"><button class="primary" id="inviteManagerSubmit" type="submit">ساخت حساب مدیر و اتصال به مدرسه</button></div>
 </form>
 </section>
 <section class="card">
@@ -244,13 +244,13 @@ $("inviteManager").onsubmit=async event=>{
    action:"invite_school_manager",
    school_id:$("managerSchool").value,
    display_name:$("managerName").value.trim(),
-   email:$("managerEmail").value.trim(),
+   initial_password:$("managerInitialPassword").value,
    username:$("managerUsername").value.trim(),
    phone:$("managerPhone").value.trim(),
    national_code:$("managerNationalCode").value.trim()
   });
   $("inviteManager").reset();
-  show("دعوت‌نامه مدیر مدرسه ارسال شد و عضویت مدیریتی او به مدرسه متصل شد. مدیر باید از ایمیل خود دعوت‌نامه را باز کند و رمز عبور را تعیین کند.","success");
+  show("حساب مدیر ساخته شد و به مدرسه متصل شد. مدیر باید در نخستین ورود رمز اولیه را تغییر دهد.","success");
   await load();
  }catch(error){show(error.message||"ارسال دعوت‌نامه مدیر مدرسه انجام نشد.","error");}
  finally{button.disabled=false;}
