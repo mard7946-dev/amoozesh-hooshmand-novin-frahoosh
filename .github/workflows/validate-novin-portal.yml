@@ -92,11 +92,14 @@ jobs:
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
       - name: Validate commercial platform security and dashboard
+        if: always()
         run: node tests/validate-commercial-platform.mjs
       - uses: denoland/setup-deno@v2
+        if: always()
         with:
           deno-version: v2.x
       - name: Type-check platform management and classroom service-gate Edge Functions
+        if: always()
         run: deno check supabase/functions/platform-management/index.ts supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
