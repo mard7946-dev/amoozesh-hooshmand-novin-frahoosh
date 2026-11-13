@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deleteLiveKitRoom } from "../_shared/livekit.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -124,7 +125,44 @@ Deno.serve(async (req: Request) => {
         p_enabled: body.enabled,
       });
       if (error) return reply({ message: error.message || "تغییر وضعیت کلاس آنلاین انجام نشد." }, 400);
-      return reply({ success: true, classroom_service_enabled: data?.enabled === true });
+      let disconnectedRooms = 0;
+      let disconnectFailures = 0;
+      if (body.enabled === false) {
+        const [classMeetings, adHocMeetings] = await Promise.all([
+          admin.from("classroom_realtime_meetings").select("cloudflare_meeting_id").limit(5000),
+          admin.from("classroom_ad_hoc_meetings").select("id,cloudflare_meeting_id")
+            .eq("status", "active").limit(5000),
+        ]);
+        if (classMeetings.error || adHocMeetings.error) {
+          console.error("classroom shutdown registry lookup failed", classMeetings.error?.message, adHocMeetings.error?.message);
+          return reply({
+            success: true, classroom_service_enabled: false,
+            warning: "سرویس جدید غیرفعال شد، اما فهرست اتاق‌های فعال برای قطع اتصال کامل دریافت نشد.",
+          });
+        }
+        const rooms = [...new Set([
+          ...(classMeetings.data ?? []).map((row: any) => clean(row.cloudflare_meeting_id, 200)),
+          ...(adHocMeetings.data ?? []).map((row: any) => clean(row.cloudflare_meeting_id, 200)),
+        ].filter((name: string) => name.startsWith("frahoosh-")))];
+        const results = await Promise.allSettled(rooms.map((room: string) => deleteLiveKitRoom(room)));
+        disconnectedRooms = results.filter(result => result.status === "fulfilled").length;
+        disconnectFailures = results.length - disconnectedRooms;
+        const { error: endMeetingsError } = await admin.from("classroom_ad_hoc_meetings")
+          .update({ status: "ended", ended_at: new Date().toISOString() }).eq("status", "active");
+        if (endMeetingsError) {
+          console.error("classroom ad-hoc shutdown update failed", endMeetingsError.message);
+          disconnectFailures++;
+        }
+      }
+      return reply({
+        success: true,
+        classroom_service_enabled: data?.enabled === true,
+        disconnected_rooms: disconnectedRooms,
+        disconnect_failures: disconnectFailures,
+        warning: disconnectFailures
+          ? "سرویس غیرفعال شد، اما قطع اتصال تعدادی از اتاق‌های قبلی تأیید نشد."
+          : null,
+      });
     }
 
     if (action === "create_demo_school") {
