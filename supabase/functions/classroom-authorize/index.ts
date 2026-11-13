@@ -72,6 +72,19 @@ Deno.serve(async (req: Request) => {
       if (!isDeputyAccount) return reply({ message: "سمت معاونت این حساب تأیید نشد." }, 403);
       role = mainRole;
     }
+    const { data: classroomFlag, error: classroomFlagError } = await admin.from("platform_feature_flags")
+      .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
+    if (classroomFlagError) {
+      console.error("classroom service flag lookup failed", classroomFlagError.message);
+      return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
+    }
+    if (classroomFlag?.enabled !== true) {
+      const message = role === "teacher"
+        ? "این سرویس در زمان غیرحضوری فعال خواهد شد."
+        : "این سرویس با خرید سرور بیرونی فعال خواهد شد.";
+      return reply({ ok: false, service_disabled: true, message }, 403);
+    }
+
     const name = clean(profile.display_name) || clean(profile.username);
     let className = "";
     if (role === "student") {
