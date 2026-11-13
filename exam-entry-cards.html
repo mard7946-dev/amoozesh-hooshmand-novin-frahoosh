@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1730">
+<title>صدور کارت آزمون | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#0e1b32;--line:#29405f;--text:#f3f6ff;--muted:#a8b8d2;--gold:#f59e0b;--mint:#16a34a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;color:var(--text)}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:#135c50;border-color:#16a34a}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#09162b;position:sticky;top:0;z-index:5}.top h1{font-size:18px;margin:0 0 5px}.muted{color:var(--muted);font-size:12px;line-height:1.9}.wrap{max-width:1200px;margin:18px auto;padding:0 14px}.panel{background:#0e1b30e8;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px;min-width:150px;flex:1}.field input,.field select{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:#081326;color:var(--text);min-height:40px}.notice{border:1px solid #725b2d;background:#302717;color:#ffe4a5;border-radius:12px;padding:11px 13px;margin-bottom:12px;line-height:1.9;font-size:12px}.notice.error{border-color:#78404b;background:#3c2028;color:#ffb6b6}.notice.ok{border-color:#276b57;background:#12382f;color:#b8ffe8}.students{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}.student{border:1px solid var(--line);border-radius:14px;padding:12px;background:#0a172a;min-width:0}.student-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.student-head strong{font-size:14px}.editor{display:grid;grid-template-columns:1fr 1fr;gap:8px}.editor .field{min-width:0}.photo-field{grid-column:1/-1}.photo-field input{padding:6px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.preview-wrap{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}.preview-label{font-size:11px;color:var(--muted);margin-bottom:7px}.card{position:relative;isolation:isolate;overflow:hidden;direction:rtl;width:100%;aspect-ratio:1.58;background:linear-gradient(135deg,#eaf2ff,#dce9ff);border:1.5px solid #17356e;border-radius:12px;color:#10295e;padding:10px 12px;display:flex;flex-direction:column;box-shadow:0 2px 8px #0002}.watermark{position:absolute;z-index:-1;inset:0;display:flex;align-items:center;justify-content:center;opacity:.13;pointer-events:none}.watermark svg{width:78%;height:94%}.card-top{text-align:center;border-bottom:1px solid #294b86;padding-bottom:5px;margin-bottom:6px}.card-top .ministry{font-size:9px;font-weight:bold}.card-top .school{font-size:12px;font-weight:bold;margin-top:3px}.card-top .kind{font-size:10px;margin-top:4px;font-weight:bold}.card-body{display:grid;grid-template-columns:1fr 62px;gap:9px;flex:1;min-height:0}.card-fields{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;align-content:center;font-size:9px}.card-fields div{border-bottom:1px dotted #6e82a9;padding:2px 0;min-width:0}.card-fields b{font-weight:bold}.card-photo{width:62px;height:76px;object-fit:cover;border:1px solid #263d6b;border-radius:5px;background:#fff;align-self:center}.photo-empty{width:62px;height:76px;border:1px dashed #63779e;border-radius:5px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;color:#53678f;background:#ffffffaa}.card-footer{font-size:8px;text-align:center;border-top:1px solid #294b86;padding-top:5px;margin-top:5px;font-weight:bold}.empty{padding:22px;text-align:center;color:var(--muted)}.hidden{display:none!important}
+#printArea{display:none}
+@media(max-width:600px){.top{position:static;align-items:flex-start;flex-direction:column}.wrap{padding:0 8px}.panel{padding:11px}.students{grid-template-columns:1fr}}
+@page{size:A4 portrait;margin:10mm}
+@media print{
+ html,body{background:#fff!important;color:#000!important;margin:0!important;padding:0!important}
+ body>*{display:none!important}#printArea{display:block!important}
+ .print-page{width:190mm;height:277mm;display:grid;grid-template-columns:91mm 91mm;grid-template-rows:58mm 58mm 58mm;column-gap:8mm;row-gap:7mm;page-break-after:always;break-after:page;align-content:start;justify-content:center}
+ .print-page:last-child{page-break-after:auto;break-after:auto}
+ .print-card{width:91mm;height:58mm;aspect-ratio:auto;box-shadow:none;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header class="top"><div><h1>فراهوش نوین · صدور کارت آزمون</h1><div class="muted" id="who">در حال بررسی نشست معاون اجرایی…</div></div><button id="back">بازگشت به پنل معاونت</button></header>
+<main class="wrap">
+ <div id="notice" class="notice">در حال دریافت فهرست دانش‌آموزان…</div>
+ <section class="panel">
+  <div class="toolbar">
+   <label class="field">عنوان نوبت امتحانی<input id="period" value="نوبت اول ۱۴۰۵-۱۴۰۶" maxlength="50"></label>
+   <label class="field">پایه<select id="gradeFilter"><option value="">همه پایه‌ها</option></select></label>
+   <label class="field">کلاس<select id="classFilter"><option value="">همه کلاس‌ها</option></select></label>
+   <label class="field">جستجوی دانش‌آموز<input id="search" placeholder="نام یا نام خانوادگی"></label>
+  </div>
+  <div class="actions">
+   <button id="reload">↻ تازه‌سازی</button>
+   <button id="saveClass" class="primary">ذخیره کارت‌های فهرست فعلی</button>
+   <button id="printClass">چاپ گروهی فهرست فعلی</button>
+  </div>
+  <p class="muted">اطلاعات کارت‌ها قابل ویرایش و ذخیره است. عکس‌های انتخابی در فضای خصوصی پایگاه داده نگهداری می‌شوند و فقط از طریق این بخشِ مجاز قابل دریافت‌اند. برای چاپ گروهی، کارت‌های فهرست فعلی ابتدا ذخیره می‌شوند.</p>
+ </section>
+ <section id="students" class="students"></section>
+</main>
+<section id="printArea" aria-hidden="true"></section>
+<script>
+const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const ENDPOINT=SUPABASE_URL+"/functions/v1/exam-entry-cards";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let students=[],cards=new Map(),currentPeriod="نوبت اول ۱۴۰۵-۱۴۰۶";
+function notice(message,type=""){ $("notice").className="notice "+type; $("notice").textContent=message; }
+function safeImage(v){const s=String(v||"");return /^https:\/\//i.test(s)||/^data:image\/(jpeg|png|webp);base64,/i.test(s)?s:"";}
+function cardFor(student,index){
+ const old=cards.get(String(student.id));
+ return old?{...old,student_id:student.id,photo_fallback:safeImage(student.photo)}:{student_id:student.id,first_name:student.first_name||"",last_name:student.last_name||"",father_name:student.father_name||"",grade:student.grade||"",class_name:student.class_name||"",seat_number:String(index+1),photo_data:null,photo_fallback:safeImage(student.photo)};
+}
+function seal(){return '<div class="watermark"><svg viewBox="0 0 300 330" aria-hidden="true"><circle cx="150" cy="165" r="145" fill="none" stroke="#17356e" stroke-width="5"/><circle cx="150" cy="165" r="135" fill="none" stroke="#17356e" stroke-width="2"/><path d="M48 120 Q150 15 252 120 L252 220 Q150 310 48 220Z" fill="none" stroke="#17356e" stroke-width="4"/><path d="M150 47l9 15 18 2-12 13 3 18-18-8-18 8 3-18-12-13 18-2z" fill="none" stroke="#17356e" stroke-width="4"/><path d="M95 210 Q150 185 205 210 M95 219 Q150 194 205 219 M95 228 Q150 203 205 228" fill="none" stroke="#17356e" stroke-width="4"/><path d="M150 190v42" stroke="#17356e" stroke-width="4"/><text x="150" y="150" text-anchor="middle" font-size="17" font-weight="bold" fill="#17356e">دبیرستان سردار شهید حاجی زاده ۲</text><text x="150" y="270" text-anchor="middle" font-size="17" font-weight="bold" fill="#17356e">تأسیس ۱۴۰۵</text></svg></div>'}
+function cardMarkup(c){
+ const img=safeImage(c.photo_data)||safeImage(c.photo_fallback);
+ return '<div class="card">'+seal()+'<div class="card-top"><div class="ministry">مدیریت آموزش و پرورش شهرستان قدس</div><div class="school">دبیرستان سردار شهید حاجی زاده ۲</div><div class="kind">کارت دانش آموزی ورود به جلسه امتحانات '+esc(currentPeriod)+'</div></div><div class="card-body"><div class="card-fields"><div><b>نام:</b> '+esc(c.first_name)+'</div><div><b>نام خانوادگی:</b> '+esc(c.last_name)+'</div><div><b>نام پدر:</b> '+esc(c.father_name)+'</div><div><b>پایه:</b> '+esc(c.grade)+'</div><div><b>کلاس:</b> '+esc(c.class_name)+'</div><div><b>شماره صندلی:</b> '+esc(c.seat_number)+'</div></div>'+(img?'<img class="card-photo" src="'+esc(img)+'" alt="عکس دانش‌آموز">':'<div class="photo-empty">عکس دانش‌آموز</div>')+'</div><div class="card-footer">تا پایان امتحانات کارت را همراه داشته باشید</div></div>';
+}
+function filtered(){
+ const g=$("gradeFilter").value,cl=$("classFilter").value,q=$("search").value.trim().toLocaleLowerCase();
+ return students.filter(s=>(!g||s.grade===g)&&(!cl||s.class_name===cl)&&(!q||(s.first_name+" "+s.last_name).toLocaleLowerCase().includes(q)));
+}
+function refreshFilters(){
+ const grades=[...new Set(students.map(s=>s.grade).filter(Boolean))].sort();
+ const oldG=$("gradeFilter").value,oldC=$("classFilter").value;
+ $("gradeFilter").innerHTML='<option value="">همه پایه‌ها</option>'+grades.map(g=>'<option>'+esc(g)+'</option>').join('');
+ if(grades.includes(oldG))$("gradeFilter").value=oldG;
+ const classes=[...new Set(students.filter(s=>!$("gradeFilter").value||s.grade===$("gradeFilter").value).map(s=>s.class_name).filter(Boolean))].sort();
+ $("classFilter").innerHTML='<option value="">همه کلاس‌ها</option>'+classes.map(c=>'<option>'+esc(c)+'</option>').join('');
+ if(classes.includes(oldC))$("classFilter").value=oldC;
+}
+function render(){
+ refreshFilters();
+ const list=filtered();
+ $("students").innerHTML=list.length?list.map((s)=>{const i=students.findIndex(x=>x.id===s.id),c=cardFor(s,i),photo=safeImage(c.photo_data)||safeImage(c.photo_fallback);
+ return '<article class="student" data-student="'+s.id+'"><div class="student-head"><strong>'+esc(s.first_name+' '+s.last_name)+'</strong><span class="muted">'+esc(s.grade)+' · '+esc(s.class_name)+'</span></div><div class="editor">'+[['first_name','نام'],['last_name','نام خانوادگی'],['father_name','نام پدر'],['grade','پایه'],['class_name','کلاس'],['seat_number','شماره صندلی']].map(([k,l])=>'<label class="field">'+l+'<input data-field="'+k+'" value="'+esc(c[k])+'" maxlength="100"></label>').join('')+'<label class="field photo-field">عکس دانش‌آموز<input type="file" accept="image/jpeg,image/png,image/webp" data-photo></label></div><div class="actions"><button class="primary" data-save>ذخیره کارت</button><button data-print>چاپ تکی</button></div><div class="preview-wrap"><div class="preview-label">پیش‌نمایش کارت</div><div class="preview">'+cardMarkup(c)+'</div></div></article>';
+ }).join(''):'<div class="empty">دانش‌آموزی در این فیلتر پیدا نشد.</div>';
+ $("students").querySelectorAll(".student").forEach(el=>{
+  const id=Number(el.dataset.student),s=students.find(x=>x.id===id);
+  const read=()=>{const c=cardFor(s,students.findIndex(x=>x.id===id));el.querySelectorAll("[data-field]").forEach(i=>c[i.dataset.field]=i.value.trim());cards.set(String(id),c);return c;};
+  el.querySelectorAll("[data-field]").forEach(i=>i.addEventListener("input",()=>{const c=read();el.querySelector(".preview").innerHTML=cardMarkup(c);}));
+  el.querySelector("[data-photo]").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;if(!/^image\/(jpeg|png|webp)$/.test(file.type)){notice("فقط عکس JPG، PNG یا WebP پذیرفته می‌شود.","error");return;}if(file.size>5*1024*1024){notice("حجم عکس اولیه نباید بیشتر از ۵ مگابایت باشد.","error");e.target.value="";return;}try{const data=await resizePhoto(file);const c=read();c.photo_data=data;c.photo_fallback=null;cards.set(String(id),c);el.querySelector(".preview").innerHTML=cardMarkup(c);notice("عکس آماده شد؛ برای نگهداری دائمی، کارت را ذخیره کنید.","ok");}catch(err){notice("خواندن عکس انجام نشد.","error");}});
+  el.querySelector("[data-save]").onclick=async()=>{try{const c=read();await saveOne(c);notice("کارت "+c.first_name+" "+c.last_name+" ذخیره شد.","ok");}catch(e){notice(e.message,"error");}};
+  el.querySelector("[data-print]").onclick=async()=>{try{const c=read();await saveOne(c);printCards([c]);}catch(e){notice(e.message,"error");}};
+ });
+}
+function resizePhoto(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const img=new Image();img.onerror=reject;img.onload=()=>{const scale=Math.min(1,420/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;canvas.getContext("2d").drawImage(img,0,0,w,h);const data=canvas.toDataURL("image/jpeg",.76);if(data.length>480000)return reject(new Error("حجم عکس زیاد است"));resolve(data);};img.src=reader.result;};reader.readAsDataURL(file);});}
+async function call(payload){const r=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.message||"ارتباط با سرویس کارت آزمون برقرار نشد.");return d;}
+async function saveOne(c){const d=await call({action:"save",exam_period:currentPeriod,card:c});cards.set(String(c.student_id),d.card);return d.card;}
+async function saveMany(list){const d=await call({action:"save_many",exam_period:currentPeriod,cards:list});notice(d.message,"ok");}
+function printCards(list){$("printArea").innerHTML="";for(let i=0;i<list.length;i+=6){const page=document.createElement("div");page.className="print-page";list.slice(i,i+6).forEach(c=>{const wrap=document.createElement("div");wrap.className="print-card";wrap.innerHTML=cardMarkup(c);page.appendChild(wrap);});$("printArea").appendChild(page);}window.print();}
+async function bootstrap(){if(!token){notice("نشست ورود پیدا نشد؛ از پنل معاون اجرایی دوباره وارد شوید.","error");return;}if(role!=="deputy"){notice("این صفحه فقط از پنل معاونت قابل استفاده است.","error");return;}try{const d=await call({action:"bootstrap",exam_period:currentPeriod});students=d.students||[];cards=new Map((d.cards||[]).map(c=>[String(c.student_id),c]));$("who").textContent="پنل معاون اجرایی · "+students.length+" دانش‌آموز · اطلاعات ذخیره‌شده قابل ویرایش";render();notice("فهرست دانش‌آموزان مدرسه بارگذاری شد. کارت‌های قبلی نیز برای ویرایش در دسترس‌اند.","ok");}catch(e){notice(e.message,"error");}}
+$("period").addEventListener("change",async()=>{currentPeriod=$("period").value.trim()||"نوبت اول";cards.clear();await bootstrap();});
+["gradeFilter","classFilter","search"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",()=>{if(id==="gradeFilter")refreshFilters();render();}));
+$("reload").onclick=bootstrap;
+$("saveClass").onclick=async()=>{const list=filtered().map(s=>cardFor(s,students.findIndex(x=>x.id===s.id)));try{await saveMany(list);await bootstrap();}catch(e){notice(e.message,"error");}};
+$("printClass").onclick=async()=>{const list=filtered().map(s=>cardFor(s,students.findIndex(x=>x.id===s.id)));if(!list.length)return;try{await saveMany(list);await bootstrap();const refreshed=filtered().map(s=>cardFor(s,students.findIndex(x=>x.id===s.id)));printCards(refreshed);}catch(e){notice(e.message,"error");}};
+$("back").onclick=()=>location.href="portal.html?step=panel&role=deputy";
+bootstrap();
+</script>
+</body></html>
