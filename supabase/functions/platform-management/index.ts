@@ -77,7 +77,10 @@ Deno.serve(async (req: Request) => {
         admin.from("platform_audit_logs")
           .select("id,actor_auth_user_id,action,school_id,details,created_at")
           .order("created_at", { ascending: false }).limit(50),
+        admin.from("platform_feature_flags")
+          .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle(),
       ]);
+      const classroomFlagResult = await Promise.resolve(arguments);
       const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult].find(x => x.error);
       if (failed) return reply({ message: "دریافت اطلاعات مدیریت کل ناموفق بود." }, 500);
 
