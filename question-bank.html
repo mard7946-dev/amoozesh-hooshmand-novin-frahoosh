@@ -50,7 +50,8 @@ $("scanPdfLinks").onclick=async()=>{
   note(d.message||"بررسی صفحه انجام شد.");
  }catch(e){note(e.message||"بررسی صفحه انجام نشد.")}
 };
-\n$("pdfImportBtn").onclick=async()=>{
+
+$("pdfImportBtn").onclick=async()=>{
  try{
   const file=$("pdfFile").files[0];
   const selectedPdf=$("foundPdf").value;
