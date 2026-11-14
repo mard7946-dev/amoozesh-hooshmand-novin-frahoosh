@@ -38,3 +38,7 @@ assert.ok(page.includes("data-paper-export") && page.includes("get_approved_pape
 assert.ok(page.includes('"B Zar","B Nazanin",Tahoma,Arial,sans-serif'), "Question bank and print output must use a consistent Persian font stack");
 
 assert.ok(api.includes('action==="update_question"&&(manager||deputy)') && page.includes('data-edit=') && page.includes('data-archive='), "Manager and educational deputy can edit or remove questions");
+
+assert.ok(page.includes('id="bulkArchiveBtn"') && page.includes('confirmation!=="حذف همه"'), "Manager bulk archive must require an explicit typed confirmation");
+assert.ok(page.includes('api("bulk_archive_questions")'), "Bulk archive button must call the server action");
+assert.ok(api.includes('action==="bulk_archive_questions"&&manager') && api.includes('eq("tenant_school_id",school).neq("status","archived").select("id")'), "Bulk archive must be manager-only and scoped to active questions in the current school");
