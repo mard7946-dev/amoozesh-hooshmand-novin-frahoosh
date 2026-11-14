@@ -69,7 +69,7 @@ Deno.serve(async(req:Request)=>{
    const prompt=clean(q.prompt),subject=clean(q.subject);
    if(!prompt||!subject)return reply({message:"متن سؤال و نام درس الزامی است."},400);
    const grade=clean(q.grade),vault=await ensureVault(db,school,subject,grade);if(!vault)return reply({message:"مخزن درس و پایه معتبر نیست."},400);
-   const payload={subject,grade,vault_id:vault.id,chapter:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
+   const payload={subject,grade,vault_id:vault.id,chapter:clean(q.chapter),topic:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
    const {data,error}=await db.from("question_bank").update(payload).eq("tenant_school_id",school).eq("id",questionId).neq("status","archived").select("id").maybeSingle();
    if(error)throw error;if(!data)return reply({message:"سؤال فعال پیدا نشد."},404);
    return reply({ok:true,message:"متن سؤال و دسته‌بندی درس اصلاح شد."});
