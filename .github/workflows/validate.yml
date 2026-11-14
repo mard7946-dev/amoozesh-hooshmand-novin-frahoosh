@@ -46,7 +46,7 @@ jobs:
       - name: Type-check classroom authorization and management Edge Functions
         run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-verification/index.ts supabase/functions/assessment-center/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts supabase/functions/question-bank/index.ts
       - name: Test Tehran schedule activation boundaries
-        run: deno test tests/classroom-schedule.test.ts tests/classroom-verification-period.test.ts tests/discipline-rules.test.ts tests/teacher-identity.test.ts tests/question-bank-pdf-parser.test.ts
+        run: deno test tests/classroom-schedule.test.ts tests/classroom-verification-period.test.ts tests/discipline-rules.test.ts tests/teacher-identity.test.ts tests/question-bank-pdf-parser.test.ts tests/question-bank-safe-fetch.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL
         env:
           DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
