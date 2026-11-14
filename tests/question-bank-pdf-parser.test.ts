@@ -36,3 +36,8 @@ Deno.test("ignores unnumbered prose and caps imported questions", () => {
   assertEquals(questions.length, 1);
   assertEquals(questions[0].subject, "فارسی");
 });
+
+Deno.test("normalizes Arabic letter variants and whitespace into consistent Persian text", () => {
+  const questions = parsePdfQuestions("۱)  كدام  يكي  از موارد زير درست است؟\nالف) گزینه اول", "علوم");
+  assertEquals(questions[0].prompt, "کدام یکی از موارد زیر درست است؟");
+});
