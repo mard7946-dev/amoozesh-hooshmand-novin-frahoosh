@@ -39,9 +39,9 @@ Deno.serve(async(req:Request)=>{
   if(action==="bootstrap"){
    const {data:vaultRows,error:vaultErr}=await db.from("question_vaults").select("id,subject,grade,created_at").eq("tenant_school_id",school).order("subject").order("grade");if(vaultErr)throw vaultErr;
    const visibleVaults=await Promise.all((vaultRows||[]).map(async(v:any)=>{let countQuery=db.from("question_bank").select("id",{count:"exact",head:true}).eq("tenant_school_id",school).eq("vault_id",v.id);if(!manager&&!deputy)countQuery=countQuery.eq("status","published");else countQuery=countQuery.neq("status","archived");const {count,error}=await countQuery;if(error)throw error;return {...v,question_count:count||0};}));
-   const activeVaultId=clean(body.vault_id),pageSize=20,pageNumber=Math.max(1,Math.min(10000,Math.trunc(Number(body.page)||1)));
+   const activeVaultId=clean(body.vault_id);
    let questions:any[]=[],questionCount=0;
-   if(activeVaultId){let questionQuery=db.from("question_bank").select("id,vault_id,subject,grade,chapter,topic,difficulty,question_type,prompt,options,correct_answer,explanation,points,source_url,source_title,source_license,status,created_at",{count:"exact"}).eq("tenant_school_id",school).eq("vault_id",activeVaultId);if(!manager&&!deputy)questionQuery=questionQuery.eq("status","published");else questionQuery=questionQuery.neq("status","archived");if(body.search)questionQuery=questionQuery.ilike("prompt","%"+clean(body.search)+"%");const {data,error,count}=await questionQuery.order("created_at",{ascending:false}).range((pageNumber-1)*pageSize,pageNumber*pageSize-1);if(error)throw error;questions=data||[];questionCount=count||0;}
+   if(activeVaultId){const selectedType=clean(body.question_type);if(selectedType&&!["multiple_choice","fill_blank","true_false","short_answer","essay"].includes(selectedType))return reply({message:"فیلتر نوع سؤال معتبر نیست."},400);let offset=0;while(true){let questionQuery=db.from("question_bank").select("id,vault_id,subject,grade,chapter,topic,difficulty,question_type,prompt,options,correct_answer,explanation,points,source_url,source_title,source_license,status,created_at",{count:"exact"}).eq("tenant_school_id",school).eq("vault_id",activeVaultId);if(!manager&&!deputy)questionQuery=questionQuery.eq("status","published");else questionQuery=questionQuery.neq("status","archived");if(body.search)questionQuery=questionQuery.ilike("prompt","%"+clean(body.search)+"%");if(selectedType)questionQuery=questionQuery.eq("question_type",selectedType);const {data,error,count}=await questionQuery.order("created_at",{ascending:true}).order("id",{ascending:true}).range(offset,offset+999);if(error)throw error;const batch=data||[];questions.push(...batch);if(offset===0)questionCount=count??batch.length;if(batch.length<1000)break;offset+=batch.length;}}
    const vaults=visibleVaults;
    const {data:collections,error:cErr}=await db.from("question_collections").select("id,title").eq("tenant_school_id",school).eq("owner_auth_user_id",auth.user.id).order("created_at");
    if(cErr) throw cErr;
@@ -53,7 +53,7 @@ Deno.serve(async(req:Request)=>{
    if(teacher)paperQuery.eq("created_by",auth.user.id);
    const {data:papers,error:paperErr}=await paperQuery.order("updated_at",{ascending:false}).limit(100);
    if(paperErr)throw paperErr;
-   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions,vaults:vaults||[],question_count:questionCount,page:pageNumber,collection,selected_ids:(items||[]).map(x=>x.question_id),selected_questions:(items||[]).map(x=>x.question_bank).filter(Boolean),papers:papers||[]});
+   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions,vaults:vaults||[],question_count:questionCount,collection,selected_ids:(items||[]).map(x=>x.question_id),selected_questions:(items||[]).map(x=>x.question_bank).filter(Boolean),papers:papers||[]});
   }
   if(action==="create_question"&&manager){
    const q=body.question||{};
