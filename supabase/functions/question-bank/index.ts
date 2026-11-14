@@ -1,56 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fetchPinnedHttps, publicHttpsUrl } from "./safe-fetch.ts";
 import { parsePdfQuestions } from "./pdf-parser.ts";
 
 const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const clean=(v:unknown)=>String(v??"").trim().slice(0,12000);
 const norm=(v:unknown)=>clean(v).replace(/[\u200c\u200f\u202a-\u202e]/g,"").replace(/ي/g,"ی").replace(/ك/g,"ک").toLocaleLowerCase("fa");
-const isPrivateHost=(host:string)=>host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="0.0.0.0"||host==="127.0.0.1"||host==="::1"||/^10\./.test(host)||/^192\.168\./.test(host)||/^172\.(1[6-9]|2\d|3[01])\./.test(host);
-
-
-const ipv4Public=(value:string):boolean=>{
- const p=value.split(".").map(Number);if(p.length!==4||p.some(n=>!Number.isInteger(n)||n<0||n>255))return false;
- const [a,b,c]=p;
- if(a===0||a===10||a===127||a>=224)return false;
- if(a===100&&b>=64&&b<=127)return false;
- if(a===169&&b===254)return false;
- if(a===172&&b>=16&&b<=31)return false;
- if(a===192&&(b===168||(b===0&&c===0)||(b===0&&c===2)))return false;
- if(a===198&&(b===18||b===19||(b===51&&c===100)))return false;
- if(a===203&&b===0&&c===113)return false;
- return true;
-};
-const ipv6Public=(value:string):boolean=>{
- const h=value.toLowerCase().split("%")[0];
- // Only globally routable unicast (2000::/3); reject mapped, local, multicast,
- // transition, documentation and other special-purpose ranges.
- if(!/^[23][0-9a-f]{0,3}:/.test(h))return false;
- if(h.startsWith("2001:db8:")||h.startsWith("2001:10:")||h.startsWith("2001:20:")||h.startsWith("2001:0:")||h.startsWith("2002:"))return false;
- return true;
-};
-const publicHttpsUrl=(value:string):URL|null=>{
- try{
-  const u=new URL(value);const h=u.hostname.toLowerCase().replace(/^\[|\]$/g,"");
-  if(u.protocol!=="https:"||u.username||u.password||!h||h==="localhost"||h.endsWith(".localhost")||h.endsWith(".local"))return null;
-  // Do not accept IP literals: resolve and validate DNS answers before any outbound request.
-  if(/^\d+(?:\.\d+){0,3}$/.test(h)||h.includes(":"))return null;
-  return u;
- }catch{return null;}
-};
-const resolvePublicHost=async(host:string):Promise<boolean>=>{
- try{
-  const a=await Deno.resolveDns(host,"A");
-  if(!a.length||a.some(ip=>!ipv4Public(ip)))return false;
-  let aaaa:string[]=[];
-  try{aaaa=await Deno.resolveDns(host,"AAAA");}catch{}
-  if(aaaa.some(ip=>!ipv6Public(ip)))return false;
-  return true;
- }catch{return false;}
-};
-const fetchPublic=async(target:URL,accept:string):Promise<Response>=>{
- if(!(await resolvePublicHost(target.hostname)))throw new Error("PUBLIC_HOST_VALIDATION_FAILED");
- return await fetch(target.toString(),{redirect:"manual",signal:AbortSignal.timeout(15000),headers:{"Accept":accept,"User-Agent":"FrahooshQuestionBank/1.0"}});
-};
 const readBounded=async(response:Response,maxBytes:number):Promise<Uint8Array>=>{
  const declared=Number(response.headers.get("content-length")||0);
  if(declared>maxBytes){await response.body?.cancel();throw new Error("RESPONSE_TOO_LARGE");}
@@ -149,7 +104,7 @@ Deno.serve(async(req:Request)=>{
    if(body.source_permission_confirmed!==true)return reply({message:"برای بررسی صفحه باید مجوز استفاده از محتوای منبع را تأیید کنید."},400);
    const page=publicHttpsUrl(clean(body.source_url));
    if(!page)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
-   const response=await fetchPublic(page,"text/html");
+   const response=await fetchPinnedHttps(page,"text/html",2*1024*1024);
    if(response.status>=300&&response.status<400)return reply({message:"صفحه به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی را وارد کنید."},400);
    if(!response.ok)return reply({message:"دریافت صفحه از سایت ممکن نشد."},502);
    const type=response.headers.get("content-type")||"";
@@ -170,7 +125,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="fetch_pdf"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
    const pdfUrl=publicHttpsUrl(clean(body.pdf_url));if(!pdfUrl)return reply({message:"نشانی PDF معتبر و عمومی نیست."},400);
-   const response=await fetchPublic(pdfUrl,"application/pdf");
+   const response=await fetchPinnedHttps(pdfUrl,"application/pdf",15*1024*1024);
    if(response.status>=300&&response.status<400)return reply({message:"فایل PDF به نشانی دیگری هدایت می‌شود؛ فایل را بارگذاری کنید یا نشانی نهایی را وارد کنید."},400);
    if(!response.ok)return reply({message:"دریافت PDF از سایت ممکن نشد."},502);
    let bytes:Uint8Array;try{bytes=await readBounded(response,15*1024*1024);}catch(error){if(error instanceof Error&&error.message==="RESPONSE_TOO_LARGE")return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);throw error;}
@@ -193,10 +148,11 @@ Deno.serve(async(req:Request)=>{
   }
   if(action==="import_url"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت محتوا باید مجوز استفاده از منبع را تأیید کنید."},400);
-   let parsed:URL;try{parsed=new URL(clean(body.source_url));}catch{return reply({message:"نشانی اینترنتی معتبر نیست."},400);}
-   if(parsed.protocol!=="https:"||isPrivateHost(parsed.hostname)||parsed.username||parsed.password)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
-   if(!(await resolvePublicHost(parsed.hostname)))return reply({message:"نشانی مقصد عمومی و امن تشخیص داده نشد."},400);
-   const response=await fetch(parsed.toString(),{redirect:"manual",signal:AbortSignal.timeout(15000),headers:{"Accept":"text/html,application/ld+json","User-Agent":"FrahooshQuestionBank/1.0"}});
+   const parsed=publicHttpsUrl(clean(body.source_url));
+   if(!parsed)return reply({message:"فقط نشانی HTTPS عمومی روی درگاه امن ۴۴۳ پذیرفته می‌شود."},400);
+   let response:Response;
+   try{response=await fetchPinnedHttps(parsed,"text/html,application/ld+json",1500000);}
+   catch(error){if(error instanceof Error&&error.message==="PUBLIC_HOST_VALIDATION_FAILED")return reply({message:"نشانی مقصد به یک IP عمومی معتبر اشاره نمی‌کند."},400);throw error;}
    if(response.status>=300&&response.status<400)return reply({message:"منبع به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی HTTPS را وارد کنید."},400);
    if(!response.ok)return reply({message:"دریافت صفحه از منبع انجام نشد."},502);
    const type=response.headers.get("content-type")||"";
