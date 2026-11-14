@@ -151,7 +151,8 @@ document.getElementById("firstPasswordForm").addEventListener("submit",async eve
  if(newPassword!==confirmPassword){status.textContent="تکرار رمز عبور یکسان نیست.";return;}
  button.disabled=true;status.textContent="در حال ثبت رمز جدید…";
  try{
-  const response=await fetch(supabaseUrl+"/functions/v1/school-portal-login",{method:"POST",headers:{"Content-Type":"application/json","apikey":supabaseAnonKey,"Authorization":"Bearer "+supabaseAnonKey},body:JSON.stringify({action:selectedRole.id==="student"?"change_student_initial_password":selectedRole.id==="manager"?"change_manager_initial_password":"change_parent_initial_password",username:usernameInput.value.trim(),password:document.getElementById("demoPassword").value,new_password:newPassword,role:selectedRole.id==="student"?"student":selectedRole.id==="manager"?"manager":"parent",school_code:document.getElementById("schoolCode").value.trim()})});
+  const passwordChangeEndpoint=selectedRole.id==="manager"?"login-by-username":"school-portal-login";
+  const response=await fetch(supabaseUrl+"/functions/v1/"+passwordChangeEndpoint,{method:"POST",headers:{"Content-Type":"application/json","apikey":supabaseAnonKey,"Authorization":"Bearer "+supabaseAnonKey},body:JSON.stringify({action:selectedRole.id==="student"?"change_student_initial_password":selectedRole.id==="manager"?"change_manager_initial_password":"change_parent_initial_password",username:usernameInput.value.trim(),password:document.getElementById("demoPassword").value,new_password:newPassword,role:selectedRole.id==="student"?"student":selectedRole.id==="manager"?"manager":"parent",school_code:document.getElementById("schoolCode").value.trim()})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.password_changed)throw new Error(data.message||"تغییر رمز عبور انجام نشد.");
   document.getElementById("firstPasswordForm").hidden=true;

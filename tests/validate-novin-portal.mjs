@@ -40,6 +40,8 @@ assert.ok(usernameLogin.includes("change_student_initial_password") && usernameL
 assert.ok(usernameLogin.includes("change_manager_initial_password") && usernameLogin.includes('accountRole === "manager"') && usernameLogin.includes("owner_auth_user_id"), "Manager first login must validate school ownership before changing the initial password");
 assert.ok(schoolLogin.includes('"change_student_initial_password"'), "School portal login must relay the student password-change completion response");
 assert.ok(html.includes("change_student_initial_password") && html.includes("change_manager_initial_password") && html.includes("requestedRole"), "Student and manager portals must show and submit first-login password changes");
+assert.ok(html.includes('selectedRole.id==="manager"?"login-by-username":"school-portal-login"'), "Manager first-password changes must use the same direct authentication endpoint that validates and changes the manager initial password; parent/student flows remain on the school portal wrapper");
+assert.ok(usernameLogin.includes('action !== "change_manager_initial_password"') && usernameLogin.includes('password_changed: true'), "Manager initial-password changes must be completed by the authentication boundary and return an explicit success response");
 const usersPage = readFileSync("users.html", "utf8");
 assert.ok(usersPage.includes('id="resetAllStudentAccounts"') && usersPage.includes('action:"reset_student_accounts"'), "Manager user page must expose the confirmed bulk student reset control");
 
