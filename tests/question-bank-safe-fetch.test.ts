@@ -7,6 +7,8 @@ Deno.test("rejects non-public IPv4 ranges and accepts public addresses", () => {
   }
   assertEquals(ipv4Public("1.1.1.1"), true);
   assertEquals(ipv4Public("8.8.8.8"), true);
+  assertEquals(ipv4Public("1..2.3"), false);
+  assertEquals(ipv4Public("999.1.1.1"), false);
 });
 
 Deno.test("accepts only HTTPS on the default secure port and rejects IP literals", () => {
