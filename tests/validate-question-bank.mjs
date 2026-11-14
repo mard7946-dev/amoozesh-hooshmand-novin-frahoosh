@@ -10,7 +10,7 @@ assert.ok(api.includes('action==="create_question"&&manager'),"Only manager can 
 assert.ok(api.includes('action==="publish_question"&&manager'),"Only manager can publish central questions");
 assert.ok(api.includes('action==="add_to_collection"&&(deputy||teacher)'),"Deputies and teachers can add published questions to personal collections");
 assert.ok(api.includes('action==="import_url"&&manager') && api.includes('source_permission_confirmed'),"URL ingestion must be manager-only and require permission confirmation");
-assert.ok(api.includes('parsed.protocol!=="https:"') && api.includes('redirect:"manual"'),"URL ingestion must require HTTPS and not follow redirects automatically");
+assert.ok(api.includes("publicHttpsUrl") && api.includes("fetchPinnedHttps"),"URL ingestion must use the HTTPS-only pinned-IP client without automatic redirects");
 assert.ok(api.includes('application/ld+json') && api.includes('status:"draft"'),"Imported structured questions must be drafts for manager review");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("service_role"),"Question bank tables must deny direct client access and use server authorization");
 console.log("Central question bank checks passed.");
