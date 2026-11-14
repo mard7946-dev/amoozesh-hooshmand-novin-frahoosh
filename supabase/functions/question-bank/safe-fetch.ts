@@ -7,7 +7,7 @@ const IPV4_DENY_CIDRS = [
 
 const ipv4Number = (value: string): number | null => {
   const parts = value.split(".");
-  if (parts.length !== 4) return null;
+  if (parts.length !== 4 || parts.some(part => !/^\\d{1,3}$/.test(part))) return null;
   const octets = parts.map(part => Number(part));
   if (octets.some(part => !Number.isInteger(part) || part < 0 || part > 255)) return null;
   return (((octets[0] << 24) >>> 0) + (octets[1] << 16) + (octets[2] << 8) + octets[3]) >>> 0;
