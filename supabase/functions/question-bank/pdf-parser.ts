@@ -27,7 +27,7 @@ const subjectHeading = /^\s*(?:درس|نام\s*درس|ماده\s*درسی)\s*[:�
 export function parsePdfQuestions(
   input: string,
   fallbackSubject: string,
-  maxQuestions = 100,
+  maxQuestions = 500,
 ): ParsedPdfQuestion[] {
   const fallback = clean(fallbackSubject);
   const text = toAsciiDigits(input.replace(/\r/g, ""));
