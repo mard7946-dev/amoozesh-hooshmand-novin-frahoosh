@@ -172,7 +172,7 @@ Deno.serve(async(req:Request)=>{
    const subject=clean(body.subject);
    if(!subject)return reply({message:"نام درس الزامی است."},400);
    if(sourceText.length<20)return reply({message:"متن قابل استفاده‌ای از PDF دریافت نشد."},422);
-   const chunks=parsePdfQuestions(sourceText,subject,100);
+   const chunks=parsePdfQuestions(sourceText,subject,500);
    if(!chunks.length)return reply({message:"سؤال شماره‌گذاری‌شده یا بخش‌بندی‌شده‌ای از متن PDF تشخیص داده نشد. برای جلوگیری از ورود اشتباه، چیزی ذخیره نشد؛ متن PDF و شماره‌گذاری را بررسی کنید.",imported:0},422);
    const rows=chunks.map(q=>({tenant_school_id:school,created_by:auth.user.id,subject:q.subject||subject,grade:clean(body.grade),prompt:q.prompt,question_type:q.question_type,options:q.options,correct_answer:q.correct_answer,source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"published"}));
    const {data,error}=await db.from("question_bank").insert(rows).select("id");
