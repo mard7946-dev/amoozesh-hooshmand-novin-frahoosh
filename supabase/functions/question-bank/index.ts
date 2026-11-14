@@ -73,6 +73,12 @@ Deno.serve(async(req:Request)=>{
   if(action==="archive_question"&&(manager||deputy)){
    const {error}=await db.from("question_bank").update({status:"archived",updated_at:new Date().toISOString()}).eq("tenant_school_id",school).eq("id",clean(body.question_id));if(error)throw error;return reply({ok:true});
   }
+  if(action==="bulk_archive_questions"&&manager){
+   const {data,error}=await db.from("question_bank").update({status:"archived",updated_at:new Date().toISOString()}).eq("tenant_school_id",school).neq("status","archived").select("id");
+   if(error)throw error;
+   const archived=Array.isArray(data)?data.length:0;
+   return reply({ok:true,archived,message:archived+" سؤال فعال مدرسه به بایگانی منتقل شد. برگه‌های آزمون قبلی تغییری نکردند."});
+  }
   if(action==="add_to_collection"&&(deputy||teacher)){
    const questionId=clean(body.question_id);
    const {data:q,error:qErr}=await db.from("question_bank").select("id").eq("tenant_school_id",school).eq("id",questionId).eq("status","published").maybeSingle();
