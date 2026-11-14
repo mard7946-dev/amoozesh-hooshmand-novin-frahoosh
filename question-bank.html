@@ -1,19 +1,16 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>بانک سؤال فراهوش نوین</title>
 <style>
-:root{font-family:Tahoma,Arial,sans-serif;color:#182235;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:18px}.head{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.head h1{margin:0 0 8px;font-size:22px}.muted{color:#64748b;font-size:13px}.head .muted{color:#d2dbea}.panel{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}label{display:block;font-size:13px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}textarea{min-height:85px}button{border:0;border-radius:9px;padding:11px 15px;background:#166534;color:white;font:inherit;cursor:pointer;margin:5px 3px}button.secondary{background:#e8eef7;color:#17243a}button:disabled{opacity:.5}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.item{border:1px solid #e1e8f0;border-radius:12px;padding:13px;margin:10px 0}.tag{font-size:12px;color:#475569}.notice{padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.hidden{display:none}.actions{display:flex;gap:6px;flex-wrap:wrap}.danger{background:#9f1239}.item,.item *{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif!important;font-size:14px!important;font-weight:400;line-height:1.9}.item b,.item strong{font-weight:700}.item p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}.item .options{padding-right:24px;margin:6px 0}.item .options li{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif!important}button,input,select,textarea{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif}
+:root{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif;color:#182235;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:18px}.head{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.head h1{margin:0 0 8px;font-size:22px}.muted{color:#64748b;font-size:13px}.head .muted{color:#d2dbea}.panel{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}label{display:block;font-size:13px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}textarea{min-height:85px}button{border:0;border-radius:9px;padding:11px 15px;background:#166534;color:white;font:inherit;cursor:pointer;margin:5px 3px}button.secondary{background:#e8eef7;color:#17243a}button:disabled{opacity:.5}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.item{border:1px solid #e1e8f0;border-radius:12px;padding:13px;margin:10px 0}.tag{font-size:12px;color:#475569}.notice{padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.hidden{display:none}.actions{display:flex;gap:6px;flex-wrap:wrap}.danger{background:#9f1239}.item,.item *{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif!important;font-size:14px!important;font-weight:400;line-height:1.9}.item b,.item strong{font-weight:700}.item p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}.item .options{padding-right:24px;margin:6px 0}.item .options li{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif!important}button,input,select,textarea{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head><body><main class="wrap">
 <header class="head"><h1>بانک سؤال فراهوش نوین</h1><div class="muted" id="roleText">بانک مرکزی مدرسه و مجموعه شخصی سؤال‌ها</div></header>
 <div id="notice" class="notice">در حال دریافت اطلاعات بانک سؤال…</div>
 <section id="managerTools" class="panel hidden"><h2>مدیریت بانک مرکزی</h2>
-<h3>ورود از نشانی سایت</h3><p class="muted">فعلاً استخراج خودکار از داده‌های استاندارد Quiz/Question (JSON-LD) پشتیبانی می‌شود. سؤال‌های استخراج‌شده ابتدا پیش‌نویس می‌شوند و باید بازبینی و منتشر شوند.</p>
-<div class="grid"><div><label>نشانی HTTPS صفحه</label><input id="sourceUrl" type="url" placeholder="https://example.org/questions"></div><div><label>درس</label><input id="importSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="importGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="sourceLicense" placeholder="مثلاً CC BY 4.0 یا اجازه ناشر"></div></div>
-<label><input id="permission" type="checkbox" style="width:auto"> تأیید می‌کنم اجازه دریافت و استفاده از محتوای این منبع را دارم.</label><button id="importBtn">بررسی و دریافت سؤال‌ها</button>
-<hr><h3>ورود سؤال‌ها از صفحه سایت یا فایل PDF</h3>
-<p class="muted">نشانی صفحه سایت را وارد کنید تا پیوندهای PDF قابل‌دسترسی در آن پیدا شوند؛ سپس فایل مناسب را انتخاب کنید. اگر سایت نیازمند ورود باشد یا PDF را با جاوااسکریپت بارگذاری کند، فایل را مستقیم بارگذاری کنید. PDF متنی پشتیبانی می‌شود؛ PDF اسکن‌شده فعلاً قابل استخراج نیست.</p>
-<div class="grid"><div><label>نشانی صفحه سایت</label><input id="pdfPageUrl" type="url" placeholder="https://example.org/books"><button type="button" id="scanPdfLinks" class="secondary">پیدا کردن PDFهای صفحه</button></div><div><label>PDFهای پیدا‌شده</label><select id="foundPdf"><option value="">ابتدا صفحه را بررسی کنید</option></select></div><div><label>یا بارگذاری مستقیم PDF</label><input id="pdfFile" type="file" accept="application/pdf,.pdf"></div><div><label>درس پیش‌فرض (برای سؤال‌هایی که عنوان درس ندارند)</label><input id="pdfSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="pdfGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="pdfLicense" placeholder="اجازه ناشر / محتوای تألیفی"></div></div>
+<h3>بارگذاری PDF و تبدیل آن به سؤال‌های متنی</h3>
+<p class="muted">فایل PDF را خودتان از دستگاه انتخاب کنید. متن، سؤال‌ها و گزینه‌ها استخراج می‌شوند و به شکل پیش‌نویس قابل بازبینی ذخیره خواهند شد. فونت، اندازه و فاصله‌گذاری در بانک سؤال و برگه چاپی یکدست است. PDF اسکن‌شده که متن قابل انتخاب ندارد، فعلاً نیازمند OCR است.</p>
+<div class="grid"><div><label>بارگذاری مستقیم فایل PDF</label><input id="pdfFile" type="file" accept="application/pdf,.pdf"></div><div><label>درس پیش‌فرض (برای سؤال‌هایی که عنوان درس ندارند)</label><input id="pdfSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="pdfGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="pdfLicense" placeholder="اجازه ناشر / محتوای تألیفی"></div></div>
 <label><input id="pdfPermission" type="checkbox" style="width:auto"> تأیید می‌کنم اجازه استفاده و ورود سؤال‌های این PDF را دارم.</label>
-<button id="pdfImportBtn">استخراج و ورود پیش‌نویس‌ها از PDF</button>
+<button id="pdfImportBtn">استخراج متن و ورود سؤال‌ها</button>
 <hr><h3>ثبت دستی سؤال</h3><div class="grid">
 <div><label>درس</label><input id="subject"></div><div><label>پایه</label><input id="grade"></div><div><label>فصل</label><input id="chapter"></div><div><label>مبحث</label><input id="topic"></div>
 <div><label>نوع سؤال</label><select id="qtype"><option value="multiple_choice">چهارگزینه‌ای</option><option value="true_false">درست / نادرست</option><option value="short_answer">پاسخ کوتاه</option><option value="essay">تشریحی</option><option value="fill_blank">جای خالی</option></select></div>
@@ -22,6 +19,10 @@
 <div style="grid-column:1/-1"><label>متن سؤال</label><textarea id="prompt"></textarea></div><div style="grid-column:1/-1"><label>توضیح پاسخ</label><textarea id="explanation"></textarea></div>
 </div><button id="saveBtn">ذخیره پیش‌نویس</button></section>
 <section class="panel"><div class="row"><h2>سؤال‌های بانک مرکزی</h2><div class="actions"><input id="search" placeholder="جست‌وجو در متن یا درس" style="max-width:240px"><select id="filterSubject" style="width:150px"><option value="">همه درس‌ها</option></select><select id="filterGrade" style="width:130px"><option value="">همه پایه‌ها</option></select></div></div><div id="questions"></div></section>
+<section id="paperTools" class="panel hidden"><h2>برگه‌های آزمون و تأیید نهایی</h2>
+<div id="teacherPaperCreate" class="hidden"><div class="grid"><div><label>عنوان برگه</label><input id="paperTitle" placeholder="مثلاً آزمون فصل اول"></div><div><label>درس برگه</label><input id="paperSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="paperGrade" placeholder="مثلاً دهم"></div></div><button id="createPaperBtn">ایجاد برگه و انتخاب سؤال</button></div>
+<p class="muted" id="paperHelp"></p><div id="paperList"></div><div id="paperEditor"></div>
+</section>
 <section class="panel"><h2>مجموعه سؤال‌های من</h2><div id="myQuestions" class="muted">برای افزودن سؤال، از بانک مرکزی انتخاب کنید.</div></section>
 <div class="row"><button class="secondary" onclick="history.back()">بازگشت به پنل</button></div>
 </main>
@@ -30,45 +31,26 @@ const base="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/question-bank"
 const anon="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const role=sessionStorage.getItem("frahoosh_novin_role")||"";
-const $=id=>document.getElementById(id);let state={questions:[],selected:[],role:""};
+const $=id=>document.getElementById(id);let state={questions:[],selected:[],role:"",papers:[],activePaper:null};
 function note(t){$("notice").textContent=t}
 async function api(action,extra={}){const r=await fetch(base,{method:"POST",headers:{"Content-Type":"application/json","apikey":anon,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||"درخواست ناموفق بود.");return d}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function draw(){const search=$("search").value.trim().toLowerCase(),grade=$("filterGrade").value,subject=$("filterSubject").value;const list=state.questions.filter(q=>(!subject||q.subject===subject)&&(!grade||q.grade===grade)&&(!search||(q.prompt+" "+q.subject+" "+q.topic).toLowerCase().includes(search)));$("questions").innerHTML=list.map(q=>'<article class="item"><div class="row"><b>'+esc(q.subject)+' · '+esc(q.grade||"بدون پایه")+'</b><span class="tag">'+esc(q.status==="published"?"منتشرشده":"پیش‌نویس")+' · '+esc(q.difficulty)+'</span></div><p>'+esc(q.prompt)+'</p>'+(Array.isArray(q.options)&&q.options.length?'<ol class="options">'+q.options.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ol>':"")+'<div class="tag">'+esc(q.chapter)+' '+esc(q.topic)+' '+(q.source_url?('· منبع: '+esc(q.source_title||q.source_url)):"")+'</div><div class="actions">'+(state.role==="manager"&&q.status==="draft"?'<button data-publish="'+q.id+'">انتشار در بانک</button>':"")+(state.role!=="manager"&&q.status==="published"&&!state.selected.includes(q.id)?'<button data-add="'+q.id+'">افزودن به سؤال‌های من</button>':"")+(state.role!=="manager"&&state.selected.includes(q.id)?'<span class="tag">به مجموعه شما اضافه شده</span>':"")+'</div></article>').join("")||'<p class="muted">سؤالی با این فیلتر پیدا نشد.</p>';const mine=state.questions.filter(q=>state.selected.includes(q.id));$("myQuestions").innerHTML=mine.map(q=>'<div class="item">'+esc(q.subject)+' · '+esc(q.prompt)+'</div>').join("")||"هنوز سؤالی اضافه نکرده‌اید."}
-async function refresh(){const d=await api("bootstrap");state={...state,...d,selected:d.selected_ids||[]};$("roleText").textContent=d.role==="manager"?"مدیریت و انتشار بانک مرکزی":d.role==="deputy"?"مشاهده و انتخاب سؤال برای معاون آموزشی":"مشاهده و انتخاب سؤال برای دبیر";$("managerTools").classList.toggle("hidden",d.role!=="manager");const subjects=[...new Set(d.questions.map(q=>q.subject).filter(Boolean))];$("filterSubject").innerHTML='<option value="">همه درس‌ها</option>'+subjects.map(s=>'<option>'+esc(s)+'</option>').join("");const grades=[...new Set(d.questions.map(q=>q.grade).filter(Boolean))];$("filterGrade").innerHTML='<option value="">همه پایه‌ها</option>'+grades.map(g=>'<option>'+esc(g)+'</option>').join("");draw();note("بانک سؤال مدرسه با موفقیت بارگذاری شد.")}
+function draw(){const search=$("search").value.trim().toLowerCase(),grade=$("filterGrade").value,subject=$("filterSubject").value;const list=state.questions.filter(q=>(!subject||q.subject===subject)&&(!grade||q.grade===grade)&&(!search||(q.prompt+" "+q.subject+" "+q.topic).toLowerCase().includes(search)));$("questions").innerHTML=list.map(q=>'<article class="item"><div class="row"><b>'+esc(q.subject)+' · '+esc(q.grade||"بدون پایه")+'</b><span class="tag">'+esc(q.status==="published"?"منتشرشده":"پیش‌نویس")+' · '+esc(q.difficulty)+'</span></div><p>'+esc(q.prompt)+'</p>'+(Array.isArray(q.options)&&q.options.length?'<ol class="options">'+q.options.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ol>':"")+'<div class="tag">'+esc(q.chapter)+' '+esc(q.topic)+' '+(q.source_url?('· منبع: '+esc(q.source_title||q.source_url)):"")+'</div><div class="actions">'+(state.role==="manager"&&q.status==="draft"?'<button class="secondary" data-edit="'+q.id+'">ویرایش متن و درس</button><button data-publish="'+q.id+'">انتشار در بانک</button>':"")+(state.role!=="manager"&&q.status==="published"&&!state.selected.includes(q.id)?'<button data-add="'+q.id+'">افزودن به سؤال‌های من</button>':"")+(state.role==="teacher"&&state.activePaper&&state.activePaper.subject===q.subject&&["draft","returned"].includes(state.activePaper.status)?'<label>نمره سؤال<input type="number" min="0.25" max="100" step="0.25" value="1" data-paper-points="'+q.id+'" style="max-width:90px"></label><button data-paper-add="'+q.id+'">افزودن به برگه آزمون</button>':"")+(state.role!=="manager"&&state.selected.includes(q.id)?'<span class="tag">به مجموعه شما اضافه شده</span>':"")+'</div></article>').join("")||'<p class="muted">سؤالی با این فیلتر پیدا نشد.</p>';const mine=state.questions.filter(q=>state.selected.includes(q.id));$("myQuestions").innerHTML=mine.map(q=>'<div class="item">'+esc(q.subject)+' · '+esc(q.prompt)+'</div>').join("")||"هنوز سؤالی اضافه نکرده‌اید."}
+async function refresh(){const activeId=state.activePaper?.id;const d=await api("bootstrap");state={...state,...d,selected:d.selected_ids||[],papers:d.papers||[]};$("roleText").textContent=d.role==="manager"?"مدیریت بانک سؤال و خروجی آزمون":d.role==="deputy"?"بررسی و خروجی برگه‌های تأییدشده":"انتخاب سؤال و تنظیم نمره برگه آزمون";$("managerTools").classList.toggle("hidden",d.role!=="manager");$("paperTools").classList.toggle("hidden",!["teacher","manager","deputy"].includes(d.role));$("teacherPaperCreate").classList.toggle("hidden",d.role!=="teacher");$("paperHelp").textContent=d.role==="teacher"?"دبیر می‌تواند برگه خود را بسازد و برای تأیید ارسال کند؛ خروجی PDF نهایی فقط پس از تأیید و فقط در پنل مدیر و معاون آموزشی فعال می‌شود.":"در این بخش برگه‌های در انتظار تأیید و برگه‌های تأییدشده را بررسی کنید؛ دریافت و چاپ خروجی فقط برای مدیر و معاون آموزشی مجاز است.";const subjects=[...new Set(d.questions.map(q=>q.subject).filter(Boolean))];$("filterSubject").innerHTML='<option value="">همه درس‌ها</option>'+subjects.map(s=>'<option>'+esc(s)+'</option>').join("");const grades=[...new Set(d.questions.map(q=>q.grade).filter(Boolean))];$("filterGrade").innerHTML='<option value="">همه پایه‌ها</option>'+grades.map(g=>'<option>'+esc(g)+'</option>').join("");draw();renderPaperList();if(activeId){try{await openPaper(activeId)}catch{state.activePaper=null;renderPaperList()}}note("بانک سؤال مدرسه با موفقیت بارگذاری شد.")}
 $("search").addEventListener("input",draw);$("filterGrade").addEventListener("change",draw);$("filterSubject").addEventListener("change",draw);
-$("questions").addEventListener("click",async e=>{const add=e.target.dataset.add,pub=e.target.dataset.publish;try{if(add){await api("add_to_collection",{question_id:add});note("سؤال به مجموعه شخصی شما اضافه شد.")}if(pub){await api("publish_question",{question_id:pub});note("سؤال منتشر شد.")}await refresh()}catch(err){note(err.message)}});
+$("questions").addEventListener("click",async e=>{const add=e.target.dataset.add,pub=e.target.dataset.publish,edit=e.target.dataset.edit;try{if(add){await api("add_to_collection",{question_id:add});note("سؤال به مجموعه شخصی شما اضافه شد.")}if(pub){await api("publish_question",{question_id:pub});note("سؤال منتشر شد.")}if(edit){const q=state.questions.find(item=>item.id===edit);if(!q)return;const prompt=window.prompt("متن سؤال",q.prompt);if(prompt===null)return;const subject=window.prompt("درس سؤال",q.subject);if(subject===null)return;const options=window.prompt("گزینه‌ها؛ هر گزینه در یک خط",Array.isArray(q.options)?q.options.join("\n"):"");if(options===null)return;await api("update_question",{question_id:edit,question:{prompt,subject,grade:q.grade,chapter:q.chapter,topic:q.topic,question_type:q.question_type,options:options.split("\n").map(x=>x.trim()).filter(Boolean),correct_answer:q.correct_answer,explanation:q.explanation}});note("سؤال اصلاح شد.")}if(add||pub||edit)await refresh()}catch(err){note(err.message)}});
 $("saveBtn").onclick=async()=>{try{const q={subject:$("subject").value,grade:$("grade").value,chapter:$("chapter").value,topic:$("topic").value,question_type:$("qtype").value,difficulty:$("difficulty").value,prompt:$("prompt").value,options:$("options").value.split("\n").map(x=>x.trim()).filter(Boolean),correct_answer:$("answer").value,explanation:$("explanation").value};await api("create_question",{question:q});note("پیش‌نویس سؤال ذخیره شد.");await refresh()}catch(e){note(e.message)}};
-$("importBtn").onclick=async()=>{try{const d=await api("import_url",{source_url:$("sourceUrl").value,subject:$("importSubject").value,grade:$("importGrade").value,source_license:$("sourceLicense").value,source_permission_confirmed:$("permission").checked});note(d.message||("تعداد سؤال‌های واردشده: "+d.imported));await refresh()}catch(e){note(e.message)}};
-$("scanPdfLinks").onclick=async()=>{
- try{
-  const page=$("pdfPageUrl").value.trim();if(!page)throw new Error("نشانی صفحه سایت را وارد کنید.");
-  if(!$("pdfPermission").checked)throw new Error("ابتدا اجازه استفاده از محتوای منبع را تأیید کنید.");
-  note("در حال بررسی صفحه و پیدا کردن پیوندهای PDF…");
-  const d=await api("discover_pdf_links",{source_url:page,source_permission_confirmed:true});
-  $("foundPdf").innerHTML='<option value="">انتخاب فایل PDF</option>'+d.pdfs.map(p=>'<option value="'+esc(p.url)+'">'+esc(p.title)+'</option>').join("");
-  note(d.message||"بررسی صفحه انجام شد.");
- }catch(e){note(e.message||"بررسی صفحه انجام نشد.")}
-};
-
 $("pdfImportBtn").onclick=async()=>{
  try{
   const file=$("pdfFile").files[0];
-  const selectedPdf=$("foundPdf").value;
-  if(!file&&!selectedPdf)throw new Error("یک PDF از فهرست انتخاب کنید یا فایل را بارگذاری کنید.");
-  if(file&&(file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf")))throw new Error("فایل انتخاب‌شده PDF نیست.");
-  if(file&&file.size>15*1024*1024)throw new Error("حجم PDF نباید بیشتر از ۱۵ مگابایت باشد.");
+  if(!file)throw new Error("فایل PDF را از دستگاه انتخاب کنید.");
+  if(file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf"))throw new Error("فایل انتخاب‌شده PDF نیست.");
+  if(file.size>15*1024*1024)throw new Error("حجم PDF نباید بیشتر از ۱۵ مگابایت باشد.");
   if(!$("pdfPermission").checked)throw new Error("ابتدا اجازه استفاده از محتوای PDF را تأیید کنید.");
   if(!$("pdfSubject").value.trim())throw new Error("نام درس را وارد کنید.");
   note("در حال استخراج متن PDF…");
   if(!window.pdfjsLib)throw new Error("ابزار خواندن PDF بارگذاری نشد؛ اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.");
-  let data,fileName;
-  if(file){data=await file.arrayBuffer();fileName=file.name;}
-  else{
-   const fetched=await api("fetch_pdf",{pdf_url:selectedPdf,source_permission_confirmed:true});
-   const binary=atob(fetched.data),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-   data=bytes.buffer;fileName=fetched.file_name||"questions.pdf";
-  }
+  const data=await file.arrayBuffer(),fileName=file.name;
   pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const pdf=await pdfjsLib.getDocument({data}).promise;
   let pages=[];
@@ -85,10 +67,73 @@ $("pdfImportBtn").onclick=async()=>{
   }
   const extracted=pages.join("\n").replace(/[ \t]+/g," ").trim();
   if(!extracted)throw new Error("متنی از PDF استخراج نشد؛ احتمالاً فایل اسکن‌شده است.");
-  const d=await api("import_pdf",{text:extracted,file_name:fileName,source_url:selectedPdf||"",subject:$("pdfSubject").value,grade:$("pdfGrade").value,source_license:$("pdfLicense").value,source_permission_confirmed:true});
+  const d=await api("import_pdf",{text:extracted,file_name:fileName,subject:$("pdfSubject").value,grade:$("pdfGrade").value,source_license:$("pdfLicense").value,source_permission_confirmed:true});
   note(d.message||("تعداد پیش‌نویس‌های واردشده: "+d.imported));
-  await refresh();
+  $("pdfFile").value="";await refresh();
  }catch(e){note(e.message||"ورود PDF انجام نشد.")}
 };
+
+async function renderPaperList(){
+ const host=$("paperList");if(!host)return;
+ const items=state.papers||[];
+ host.innerHTML=items.map(p=>'<div class="item"><div class="row"><b>'+esc(p.title)+' · '+esc(p.subject)+' · '+esc(p.grade||"بدون پایه")+'</b><span class="tag">'+esc(({draft:"پیش‌نویس",submitted:"در انتظار تأیید",approved:"تأیید نهایی",returned:"نیازمند اصلاح"})[p.status]||p.status)+' · '+esc(Number(p.total_points||0))+' نمره</span></div><button class="secondary" data-paper-open="'+p.id+'">'+(state.role==="teacher"?"مشاهده / ویرایش":"بررسی برگه")+'</button></div>').join("")||'<p class="muted">هنوز برگه آزمونی ثبت نشده است.</p>';
+}
+async function openPaper(id){
+ const d=await api("get_paper",{paper_id:id});state.activePaper=d.paper;
+ const p=d.paper,items=d.items||[],total=items.reduce((s,x)=>s+Number(x.points||0),0);
+ const host=$("paperEditor");
+ let body='<div class="item"><h3>'+esc(p.title)+'</h3><div class="tag">'+esc(p.subject)+' · '+esc(p.grade||"بدون پایه")+' · مجموع نمره: '+esc(p.total_points||total)+'</div>';
+ if(state.role==="teacher"&&p.status==="approved"){
+  body+='<p>این برگه تأیید نهایی شده است. خروجی نهایی فقط در اختیار مدیر و معاون آموزشی قرار دارد.</p>';
+ }else{
+  body+=items.map(it=>{const q=it.question_bank||{};return '<article class="item"><div class="row"><b>'+esc(q.subject||p.subject)+'</b><span class="tag">'+esc(it.points)+' نمره</span></div><p>'+esc(q.prompt||"")+'</p>'+(Array.isArray(q.options)&&q.options.length?'<ol class="options">'+q.options.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ol>':"")+(state.role==="teacher"&&["draft","returned"].includes(p.status)?'<button class="danger" data-paper-remove="'+it.id+'">حذف از برگه</button>':"")+'</article>'}).join("");
+ }
+ if(state.role==="teacher"){
+  if(["draft","returned"].includes(p.status)){
+   body+='<p class="tag">مجموع نمره فعلی: '+total.toFixed(2)+' از ۱۰۰</p><button id="submitPaperBtn" data-paper-submit="'+p.id+'">ارسال برای تأیید نهایی</button>';
+  }else if(p.status==="submitted")body+='<p>برگه ارسال شده و تا اعلام نتیجه بررسی قابل ویرایش نیست.</p>';
+  if(p.status==="returned")body+='<p class="notice">توضیح اصلاح: '+esc(p.review_note||"")+'</p>';
+ }else if(p.status==="submitted"){
+  body+='<p>این برگه برای بررسی نهایی ارسال شده است.</p><label>توضیح (در صورت بازگرداندن برای اصلاح)<textarea id="paperReviewNote"></textarea></label><button data-paper-approve="'+p.id+'">تأیید نهایی</button><button class="danger" data-paper-return="'+p.id+'">بازگرداندن برای اصلاح</button>';
+ }else if(p.status==="approved"){
+  body+='<p class="notice">تأیید نهایی انجام شده است؛ خروجی چاپ فقط در این سطح دسترسی فعال است.</p><button data-paper-export="'+p.id+'">چاپ / ذخیره خروجی PDF</button>';
+ }
+ body+='</div>';host.innerHTML=body;draw();
+}
+async function exportApprovedPaper(id){
+ const win=window.open("about:blank","_blank");if(!win)throw new Error("برای چاپ، بازشدن پنجره جدید را در مرورگر مجاز کنید.");
+ try{
+  const d=await api("get_approved_paper",{paper_id:id});
+  if(!d.export_allowed)throw new Error("دسترسی دریافت خروجی تأیید نشد.");
+  const p=d.paper,items=d.items||[];
+  const rows=items.map((it,i)=>{const q=it.question_bank||{};return '<section class="question"><div class="qrow"><b>سؤال '+(i+1)+'</b><b>'+esc(it.points)+' نمره</b></div><p>'+esc(q.prompt||"")+'</p>'+(Array.isArray(q.options)&&q.options.length?'<ol>'+q.options.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ol>':"")+'</section>'}).join("");
+  const doc='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>'+esc(p.title)+'</title><style>@page{size:A4;margin:18mm}*{box-sizing:border-box}body{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif;color:#111;font-size:14pt;line-height:2}.head{text-align:center;border-bottom:1px solid #777;padding-bottom:10px;margin-bottom:18px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.question{break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}.qrow{display:flex;justify-content:space-between}.question p{white-space:pre-wrap;margin:5px 0}.question ol{margin:4px 0;padding-right:30px} .blank{display:inline-block;min-width:100px;border-bottom:1px dotted #333}@media print{button{display:none}}</style></head><body><header class="head"><h2>دبیرستان سردار شهید حاجی‌زاده ۲</h2><h3>'+esc(p.title)+'</h3><div>'+esc(p.subject)+' · '+esc(p.grade||"")+'</div></header><div class="meta"><div>نام و نام خانوادگی: ................................</div><div>کلاس: ........................</div><div>تاریخ: ........................</div><div>نمره کل: '+esc(p.total_points)+' از ۱۰۰</div></div>'+rows+'</body></html>';
+  win.document.open();win.document.write(doc);win.document.close();win.focus();setTimeout(()=>win.print(),500);
+ }catch(error){win.close();throw error}
+}
+$("createPaperBtn").onclick=async()=>{try{const d=await api("create_paper",{title:$("paperTitle").value,subject:$("paperSubject").value,grade:$("paperGrade").value});$("paperTitle").value="";await refresh();await openPaper(d.paper_id);note(d.message)}catch(e){note(e.message)}};
+$("paperList").addEventListener("click",async e=>{const id=e.target.dataset.paperOpen;if(!id)return;try{await openPaper(id)}catch(err){note(err.message)}});
+$("paperEditor").addEventListener("click",async e=>{
+ const remove=e.target.dataset.paperRemove,submit=e.target.dataset.paperSubmit,approve=e.target.dataset.paperApprove,ret=e.target.dataset.paperReturn,exp=e.target.dataset.paperExport;
+ try{
+  if(remove){await api("remove_paper_item",{paper_id:state.activePaper.id,item_id:remove});await openPaper(state.activePaper.id);note("سؤال از برگه حذف شد.");}
+  if(submit){const d=await api("submit_paper",{paper_id:submit});state.activePaper=null;await refresh();note(d.message);}
+  if(approve||ret){const d=await api("review_paper",{paper_id:approve||ret,decision:approve?"approve":"return",note:$("paperReviewNote")?.value||""});state.activePaper=null;await refresh();note(d.message);}
+  if(exp){await exportApprovedPaper(exp);note("برگه تأییدشده برای چاپ آماده شد. در پنجره چاپ، گزینه «ذخیره به‌صورت PDF» را انتخاب کنید.");}
+ }catch(err){note(err.message||"عملیات برگه آزمون انجام نشد.")}
+});
+$("paperEditor").addEventListener("change",async e=>{
+ const qid=e.target.dataset.paperPoints;if(!qid||!state.activePaper)return;
+ const card=e.target.closest(".item");const add=card?.querySelector('[data-paper-add="'+qid+'"]');if(add)add.dataset.points=String(e.target.value);
+});
+$("questions").addEventListener("click",async e=>{
+ const id=e.target.dataset.paperAdd;if(!id)return;
+ try{if(!state.activePaper)throw new Error("ابتدا یک برگه آزمون ایجاد و باز کنید.");
+  const input=$("questions").querySelector('[data-paper-points="'+id+'"]');
+  const d=await api("add_paper_item",{paper_id:state.activePaper.id,question_id:id,points:Number(input?.value||1)});
+  await openPaper(state.activePaper.id);note(d.message);
+ }catch(err){note(err.message)}
+});
+
 if(!token){note("نشست ورود پیدا نشد؛ از پنل مدرسه دوباره وارد شوید.")}else refresh().catch(e=>note(e.message));
 </script></body></html>

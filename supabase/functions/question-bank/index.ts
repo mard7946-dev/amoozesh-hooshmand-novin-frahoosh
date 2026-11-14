@@ -5,69 +5,6 @@ const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers"
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const clean=(v:unknown)=>String(v??"").trim().slice(0,12000);
 const norm=(v:unknown)=>clean(v).replace(/[\u200c\u200f\u202a-\u202e]/g,"").replace(/ي/g,"ی").replace(/ك/g,"ک").toLocaleLowerCase("fa");
-const isPrivateHost=(host:string)=>host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="0.0.0.0"||host==="127.0.0.1"||host==="::1"||/^10\./.test(host)||/^192\.168\./.test(host)||/^172\.(1[6-9]|2\d|3[01])\./.test(host);
-
-
-const ipv4Public=(value:string):boolean=>{
- const p=value.split(".").map(Number);if(p.length!==4||p.some(n=>!Number.isInteger(n)||n<0||n>255))return false;
- const [a,b,c]=p;
- if(a===0||a===10||a===127||a>=224)return false;
- if(a===100&&b>=64&&b<=127)return false;
- if(a===169&&b===254)return false;
- if(a===172&&b>=16&&b<=31)return false;
- if(a===192&&(b===168||(b===0&&c===0)||(b===0&&c===2)))return false;
- if(a===198&&(b===18||b===19||(b===51&&c===100)))return false;
- if(a===203&&b===0&&c===113)return false;
- return true;
-};
-const ipv6Public=(value:string):boolean=>{
- const h=value.toLowerCase().split("%")[0];
- // Only globally routable unicast (2000::/3); reject mapped, local, multicast,
- // transition, documentation and other special-purpose ranges.
- if(!/^[23][0-9a-f]{0,3}:/.test(h))return false;
- if(h.startsWith("2001:db8:")||h.startsWith("2001:10:")||h.startsWith("2001:20:")||h.startsWith("2001:0:")||h.startsWith("2002:"))return false;
- return true;
-};
-const publicHttpsUrl=(value:string):URL|null=>{
- try{
-  const u=new URL(value);const h=u.hostname.toLowerCase().replace(/^\[|\]$/g,"");
-  if(u.protocol!=="https:"||u.username||u.password||!h||h==="localhost"||h.endsWith(".localhost")||h.endsWith(".local"))return null;
-  // Do not accept IP literals: resolve and validate DNS answers before any outbound request.
-  if(/^\d+(?:\.\d+){0,3}$/.test(h)||h.includes(":"))return null;
-  return u;
- }catch{return null;}
-};
-const resolvePublicHost=async(host:string):Promise<boolean>=>{
- try{
-  const a=await Deno.resolveDns(host,"A");
-  if(!a.length||a.some(ip=>!ipv4Public(ip)))return false;
-  let aaaa:string[]=[];
-  try{aaaa=await Deno.resolveDns(host,"AAAA");}catch{}
-  if(aaaa.some(ip=>!ipv6Public(ip)))return false;
-  return true;
- }catch{return false;}
-};
-const fetchPublic=async(target:URL,accept:string):Promise<Response>=>{
- if(!(await resolvePublicHost(target.hostname)))throw new Error("PUBLIC_HOST_VALIDATION_FAILED");
- return await fetch(target.toString(),{redirect:"manual",signal:AbortSignal.timeout(15000),headers:{"Accept":accept,"User-Agent":"FrahooshQuestionBank/1.0"}});
-};
-const readBounded=async(response:Response,maxBytes:number):Promise<Uint8Array>=>{
- const declared=Number(response.headers.get("content-length")||0);
- if(declared>maxBytes){await response.body?.cancel();throw new Error("RESPONSE_TOO_LARGE");}
- if(!response.body)throw new Error("EMPTY_RESPONSE");
- const reader=response.body.getReader();const chunks:Uint8Array[]=[];let total=0;
- try{
-  while(true){
-   const {done,value}=await reader.read();if(done)break;
-   total+=value.byteLength;
-   if(total>maxBytes){await reader.cancel();throw new Error("RESPONSE_TOO_LARGE");}
-   chunks.push(value);
-  }
- }finally{reader.releaseLock();}
- const result=new Uint8Array(total);let offset=0;
- for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.byteLength;}
- return result;
-};
 const toBase64=(bytes:Uint8Array)=>{let binary="";const step=0x8000;for(let i=0;i<bytes.length;i+=step)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+step,bytes.length)));return btoa(binary);};
 
 Deno.serve(async(req:Request)=>{
@@ -86,13 +23,13 @@ Deno.serve(async(req:Request)=>{
   if(pErr||!profile?.tenant_school_id) return reply({message:"پروفایل مدرسه تأیید نشد."},403);
   const role=norm(profile.role);
   const manager=["manager","مدیر","school_manager"].includes(role);
-  const deputy=["deputy","educational_deputy","معاون","معاون آموزشی"].includes(role);
+  const deputy=["educational","educational_deputy","معاون آموزشی"].includes(role);
   const teacher=["teacher","دبیر","معلم"].includes(role);
   if(!manager&&!deputy&&!teacher) return reply({message:"این نقش به بانک سؤال دسترسی ندارد."},403);
   const {data:members,error:mErr}=await db.from("school_memberships").select("role").eq("school_id",profile.tenant_school_id).eq("auth_user_id",auth.user.id).eq("is_active",true);
   if(mErr) return reply({message:"بررسی عضویت مدرسه ناموفق بود."},503);
   const membershipRoles=(members||[]).map(x=>norm(x.role));
-  const valid=manager?membershipRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?membershipRoles.some(x=>["deputy","معاون","معاون آموزشی","educational_deputy"].includes(x)):membershipRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
+  const valid=manager?membershipRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?membershipRoles.some(x=>["educational","educational_deputy","معاون آموزشی"].includes(x)):membershipRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
   if(!valid) return reply({message:"عضویت فعال این نقش در مدرسه تأیید نشد."},403);
   const body=await req.json().catch(()=>({}));
   const action=clean(body.action);
@@ -110,7 +47,11 @@ Deno.serve(async(req:Request)=>{
    if(!collection){const created=await db.from("question_collections").insert({tenant_school_id:school,owner_auth_user_id:auth.user.id,title:"سؤال‌های من"}).select("id,title").single();if(created.error)throw created.error;collection=created.data;}
    const {data:items,error:iErr}=await db.from("question_collection_items").select("question_id").eq("collection_id",collection.id);
    if(iErr)throw iErr;
-   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions:questions||[],collection,selected_ids:(items||[]).map(x=>x.question_id)});
+   const paperQuery=db.from("question_papers").select("id,title,subject,grade,status,created_by,total_points,submitted_at,approved_at,review_note,created_at,updated_at").eq("tenant_school_id",school);
+   if(teacher)paperQuery.eq("created_by",auth.user.id);
+   const {data:papers,error:paperErr}=await paperQuery.order("updated_at",{ascending:false}).limit(100);
+   if(paperErr)throw paperErr;
+   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions:questions||[],collection,selected_ids:(items||[]).map(x=>x.question_id),papers:papers||[]});
   }
   if(action==="create_question"&&manager){
    const q=body.question||{};
@@ -119,6 +60,15 @@ Deno.serve(async(req:Request)=>{
    const payload={tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(q.grade),chapter:clean(q.chapter),topic:clean(q.topic),difficulty:["easy","medium","hard"].includes(q.difficulty)?q.difficulty:"medium",question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"multiple_choice",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),points:Math.max(0,Number(q.points)||1),source_url:clean(q.source_url),source_title:clean(q.source_title),source_license:clean(q.source_license),source_permission_confirmed:q.source_permission_confirmed===true,status:"draft"};
    const {data,error}=await db.from("question_bank").insert(payload).select("id").single();if(error)throw error;
    return reply({ok:true,id:data.id,message:"سؤال به‌صورت پیش‌نویس ذخیره شد."});
+  }
+  if(action==="update_question"&&manager){
+   const questionId=clean(body.question_id),q=body.question||{};
+   const prompt=clean(q.prompt),subject=clean(q.subject);
+   if(!prompt||!subject)return reply({message:"متن سؤال و نام درس الزامی است."},400);
+   const payload={subject,grade:clean(q.grade),chapter:clean(q.chapter),topic:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
+   const {data,error}=await db.from("question_bank").update(payload).eq("tenant_school_id",school).eq("id",questionId).eq("status","draft").select("id").maybeSingle();
+   if(error)throw error;if(!data)return reply({message:"فقط سؤال پیش‌نویس قابل ویرایش است."},404);
+   return reply({ok:true,message:"متن سؤال و دسته‌بندی درس اصلاح شد."});
   }
   if(action==="publish_question"&&manager){
    const {data,error}=await db.from("question_bank").update({status:"published",updated_at:new Date().toISOString()}).eq("tenant_school_id",school).eq("id",clean(body.question_id)).select("id").maybeSingle();
@@ -145,39 +95,82 @@ Deno.serve(async(req:Request)=>{
    const {error}=await db.from("question_collection_items").delete().eq("collection_id",c.id).eq("question_id",questionId);if(error)throw error;return reply({ok:true});
   }
 
-  if(action==="discover_pdf_links"&&manager){
-   if(body.source_permission_confirmed!==true)return reply({message:"برای بررسی صفحه باید مجوز استفاده از محتوای منبع را تأیید کنید."},400);
-   const page=publicHttpsUrl(clean(body.source_url));
-   if(!page)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
-   const response=await fetchPublic(page,"text/html");
-   if(response.status>=300&&response.status<400)return reply({message:"صفحه به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی را وارد کنید."},400);
-   if(!response.ok)return reply({message:"دریافت صفحه از سایت ممکن نشد."},502);
-   const type=response.headers.get("content-type")||"";
-   if(!type.toLowerCase().includes("text/html"))return reply({message:"این نشانی صفحه HTML نیست؛ فایل PDF را مستقیماً بارگذاری کنید."},415);
-   const html=new TextDecoder().decode(await readBounded(response,2*1024*1024));
-   const links=new Map<string,{url:string,title:string}>();
-   for(const m of html.matchAll(/<a\b([^>]*?)href\s*=\s*(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi)){
-    const href=(m[3]||"").replace(/&amp;/g,"&").trim();if(!href)continue;
-    let resolved:URL;try{resolved=new URL(href,page);}catch{continue;}
-    if(!/\.pdf(?:$|[?#])/i.test(resolved.pathname+resolved.search))continue;
-    const safe=publicHttpsUrl(resolved.toString());if(!safe)continue;
-    const title=(m[5]||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,180)||decodeURIComponent(safe.pathname.split("/").pop()||"فایل PDF");
-    links.set(safe.toString(),{url:safe.toString(),title});
+  if(action==="create_paper"&&teacher){
+   const title=clean(body.title),subject=clean(body.subject),grade=clean(body.grade);
+   if(title.length<2||!subject)return reply({message:"عنوان برگه و درس الزامی است."},400);
+   const {data,error}=await db.from("question_papers").insert({tenant_school_id:school,created_by:auth.user.id,title,subject,grade,status:"draft"}).select("id").single();
+   if(error)throw error;
+   return reply({ok:true,paper_id:data.id,message:"برگهٔ آزمون ایجاد شد؛ اکنون سؤال‌ها را انتخاب کنید."});
+  }
+  if(action==="get_paper"){
+   const paperId=clean(body.paper_id);
+   const {data:paper,error}=await db.from("question_papers").select("*").eq("tenant_school_id",school).eq("id",paperId).maybeSingle();
+   if(error)throw error;if(!paper)return reply({message:"برگه پیدا نشد."},404);
+   if(teacher&&paper.created_by!==auth.user.id)return reply({message:"به این برگه دسترسی ندارید."},403);
+   if(teacher&&paper.status==="approved")return reply({ok:true,paper:{id:paper.id,title:paper.title,subject:paper.subject,grade:paper.grade,status:paper.status,total_points:paper.total_points,approved_at:paper.approved_at},items:[],export_allowed:false});
+   const {data:items,error:itemErr}=await db.from("question_paper_items").select("id,question_id,points,order_index,question_bank(id,subject,grade,question_type,prompt,options)").eq("paper_id",paperId).order("order_index",{ascending:true}).order("created_at",{ascending:true});
+   if(itemErr)throw itemErr;
+   return reply({ok:true,paper,items:items||[],export_allowed:(manager||deputy)&&paper.status==="approved"});
+  }
+  if(action==="add_paper_item"&&teacher){
+   const paperId=clean(body.paper_id),questionId=clean(body.question_id),points=Number(body.points);
+   if(!Number.isFinite(points)||points<=0||points>100)return reply({message:"نمره سؤال باید بیشتر از صفر و حداکثر ۱۰۰ باشد."},400);
+   const {data:paper,error:pErr}=await db.from("question_papers").select("id,subject,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
+   if(pErr)throw pErr;if(!paper)return reply({message:"برگه متعلق به شما نیست."},403);
+   if(!["draft","returned"].includes(paper.status))return reply({message:"پس از ارسال برای تأیید، امکان تغییر برگه وجود ندارد."},409);
+   const {data:question,error:qErr}=await db.from("question_bank").select("id,subject").eq("tenant_school_id",school).eq("id",questionId).eq("status","published").maybeSingle();
+   if(qErr)throw qErr;if(!question)return reply({message:"سؤال منتشرشده پیدا نشد."},404);
+   if(norm(question.subject)!==norm(paper.subject))return reply({message:"فقط سؤال‌های همان درس را می‌توانید به این برگه اضافه کنید."},400);
+   const {data:existing,error:eErr}=await db.from("question_paper_items").select("id").eq("paper_id",paperId).eq("question_id",questionId).maybeSingle();
+   if(eErr)throw eErr;
+   if(existing){const {error}=await db.from("question_paper_items").update({points}).eq("id",existing.id);if(error)throw error;}
+   else{
+    const {data:positions,error:cErr}=await db.from("question_paper_items").select("order_index").eq("paper_id",paperId);
+    if(cErr)throw cErr;if((positions||[]).length>=100)return reply({message:"هر برگه حداکثر ۱۰۰ سؤال می‌تواند داشته باشد."},400);
+    const nextOrder=(positions||[]).reduce((max,item)=>Math.max(max,Number(item.order_index)+1),0);
+    const {error}=await db.from("question_paper_items").insert({paper_id:paperId,question_id:questionId,points,order_index:nextOrder});
+    if(error)throw error;
    }
-   const pdfs=[...links.values()].slice(0,50);
-   return reply({ok:true,count:pdfs.length,pdfs,message:pdfs.length?pdfs.length+" فایل PDF در صفحه پیدا شد.":"پیوند PDF قابل‌دسترسی در HTML صفحه پیدا نشد؛ اگر سایت با جاوااسکریپت PDFها را بارگذاری می‌کند، فایل را مستقیم بارگذاری کنید."});
+   return reply({ok:true,message:"سؤال و نمره آن در برگه ذخیره شد."});
   }
-  if(action==="fetch_pdf"&&manager){
-   if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
-   const pdfUrl=publicHttpsUrl(clean(body.pdf_url));if(!pdfUrl)return reply({message:"نشانی PDF معتبر و عمومی نیست."},400);
-   const response=await fetchPublic(pdfUrl,"application/pdf");
-   if(response.status>=300&&response.status<400)return reply({message:"فایل PDF به نشانی دیگری هدایت می‌شود؛ فایل را بارگذاری کنید یا نشانی نهایی را وارد کنید."},400);
-   if(!response.ok)return reply({message:"دریافت PDF از سایت ممکن نشد."},502);
-   let bytes:Uint8Array;try{bytes=await readBounded(response,15*1024*1024);}catch(error){if(error instanceof Error&&error.message==="RESPONSE_TOO_LARGE")return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);throw error;}
-   if(bytes.length<5||new TextDecoder().decode(bytes.subarray(0,5))!=="%PDF-")return reply({message:"نشانی انتخاب‌شده محتوای PDF معتبر برنگرداند."},415);
-   return reply({ok:true,file_name:decodeURIComponent(pdfUrl.pathname.split("/").pop()||"questions.pdf"),data:toBase64(bytes)});
+  if(action==="remove_paper_item"&&teacher){
+   const paperId=clean(body.paper_id),itemId=clean(body.item_id);
+   const {data:paper,error:pErr}=await db.from("question_papers").select("id,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
+   if(pErr)throw pErr;if(!paper)return reply({message:"برگه پیدا نشد."},404);
+   if(!["draft","returned"].includes(paper.status))return reply({message:"این برگه قفل شده است."},409);
+   const {error}=await db.from("question_paper_items").delete().eq("paper_id",paperId).eq("id",itemId);
+   if(error)throw error;return reply({ok:true});
   }
-
+  if(action==="submit_paper"&&teacher){
+   const paperId=clean(body.paper_id);
+   const {data:paper,error:pErr}=await db.from("question_papers").select("id,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
+   if(pErr)throw pErr;if(!paper)return reply({message:"برگه پیدا نشد."},404);
+   if(!["draft","returned"].includes(paper.status))return reply({message:"این برگه قبلاً ارسال شده یا تأیید نهایی شده است."},409);
+   const {data:items,error:iErr}=await db.from("question_paper_items").select("points").eq("paper_id",paperId);
+   if(iErr)throw iErr;if(!items?.length)return reply({message:"برای ارسال، دست‌کم یک سؤال انتخاب کنید."},400);
+   const total=items.reduce((sum,item)=>sum+Number(item.points||0),0);
+   if(total<=0||total>100)return reply({message:"مجموع نمره‌ها باید بیشتر از صفر و حداکثر ۱۰۰ باشد."},400);
+   const {data,error}=await db.from("question_papers").update({status:"submitted",total_points:total,submitted_at:new Date().toISOString(),review_note:"",updated_at:new Date().toISOString()}).eq("id",paperId).in("status",["draft","returned"]).select("id").maybeSingle();
+   if(error)throw error;if(!data)return reply({message:"وضعیت برگه تغییر کرده است؛ صفحه را تازه‌سازی کنید."},409);
+   return reply({ok:true,message:"برگه برای تأیید نهایی مدیر یا معاون آموزشی ارسال شد."});
+  }
+  if(action==="review_paper"&&(manager||deputy)){
+   const paperId=clean(body.paper_id),decision=clean(body.decision),noteText=clean(body.note);
+   if(!["approve","return"].includes(decision))return reply({message:"تصمیم بررسی معتبر نیست."},400);
+   if(decision==="return"&&!noteText)return reply({message:"برای بازگرداندن برگه، علت اصلاح را بنویسید."},400);
+   const patch=decision==="approve"?{status:"approved",approved_by:auth.user.id,approved_at:new Date().toISOString(),review_note:"",updated_at:new Date().toISOString()}:{status:"returned",approved_by:null,approved_at:null,review_note:noteText,updated_at:new Date().toISOString()};
+   const {data,error}=await db.from("question_papers").update(patch).eq("tenant_school_id",school).eq("id",paperId).eq("status","submitted").select("id").maybeSingle();
+   if(error)throw error;if(!data)return reply({message:"فقط برگهٔ در انتظار تأیید قابل بررسی است."},409);
+   return reply({ok:true,message:decision==="approve"?"برگه تأیید نهایی شد؛ خروجی فقط برای مدیر و معاون آموزشی فعال است.":"برگه برای اصلاح به دبیر بازگردانده شد."});
+  }
+  if(action==="get_approved_paper"&&(manager||deputy)){
+   const paperId=clean(body.paper_id);
+   const {data:paper,error}=await db.from("question_papers").select("id,title,subject,grade,status,total_points,created_by,approved_at").eq("tenant_school_id",school).eq("id",paperId).eq("status","approved").maybeSingle();
+   if(error)throw error;if(!paper)return reply({message:"فقط برگهٔ تأییدشده برای خروجی قابل دریافت است."},404);
+   const {data:items,error:itemErr}=await db.from("question_paper_items").select("points,order_index,question_bank(subject,grade,question_type,prompt,options)").eq("paper_id",paperId).order("order_index",{ascending:true}).order("created_at",{ascending:true});
+   if(itemErr)throw itemErr;
+   return reply({ok:true,paper,items:items||[],export_allowed:true});
+  }
   if(action==="import_pdf"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای ورود PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
    const sourceText=String(body.text||"").slice(0,180000);
@@ -190,26 +183,6 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await db.from("question_bank").insert(rows).select("id");
    if(error)throw error;
    return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال به‌صورت پیش‌نویس وارد شد. درس هر سؤال از عنوان صریح بخش «درس: ...» تشخیص داده شده و در غیر این صورت از درس انتخاب‌شده استفاده شده است؛ متن، گزینه‌ها و پاسخ‌ها را بازبینی کنید."});
-  }
-  if(action==="import_url"&&manager){
-   if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت محتوا باید مجوز استفاده از منبع را تأیید کنید."},400);
-   let parsed:URL;try{parsed=new URL(clean(body.source_url));}catch{return reply({message:"نشانی اینترنتی معتبر نیست."},400);}
-   if(parsed.protocol!=="https:"||isPrivateHost(parsed.hostname)||parsed.username||parsed.password)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
-   if(!(await resolvePublicHost(parsed.hostname)))return reply({message:"نشانی مقصد عمومی و امن تشخیص داده نشد."},400);
-   const response=await fetch(parsed.toString(),{redirect:"manual",signal:AbortSignal.timeout(15000),headers:{"Accept":"text/html,application/ld+json","User-Agent":"FrahooshQuestionBank/1.0"}});
-   if(response.status>=300&&response.status<400)return reply({message:"منبع به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی HTTPS را وارد کنید."},400);
-   if(!response.ok)return reply({message:"دریافت صفحه از منبع انجام نشد."},502);
-   const type=response.headers.get("content-type")||"";
-   if(!type.includes("text/html")&&!type.includes("application/ld+json"))return reply({message:"فعلاً فقط صفحه HTML یا داده JSON-LD قابل بررسی است."},415);
-   const raw=new TextDecoder().decode(await readBounded(response,1500000));
-   const scripts=[...raw.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
-   const found:any[]=[];
-   for(const match of scripts){try{const parsedJson=JSON.parse(match[1]);const candidates=Array.isArray(parsedJson)?parsedJson:[parsedJson];for(const item of candidates){const list=Array.isArray(item["@graph"])?item["@graph"]:[item];for(const node of list){const kind=String(node["@type"]||"");if((kind==="Question"||kind==="Quiz")&&node.name&&node.text)found.push(node);}}}catch{}}
-   if(!found.length)return reply({message:"از این صفحه سؤال ساختاریافته قابل استخراج پیدا نشد. می‌توانید اطلاعات را دستی ثبت کنید یا منبعی با داده استاندارد Quiz/Question بدهید.",imported:0},422);
-   const rows=found.slice(0,100).map(q=>({tenant_school_id:school,created_by:auth.user.id,subject:clean(body.subject)||"نیازمند دسته‌بندی",grade:clean(body.grade),prompt:clean(q.text||q.name),question_type:"short_answer",options:[],correct_answer:"",source_url:parsed.toString(),source_title:clean(q.name)||parsed.hostname,source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"})).filter(q=>q.prompt);
-   if(!rows.length)return reply({message:"سؤال قابل ذخیره‌ای از صفحه استخراج نشد."},422);
-   const {data,error}=await db.from("question_bank").insert(rows).select("id");if(error)throw error;
-   return reply({ok:true,imported:data?.length||0,message:"سؤال‌ها به‌صورت پیش‌نویس وارد شدند؛ پس از تکمیل دسته‌بندی و بازبینی می‌توانید منتشر کنید."});
   }
   return reply({message:"این عملیات برای نقش شما مجاز نیست یا شناخته نشد."},403);
  }catch(error){console.error("question-bank error",error);return reply({message:"عملیات بانک سؤال انجام نشد؛ ساختار داده و دسترسی سرویس را بررسی کنید."},500);}
