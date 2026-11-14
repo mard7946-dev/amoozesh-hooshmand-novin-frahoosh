@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>بانک سؤال فراهوش نوین</title>
 <style>
-:root{font-family:Tahoma,Arial,sans-serif;color:#182235;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:18px}.head{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.head h1{margin:0 0 8px;font-size:22px}.muted{color:#64748b;font-size:13px}.head .muted{color:#d2dbea}.panel{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}label{display:block;font-size:13px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}textarea{min-height:85px}button{border:0;border-radius:9px;padding:11px 15px;background:#166534;color:white;font:inherit;cursor:pointer;margin:5px 3px}button.secondary{background:#e8eef7;color:#17243a}button:disabled{opacity:.5}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.item{border:1px solid #e1e8f0;border-radius:12px;padding:13px;margin:10px 0}.tag{font-size:12px;color:#475569}.notice{padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.hidden{display:none}.actions{display:flex;gap:6px;flex-wrap:wrap}.danger{background:#9f1239}
+:root{font-family:Tahoma,Arial,sans-serif;color:#182235;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:18px}.head{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.head h1{margin:0 0 8px;font-size:22px}.muted{color:#64748b;font-size:13px}.head .muted{color:#d2dbea}.panel{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}label{display:block;font-size:13px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}textarea{min-height:85px}button{border:0;border-radius:9px;padding:11px 15px;background:#166534;color:white;font:inherit;cursor:pointer;margin:5px 3px}button.secondary{background:#e8eef7;color:#17243a}button:disabled{opacity:.5}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.item{border:1px solid #e1e8f0;border-radius:12px;padding:13px;margin:10px 0}.tag{font-size:12px;color:#475569}.notice{padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.hidden{display:none}.actions{display:flex;gap:6px;flex-wrap:wrap}.danger{background:#9f1239}.item,.item *{font-family:Tahoma,Arial,sans-serif!important;font-size:14px;line-height:1.9}.item p{white-space:pre-wrap;overflow-wrap:anywhere}button,input,select,textarea{font-family:Tahoma,Arial,sans-serif}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head><body><main class="wrap">
 <header class="head"><h1>بانک سؤال فراهوش نوین</h1><div class="muted" id="roleText">بانک مرکزی مدرسه و مجموعه شخصی سؤال‌ها</div></header>
 <div id="notice" class="notice">در حال دریافت اطلاعات بانک سؤال…</div>
@@ -43,13 +43,21 @@ $("importBtn").onclick=async()=>{try{const d=await api("import_url",{source_url:
 $("pdfImportBtn").onclick=async()=>{
  try{
   const file=$("pdfFile").files[0];
-  if(!file||file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf"))throw new Error("ابتدا یک فایل PDF انتخاب کنید.");
-  if(file.size>15*1024*1024)throw new Error("حجم PDF نباید بیشتر از ۱۵ مگابایت باشد.");
+  const selectedPdf=$("foundPdf").value;
+  if(!file&&!selectedPdf)throw new Error("یک PDF از فهرست انتخاب کنید یا فایل را بارگذاری کنید.");
+  if(file&&(file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf")))throw new Error("فایل انتخاب‌شده PDF نیست.");
+  if(file&&file.size>15*1024*1024)throw new Error("حجم PDF نباید بیشتر از ۱۵ مگابایت باشد.");
   if(!$("pdfPermission").checked)throw new Error("ابتدا اجازه استفاده از محتوای PDF را تأیید کنید.");
   if(!$("pdfSubject").value.trim())throw new Error("نام درس را وارد کنید.");
   note("در حال استخراج متن PDF…");
   if(!window.pdfjsLib)throw new Error("ابزار خواندن PDF بارگذاری نشد؛ اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.");
-  const data=await file.arrayBuffer();
+  let data,fileName;
+  if(file){data=await file.arrayBuffer();fileName=file.name;}
+  else{
+   const fetched=await api("fetch_pdf",{pdf_url:selectedPdf,source_permission_confirmed:true});
+   const binary=atob(fetched.data),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+   data=bytes.buffer;fileName=fetched.file_name||"questions.pdf";
+  }
   pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const pdf=await pdfjsLib.getDocument({data}).promise;
   let pages=[];
@@ -66,7 +74,7 @@ $("pdfImportBtn").onclick=async()=>{
   }
   const extracted=pages.join("\n").replace(/[ \t]+/g," ").trim();
   if(!extracted)throw new Error("متنی از PDF استخراج نشد؛ احتمالاً فایل اسکن‌شده است.");
-  const d=await api("import_pdf",{text:extracted,file_name:file.name,subject:$("pdfSubject").value,grade:$("pdfGrade").value,source_license:$("pdfLicense").value,source_permission_confirmed:true});
+  const d=await api("import_pdf",{text:extracted,file_name:fileName,source_url:selectedPdf||"",subject:$("pdfSubject").value,grade:$("pdfGrade").value,source_license:$("pdfLicense").value,source_permission_confirmed:true});
   note(d.message||("تعداد پیش‌نویس‌های واردشده: "+d.imported));
   await refresh();
  }catch(e){note(e.message||"ورود PDF انجام نشد.")}
