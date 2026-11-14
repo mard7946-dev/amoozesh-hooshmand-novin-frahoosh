@@ -6,6 +6,10 @@ const clean=(v:unknown)=>String(v??"").trim().slice(0,12000);
 const norm=(v:unknown)=>clean(v).replace(/[\u200c\u200f\u202a-\u202e]/g,"").replace(/ي/g,"ی").replace(/ك/g,"ک").toLocaleLowerCase("fa");
 const isPrivateHost=(host:string)=>host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="0.0.0.0"||host==="127.0.0.1"||host==="::1"||/^10\./.test(host)||/^192\.168\./.test(host)||/^172\.(1[6-9]|2\d|3[01])\./.test(host);
 
+
+const publicHttpsUrl=(value:string):URL|null=>{try{const u=new URL(value);const h=u.hostname.toLowerCase().replace(/^\[|\]$/g,"");if(u.protocol!=="https:"||u.username||u.password||h==="localhost"||h.endsWith(".localhost")||h.endsWith(".local")||h==="::1"||h==="0.0.0.0"||h==="127.0.0.1"||/^10\./.test(h)||/^192\.168\./.test(h)||/^172\.(1[6-9]|2\d|3[01])\./.test(h)||/^169\.254\./.test(h)||h==="::"||h.startsWith("fc")||h.startsWith("fd")||h.startsWith("fe80:"))return null;return u;}catch{return null;}};
+const toBase64=(bytes:Uint8Array)=>{let binary="";const step=0x8000;for(let i=0;i<bytes.length;i+=step)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+step,bytes.length)));return btoa(binary);};
+
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS") return new Response("ok",{headers:cors});
  if(req.method!=="POST") return reply({message:"درخواست نامعتبر است."},405);
@@ -80,6 +84,41 @@ Deno.serve(async(req:Request)=>{
    if(cErr)throw cErr;if(!c)return reply({ok:true});
    const {error}=await db.from("question_collection_items").delete().eq("collection_id",c.id).eq("question_id",questionId);if(error)throw error;return reply({ok:true});
   }
+
+  if(action==="discover_pdf_links"&&manager){
+   if(body.source_permission_confirmed!==true)return reply({message:"برای بررسی صفحه باید مجوز استفاده از محتوای منبع را تأیید کنید."},400);
+   const page=publicHttpsUrl(clean(body.source_url));
+   if(!page)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
+   const response=await fetch(page.toString(),{redirect:"manual",headers:{"Accept":"text/html","User-Agent":"FrahooshQuestionBank/1.0"}});
+   if(response.status>=300&&response.status<400)return reply({message:"صفحه به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی را وارد کنید."},400);
+   if(!response.ok)return reply({message:"دریافت صفحه از سایت ممکن نشد."},502);
+   const type=response.headers.get("content-type")||"";
+   if(!type.toLowerCase().includes("text/html"))return reply({message:"این نشانی صفحه HTML نیست؛ فایل PDF را مستقیماً بارگذاری کنید."},415);
+   const html=(await response.text()).slice(0,2000000);
+   const links=new Map<string,{url:string,title:string}>();
+   for(const m of html.matchAll(/<a\\b([^>]*?)href\\s*=\\s*(["'])(.*?)\\2([^>]*)>([\\s\\S]*?)<\\/a>/gi)){
+    const href=(m[3]||"").replace(/&amp;/g,"&").trim();if(!href)continue;
+    let resolved:URL;try{resolved=new URL(href,page);}catch{continue;}
+    if(!/\\.pdf(?:$|[?#])/i.test(resolved.pathname+resolved.search))continue;
+    const safe=publicHttpsUrl(resolved.toString());if(!safe)continue;
+    const title=(m[5]||"").replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,180)||decodeURIComponent(safe.pathname.split("/").pop()||"فایل PDF");
+    links.set(safe.toString(),{url:safe.toString(),title});
+   }
+   const pdfs=[...links.values()].slice(0,50);
+   return reply({ok:true,count:pdfs.length,pdfs,message:pdfs.length?pdfs.length+" فایل PDF در صفحه پیدا شد.":"پیوند PDF قابل‌دسترسی در HTML صفحه پیدا نشد؛ اگر سایت با جاوااسکریپت PDFها را بارگذاری می‌کند، فایل را مستقیم بارگذاری کنید."});
+  }
+  if(action==="fetch_pdf"&&manager){
+   if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
+   const pdfUrl=publicHttpsUrl(clean(body.pdf_url));if(!pdfUrl)return reply({message:"نشانی PDF معتبر و عمومی نیست."},400);
+   const response=await fetch(pdfUrl.toString(),{redirect:"manual",headers:{"Accept":"application/pdf","User-Agent":"FrahooshQuestionBank/1.0"}});
+   if(response.status>=300&&response.status<400)return reply({message:"فایل PDF به نشانی دیگری هدایت می‌شود؛ فایل را بارگذاری کنید یا نشانی نهایی را وارد کنید."},400);
+   if(!response.ok)return reply({message:"دریافت PDF از سایت ممکن نشد."},502);
+   const length=Number(response.headers.get("content-length")||0);if(length>15*1024*1024)return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);
+   const bytes=new Uint8Array(await response.arrayBuffer());if(bytes.length>15*1024*1024)return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);
+   if(bytes.length<5||new TextDecoder().decode(bytes.subarray(0,5))!=="%PDF-")return reply({message:"نشانی انتخاب‌شده محتوای PDF معتبر برنگرداند."},415);
+   return reply({ok:true,file_name:decodeURIComponent(pdfUrl.pathname.split("/").pop()||"questions.pdf"),data:toBase64(bytes)});
+  }
+
   if(action==="import_pdf"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای ورود PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
    const sourceText=String(body.text||"").slice(0,180000);
