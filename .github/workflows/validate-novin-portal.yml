@@ -19,6 +19,7 @@ on:
       - 'accept-invite.html'
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
+      - 'supabase/functions/request-manager-password-recovery/index.ts'
       - 'supabase/functions/login-by-username/index.ts'
       - 'supabase/functions/admin-manage-users/index.ts'
       - 'supabase/functions/parent-management/index.ts'
@@ -64,6 +65,8 @@ on:
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
       - 'supabase/functions/login-by-username/index.ts'
+      - 'supabase/functions/request-manager-password-recovery/index.ts'
+      - '.github/workflows/validate-novin-portal.yml'
       - 'supabase/functions/assessment-center/index.ts'
       - 'supabase/functions/classroom-login/index.ts'
       - 'supabase/functions/admin-manage-users/index.ts'
@@ -115,6 +118,8 @@ jobs:
         run: deno check supabase/functions/platform-management/index.ts supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check manager password recovery Edge Function
+        run: deno check supabase/functions/request-manager-password-recovery/index.ts
       - name: Type-check username login Edge Function
         run: deno check supabase/functions/login-by-username/index.ts
       - name: Type-check parent account management Edge Function
