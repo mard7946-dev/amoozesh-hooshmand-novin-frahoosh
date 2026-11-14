@@ -104,7 +104,7 @@ Deno.serve(async(req:Request)=>{
    if(body.source_permission_confirmed!==true)return reply({message:"برای بررسی صفحه باید مجوز استفاده از محتوای منبع را تأیید کنید."},400);
    const page=publicHttpsUrl(clean(body.source_url));
    if(!page)return reply({message:"فقط نشانی HTTPS عمومی و معتبر پذیرفته می‌شود."},400);
-   const response=await fetchPinnedHttps(page,"text/html",2*1024*1024);
+   let response:Response;try{response=await fetchPinnedHttps(page,"text/html",2*1024*1024);}catch(error){if(error instanceof Error&&error.message==="RESPONSE_TOO_LARGE")return reply({message:"حجم صفحه بیشتر از ۲ مگابایت است."},413);if(error instanceof Error&&error.message==="PUBLIC_HOST_VALIDATION_FAILED")return reply({message:"نشانی مقصد به یک IP عمومی معتبر اشاره نمی‌کند."},400);throw error;}
    if(response.status>=300&&response.status<400)return reply({message:"صفحه به نشانی دیگری هدایت می‌شود؛ لطفاً نشانی نهایی را وارد کنید."},400);
    if(!response.ok)return reply({message:"دریافت صفحه از سایت ممکن نشد."},502);
    const type=response.headers.get("content-type")||"";
@@ -125,7 +125,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="fetch_pdf"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت PDF باید مجوز استفاده از محتوا را تأیید کنید."},400);
    const pdfUrl=publicHttpsUrl(clean(body.pdf_url));if(!pdfUrl)return reply({message:"نشانی PDF معتبر و عمومی نیست."},400);
-   const response=await fetchPinnedHttps(pdfUrl,"application/pdf",15*1024*1024);
+   let response:Response;try{response=await fetchPinnedHttps(pdfUrl,"application/pdf",15*1024*1024);}catch(error){if(error instanceof Error&&error.message==="RESPONSE_TOO_LARGE")return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);if(error instanceof Error&&error.message==="PUBLIC_HOST_VALIDATION_FAILED")return reply({message:"نشانی مقصد به یک IP عمومی معتبر اشاره نمی‌کند."},400);throw error;}
    if(response.status>=300&&response.status<400)return reply({message:"فایل PDF به نشانی دیگری هدایت می‌شود؛ فایل را بارگذاری کنید یا نشانی نهایی را وارد کنید."},400);
    if(!response.ok)return reply({message:"دریافت PDF از سایت ممکن نشد."},502);
    let bytes:Uint8Array;try{bytes=await readBounded(response,15*1024*1024);}catch(error){if(error instanceof Error&&error.message==="RESPONSE_TOO_LARGE")return reply({message:"حجم PDF نباید بیشتر از ۱۵ مگابایت باشد."},413);throw error;}
