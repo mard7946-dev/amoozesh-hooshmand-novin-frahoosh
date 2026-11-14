@@ -10,9 +10,9 @@ assert.ok(html.includes("/functions/v1/school-portal-login"), "Portal must use t
 assert.ok(!html.includes("request-manager-password-recovery") && !html.includes('id="recoverPassword"') && !html.includes('step==="recover"'), "School portal must not expose email-based manager recovery");
 const managerRecovery = readFileSync("supabase/functions/request-manager-password-recovery/index.ts", "utf8");
 assert.ok(managerRecovery.includes("status: 410") && !managerRecovery.includes("/auth/v1/recover"), "Legacy email recovery endpoint must be disabled");
-const platformAdminPage = readFileSync("platform-admin.html", "utf8");
-assert.ok(platformAdminPage.includes('id="resetManagerPassword"') && platformAdminPage.includes("reset_school_manager_password"), "Authenticated platform admin must be able to reset a school manager password");
-assert.ok(platformAdminPage.includes("تغییر رمز اجباری"), "Platform admin reset UI must explain the forced next-login password change");
+const managerResetAdminPage = readFileSync("platform-admin.html", "utf8");
+assert.ok(managerResetAdminPage.includes('id="resetManagerPassword"') && managerResetAdminPage.includes("reset_school_manager_password"), "Authenticated platform admin must be able to reset a school manager password");
+assert.ok(managerResetAdminPage.includes("تغییر رمز اجباری"), "Platform admin reset UI must explain the forced next-login password change");
 const platformManagement = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
 assert.ok(platformManagement.includes('action === "reset_school_manager_password"') && platformManagement.includes("platform_admins"), "Manager password reset must be protected by platform-admin authentication");
 assert.ok(platformManagement.includes("owner_auth_user_id") && platformManagement.includes('.eq("role", "manager")') && platformManagement.includes('.eq("is_active", true)'), "Manager reset must target only the active owner-manager of the selected school");
