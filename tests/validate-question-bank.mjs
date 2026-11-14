@@ -8,7 +8,9 @@ const papersMigration=readFileSync("supabase/migrations/20261114080000_question_
 assert.ok(portal.includes("roleItems.push(['📚','بانک سؤال'"),"Question bank must appear for manager, deputy and teacher");
 assert.ok(page.includes("question-bank") && page.includes("frahoosh_novin_access_token"),"Question bank UI must use the authenticated school session");
 assert.ok(api.includes('action==="create_question"&&manager'),"Only manager can create central questions");
-assert.ok(api.includes('action==="publish_question"&&manager'),"Only manager can publish central questions");
+assert.ok(api.includes('status:"published"}));') && api.includes("سؤال یکجا و مستقیماً به بانک مرکزی اضافه شد"),"PDF imports must be bulk-published");
+assert.ok(api.includes('action==="update_question"&&(manager||deputy)') && api.includes('action==="archive_question"&&(manager||deputy)'),"Manager and educational deputy can edit/remove questions");
+assert.ok(!page.includes("data-publish=") && !api.includes('action==="publish_question"'),"No per-question publishing step remains");
 assert.ok(api.includes('action==="add_to_collection"&&(deputy||teacher)'),"Deputies and teachers can add published questions to personal collections");
 assert.ok(page.includes('id="pdfFile"') && page.includes('id="pdfSubject"'),"Manager must be able to upload a PDF directly and assign its default subject");
 assert.ok(!page.includes('id="pdfPageUrl"') && !api.includes('action==="fetch_pdf"') && !api.includes('action==="discover_pdf_links"'),"Question-bank PDF ingestion must use manual file upload only");
@@ -35,4 +37,4 @@ assert.ok(papersMigration.includes("question_papers") && papersMigration.include
 assert.ok(page.includes("data-paper-export") && page.includes("get_approved_paper") && page.includes("چاپ / ذخیره خروجی PDF"), "Approved PDF print action must be visible in the manager/deputy review workflow");
 assert.ok(page.includes('"B Zar","B Nazanin",Tahoma,Arial,sans-serif'), "Question bank and print output must use a consistent Persian font stack");
 
-assert.ok(api.includes('action==="update_question"&&manager') && page.includes('data-edit='), "Manager must be able to correct extracted draft question text and lesson before publishing");
+assert.ok(api.includes('action==="update_question"&&(manager||deputy)') && page.includes('data-edit=') && page.includes('data-archive='), "Manager and educational deputy can edit or remove questions");
