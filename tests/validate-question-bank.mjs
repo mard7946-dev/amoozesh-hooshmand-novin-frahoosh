@@ -42,3 +42,11 @@ assert.ok(api.includes('action==="update_question"&&(manager||deputy)') && page.
 assert.ok(page.includes('id="bulkArchiveBtn"') && page.includes('confirmation!=="حذف همه"'), "Manager bulk archive must require an explicit typed confirmation");
 assert.ok(page.includes('api("bulk_archive_questions")'), "Bulk archive button must call the server action");
 assert.ok(api.includes('action==="bulk_archive_questions"&&manager') && api.includes('eq("tenant_school_id",school).neq("status","archived").select("id")'), "Bulk archive must be manager-only and scoped to active questions in the current school");
+
+const vaultMigration = readFileSync("supabase/migrations/20261114120000_question_subject_grade_vaults.sql", "utf8");
+assert.ok(vaultMigration.includes("question_vaults") && vaultMigration.includes("question_bank_vault_id_fkey") && vaultMigration.includes("vault_id set not null"), "Every existing and new question must belong to one subject-grade vault");
+assert.ok(api.includes("ensureVault(db,school,subject,grade)") && api.includes("vault_id:vault.id"), "Manual questions must be assigned to their exact subject-grade vault");
+assert.ok(api.includes("vault_ids:[...new Set") && api.includes("vaultByKey"), "PDF import must create and assign a separate vault for each detected subject and selected grade");
+assert.ok(page.includes('id="vaults"') && page.includes("data-vault=") && page.includes("pageSize=20"), "Question browsing must open separate subject-grade vaults with paginated lists");
+assert.ok(page.includes("optionMarkup") && page.includes("option-row") && page.includes("question-prompt"), "Question text and its options must render as one structured question card");
+assert.ok(page.includes("font-size:16pt") && page.includes("gap:8px") && page.includes("@page{size:A4"), "Printed questions and options must use professional A4 typography and spacing");
