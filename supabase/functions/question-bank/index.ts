@@ -5,6 +5,8 @@ const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers"
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const clean=(v:unknown)=>String(v??"").trim().slice(0,12000);
 const norm=(v:unknown)=>clean(v).replace(/[\u200c\u200f\u202a-\u202e]/g,"").replace(/ي/g,"ی").replace(/ك/g,"ک").toLocaleLowerCase("fa");
+const vaultKey=(v:unknown)=>norm(v).replace(/\s+/g," ");
+async function ensureVault(db:any,school:string,subjectValue:unknown,gradeValue:unknown){const subject=clean(subjectValue).replace(/\s+/g," "),grade=clean(gradeValue).replace(/\s+/g," "),subject_key=vaultKey(subject),grade_key=vaultKey(grade);if(!subject)return null;const {error:upsertError}=await db.from("question_vaults").upsert({tenant_school_id:school,subject,grade,subject_key,grade_key},{onConflict:"tenant_school_id,subject_key,grade_key",ignoreDuplicates:true});if(upsertError)throw upsertError;const {data,error}=await db.from("question_vaults").select("id,subject,grade").eq("tenant_school_id",school).eq("subject_key",subject_key).eq("grade_key",grade_key).single();if(error)throw error;return data;}
 const toBase64=(bytes:Uint8Array)=>{let binary="";const step=0x8000;for(let i=0;i<bytes.length;i+=step)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+step,bytes.length)));return btoa(binary);};
 
 Deno.serve(async(req:Request)=>{
@@ -35,12 +37,13 @@ Deno.serve(async(req:Request)=>{
   const action=clean(body.action);
   const school=profile.tenant_school_id;
   if(action==="bootstrap"){
-   let query=db.from("question_bank").select("id,subject,grade,chapter,topic,difficulty,question_type,prompt,options,correct_answer,explanation,points,source_url,source_title,source_license,status,created_at").eq("tenant_school_id",school);
+   let query=db.from("question_bank").select("id,vault_id,subject,grade,chapter,topic,difficulty,question_type,prompt,options,correct_answer,explanation,points,source_url,source_title,source_license,status,created_at").eq("tenant_school_id",school);
    if(!manager&&!deputy) query=query.eq("status","published"); else query=query.neq("status","archived");
    if(body.subject) query=query.ilike("subject","%"+clean(body.subject)+"%");
    if(body.grade) query=query.eq("grade",clean(body.grade));
    const {data:questions,error}=await query.order("created_at",{ascending:false}).limit(1000);
    if(error) throw error;
+   const {data:vaults,error:vaultErr}=await db.from("question_vaults").select("id,subject,grade,created_at").eq("tenant_school_id",school).order("subject").order("grade");if(vaultErr)throw vaultErr;
    const {data:collections,error:cErr}=await db.from("question_collections").select("id,title").eq("tenant_school_id",school).eq("owner_auth_user_id",auth.user.id).order("created_at");
    if(cErr) throw cErr;
    let collection=collections?.[0];
@@ -51,21 +54,23 @@ Deno.serve(async(req:Request)=>{
    if(teacher)paperQuery.eq("created_by",auth.user.id);
    const {data:papers,error:paperErr}=await paperQuery.order("updated_at",{ascending:false}).limit(100);
    if(paperErr)throw paperErr;
-   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions:questions||[],collection,selected_ids:(items||[]).map(x=>x.question_id),papers:papers||[]});
+   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions:questions||[],vaults:vaults||[],collection,selected_ids:(items||[]).map(x=>x.question_id),papers:papers||[]});
   }
   if(action==="create_question"&&manager){
    const q=body.question||{};
    const prompt=clean(q.prompt),subject=clean(q.subject);
    if(!prompt||!subject) return reply({message:"متن سؤال و نام درس الزامی است."},400);
-   const payload={tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(q.grade),chapter:clean(q.chapter),topic:clean(q.topic),difficulty:["easy","medium","hard"].includes(q.difficulty)?q.difficulty:"medium",question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"multiple_choice",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),points:Math.max(0,Number(q.points)||1),source_url:clean(q.source_url),source_title:clean(q.source_title),source_license:clean(q.source_license),source_permission_confirmed:q.source_permission_confirmed===true,status:"published"};
+   const grade=clean(q.grade),vault=await ensureVault(db,school,subject,grade);if(!vault)return reply({message:"مخزن درس و پایه معتبر نیست."},400);
+   const payload={tenant_school_id:school,vault_id:vault.id,created_by:auth.user.id,subject,grade,chapter:clean(q.chapter),topic:clean(q.topic),difficulty:["easy","medium","hard"].includes(q.difficulty)?q.difficulty:"medium",question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"multiple_choice",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),points:Math.max(0,Number(q.points)||1),source_url:clean(q.source_url),source_title:clean(q.source_title),source_license:clean(q.source_license),source_permission_confirmed:q.source_permission_confirmed===true,status:"published"};
    const {data,error}=await db.from("question_bank").insert(payload).select("id").single();if(error)throw error;
-   return reply({ok:true,id:data.id,message:"سؤال مستقیماً به بانک مرکزی اضافه شد."});
+   return reply({ok:true,id:data.id,vault_id:vault.id,message:"سؤال به مخزن "+subject+" · "+(grade||"بدون پایه")+" اضافه شد."});
   }
   if(action==="update_question"&&(manager||deputy)){
    const questionId=clean(body.question_id),q=body.question||{};
    const prompt=clean(q.prompt),subject=clean(q.subject);
    if(!prompt||!subject)return reply({message:"متن سؤال و نام درس الزامی است."},400);
-   const payload={subject,grade:clean(q.grade),chapter:clean(q.chapter),topic:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
+   const grade=clean(q.grade),vault=await ensureVault(db,school,subject,grade);if(!vault)return reply({message:"مخزن درس و پایه معتبر نیست."},400);
+   const payload={subject,grade,vault_id:vault.id,chapter:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
    const {data,error}=await db.from("question_bank").update(payload).eq("tenant_school_id",school).eq("id",questionId).neq("status","archived").select("id").maybeSingle();
    if(error)throw error;if(!data)return reply({message:"سؤال فعال پیدا نشد."},404);
    return reply({ok:true,message:"متن سؤال و دسته‌بندی درس اصلاح شد."});
@@ -119,9 +124,9 @@ Deno.serve(async(req:Request)=>{
    const {data:paper,error:pErr}=await db.from("question_papers").select("id,subject,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
    if(pErr)throw pErr;if(!paper)return reply({message:"برگه متعلق به شما نیست."},403);
    if(!["draft","returned"].includes(paper.status))return reply({message:"پس از ارسال برای تأیید، امکان تغییر برگه وجود ندارد."},409);
-   const {data:question,error:qErr}=await db.from("question_bank").select("id,subject").eq("tenant_school_id",school).eq("id",questionId).eq("status","published").maybeSingle();
+   const {data:question,error:qErr}=await db.from("question_bank").select("id,subject,grade").eq("tenant_school_id",school).eq("id",questionId).eq("status","published").maybeSingle();
    if(qErr)throw qErr;if(!question)return reply({message:"سؤال منتشرشده پیدا نشد."},404);
-   if(norm(question.subject)!==norm(paper.subject))return reply({message:"فقط سؤال‌های همان درس را می‌توانید به این برگه اضافه کنید."},400);
+   if(norm(question.subject)!==norm(paper.subject)||norm(question.grade)!==norm(paper.grade))return reply({message:"فقط سؤال‌های همان درس و همان پایه را می‌توانید به این برگه اضافه کنید."},400);
    const {data:existing,error:eErr}=await db.from("question_paper_items").select("id").eq("paper_id",paperId).eq("question_id",questionId).maybeSingle();
    if(eErr)throw eErr;
    if(existing){const {error}=await db.from("question_paper_items").update({points}).eq("id",existing.id);if(error)throw error;}
@@ -180,10 +185,11 @@ Deno.serve(async(req:Request)=>{
    if(sourceText.length<20)return reply({message:"متن قابل استفاده‌ای از PDF دریافت نشد."},422);
    const chunks=parsePdfQuestions(sourceText,subject,500);
    if(!chunks.length)return reply({message:"سؤال شماره‌گذاری‌شده یا بخش‌بندی‌شده‌ای از متن PDF تشخیص داده نشد. برای جلوگیری از ورود اشتباه، چیزی ذخیره نشد؛ متن PDF و شماره‌گذاری را بررسی کنید.",imported:0},422);
-   const rows=chunks.map(q=>({tenant_school_id:school,created_by:auth.user.id,subject:q.subject||subject,grade:clean(body.grade),prompt:q.prompt,question_type:q.question_type,options:q.options,correct_answer:q.correct_answer,source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"published"}));
+   const grade=clean(body.grade),vaultByKey=new Map<string,any>();for(const q of chunks){const vault=await ensureVault(db,school,q.subject||subject,grade);if(!vault)throw new Error("مخزن درس و پایه ساخته نشد.");vaultByKey.set(vaultKey(q.subject||subject)+"|"+vaultKey(grade),vault);}
+   const rows=chunks.map(q=>{const vault=vaultByKey.get(vaultKey(q.subject||subject)+"|"+vaultKey(grade));return {tenant_school_id:school,vault_id:vault.id,created_by:auth.user.id,subject:q.subject||subject,grade,prompt:q.prompt,question_type:q.question_type,options:q.options,correct_answer:q.correct_answer,source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"published"};});
    const {data,error}=await db.from("question_bank").insert(rows).select("id");
    if(error)throw error;
-   return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال یکجا و مستقیماً به بانک مرکزی اضافه شد. مدیر و معاون آموزشی می‌توانند هر سؤال را در صورت نیاز ویرایش یا حذف کنند."});
+   return reply({ok:true,imported:data?.length||0,vault_ids:[...new Set([...vaultByKey.values()].map(v=>v.id))],message:(data?.length||0)+" سؤال در مخزن‌های اختصاصی درس و پایه ذخیره شد."});
   }
   return reply({message:"این عملیات برای نقش شما مجاز نیست یا شناخته نشد."},403);
  }catch(error){console.error("question-bank error",error);return reply({message:"عملیات بانک سؤال انجام نشد؛ ساختار داده و دسترسی سرویس را بررسی کنید."},500);}
