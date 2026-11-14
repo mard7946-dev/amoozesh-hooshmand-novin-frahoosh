@@ -120,7 +120,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="add_paper_item"&&teacher){
    const paperId=clean(body.paper_id),questionId=clean(body.question_id),points=Number(body.points);
    if(!Number.isFinite(points)||points<=0||points>100)return reply({message:"نمره سؤال باید بیشتر از صفر و حداکثر ۱۰۰ باشد."},400);
-   const {data:paper,error:pErr}=await db.from("question_papers").select("id,subject,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
+   const {data:paper,error:pErr}=await db.from("question_papers").select("id,subject,grade,status").eq("tenant_school_id",school).eq("id",paperId).eq("created_by",auth.user.id).maybeSingle();
    if(pErr)throw pErr;if(!paper)return reply({message:"برگه متعلق به شما نیست."},403);
    if(!["draft","returned"].includes(paper.status))return reply({message:"پس از ارسال برای تأیید، امکان تغییر برگه وجود ندارد."},409);
    const {data:question,error:qErr}=await db.from("question_bank").select("id,subject,grade").eq("tenant_school_id",school).eq("id",questionId).eq("status","published").maybeSingle();
