@@ -9,6 +9,9 @@ export type ParsedPdfQuestion = {
 const clean = (value: string) => value
   .replace(/[\u200e\u200f\u202a-\u202e]/g, "")
   .replace(/[\u00a0\t]+/g, " ")
+  .replace(/\u064a/g, "ی")
+  .replace(/\u0643/g, "ک")
+  .replace(/\u0649/g, "ی")
   .replace(/\s+/g, " ")
   .trim();
 
