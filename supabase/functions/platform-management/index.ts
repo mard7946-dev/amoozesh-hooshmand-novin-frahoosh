@@ -238,6 +238,66 @@ Deno.serve(async (req: Request) => {
       return reply({ success: true, subscription: data });
     }
 
+    if (action === "reset_school_manager_password") {
+      const schoolId = clean(body?.school_id, 80);
+      const username = clean(body?.username, 40);
+      const temporaryPassword = String(body?.temporary_password ?? "");
+      if (!schoolId || !/^[A-Za-z0-9._-]{4,40}$/.test(username) ||
+          temporaryPassword.length < 10 || temporaryPassword.length > 128 || temporaryPassword === username) {
+        return reply({ message: "مدرسه، نام کاربری یا رمز موقت معتبر نیست." }, 400);
+      }
+      const { data: school, error: schoolError } = await admin.from("schools")
+        .select("id,name,status,owner_auth_user_id").eq("id", schoolId).maybeSingle();
+      if (schoolError) return reply({ message: "بررسی مدرسه انجام نشد." }, 500);
+      if (!school || school.status !== "active" || !school.owner_auth_user_id) {
+        return reply({ message: "مدرسه فعال یا مدیر اصلی معتبر پیدا نشد." }, 404);
+      }
+      const { data: accounts, error: accountError } = await admin.from("account_settings")
+        .select("auth_user_id,username,tenant_school_id,role")
+        .eq("tenant_school_id", schoolId).eq("username", username).eq("role", "manager").limit(2);
+      if (accountError) return reply({ message: "بررسی حساب مدیر انجام نشد." }, 500);
+      if (!accounts || accounts.length !== 1 || accounts[0].auth_user_id !== school.owner_auth_user_id) {
+        return reply({ message: "نام کاربری به مدیر اصلی همین مدرسه متصل نیست." }, 404);
+      }
+      const managerUserId = accounts[0].auth_user_id;
+      const { data: membership, error: membershipError } = await admin.from("school_memberships")
+        .select("id").eq("school_id", schoolId).eq("auth_user_id", managerUserId)
+        .eq("role", "manager").eq("is_active", true).maybeSingle();
+      if (membershipError) return reply({ message: "بررسی عضویت مدیر انجام نشد." }, 500);
+      if (!membership) return reply({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 409);
+      const { data: target, error: targetError } = await admin.auth.admin.getUserById(managerUserId);
+      if (targetError || !target.user) return reply({ message: "حساب احراز هویت مدیر پیدا نشد." }, 404);
+      const nextAppMetadata = {
+        ...(target.user.app_metadata ?? {}),
+        role: "manager",
+        school_id: schoolId,
+        must_change_password: true,
+        password_reset_at: new Date().toISOString(),
+        password_reset_by: auth.user.id,
+      };
+      const { error: updateError } = await admin.auth.admin.updateUserById(managerUserId, {
+        password: temporaryPassword,
+        app_metadata: nextAppMetadata,
+      });
+      if (updateError) {
+        console.error("platform manager password reset failed", JSON.stringify({ code: updateError.code ?? null, message: updateError.message ?? null }));
+        return reply({ message: "ثبت رمز موقت مدیر انجام نشد." }, 500);
+      }
+      const { error: auditError } = await admin.from("platform_audit_logs").insert({
+        actor_auth_user_id: auth.user.id,
+        action: "manager.password_reset",
+        school_id: schoolId,
+        details: { username, forced_password_change: true },
+      });
+      if (auditError) console.error("manager password reset audit insert failed", auditError.message);
+      return reply({
+        success: true,
+        forced_password_change: true,
+        audit_recorded: !auditError,
+        message: "رمز موقت مدیر بازنشانی شد؛ تغییر رمز در ورود بعدی اجباری است.",
+      });
+    }
+
     if (action === "invite_school_manager") {
       const schoolId = clean(body?.school_id, 80);
       const username = clean(body?.username, 40);
