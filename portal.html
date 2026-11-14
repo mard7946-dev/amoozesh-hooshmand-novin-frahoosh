@@ -165,7 +165,21 @@ document.getElementById("firstPasswordForm").addEventListener("submit",async eve
  finally{button.disabled=false;}
 });
 document.getElementById("cancelFirstPasswordChange").addEventListener("click",()=>{document.getElementById("firstPasswordForm").hidden=true;document.getElementById("demoLogin").hidden=false;});
-document.getElementById("recoverPassword").onclick=()=>{document.getElementById("loginNotice").textContent=selectedRole.id==="parent"?"بازیابی رمز بدون پیامک انجام می‌شود؛ برای بازنشانی رمز با مدیر مدرسه تماس بگیرید.":"برای بازیابی رمز با مدیر مدرسه تماس بگیرید.";};
+document.getElementById("recoverPassword").onclick=async()=>{
+ const notice=document.getElementById("loginNotice");
+ if(selectedRole.id!=="manager"){notice.textContent="بازیابی خودکار فعلاً فقط برای حساب مدیر مدرسه فعال است.";return;}
+ const username=usernameInput.value.trim();
+ const schoolCode=document.getElementById("schoolCode").value.trim();
+ if(!username||!schoolCode){notice.textContent="ابتدا نام کاربری و کد مدرسه را وارد کنید.";return;}
+ const button=document.getElementById("recoverPassword");button.disabled=true;notice.textContent="در حال بررسی اطلاعات و ارسال درخواست بازیابی…";
+ try{
+  const response=await fetch(supabaseUrl+"/functions/v1/request-manager-password-recovery",{method:"POST",headers:{"Content-Type":"application/json","apikey":supabaseAnonKey,"Authorization":"Bearer "+supabaseAnonKey},body:JSON.stringify({username,school_code:schoolCode})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.message||"درخواست بازیابی فعلاً انجام نشد.");
+  notice.textContent=data.message||"اگر اطلاعات حساب معتبر باشد، پیوند بازیابی به ایمیل تأییدشده مدیر ارسال می‌شود.";
+ }catch(error){notice.textContent=error.message||"ارتباط با سرویس بازیابی برقرار نشد؛ دوباره تلاش کنید.";}
+ finally{button.disabled=false;}
+};
 document.getElementById("changeRole").onclick=()=>go("home");
 document.getElementById("home").onclick=()=>go("home");
 const initial=roles.find(x=>x.id===roleId);
@@ -247,6 +261,37 @@ if(step==="accept-invite"){
    if(!response.ok)throw new Error(data.msg||data.message||"ثبت رمز عبور ناموفق بود.");
    form.hidden=true;loginLink.hidden=false;showInviteStatus("رمز عبور ثبت شد. اکنون می‌توانید با نام کاربری و رمز جدید وارد پنل مدیر مدرسه شوید.");
   }catch(error){showInviteStatus(error.message||"ارتباط با سرویس احراز هویت برقرار نشد.",true);}
+  finally{button.disabled=false;}
+ });
+}
+if(step==="recover"){
+ const hash=new URLSearchParams(location.hash.slice(1));
+ const recoveryToken=hash.get("access_token")||"";
+ const recoveryType=hash.get("type")||"";
+ history.replaceState(null,"",location.pathname+location.search);
+ document.body.innerHTML='<main style="max-width:480px;margin:8vh auto;padding:24px;border:1px solid #304461;border-radius:18px;background:#0e1b32;color:#f3f6ff;font-family:Tahoma,Segoe UI,sans-serif"><div style="color:#63e0c0;font-weight:bold">FRAHOOSH · SCHOOL ACCOUNT</div><h1>بازیابی رمز مدیر مدرسه</h1><p style="color:#a8b8d2;line-height:1.9">پس از تأیید پیوند اختصاصی ایمیل، رمز دلخواه جدید خود را انتخاب کنید.</p><form id="managerRecoveryForm" hidden><label for="managerRecoveryPassword">رمز عبور جدید</label><input id="managerRecoveryPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border:1px solid #304461;border-radius:10px;background:#081326;color:#f3f6ff;box-sizing:border-box"><label for="managerRecoveryConfirm">تکرار رمز عبور جدید</label><input id="managerRecoveryConfirm" type="password" minlength="10" maxlength="128" autocomplete="new-password" required style="display:block;width:100%;padding:12px;margin:8px 0 14px;border:1px solid #304461;border-radius:10px;background:#081326;color:#f3f6ff;box-sizing:border-box"><button id="managerRecoverySubmit" type="submit" style="padding:12px 16px;border:1px solid #63e0c0;border-radius:10px;background:#164b48;color:#f3f6ff;font:inherit">ثبت رمز جدید</button></form><div id="managerRecoveryStatus" role="status" aria-live="polite" style="margin-top:14px;padding:11px;border-radius:10px;background:#162a43"></div><a id="managerRecoveryLogin" href="portal.html?step=login&amp;role=manager" hidden style="display:inline-block;margin-top:16px;color:#63e0c0">ورود به پنل مدیر مدرسه</a></main>';
+ const form=document.getElementById("managerRecoveryForm");
+ const status=document.getElementById("managerRecoveryStatus");
+ const loginLink=document.getElementById("managerRecoveryLogin");
+ const showRecoveryStatus=(message,error=false)=>{status.textContent=message;status.style.background=error?"#452525":"#162a43";};
+ if(recoveryToken&&recoveryType==="recovery"){
+  form.hidden=false;showRecoveryStatus("پیوند بازیابی تأیید شد. رمز جدید خود را وارد کنید.");
+ }else{
+  showRecoveryStatus("پیوند بازیابی معتبر نیست یا منقضی شده است. از صفحه ورود درخواست تازه‌ای ارسال کنید.",true);
+ }
+ form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const password=document.getElementById("managerRecoveryPassword").value;
+  const confirm=document.getElementById("managerRecoveryConfirm").value;
+  if(password.length<10||password.length>128){showRecoveryStatus("رمز جدید باید بین ۱۰ تا ۱۲۸ نویسه داشته باشد.",true);return;}
+  if(password!==confirm){showRecoveryStatus("تکرار رمز عبور با رمز جدید یکسان نیست.",true);return;}
+  const button=document.getElementById("managerRecoverySubmit");button.disabled=true;showRecoveryStatus("در حال ثبت رمز جدید…");
+  try{
+   const response=await fetch(supabaseUrl+"/auth/v1/user",{method:"PUT",headers:{"Content-Type":"application/json","apikey":supabaseAnonKey,"Authorization":"Bearer "+recoveryToken},body:JSON.stringify({password})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.msg||data.message||"ثبت رمز جدید انجام نشد؛ پیوند ممکن است منقضی شده باشد.");
+   form.hidden=true;loginLink.hidden=false;showRecoveryStatus("رمز عبور با موفقیت تغییر کرد. اکنون می‌توانید با نام کاربری و رمز جدید وارد شوید.");
+  }catch(error){showRecoveryStatus(error.message||"ثبت رمز جدید ناموفق بود؛ دوباره درخواست بازیابی کنید.",true);}
   finally{button.disabled=false;}
  });
 }
