@@ -47,13 +47,13 @@ Deno.serve(async(req:Request)=>{
    if(cErr) throw cErr;
    let collection=collections?.[0];
    if(!collection){const created=await db.from("question_collections").insert({tenant_school_id:school,owner_auth_user_id:auth.user.id,title:"سؤال‌های من"}).select("id,title").single();if(created.error)throw created.error;collection=created.data;}
-   const {data:items,error:iErr}=await db.from("question_collection_items").select("question_id").eq("collection_id",collection.id);
+   const {data:items,error:iErr}=await db.from("question_collection_items").select("question_id,question_bank(id,subject,grade,prompt,options)").eq("collection_id",collection.id);
    if(iErr)throw iErr;
    const paperQuery=db.from("question_papers").select("id,title,subject,grade,status,created_by,total_points,submitted_at,approved_at,review_note,created_at,updated_at").eq("tenant_school_id",school);
    if(teacher)paperQuery.eq("created_by",auth.user.id);
    const {data:papers,error:paperErr}=await paperQuery.order("updated_at",{ascending:false}).limit(100);
    if(paperErr)throw paperErr;
-   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions,vaults:vaults||[],question_count:questionCount,page:pageNumber,collection,selected_ids:(items||[]).map(x=>x.question_id),papers:papers||[]});
+   return reply({ok:true,role:manager?"manager":deputy?"deputy":"teacher",questions,vaults:vaults||[],question_count:questionCount,page:pageNumber,collection,selected_ids:(items||[]).map(x=>x.question_id),selected_questions:(items||[]).map(x=>x.question_bank).filter(Boolean),papers:papers||[]});
   }
   if(action==="create_question"&&manager){
    const q=body.question||{};
