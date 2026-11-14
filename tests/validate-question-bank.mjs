@@ -47,6 +47,7 @@ const vaultMigration = readFileSync("supabase/migrations/20261114120000_question
 assert.ok(vaultMigration.includes("question_vaults") && vaultMigration.includes("question_bank_vault_id_fkey") && vaultMigration.includes("vault_id set not null"), "Every existing and new question must belong to one subject-grade vault");
 assert.ok(api.includes("ensureVault(db,school,subject,grade)") && api.includes("vault_id:vault.id"), "Manual questions must be assigned to their exact subject-grade vault");
 assert.ok(api.includes("vault_ids:[...new Set") && api.includes("vaultByKey"), "PDF import must create and assign a separate vault for each detected subject and selected grade");
-assert.ok(page.includes('id="vaults"') && page.includes("data-vault=") && page.includes("pageSize=20"), "Question browsing must open separate subject-grade vaults with paginated lists");
+assert.ok(page.includes('id="vaults"') && page.includes("data-vault=") && page.includes("questionPageInfo"), "Question browsing must open separate subject-grade vaults with paginated lists");
+assert.ok(api.includes('{count:"exact",head:true}') && api.includes(".range((pageNumber-1)*pageSize,pageNumber*pageSize-1)"), "Question lists must use server-side pagination and exact per-vault counts");
 assert.ok(page.includes("optionMarkup") && page.includes("option-row") && page.includes("question-prompt"), "Question text and its options must render as one structured question card");
 assert.ok(page.includes("font-size:16pt") && page.includes("gap:8px") && page.includes("@page{size:A4"), "Printed questions and options must use professional A4 typography and spacing");
