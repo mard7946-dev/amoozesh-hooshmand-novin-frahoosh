@@ -40,7 +40,6 @@ async function refresh(){const activeId=state.activePaper?.id;const d=await api(
 $("search").addEventListener("input",draw);$("filterGrade").addEventListener("change",draw);$("filterSubject").addEventListener("change",draw);
 $("questions").addEventListener("click",async e=>{const add=e.target.dataset.add,pub=e.target.dataset.publish;try{if(add){await api("add_to_collection",{question_id:add});note("سؤال به مجموعه شخصی شما اضافه شد.")}if(pub){await api("publish_question",{question_id:pub});note("سؤال منتشر شد.")}await refresh()}catch(err){note(err.message)}});
 $("saveBtn").onclick=async()=>{try{const q={subject:$("subject").value,grade:$("grade").value,chapter:$("chapter").value,topic:$("topic").value,question_type:$("qtype").value,difficulty:$("difficulty").value,prompt:$("prompt").value,options:$("options").value.split("\n").map(x=>x.trim()).filter(Boolean),correct_answer:$("answer").value,explanation:$("explanation").value};await api("create_question",{question:q});note("پیش‌نویس سؤال ذخیره شد.");await refresh()}catch(e){note(e.message)}};
-$("importBtn").onclick=async()=>{try{const d=await api("import_url",{source_url:$("sourceUrl").value,subject:$("importSubject").value,grade:$("importGrade").value,source_license:$("sourceLicense").value,source_permission_confirmed:$("permission").checked});note(d.message||("تعداد سؤال‌های واردشده: "+d.imported));await refresh()}catch(e){note(e.message)}};
 $("pdfImportBtn").onclick=async()=>{
  try{
   const file=$("pdfFile").files[0];
