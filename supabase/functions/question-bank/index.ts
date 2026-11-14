@@ -39,7 +39,7 @@ Deno.serve(async(req:Request)=>{
    if(!manager&&!deputy) query=query.eq("status","published"); else query=query.neq("status","archived");
    if(body.subject) query=query.ilike("subject","%"+clean(body.subject)+"%");
    if(body.grade) query=query.eq("grade",clean(body.grade));
-   const {data:questions,error}=await query.order("created_at",{ascending:false}).limit(300);
+   const {data:questions,error}=await query.order("created_at",{ascending:false}).limit(1000);
    if(error) throw error;
    const {data:collections,error:cErr}=await db.from("question_collections").select("id,title").eq("tenant_school_id",school).eq("owner_auth_user_id",auth.user.id).order("created_at");
    if(cErr) throw cErr;
