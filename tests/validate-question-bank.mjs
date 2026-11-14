@@ -50,4 +50,5 @@ assert.ok(api.includes("vault_ids:[...new Set") && api.includes("vaultByKey"), "
 assert.ok(page.includes('id="vaults"') && page.includes("data-vault=") && page.includes("questionPageInfo"), "Question browsing must open separate subject-grade vaults with paginated lists");
 assert.ok(api.includes('{count:"exact",head:true}') && api.includes(".range((pageNumber-1)*pageSize,pageNumber*pageSize-1)"), "Question lists must use server-side pagination and exact per-vault counts");
 assert.ok(page.includes("optionMarkup") && page.includes("option-row") && page.includes("question-prompt"), "Question text and its options must render as one structured question card");
+assert.ok(page.includes("data-view=") && page.includes("questionDetailDialog") && page.includes("showQuestionDetail") && page.includes("question-detail-body"), "Every question must open a responsive full-content view with all options");
 assert.ok(page.includes("font-size:16pt") && page.includes("gap:8px") && page.includes("@page{size:A4"), "Printed questions and options must use professional A4 typography and spacing");
