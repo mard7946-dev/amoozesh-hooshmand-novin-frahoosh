@@ -9,9 +9,9 @@
 <h3>ورود از نشانی سایت</h3><p class="muted">فعلاً استخراج خودکار از داده‌های استاندارد Quiz/Question (JSON-LD) پشتیبانی می‌شود. سؤال‌های استخراج‌شده ابتدا پیش‌نویس می‌شوند و باید بازبینی و منتشر شوند.</p>
 <div class="grid"><div><label>نشانی HTTPS صفحه</label><input id="sourceUrl" type="url" placeholder="https://example.org/questions"></div><div><label>درس</label><input id="importSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="importGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="sourceLicense" placeholder="مثلاً CC BY 4.0 یا اجازه ناشر"></div></div>
 <label><input id="permission" type="checkbox" style="width:auto"> تأیید می‌کنم اجازه دریافت و استفاده از محتوای این منبع را دارم.</label><button id="importBtn">بررسی و دریافت سؤال‌ها</button>
-<hr><h3>ورود سؤال‌ها از فایل PDF</h3>
-<p class="muted">برای PDF متنی (قابل انتخاب و کپی)، متن سؤال‌ها استخراج می‌شود. هر سؤالِ شماره‌گذاری‌شده به‌صورت پیش‌نویس جداگانه وارد می‌شود و باید پیش از انتشار بازبینی شود. PDF اسکن‌شده پشتیبانی نمی‌شود.</p>
-<div class="grid"><div><label>فایل PDF</label><input id="pdfFile" type="file" accept="application/pdf,.pdf"></div><div><label>درس</label><input id="pdfSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="pdfGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="pdfLicense" placeholder="اجازه ناشر / محتوای تألیفی"></div></div>
+<hr><h3>ورود سؤال‌ها از صفحه سایت یا فایل PDF</h3>
+<p class="muted">نشانی صفحه سایت را وارد کنید تا پیوندهای PDF قابل‌دسترسی در آن پیدا شوند؛ سپس فایل مناسب را انتخاب کنید. اگر سایت نیازمند ورود باشد یا PDF را با جاوااسکریپت بارگذاری کند، فایل را مستقیم بارگذاری کنید. PDF متنی پشتیبانی می‌شود؛ PDF اسکن‌شده فعلاً قابل استخراج نیست.</p>
+<div class="grid"><div><label>نشانی صفحه سایت</label><input id="pdfPageUrl" type="url" placeholder="https://example.org/books"><button type="button" id="scanPdfLinks" class="secondary">پیدا کردن PDFهای صفحه</button></div><div><label>PDFهای پیدا‌شده</label><select id="foundPdf"><option value="">ابتدا صفحه را بررسی کنید</option></select></div><div><label>یا بارگذاری مستقیم PDF</label><input id="pdfFile" type="file" accept="application/pdf,.pdf"></div><div><label>درس</label><input id="pdfSubject" placeholder="مثلاً ریاضی"></div><div><label>پایه</label><input id="pdfGrade" placeholder="مثلاً دهم"></div><div><label>مجوز یا توضیح اجازه استفاده</label><input id="pdfLicense" placeholder="اجازه ناشر / محتوای تألیفی"></div></div>
 <label><input id="pdfPermission" type="checkbox" style="width:auto"> تأیید می‌کنم اجازه استفاده و ورود سؤال‌های این PDF را دارم.</label>
 <button id="pdfImportBtn">استخراج و ورود پیش‌نویس‌ها از PDF</button>
 <hr><h3>ثبت دستی سؤال</h3><div class="grid">
@@ -40,7 +40,17 @@ $("search").addEventListener("input",draw);$("filterGrade").addEventListener("ch
 $("questions").addEventListener("click",async e=>{const add=e.target.dataset.add,pub=e.target.dataset.publish;try{if(add){await api("add_to_collection",{question_id:add});note("سؤال به مجموعه شخصی شما اضافه شد.")}if(pub){await api("publish_question",{question_id:pub});note("سؤال منتشر شد.")}await refresh()}catch(err){note(err.message)}});
 $("saveBtn").onclick=async()=>{try{const q={subject:$("subject").value,grade:$("grade").value,chapter:$("chapter").value,topic:$("topic").value,question_type:$("qtype").value,difficulty:$("difficulty").value,prompt:$("prompt").value,options:$("options").value.split("\n").map(x=>x.trim()).filter(Boolean),correct_answer:$("answer").value,explanation:$("explanation").value};await api("create_question",{question:q});note("پیش‌نویس سؤال ذخیره شد.");await refresh()}catch(e){note(e.message)}};
 $("importBtn").onclick=async()=>{try{const d=await api("import_url",{source_url:$("sourceUrl").value,subject:$("importSubject").value,grade:$("importGrade").value,source_license:$("sourceLicense").value,source_permission_confirmed:$("permission").checked});note(d.message||("تعداد سؤال‌های واردشده: "+d.imported));await refresh()}catch(e){note(e.message)}};
-$("pdfImportBtn").onclick=async()=>{
+$("scanPdfLinks").onclick=async()=>{
+ try{
+  const page=$("pdfPageUrl").value.trim();if(!page)throw new Error("نشانی صفحه سایت را وارد کنید.");
+  if(!$("pdfPermission").checked)throw new Error("ابتدا اجازه استفاده از محتوای منبع را تأیید کنید.");
+  note("در حال بررسی صفحه و پیدا کردن پیوندهای PDF…");
+  const d=await api("discover_pdf_links",{source_url:page,source_permission_confirmed:true});
+  $("foundPdf").innerHTML='<option value="">انتخاب فایل PDF</option>'+d.pdfs.map(p=>'<option value="'+esc(p.url)+'">'+esc(p.title)+'</option>').join("");
+  note(d.message||"بررسی صفحه انجام شد.");
+ }catch(e){note(e.message||"بررسی صفحه انجام نشد.")}
+};
+\n$("pdfImportBtn").onclick=async()=>{
  try{
   const file=$("pdfFile").files[0];
   const selectedPdf=$("foundPdf").value;
