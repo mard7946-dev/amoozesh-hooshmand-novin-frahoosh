@@ -7,6 +7,14 @@ assert.ok(html.includes("supabaseUrl+'/auth/v1/user'") && html.includes("session
 assert.ok(html.includes("educational_deputy:'deputy'") && html.includes("executive_deputy:'deputy'") && html.includes("pastoral_deputy:'deputy'"), "All deputy account roles must return to the shared deputy portal");
 
 assert.ok(html.includes("/functions/v1/school-portal-login"), "Portal must use the school-code aware portal login function");
+assert.ok(html.includes("/functions/v1/request-manager-password-recovery") && html.includes('selectedRole.id!=="manager"'), "Portal must expose manager-only password recovery through the dedicated endpoint");
+assert.ok(html.includes('recoveryType==="recovery"') && html.includes('/auth/v1/user'), "Manager recovery callback must require a recovery session before changing the password");
+assert.ok(html.includes("managerRecoveryConfirm") && html.includes("رمز عبور با موفقیت تغییر کرد"), "Manager recovery page must confirm and save the new password");
+const managerRecovery = readFileSync("supabase/functions/request-manager-password-recovery/index.ts", "utf8");
+assert.ok(managerRecovery.includes('.eq("role", "manager")') && managerRecovery.includes("owner_auth_user_id"), "Recovery requests must be limited to the actual school owner-manager");
+assert.ok(managerRecovery.includes('.eq("is_active", true)') && managerRecovery.includes("email_confirmed_at"), "Recovery requests must require an active manager membership and confirmed email");
+assert.ok(managerRecovery.includes("/auth/v1/recover") && !managerRecovery.includes("return reply({ email"), "Recovery must use Supabase Auth email delivery without exposing account email addresses");
+
 assert.ok(html.includes('id="schoolCodeRow"') && html.includes('id="schoolCode"'), "Portal must collect a school code for every role");
 assert.ok(html.includes("school_code:document.getElementById('schoolCode').value.trim()"), "Portal must submit the selected school code");
 const schoolLogin = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
