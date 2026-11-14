@@ -36,3 +36,5 @@ assert.ok(api.includes('["educational","educational_deputy","معاون آموز
 assert.ok(papersMigration.includes("question_papers") && papersMigration.includes("question_paper_items") && papersMigration.includes("revoke all") && papersMigration.includes("service_role"), "Exam paper tables must be protected from direct client access");
 assert.ok(page.includes("data-paper-export") && page.includes("get_approved_paper") && page.includes("چاپ / ذخیره خروجی PDF"), "Approved PDF print action must be visible in the manager/deputy review workflow");
 assert.ok(page.includes('"B Zar","B Nazanin",Tahoma,Arial,sans-serif'), "Question bank and print output must use a consistent Persian font stack");
+
+assert.ok(api.includes('action==="update_question"&&manager') && page.includes('data-edit='), "Manager must be able to correct extracted draft question text and lesson before publishing");
