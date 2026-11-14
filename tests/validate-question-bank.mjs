@@ -24,3 +24,8 @@ assert.ok(parser.includes("subjectHeading") && parser.includes('subject: block.s
 assert.ok(api.includes("parsePdfQuestions(sourceText,subject,100)"), "PDF imports must use the tested parser");
 const pageScripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 for (const source of pageScripts) assert.doesNotThrow(() => new Function(source), "Question bank page script syntax must be valid");
+
+const safeFetch = readFileSync("supabase/functions/question-bank/safe-fetch.ts", "utf8");
+assert.ok(safeFetch.includes('Deno.connect({ hostname: address, port: 443') && safeFetch.includes('Deno.startTls(tcp, { hostname: validated.hostname })'), "Outbound HTTPS must connect to the validated IP while verifying TLS against the original hostname");
+assert.ok(safeFetch.includes("maxBytes + 128 * 1024") && safeFetch.includes("Deno.resolveDns(hostname, \"A\""), "Outbound source fetches must use bounded reads and validated DNS answers");
+assert.ok(api.includes("fetchPinnedHttps(parsed") && api.includes("fetchPinnedHttps(pdfUrl") && api.includes("fetchPinnedHttps(page"), "All question-bank URL/PDF fetch paths must use the pinned HTTPS client");
