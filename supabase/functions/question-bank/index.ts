@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { parsePdfQuestions } from "./pdf-parser.ts";
 
 const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
@@ -183,29 +184,12 @@ Deno.serve(async(req:Request)=>{
    const subject=clean(body.subject);
    if(!subject)return reply({message:"نام درس الزامی است."},400);
    if(sourceText.length<20)return reply({message:"متن قابل استفاده‌ای از PDF دریافت نشد."},422);
-   // Split only at explicit numbered-question boundaries; do not invent question boundaries.
-   const normalized=sourceText.replace(/\r/g,"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-   const starts=[...normalized.matchAll(/(?:^|\n)\s*(?:سؤال\s*)?\d{1,3}\s*[.)ـ:\-]\s*/g)];
-   if(!starts.length)return reply({message:"شماره‌گذاری سؤال‌ها در متن PDF تشخیص داده نشد. برای جلوگیری از ورود اشتباه، چیزی ذخیره نشد؛ شماره‌گذاری سؤال‌ها را بررسی کنید.",imported:0},422);
-   const chunks:Array<{prompt:string;options:string[];question_type:string;correct_answer:string}>=[];
-   for(let i=0;i<starts.length&&chunks.length<100;i++){
-    const start=starts[i].index+(starts[i][0].startsWith("\n")?1:0)+starts[i][0].length-(starts[i][0].startsWith("\n")?1:0);
-    const end=i+1<starts.length?starts[i+1].index:normalized.length;
-    const raw=normalized.slice(start,end).trim();
-    const optionPattern=/(?:^|\n)\s*(?:([الفبجد])|([A-D])|([1-4]))\s*[).ـ:：-]\s*([^\n]+)/gi;
-    const optionMatches=[...raw.matchAll(optionPattern)];
-    const options=optionMatches.map(m=>clean(m[4])).filter(Boolean).slice(0,8);
-    const answerMatch=raw.match(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(الف|ب|ج|د|[1-4]|A|B|C|D)/i);
-    const answer=answerMatch?answerMatch[1]:"";
-    const withoutOptions=raw.replace(optionPattern,"\n").replace(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(?:الف|ب|ج|د|[1-4]|A|B|C|D)/i,"");
-    const prompt=clean(withoutOptions.replace(/\s+/g," "));
-    if(prompt.length>=8)chunks.push({prompt,options,question_type:options.length>=2?"multiple_choice":"essay",correct_answer:answer});
-   }
-   if(!chunks.length)return reply({message:"سؤال قابل ذخیره‌ای از متن PDF استخراج نشد."},422);
-   const rows=chunks.map(q=>({tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(body.grade),prompt:q.prompt,question_type:q.question_type,options:q.options,correct_answer:q.correct_answer,source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"}));
+   const chunks=parsePdfQuestions(sourceText,subject,100);
+   if(!chunks.length)return reply({message:"سؤال شماره‌گذاری‌شده یا بخش‌بندی‌شده‌ای از متن PDF تشخیص داده نشد. برای جلوگیری از ورود اشتباه، چیزی ذخیره نشد؛ متن PDF و شماره‌گذاری را بررسی کنید.",imported:0},422);
+   const rows=chunks.map(q=>({tenant_school_id:school,created_by:auth.user.id,subject:q.subject||subject,grade:clean(body.grade),prompt:q.prompt,question_type:q.question_type,options:q.options,correct_answer:q.correct_answer,source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"}));
    const {data,error}=await db.from("question_bank").insert(rows).select("id");
    if(error)throw error;
-   return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال به‌صورت پیش‌نویس وارد شد. متن، گزینه‌ها و پاسخ‌ها را بازبینی و تکمیل کنید؛ هیچ‌کدام خودکار منتشر نشده‌اند."});
+   return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال به‌صورت پیش‌نویس وارد شد. درس هر سؤال از عنوان صریح بخش «درس: ...» تشخیص داده شده و در غیر این صورت از درس انتخاب‌شده استفاده شده است؛ متن، گزینه‌ها و پاسخ‌ها را بازبینی کنید."});
   }
   if(action==="import_url"&&manager){
    if(body.source_permission_confirmed!==true)return reply({message:"برای دریافت محتوا باید مجوز استفاده از منبع را تأیید کنید."},400);
