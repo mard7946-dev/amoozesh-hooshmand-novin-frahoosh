@@ -8,7 +8,7 @@ const papersMigration=readFileSync("supabase/migrations/20261114080000_question_
 assert.ok(portal.includes("roleItems.push(['📚','بانک سؤال'"),"Question bank must appear for manager, deputy and teacher");
 assert.ok(page.includes("question-bank") && page.includes("frahoosh_novin_access_token"),"Question bank UI must use the authenticated school session");
 assert.ok(api.includes('action==="create_question"&&manager'),"Only manager can create central questions");
-assert.ok(api.includes('status:"published"}));') && api.includes("سؤال یکجا و مستقیماً به بانک مرکزی اضافه شد"),"PDF imports must be bulk-published");
+assert.ok(api.includes('status:"published"};});') && api.includes("سؤال در مخزن‌های اختصاصی درس و پایه ذخیره شد"),"PDF imports must be bulk-published into subject-grade vaults");
 assert.ok(api.includes('action==="update_question"&&(manager||deputy)') && api.includes('action==="archive_question"&&(manager||deputy)'),"Manager and educational deputy can edit/remove questions");
 assert.ok(!page.includes("data-publish=") && !api.includes('action==="publish_question"'),"No per-question publishing step remains");
 assert.ok(api.includes('action==="add_to_collection"&&(deputy||teacher)'),"Deputies and teachers can add published questions to personal collections");
