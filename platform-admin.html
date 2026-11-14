@@ -112,12 +112,14 @@ function fillPlans(){
 }
 function fillManagerSchools(){
  const select=$("managerSchool");select.replaceChildren();
- const eligible=state.schools.filter(s=>s.status==="active"&&!s.owner_auth_user_id&&(!s.subscription||Date.parse(s.subscription.ends_at)>Date.now()));
+ const replacementSchoolId="7d1bf3f2-1e04-4075-8e2a-1816f4ec8a5b";
+ const expectedPreviousOwner="0717bcdc-8adb-41a7-8990-4dec91e6b10f";
+ const eligible=state.schools.filter(s=>s.status==="active"&&(!s.subscription||Date.parse(s.subscription.ends_at)>Date.now())&&(!s.owner_auth_user_id||(s.id===replacementSchoolId&&s.owner_auth_user_id===expectedPreviousOwner)));
  if(!eligible.length){
   const option=node("option","","مدرسه فعالِ بدون مدیر اصلی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
  }
  select.disabled=false;$("inviteManagerSubmit").disabled=false;
- for(const school of eligible){const option=node("option","",school.name+" · "+(school.school_code||school.slug));option.value=school.id;select.append(option);}
+ for(const school of eligible){const replacement=school.id==="7d1bf3f2-1e04-4075-8e2a-1816f4ec8a5b";const option=node("option","",school.name+" · "+(school.school_code||school.slug)+(replacement?" · جایگزینی مدیر قبلی":""));option.value=school.id;select.append(option);}
 }
 function renderMetrics(metrics){
  $("metrics").replaceChildren();
