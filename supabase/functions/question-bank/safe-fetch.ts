@@ -207,7 +207,12 @@ export const fetchPinnedHttps = async (target: URL, accept: string, maxBytes: nu
       const contentType = parsed.headers.get("content-type");
       if (contentType) headers.set("content-type", contentType);
       headers.set("content-length", String(parsed.body.byteLength));
-      const body = [204, 205, 304].includes(parsed.status) ? null : parsed.body;
+      let body: ArrayBuffer | null = null;
+      if (![204, 205, 304].includes(parsed.status)) {
+        const copy = new Uint8Array(parsed.body.byteLength);
+        copy.set(parsed.body);
+        body = copy.buffer;
+      }
       return new Response(body, { status: parsed.status, headers });
     } catch (error) {
       lastError = error;
