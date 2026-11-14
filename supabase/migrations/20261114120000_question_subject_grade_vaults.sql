@@ -16,8 +16,8 @@ insert into public.question_vaults (tenant_school_id, subject, grade, subject_ke
 select tenant_school_id, min(subject), min(grade), subject_key, grade_key
 from (
   select tenant_school_id, subject, grade,
-    lower(translate(regexp_replace(btrim(subject), '[[:space:]‌‏]+', ' ', 'g'), 'يك', 'یک')) as subject_key,
-    lower(translate(regexp_replace(btrim(grade), '[[:space:]‌‏]+', ' ', 'g'), 'يك', 'یک')) as grade_key
+    lower(translate(regexp_replace(btrim(subject), '[[:space:]‌‏‪‫‬‭‮]+', ' ', 'g'), 'يك', 'یک')) as subject_key,
+    lower(translate(regexp_replace(btrim(grade), '[[:space:]‌‏‪‫‬‭‮]+', ' ', 'g'), 'يك', 'یک')) as grade_key
   from public.question_bank
 ) normalized
 group by tenant_school_id, subject_key, grade_key
@@ -28,8 +28,8 @@ update public.question_bank q
 set vault_id = v.id
 from public.question_vaults v
 where v.tenant_school_id = q.tenant_school_id
-  and v.subject_key = lower(translate(regexp_replace(btrim(q.subject), '[[:space:]‌‏]+', ' ', 'g'), 'يك', 'یک'))
-  and v.grade_key = lower(translate(regexp_replace(btrim(q.grade), '[[:space:]‌‏]+', ' ', 'g'), 'يك', 'یک'))
+  and v.subject_key = lower(translate(regexp_replace(btrim(q.subject), '[[:space:]‌‏‪‫‬‭‮]+', ' ', 'g'), 'يك', 'یک'))
+  and v.grade_key = lower(translate(regexp_replace(btrim(q.grade), '[[:space:]‌‏‪‫‬‭‮]+', ' ', 'g'), 'يك', 'یک'))
   and q.vault_id is null;
 
 alter table public.question_bank alter column vault_id set not null;
