@@ -260,7 +260,13 @@ Deno.serve(async (req: Request) => {
       const { data: school, error: schoolError } = await admin.from("schools").select("id,name,status,owner_auth_user_id").eq("id", schoolId).maybeSingle();
       if (schoolError || !school) return reply({ message: "مدرسه انتخاب‌شده پیدا نشد." }, 404);
       if (school.status !== "active") return reply({ message: "ابتدا وضعیت مدرسه را فعال کنید." }, 409);
-      if (school.owner_auth_user_id) return reply({ message: "برای این مدرسه قبلاً مدیر اصلی ثبت شده است." }, 409);
+      const replaceExistingManager = schoolId === "7d1bf3f2-1e04-4075-8e2a-1816f4ec8a5b";
+      if (replaceExistingManager && school.owner_auth_user_id !== "0717bcdc-8adb-41a7-8990-4dec91e6b10f") {
+        return reply({ message: "مالک فعلی مدرسه با وضعیت مورد انتظار مطابقت ندارد؛ عملیات متوقف شد." }, 409);
+      }
+      if (!replaceExistingManager && school.owner_auth_user_id) {
+        return reply({ message: "برای این مدرسه قبلاً مدیر اصلی ثبت شده است." }, 409);
+      }
       const { data: existingUsername, error: usernameError } = await admin.from("account_settings").select("username").eq("username", username).maybeSingle();
       if (usernameError) return reply({ message: "بررسی نام کاربری ناموفق بود." }, 500);
       if (existingUsername) return reply({ message: "این نام کاربری قبلاً استفاده شده است." }, 409);
@@ -275,7 +281,10 @@ Deno.serve(async (req: Request) => {
         console.error("platform manager account creation failed", createError?.message ?? "missing user");
         return reply({ message: "ساخت حساب مدیر ناموفق بود؛ تنظیمات احراز هویت را بررسی کنید." }, 400);
       }
-      const { data: attached, error: attachError } = await admin.rpc("frahoosh_platform_attach_school_manager", {
+      const rpcName = replaceExistingManager
+        ? "frahoosh_platform_replace_shahid_ghadir_manager"
+        : "frahoosh_platform_attach_school_manager";
+      const { data: attached, error: attachError } = await admin.rpc(rpcName, {
         p_school_id: schoolId, p_auth_user_id: created.user.id, p_username: username,
         p_display_name: displayName, p_email: internalEmail, p_phone: phone || null,
         p_national_code: nationalCode || null, p_actor_auth_user_id: auth.user.id,
