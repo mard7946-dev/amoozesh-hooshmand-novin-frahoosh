@@ -65,6 +65,8 @@ on:
       - 'supabase/functions/platform-management/index.ts'
       - 'supabase/functions/school-portal-login/index.ts'
       - 'supabase/functions/login-by-username/index.ts'
+      - 'supabase/functions/request-manager-password-recovery/index.ts'
+      - '.github/workflows/validate-novin-portal.yml'
       - 'supabase/functions/assessment-center/index.ts'
       - 'supabase/functions/classroom-login/index.ts'
       - 'supabase/functions/admin-manage-users/index.ts'
