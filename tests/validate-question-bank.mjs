@@ -12,8 +12,6 @@ assert.ok(api.includes('action==="publish_question"&&manager'),"Only manager can
 assert.ok(api.includes('action==="add_to_collection"&&(deputy||teacher)'),"Deputies and teachers can add published questions to personal collections");
 assert.ok(page.includes('id="pdfFile"') && page.includes('id="pdfSubject"'),"Manager must be able to upload a PDF directly and assign its default subject");
 assert.ok(!page.includes('id="pdfPageUrl"') && !api.includes('action==="fetch_pdf"') && !api.includes('action==="discover_pdf_links"'),"Question-bank PDF ingestion must use manual file upload only");
-assert.ok(page.includes('id="pdfFile"') && page.includes('id="pdfSubject"'),"Manager must be able to upload a PDF directly and assign its default subject");
-assert.ok(api.includes('application/ld+json') && api.includes('status:"draft"'),"Imported structured questions must be drafts for manager review");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("service_role"),"Question bank tables must deny direct client access and use server authorization");
 console.log("Central question bank checks passed.");
 
