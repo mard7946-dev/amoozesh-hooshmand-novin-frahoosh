@@ -22,8 +22,5 @@ assert.ok(page.includes('id="pdfSubject"'), "Every PDF import must have a fallba
 assert.ok(page.includes('font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif!important'), "Question cards must use one consistent Persian font stack");
 assert.ok(parser.includes("subjectHeading") && parser.includes('subject: block.subject || fallback'), "Questions must be grouped under explicit lesson headings or the selected fallback lesson");
 assert.ok(api.includes("parsePdfQuestions(sourceText,subject,100)"), "PDF imports must use the tested parser");
-const pageScripts = [...page.matchAll(/<script(\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
-  .filter(match => !/\\btype\\s*=\\s*["']module["']/i.test(match[1] || ""))
-  .map(match => match[2])
-  .filter(source => source.trim());
+const pageScripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
 for (const source of pageScripts) assert.doesNotThrow(() => new Function(source), "Question bank page script syntax must be valid");
