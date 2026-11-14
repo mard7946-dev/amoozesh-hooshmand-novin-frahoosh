@@ -61,6 +61,15 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await db.from("question_bank").insert(payload).select("id").single();if(error)throw error;
    return reply({ok:true,id:data.id,message:"سؤال به‌صورت پیش‌نویس ذخیره شد."});
   }
+  if(action==="update_question"&&manager){
+   const questionId=clean(body.question_id),q=body.question||{};
+   const prompt=clean(q.prompt),subject=clean(q.subject);
+   if(!prompt||!subject)return reply({message:"متن سؤال و نام درس الزامی است."},400);
+   const payload={subject,grade:clean(q.grade),chapter:clean(q.chapter),topic:clean(q.topic),question_type:["multiple_choice","true_false","short_answer","essay","fill_blank"].includes(q.question_type)?q.question_type:"short_answer",prompt,options:Array.isArray(q.options)?q.options.slice(0,8).map(clean):[],correct_answer:clean(q.correct_answer),explanation:clean(q.explanation),updated_at:new Date().toISOString()};
+   const {data,error}=await db.from("question_bank").update(payload).eq("tenant_school_id",school).eq("id",questionId).eq("status","draft").select("id").maybeSingle();
+   if(error)throw error;if(!data)return reply({message:"فقط سؤال پیش‌نویس قابل ویرایش است."},404);
+   return reply({ok:true,message:"متن سؤال و دسته‌بندی درس اصلاح شد."});
+  }
   if(action==="publish_question"&&manager){
    const {data,error}=await db.from("question_bank").update({status:"published",updated_at:new Date().toISOString()}).eq("tenant_school_id",school).eq("id",clean(body.question_id)).select("id").maybeSingle();
    if(error)throw error;if(!data)return reply({message:"سؤال پیدا نشد."},404);
