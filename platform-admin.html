@@ -112,14 +112,12 @@ function fillPlans(){
 }
 function fillManagerSchools(){
  const select=$("managerSchool");select.replaceChildren();
- const replacementSchoolId="7d1bf3f2-1e04-4075-8e2a-1816f4ec8a5b";
- const expectedPreviousOwner="0717bcdc-8adb-41a7-8990-4dec91e6b10f";
- const eligible=state.schools.filter(s=>s.status==="active"&&(!s.subscription||Date.parse(s.subscription.ends_at)>Date.now())&&(!s.owner_auth_user_id||(s.id===replacementSchoolId&&s.owner_auth_user_id===expectedPreviousOwner)));
+ const eligible=state.schools.filter(s=>s.status==="active"&&(!s.subscription||Date.parse(s.subscription.ends_at)>Date.now()));
  if(!eligible.length){
-  const option=node("option","","مدرسه فعالِ بدون مدیر اصلی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
+  const option=node("option","","مدرسه فعال و واجد شرایطی وجود ندارد");option.value="";select.append(option);select.disabled=true;$("inviteManagerSubmit").disabled=true;return;
  }
  select.disabled=false;$("inviteManagerSubmit").disabled=false;
- for(const school of eligible){const replacement=school.id==="7d1bf3f2-1e04-4075-8e2a-1816f4ec8a5b";const option=node("option","",school.name+" · "+(school.school_code||school.slug)+(replacement?" · جایگزینی مدیر قبلی":""));option.value=school.id;select.append(option);}
+ for(const school of eligible){const option=node("option","",school.name+" · "+(school.school_code||school.slug)+(school.owner_auth_user_id?" · دارای مدیر؛ جایگزینی با تأیید":" · بدون مدیر"));option.value=school.id;select.append(option);}
 }
 function renderMetrics(metrics){
  $("metrics").replaceChildren();
@@ -242,9 +240,13 @@ $("createDemoSchool").onsubmit=async event=>{
 $("inviteManager").onsubmit=async event=>{
  event.preventDefault();const button=$("inviteManagerSubmit");button.disabled=true;
  try{
+  const selectedSchool=state.schools.find(s=>s.id===$("managerSchool").value);
+  const replaceExistingManager=Boolean(selectedSchool?.owner_auth_user_id);
+  if(replaceExistingManager&&!window.confirm("این مدرسه مدیر اصلی دارد. با ادامه، مالکیت مدیریتی فقط در همین مدرسه به حساب جدید منتقل می‌شود؛ حساب و اطلاعات ورود مدیر قبلی در مدرسه دیگر دست‌نخورده می‌ماند. ادامه می‌دهید؟"))return;
   await api({
    action:"invite_school_manager",
    school_id:$("managerSchool").value,
+   replace_existing_manager:replaceExistingManager,
    display_name:$("managerName").value.trim(),
    initial_password:$("managerInitialPassword").value,
    username:$("managerUsername").value.trim(),
