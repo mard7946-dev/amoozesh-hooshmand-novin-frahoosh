@@ -67,6 +67,30 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const auth = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const variants = usernameVariants(username);
+  const requestedRole = clean(body?.role);
+  const action = clean(body?.action);
+  const newPassword = String(body?.new_password ?? "");
+  const schoolCode = clean(body?.school_code).toUpperCase();
+  let managerSchoolId: string | null = null;
+
+  // Manager credentials are tenant-scoped before password authentication.
+  // Never resolve a manager username against another school's account row.
+  if (requestedRole === "manager") {
+    if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) {
+      return respond({ message: "کد مدرسه معتبر نیست." }, 400);
+    }
+    const { data: selectedSchool, error: selectedSchoolError } = await admin
+      .from("schools").select("id").eq("school_code", schoolCode).eq("status", "active").maybeSingle();
+    if (selectedSchoolError) {
+      console.error("manager school-code lookup failed", selectedSchoolError.code);
+      return respond({ message: "بررسی مدرسه انجام نشد؛ دوباره تلاش کنید." }, 503);
+    }
+    if (!selectedSchool) {
+      return respond({ message: "نام کاربری یا رمز عبور صحیح نیست؛ شماره را همان‌طور که مدیر ثبت کرده وارد کنید." }, 401);
+    }
+    managerSchoolId = selectedSchool.id;
+  }
+
   const emails = new Set<string>();
   const addEmails = (rows: Array<{ email?: string | null }> | null) => {
     for (const row of rows ?? []) {
@@ -77,7 +101,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     // Resolve account usernames on the server; never expose account emails to the client.
-    const byUsername = await admin.from("account_settings").select("email").in("username", variants).limit(10);
+    const byUsername = managerSchoolId
+      ? await admin.from("account_settings").select("email").in("username", variants)
+        .eq("tenant_school_id", managerSchoolId).eq("role", "manager").limit(10)
+      : await admin.from("account_settings").select("email").in("username", variants).limit(10);
     if (byUsername.error) throw byUsername.error;
     addEmails(byUsername.data);
 
@@ -133,9 +160,6 @@ Deno.serve(async (req: Request) => {
   }
 
   // Validate requested portal role against the user's school account and active membership.
-  const requestedRole = clean(body?.role);
-  const action = clean(body?.action);
-  const newPassword = String(body?.new_password ?? "");
   if (requestedRole) {
     const allowedRoles: Record<string, string[]> = {
       manager: ["manager"], deputy: ["executive", "educational", "cultural"],
@@ -143,9 +167,11 @@ Deno.serve(async (req: Request) => {
     };
     const expected = allowedRoles[requestedRole];
     if (!expected) return respond({ message: "نقش ورود معتبر نیست." }, 400);
-    const { data: accountRows, error: accountError } = await admin
-      .from("account_settings").select("role, tenant_school_id, national_code, username")
-      .eq("email", email).eq("auth_user_id", data.user.id).limit(10);
+    let accountRowsQuery = admin.from("account_settings")
+      .select("role, tenant_school_id, national_code, username")
+      .eq("email", email).eq("auth_user_id", data.user.id);
+    if (managerSchoolId) accountRowsQuery = accountRowsQuery.eq("tenant_school_id", managerSchoolId);
+    const { data: accountRows, error: accountError } = await accountRowsQuery.limit(10);
     if (accountError) {
       console.error("login-by-username role lookup failed", JSON.stringify({ code: accountError.code ?? null }));
       return respond({ message: "بررسی سطح دسترسی انجام نشد؛ دوباره تلاش کنید." }, 503);
@@ -168,9 +194,11 @@ Deno.serve(async (req: Request) => {
 
   // Enforce the first-login password change at the authentication boundary.
   // This prevents clients from bypassing the portal wrapper and receiving a JWT.
-  const account = await admin.from("account_settings")
+  let initialAccountQuery = admin.from("account_settings")
     .select("role, tenant_school_id, national_code, username")
-    .eq("email", email).eq("auth_user_id", data.user.id).maybeSingle();
+    .eq("email", email).eq("auth_user_id", data.user.id);
+  if (managerSchoolId) initialAccountQuery = initialAccountQuery.eq("tenant_school_id", managerSchoolId);
+  const account = await initialAccountQuery.maybeSingle();
   if (account.error) {
     console.error("login-by-username initial-password lookup failed", account.error.code);
     return respond({ message: "بررسی وضعیت امنیتی حساب انجام نشد؛ دوباره تلاش کنید." }, 503);
@@ -181,9 +209,7 @@ Deno.serve(async (req: Request) => {
     if (accountRole === "manager" && requestedRole === "manager") {
       if (action !== "change_manager_initial_password") return respond({ message: "برای نخستین ورود مدیر، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
       if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
-      const schoolCode = clean(body?.school_code).toUpperCase();
-      if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
-      const school = await admin.from("schools").select("school_code,status,owner_auth_user_id").eq("id", account.data?.tenant_school_id).maybeSingle();
+      const school = await admin.from("schools").select("school_code,status,owner_auth_user_id").eq("id", managerSchoolId).maybeSingle();
       if (school.error || !school.data || school.data.status !== "active" || school.data.owner_auth_user_id !== data.user.id || clean(school.data.school_code).toUpperCase() !== schoolCode) return respond({ message: "مدرسه یا مالکیت حساب مدیر تأیید نشد." }, 403);
       const membership = await admin.from("school_memberships").select("id").eq("school_id", account.data?.tenant_school_id).eq("auth_user_id", data.user.id).eq("role", "manager").eq("is_active", true).maybeSingle();
       if (membership.error || !membership.data) return respond({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
