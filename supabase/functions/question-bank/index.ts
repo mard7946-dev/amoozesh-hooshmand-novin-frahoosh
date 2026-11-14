@@ -125,9 +125,10 @@ Deno.serve(async(req:Request)=>{
    if(eErr)throw eErr;
    if(existing){const {error}=await db.from("question_paper_items").update({points}).eq("id",existing.id);if(error)throw error;}
    else{
-    const {count,error:cErr}=await db.from("question_paper_items").select("id",{count:"exact",head:true}).eq("paper_id",paperId);
-    if(cErr)throw cErr;if((count||0)>=100)return reply({message:"هر برگه حداکثر ۱۰۰ سؤال می‌تواند داشته باشد."},400);
-    const {error}=await db.from("question_paper_items").insert({paper_id:paperId,question_id:questionId,points,order_index:count||0});
+    const {data:positions,error:cErr}=await db.from("question_paper_items").select("order_index").eq("paper_id",paperId);
+    if(cErr)throw cErr;if((positions||[]).length>=100)return reply({message:"هر برگه حداکثر ۱۰۰ سؤال می‌تواند داشته باشد."},400);
+    const nextOrder=(positions||[]).reduce((max,item)=>Math.max(max,Number(item.order_index)+1),0);
+    const {error}=await db.from("question_paper_items").insert({paper_id:paperId,question_id:questionId,points,order_index:nextOrder});
     if(error)throw error;
    }
    return reply({ok:true,message:"سؤال و نمره آن در برگه ذخیره شد."});
