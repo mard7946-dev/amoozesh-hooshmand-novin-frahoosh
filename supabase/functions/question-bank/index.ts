@@ -137,9 +137,9 @@ Deno.serve(async(req:Request)=>{
     const optionPattern=/(?:^|\n)\s*(?:([الفبجد])|([A-D])|([1-4]))\s*[).ـ:：-]\s*([^\n]+)/gi;
     const optionMatches=[...raw.matchAll(optionPattern)];
     const options=optionMatches.map(m=>clean(m[4])).filter(Boolean).slice(0,8);
-    const answerMatch=raw.match(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(الف|ب|ج|د|[1-4]|A|B|C|D)\b?/i);
+    const answerMatch=raw.match(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(الف|ب|ج|د|[1-4]|A|B|C|D)/i);
     const answer=answerMatch?answerMatch[1]:"";
-    const withoutOptions=raw.replace(optionPattern,"\n").replace(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(?:الف|ب|ج|د|[1-4]|A|B|C|D)\b?/i,"");
+    const withoutOptions=raw.replace(optionPattern,"\n").replace(/(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：-]?\s*(?:الف|ب|ج|د|[1-4]|A|B|C|D)/i,"");
     const prompt=clean(withoutOptions.replace(/\s+/g," "));
     if(prompt.length>=8)chunks.push({prompt,options,question_type:options.length>=2?"multiple_choice":"essay",correct_answer:answer});
    }
