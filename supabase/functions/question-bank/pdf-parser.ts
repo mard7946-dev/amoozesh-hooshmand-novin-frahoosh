@@ -18,7 +18,7 @@ const toAsciiDigits = (value: string) => value
 
 const questionStart = /^\s*(?:(?:سؤال|سوال|پرسش)\s*(?:شماره\s*)?)?\d{1,3}\s*[.)\]ـ:：\-–—]\s*/i;
 const optionLine = /^\s*(?:الف|ب|ج|د|آ|A|B|C|D)\s*[.)\]ـ:：\-–—]\s*/i;
-const answerLine = /^\s*(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：\-–—]?\s*(الف|ب|ج|د|آ|[1-4]|A|B|C|D)(?:\\s|$)/i;
+const answerLine = /^\s*(?:پاسخ(?:\s*صحیح)?|جواب(?:\s*صحیح)?)\s*[:：\-–—]?\s*(الف|ب|ج|د|آ|[1-4]|A|B|C|D)(?:\s|$)/i;
 const subjectHeading = /^\s*(?:درس|نام\s*درس|ماده\s*درسی)\s*[:：\-–—]\s*(.{2,80})\s*$/i;
 
 export function parsePdfQuestions(
