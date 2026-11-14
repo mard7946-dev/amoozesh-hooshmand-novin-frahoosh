@@ -53,9 +53,20 @@ Deno.serve(async (req: Request) => {
 
   try {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: school, error: schoolError } = await admin.from("schools")
+      .select("id,school_code,status,owner_auth_user_id")
+      .eq("school_code", schoolCode)
+      .eq("status", "active")
+      .maybeSingle();
+    if (schoolError) throw schoolError;
+    if (!school || normalize(school.school_code) !== schoolCode || !school.owner_auth_user_id) {
+      return reply({ message: "اگر اطلاعات حساب معتبر باشد، پیوند بازیابی به ایمیل تأییدشده مدیر ارسال می‌شود." });
+    }
+
     const { data: accounts, error: accountError } = await admin.from("account_settings")
       .select("username,email,auth_user_id,tenant_school_id,role")
       .eq("username", username)
+      .eq("tenant_school_id", school.id)
       .eq("role", "manager")
       .limit(2);
     if (accountError) throw accountError;
@@ -66,17 +77,8 @@ Deno.serve(async (req: Request) => {
     }
     const account = accounts[0];
     const email = clean(account.email).toLowerCase();
-    if (!email.includes("@") || !account.auth_user_id || !account.tenant_school_id) {
-      return reply({ message: "اگر اطلاعات حساب معتبر باشد، پیوند بازیابی به ایمیل تأییدشده مدیر ارسال می‌شود." });
-    }
-
-    const { data: school, error: schoolError } = await admin.from("schools")
-      .select("id,school_code,status,owner_auth_user_id")
-      .eq("id", account.tenant_school_id)
-      .maybeSingle();
-    if (schoolError) throw schoolError;
-    if (!school || school.status !== "active" ||
-        normalize(school.school_code) !== schoolCode ||
+    if (!email.includes("@") || !account.auth_user_id ||
+        account.tenant_school_id !== school.id ||
         school.owner_auth_user_id !== account.auth_user_id) {
       return reply({ message: "اگر اطلاعات حساب معتبر باشد، پیوند بازیابی به ایمیل تأییدشده مدیر ارسال می‌شود." });
     }
