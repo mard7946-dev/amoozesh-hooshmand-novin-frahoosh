@@ -96,12 +96,12 @@ Deno.serve(async(req:Request)=>{
    if(!type.toLowerCase().includes("text/html"))return reply({message:"این نشانی صفحه HTML نیست؛ فایل PDF را مستقیماً بارگذاری کنید."},415);
    const html=(await response.text()).slice(0,2000000);
    const links=new Map<string,{url:string,title:string}>();
-   for(const m of html.matchAll(/<a\\b([^>]*?)href\\s*=\\s*(["'])(.*?)\\2([^>]*)>([\\s\\S]*?)<\\/a>/gi)){
+   for(const m of html.matchAll(/<a\b([^>]*?)href\s*=\s*(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi)){
     const href=(m[3]||"").replace(/&amp;/g,"&").trim();if(!href)continue;
     let resolved:URL;try{resolved=new URL(href,page);}catch{continue;}
-    if(!/\\.pdf(?:$|[?#])/i.test(resolved.pathname+resolved.search))continue;
+    if(!/\.pdf(?:$|[?#])/i.test(resolved.pathname+resolved.search))continue;
     const safe=publicHttpsUrl(resolved.toString());if(!safe)continue;
-    const title=(m[5]||"").replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,180)||decodeURIComponent(safe.pathname.split("/").pop()||"فایل PDF");
+    const title=(m[5]||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,180)||decodeURIComponent(safe.pathname.split("/").pop()||"فایل PDF");
     links.set(safe.toString(),{url:safe.toString(),title});
    }
    const pdfs=[...links.values()].slice(0,50);
@@ -137,7 +137,7 @@ Deno.serve(async(req:Request)=>{
     if(prompt.length>=8)chunks.push(prompt);
    }
    if(!chunks.length)return reply({message:"سؤال قابل ذخیره‌ای از متن PDF استخراج نشد."},422);
-   const rows=chunks.map(prompt=>({tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(body.grade),prompt,question_type:"essay",options:[],correct_answer:"",source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"}));
+   const rows=chunks.map(prompt=>({tenant_school_id:school,created_by:auth.user.id,subject,grade:clean(body.grade),prompt,question_type:"essay",options:[],correct_answer:"",source_url:clean(body.source_url),source_title:clean(body.file_name)||"ورود از PDF",source_license:clean(body.source_license),source_permission_confirmed:true,status:"draft"}));
    const {data,error}=await db.from("question_bank").insert(rows).select("id");
    if(error)throw error;
    return reply({ok:true,imported:data?.length||0,message:(data?.length||0)+" سؤال به‌صورت پیش‌نویس وارد شد. متن، گزینه‌ها و پاسخ‌ها را بازبینی و تکمیل کنید؛ هیچ‌کدام خودکار منتشر نشده‌اند."});
