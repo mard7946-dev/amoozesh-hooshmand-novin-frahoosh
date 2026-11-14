@@ -266,14 +266,14 @@ Deno.serve(async (req: Request) => {
     if (newPassword.length < 10 || newPassword.length > 128 || newPassword === nationalCode) {
       return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با کد ملی یکسان نباشد." }, 400);
     }
-    const schoolCode = clean(body?.school_code).toUpperCase();
-    if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) {
+    const parentSchoolCode = clean(body?.school_code).toUpperCase();
+    if (!/^[A-Z0-9-]{3,40}$/.test(parentSchoolCode)) {
       return respond({ message: "کد مدرسه معتبر نیست." }, 400);
     }
     const school = await admin.from("schools").select("school_code,status")
       .eq("id", account.data?.tenant_school_id).maybeSingle();
     if (school.error || !school.data || school.data.status !== "active" ||
-        clean(school.data.school_code).toUpperCase() !== schoolCode) {
+        clean(school.data.school_code).toUpperCase() !== parentSchoolCode) {
       return respond({ message: "کد مدرسه با حساب کاربری مطابقت ندارد." }, 403);
     }
     const nextAppMetadata = {
