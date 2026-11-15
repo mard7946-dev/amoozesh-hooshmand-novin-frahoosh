@@ -211,8 +211,13 @@ Deno.serve(async (req: Request) => {
     if (accountRole === "manager" && requestedRole === "manager") {
       if (action !== "change_manager_initial_password") return respond({ message: "برای نخستین ورود مدیر، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
       if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
-      const school = await admin.from("schools").select("school_code,status,owner_auth_user_id").eq("id", managerSchoolId).maybeSingle();
-      if (school.error || !school.data || school.data.status !== "active" || school.data.owner_auth_user_id !== data.user.id || clean(school.data.school_code).toUpperCase() !== schoolCode) return respond({ message: "مدرسه یا مالکیت حساب مدیر تأیید نشد." }, 403);
+      const school = await admin.from("schools").select("school_code,status").eq("id", managerSchoolId).maybeSingle();
+      if (school.error || !school.data || school.data.status !== "active" || clean(school.data.school_code).toUpperCase() !== schoolCode) {
+        console.error("manager initial password school validation failed", JSON.stringify({ schoolLookupFailed: Boolean(school.error), schoolFound: Boolean(school.data), schoolActive: school.data?.status === "active", schoolCodeMatches: clean(school.data?.school_code).toUpperCase() === schoolCode }));
+        return respond({ message: "مدرسه انتخاب‌شده معتبر یا فعال نیست؛ کد مدرسه را بررسی کنید." }, 403);
+      }
+      // Active manager membership is the authorization source. A manager may be
+      // granted access without being the school's original owner account.
       const membership = await admin.from("school_memberships").select("id").eq("school_id", managerSchoolId).eq("auth_user_id", data.user.id).eq("role", "manager").eq("is_active", true).maybeSingle();
       if (membership.error || !membership.data) return respond({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
       const nextAppMetadata = { ...(data.user.app_metadata ?? {}), must_change_password: false, password_changed_at: new Date().toISOString() };
