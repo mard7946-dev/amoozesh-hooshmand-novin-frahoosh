@@ -43,6 +43,7 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const guestToken = clean(body?.guest_token);
   if (guestToken) {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(guestToken)) return reply({ message: "لینک مهمان معتبر نیست." }, 400);
     try {
       const admin = serviceClient();
       const { data: classroomFlag, error: flagError } = await admin.from("platform_feature_flags")
