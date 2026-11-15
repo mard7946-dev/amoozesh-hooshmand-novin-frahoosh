@@ -166,6 +166,7 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
    for(const publication of participant.trackPublications.values())if(publication.track)attachTrack(publication.track,participant);
   }
   for(const publication of liveRoom.localParticipant.trackPublications.values())if(publication.track&&publication.track.kind===sdk.Track.Kind.Video)attachTrack(publication.track,liveRoom.localParticipant);
+  profile=credentials.profile||profile;
   $("meetingTitle").textContent=credentials.room?.title||room.title||room.subject||"کلاس آنلاین";
   $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت · ورود با مجوز مدرسه":[room.class_name,room.teacher].filter(Boolean).join(" · ");
   $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
