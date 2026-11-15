@@ -37,6 +37,12 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="back">بازگشت به پنل</button></div>
 </header>
 <main>
+ <section class="panel hidden" id="guestEntry">
+  <strong>ورود مهمان به جلسه آزمایشی</strong>
+  <p class="muted">این لینک فقط برای یک بار ورود و همین جلسه صادر شده است. نام نمایشی خود را وارد کنید.</p>
+  <label for="guestName">نام نمایشی<input id="guestName" maxlength="50" autocomplete="name" placeholder="نام شما"></label>
+  <button id="guestJoin" type="button">ورود به جلسه آزمایشی</button>
+ </section>
  <section class="panel" id="selector">
   <strong>کلاس‌های مجاز</strong>
   <p class="muted">ورود فقط برای زنگ فعال و پس از بررسی مجوز حساب، مدرسه و برنامهٔ هفتگی انجام می‌شود.</p>
@@ -61,6 +67,8 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const guestToken=new URLSearchParams(location.search).get("guest_token")||"";
+let guestMode=false;
 const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
 const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:"دانش‌آموز"};
 const $=id=>document.getElementById(id);
@@ -142,7 +150,9 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
  const buttons=$("roomList").querySelectorAll("button");buttons.forEach(button=>button.disabled=true);
  try{
   say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
-  const credentials=await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
+  const credentials=guestMode
+   ? await postFunction("classroom-realtime-token",{guest_token:guestToken,guest_name:$("guestName").value.trim()})
+   : await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
   const sdk=window.LivekitClient;
   if(!sdk||!sdk.Room)throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
   if(!credentials.server_url||!credentials.token)throw new Error("اطلاعات اتصال امن کلاس از سرور دریافت نشد.");
@@ -203,9 +213,24 @@ $("audioStart").addEventListener("click",async()=>{
  catch(error){say("پخش صدا فعال نشد؛ تنظیم صدای مرورگر و دستگاه را بررسی کنید.");}
 });
 async function boot(){
- if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
  try{
   const query=new URLSearchParams(location.search);
+  if(guestToken){
+   guestMode=true;
+   $("selector").classList.add("hidden");
+   $("guestEntry").classList.remove("hidden");
+   $("status").textContent="لینک مهمان شناسایی شد؛ نام نمایشی را وارد کنید.";
+   $("notice").textContent="دسترسی مهمان فقط به همین جلسه محدود است؛ میکروفن و دوربین در ابتدا خاموش هستند.";
+   $("guestJoin").addEventListener("click",async()=>{
+    const name=$("guestName").value.trim();
+    if(name.length<2){say("نام نمایشی را حداقل با ۲ نویسه وارد کنید.");return;}
+    $("guestJoin").disabled=true;
+    await enterRoom({id:"guest",title:"جلسه آزمایشی"},0);
+    $("guestJoin").disabled=false;
+   });
+   return;
+  }
+  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
   const requestedMeetingId=query.get("meeting_id")||"";
   const requestedJoinCode=query.get("join_code")||"";
   if(requestedMeetingId){
