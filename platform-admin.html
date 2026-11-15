@@ -50,15 +50,15 @@
 </form>
 </section>
 <section class="card">
-<h2>ایجاد نسخه آزمایشی رایگان ۷ روزه</h2>
-<p class="muted">برای هر مدرسه یک فضای مستقل با کد و شناسه جداگانه ساخته می‌شود. زمان آزمایش از لحظه ایجاد مدرسه آغاز می‌شود و پس از ۷ روز دسترسی آن پایان می‌یابد. برای ورود مدیر، سپس از بخش «دعوت مدیر مدرسه» استفاده کنید.</p>
+<h2>ایجاد نسخه آزمایشی رایگان یک‌ماهه</h2>
+<p class="muted">برای هر مدرسه یک فضای مستقل با کد و شناسه جداگانه ساخته می‌شود. زمان آزمایش از لحظه ایجاد مدرسه آغاز می‌شود و پس از یک ماه دسترسی آن پایان می‌یابد. برای ورود مدیر، سپس از بخش «دعوت مدیر مدرسه» استفاده کنید.</p>
 <form id="createDemoSchool">
 <div class="grid">
 <div><label for="demoSchoolName">نام مدرسه</label><input id="demoSchoolName" required maxlength="180" placeholder="نام مدرسه"></div>
 <div><label for="demoSchoolSlug">شناسه لاتین مدرسه</label><input id="demoSchoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="demo-school" dir="ltr"></div>
 <div><label for="demoSchoolCode">کد مدرسه</label><input id="demoSchoolCode" required maxlength="40" placeholder="DEMO001" dir="ltr"></div>
 </div>
-<div style="margin-top:14px"><button class="primary" type="submit">ایجاد مدرسه آزمایشی ۷ روزه</button></div>
+<div style="margin-top:14px"><button class="primary" type="submit">ایجاد مدرسه آزمایشی یک‌ماهه</button></div>
 </form>
 </section>
 <section class="card">
@@ -155,7 +155,7 @@ function renderSchools(){
   const sub=school.subscription;
   const summary=sub?(sub.plan_id
    ?("اشتراک: "+(state.plans.find(p=>p.id===sub.plan_id)?.name||"طرح ثبت‌شده")+" · ظرفیت "+new Intl.NumberFormat("fa-IR").format(sub.student_limit)+" دانش‌آموز · پایان "+date(sub.ends_at))
-   :(trialExpired?"دوره آزمایشی رایگان ۷ روزه پایان یافته · تاریخ پایان "+date(sub.ends_at):"دوره آزمایشی رایگان ۷ روزه · پایان "+date(sub.ends_at))):"بدون اشتراک";
+   :(trialExpired?"دوره آزمایشی رایگان یک‌ماهه پایان یافته · تاریخ پایان "+date(sub.ends_at):"دوره آزمایشی رایگان یک‌ماهه · پایان "+date(sub.ends_at))):"بدون اشتراک";
   card.append(node("p","muted",summary));
   card.append(node("p","muted","اعضای فعال: "+new Intl.NumberFormat("fa-IR").format(school.active_members)+" · شناسه: "+school.id));
   const tools=node("div","school-tools");
@@ -249,7 +249,7 @@ $("createDemoSchool").onsubmit=async event=>{
  try{
   await api({action:"create_demo_school",name:$("demoSchoolName").value.trim(),slug:$("demoSchoolSlug").value.trim(),school_code:$("demoSchoolCode").value.trim()});
   $("createDemoSchool").reset();
-  show("مدرسه آزمایشی با دسترسی رایگان ۷ روزه ساخته شد. اکنون مدیر آن را از بخش دعوت مدیر مدرسه معرفی کنید.","success");
+  show("مدرسه آزمایشی با دسترسی رایگان یک‌ماهه ساخته شد. اکنون مدیر آن را از بخش دعوت مدیر مدرسه معرفی کنید.","success");
   await load();
  }catch(error){show(error.message||"ایجاد مدرسه آزمایشی انجام نشد.","error");}
  finally{button.disabled=false;}
