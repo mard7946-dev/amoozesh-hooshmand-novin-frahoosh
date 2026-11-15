@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
         return reply({ message: "برای این جلسه فعال امکان ساخت لینک مهمان وجود ندارد." }, 409);
       }
       const bytes = crypto.getRandomValues(new Uint8Array(32));
-      const rawToken = btoa(String.fromCharCode(...bytes)).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+      const rawToken = btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
       const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)));
       const tokenHash = [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
       const expiresAt = new Date(Math.min(new Date(meeting.expires_at).getTime(), Date.now() + 20 * 60_000)).toISOString();
