@@ -67,7 +67,7 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
-const guestToken=new URLSearchParams(location.search).get("guest_token")||"";
+const guestToken=new URLSearchParams(location.hash.slice(1)).get("guest_token")||"";
 let guestMode=false;
 const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
 const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:"دانش‌آموز"};
