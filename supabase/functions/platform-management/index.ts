@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
           .select("id,school_id,plan_id,status,starts_at,ends_at,grace_days,student_min,student_limit,notes,created_at")
           .order("created_at", { ascending: false }).limit(2000),
         admin.from("subscription_plans")
-          .select("id,plan_code,name,duration_months,student_min,student_limit,is_active,price_irr")
+          .select("id,plan_code,name,duration_months,student_min,student_limit,is_active")
           .order("duration_months", { ascending: true }).order("student_limit", { ascending: true }),
         admin.from("school_memberships")
           .select("school_id,auth_user_id,role,is_active").eq("is_active", true).limit(10000),
