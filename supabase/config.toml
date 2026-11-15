@@ -1,0 +1,4 @@
+# Guest entry is authorized by a hashed, single-use invitation token inside the function.
+# The function still validates normal school JWTs itself for all existing authenticated flows.
+[functions.classroom-realtime-token]
+verify_jwt = false
