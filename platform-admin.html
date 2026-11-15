@@ -123,7 +123,7 @@ function fillPlans(){
  const selects=[$("newPlan"),...document.querySelectorAll("[data-plan-select]")];
  const pricedPlans=[];
  for(const select of selects){const current=select.value;select.replaceChildren();if(select.id==="newPlan"&&!pricedPlans.length){const option=node("option","","اشتراک تجاری فعلاً غیرفعال است؛ برای دمو از فرم بالاتر استفاده کنید");option.value="";select.append(option);}for(const plan of pricedPlans){const option=node("option","",plan.name);option.value=plan.id;select.append(option);}if(current&&pricedPlans.some(x=>x.id===current))select.value=current;}
- const submit=$("createSchool").querySelector('button[type="submit']");
+ const submit=$("createSchool").querySelector('button[type="submit"]');
  submit.disabled=pricedPlans.length===0;
 }
 function fillManagerSchools(){
