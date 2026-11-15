@@ -66,14 +66,34 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 <script>
 const SUPABASE_URL="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const SUPABASE_KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
-const accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+let accessToken=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const guestToken=new URLSearchParams(location.hash.slice(1)).get("guest_token")||"";
 let guestMode=false;
-const activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
+let activeRole=sessionStorage.getItem("frahoosh_novin_role")||new URLSearchParams(location.search).get("role")||"";
 const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:"دانش‌آموز"};
 const $=id=>document.getElementById(id);
 let profile=null,liveRoom=null,micOn=false,cameraOn=false,screenOn=false;
 const participantTiles=new Map();
+async function recoverSessionFromOpenPortal(){
+ if(accessToken||!('BroadcastChannel' in window))return Boolean(accessToken);
+ const channel=new BroadcastChannel('frahoosh-classroom-session-v1');
+ const requestId=crypto.randomUUID();
+ return await new Promise(resolve=>{
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);channel.close();resolve(value);};
+  const timer=setTimeout(()=>finish(false),1800);
+  channel.addEventListener('message',event=>{
+   const data=event.data||{};
+   if(data.type!=='classroom-session-response'||data.requestId!==requestId||typeof data.access_token!=='string'||!data.access_token)return;
+   accessToken=data.access_token;
+   activeRole=String(data.active_role||activeRole||'');
+   sessionStorage.setItem('frahoosh_novin_access_token',accessToken);
+   if(activeRole)sessionStorage.setItem('frahoosh_novin_role',activeRole);
+   finish(true);
+  });
+  channel.postMessage({type:'classroom-session-request',requestId});
+ });
+}
 function say(text){$("status").textContent=text;$("notice").textContent=text;}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
@@ -231,7 +251,8 @@ async function boot(){
    });
    return;
   }
-  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا از پنل فراهوش وارد شوید.");return;}
+  if(!accessToken)await recoverSessionFromOpenPortal();
+  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا پنل فراهوش را در همین مرورگر باز نگه دارید و دوباره از کلاس آنلاین وارد شوید.");return;}
   const requestedMeetingId=query.get("meeting_id")||"";
   const requestedJoinCode=query.get("join_code")||"";
   if(requestedMeetingId){
