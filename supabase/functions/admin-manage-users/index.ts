@@ -34,18 +34,18 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: auth, error: authError } = await admin.auth.getUser(bearer.slice(7));
   if (authError || !auth.user) return reply({ message: "نشست ورود معتبر نیست؛ دوباره وارد شوید." }, 401);
+  const body = await req.json().catch(() => ({}));
 
   const { data: caller, error: callerError } = await admin.from("account_settings")
     .select("auth_user_id,role,tenant_school_id").eq("auth_user_id", auth.user.id).maybeSingle();
   if (callerError || !caller) return reply({ message: "حساب مدیریت پیدا نشد." }, 403);
   if (!managerRoles.includes(clean(caller.role).toLowerCase())) return reply({ message: "فقط مدیر سامانه اجازه مدیریت کاربران این مدرسه را دارد." }, 403);
-  const schoolId = clean(caller.tenant_school_id);
+  const schoolId = clean(body.school_id) || clean(caller.tenant_school_id);
   if (!schoolId) return reply({ message: "شناسه مدرسه برای حساب مدیر ثبت نشده است." }, 409);
   const { data: managerMembership, error: managerMembershipError } = await admin.from("school_memberships")
     .select("id").eq("auth_user_id", auth.user.id).eq("school_id", schoolId).eq("role", "manager").eq("is_active", true).maybeSingle();
   if (managerMembershipError || !managerMembership) return reply({ message: "عضویت فعال مدیر برای این مدرسه تأیید نشد." }, 403);
 
-  const body = await req.json().catch(() => ({}));
   const action = clean(body.action || "list");
   if (action === "list") {
     const { data: accounts, error } = await admin.from("account_settings")

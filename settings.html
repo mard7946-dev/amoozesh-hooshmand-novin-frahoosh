@@ -64,7 +64,7 @@ let serverRows=[];
 function message(text,error=false){statusNode.textContent=text;statusNode.classList.toggle("error",error);}
 function val(id){return document.getElementById(id).value.trim();}
 async function callApi(action,payload={}) {
- const response=await fetch(SUPABASE_URL+"/functions/v1/school-settings",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...payload})});
+ const response=await fetch(SUPABASE_URL+"/functions/v1/school-settings",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+token},body:JSON.stringify({school_id:sessionStorage.getItem('frahoosh_novin_school_id')||'',action,...payload})});
  const data=await response.json().catch(()=>({}));
  if(!response.ok)throw new Error(data.message||"ارتباط با سرویس تنظیمات برقرار نشد.");
  return data;
