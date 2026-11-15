@@ -36,20 +36,6 @@
 <p id="classroomServiceHelp" class="muted">با غیرفعال‌سازی، ورود به همه کلاس‌ها و جلسه‌های آنلاین از سمت سرور مسدود می‌شود.</p>
 </section>
 <section class="card">
-<h2>ثبت مدرسه جدید</h2>
-<p class="muted">با ثبت مدرسه، یک فضای مستقل و اشتراک اولیه ساخته می‌شود. ساخت حساب مدیر مدرسه و دعوت‌نامه ورود، مرحله بعدی راه‌اندازی مشتری است.</p>
-<form id="createSchool">
-<div class="grid">
-<div><label for="schoolName">نام مدرسه</label><input id="schoolName" required maxlength="180" placeholder="مثلاً دبیرستان نمونه"></div>
-<div><label for="schoolSlug">شناسه لاتین مدرسه</label><input id="schoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nemoneh-school" dir="ltr"></div>
-<div><label for="schoolCode">کد مدرسه</label><input id="schoolCode" required maxlength="40" placeholder="NEM001" dir="ltr"></div>
-<div><label for="newPlan">طرح اشتراک اولیه</label><select id="newPlan" required></select></div>
-<div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
-</div>
-<div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه و ایجاد اشتراک</button></div>
-</form>
-</section>
-<section class="card">
 <h2>ایجاد نسخه آزمایشی رایگان یک‌ماهه</h2>
 <p class="muted">برای هر مدرسه یک فضای مستقل با کد و شناسه جداگانه ساخته می‌شود. زمان آزمایش از لحظه ایجاد مدرسه آغاز می‌شود و پس از یک ماه دسترسی آن پایان می‌یابد. برای ورود مدیر، سپس از بخش «دعوت مدیر مدرسه» استفاده کنید.</p>
 <form id="createDemoSchool">
@@ -61,6 +47,21 @@
 <div style="margin-top:14px"><button class="primary" type="submit">ایجاد مدرسه آزمایشی یک‌ماهه</button></div>
 </form>
 </section>
+<section class="card">
+<h2>ثبت مدرسه با اشتراک تجاری</h2>
+<p class="muted">دموی رایگان ۳۰ روزه مستقل از اشتراک تجاری است. بخش اشتراک تجاری تا زمان نهایی‌شدن شرایط آن غیرفعال می‌ماند.</p>
+<form id="createSchool">
+<div class="grid">
+<div><label for="schoolName">نام مدرسه</label><input id="schoolName" required maxlength="180" placeholder="مثلاً دبیرستان نمونه"></div>
+<div><label for="schoolSlug">شناسه لاتین مدرسه</label><input id="schoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nemoneh-school" dir="ltr"></div>
+<div><label for="schoolCode">کد مدرسه</label><input id="schoolCode" required maxlength="40" placeholder="NEM001" dir="ltr"></div>
+<div><label for="newPlan">طرح اشتراک اولیه</label><select id="newPlan" required></select></div>
+<div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
+</div>
+<div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه با اشتراک تجاری</button></div>
+</form>
+</section>
+
 <section class="card">
 <h2>مدارس ثبت‌شده</h2>
 <div id="schools"><div class="empty">در حال دریافت فهرست مدارس…</div></div>
@@ -120,7 +121,10 @@ const date=value=>value?new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
 function fillPlans(){
  const selects=[$("newPlan"),...document.querySelectorAll("[data-plan-select]")];
- for(const select of selects){const current=select.value;select.replaceChildren();for(const plan of state.plans.filter(x=>x.is_active)){const option=node("option","",plan.name);option.value=plan.id;select.append(option);}if(current&&state.plans.some(x=>x.id===current))select.value=current;}
+ const pricedPlans=[];
+ for(const select of selects){const current=select.value;select.replaceChildren();if(select.id==="newPlan"&&!pricedPlans.length){const option=node("option","","اشتراک تجاری فعلاً غیرفعال است؛ برای دمو از فرم بالاتر استفاده کنید");option.value="";select.append(option);}for(const plan of pricedPlans){const option=node("option","",plan.name);option.value=plan.id;select.append(option);}if(current&&pricedPlans.some(x=>x.id===current))select.value=current;}
+ const submit=$("createSchool").querySelector('button[type="submit"]');
+ submit.disabled=pricedPlans.length===0;
 }
 function fillManagerSchools(){
  const select=$("managerSchool");select.replaceChildren();
@@ -160,7 +164,7 @@ function renderSchools(){
   card.append(node("p","muted","اعضای فعال: "+new Intl.NumberFormat("fa-IR").format(school.active_members)+" · شناسه: "+school.id));
   const tools=node("div","school-tools");
   const statusWrap=node("div");const statusLabel=node("label","","وضعیت مدرسه");const statusSelect=node("select");for(const [value,label] of [["active","فعال"],["suspended","تعلیق"],["archived","بایگانی"]]){const op=node("option","",label);op.value=value;statusSelect.append(op);}statusSelect.value=school.status;const statusButton=node("button","","ذخیره وضعیت");statusButton.onclick=async()=>{statusButton.disabled=true;try{await api({action:"set_school_status",school_id:school.id,status:statusSelect.value});show("وضعیت مدرسه به‌روزرسانی شد.","success");await load();}catch(e){show(e.message,"error");}finally{statusButton.disabled=false;}};statusWrap.append(statusLabel,statusSelect,statusButton);
-  const planWrap=node("div");const planLabel=node("label","","تمدید یا تغییر اشتراک");const planSelect=node("select");planSelect.dataset.planSelect="1";for(const plan of state.plans.filter(x=>x.is_active)){const op=node("option","",plan.name);op.value=plan.id;planSelect.append(op);}if(sub?.plan_id)planSelect.value=sub.plan_id;const planButton=node("button","","ثبت اشتراک جدید");planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
+  const planWrap=node("div");const planLabel=node("label","","اشتراک تجاری (فعلاً غیرفعال)");const planSelect=node("select");planSelect.dataset.planSelect="1";planSelect.disabled=true;const planButton=node("button","","ثبت اشتراک جدید");planButton.disabled=true;planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
   tools.append(statusWrap,planWrap);card.append(tools);
   card.append(node("p","muted",school.owner_auth_user_id?"مدیر اصلی مدرسه معرفی و به عضویت مدیریتی متصل شده است.":"مدیر اصلی مدرسه هنوز معرفی نشده است."));
   root.append(card);
