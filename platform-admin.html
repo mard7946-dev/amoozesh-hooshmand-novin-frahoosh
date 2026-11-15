@@ -86,6 +86,18 @@
 </form>
 </section>
 <section class="card">
+<h2>بازنشانی رمز مدیر مدرسه</h2>
+<p class="muted">فقط مدیر کلِ واردشده می‌تواند برای مدیر اصلی یک مدرسه رمز موقت تعیین کند. مدیر مدرسه در ورود بعدی باید رمز شخصی تازه‌ای ثبت کند. این عملیات هیچ ایمیل یا پیامکی ارسال نمی‌کند.</p>
+<form id="resetManagerPassword">
+<div class="grid">
+<div><label for="managerResetSchool">مدرسه دارای مدیر</label><select id="managerResetSchool" required></select></div>
+<div><label for="managerResetUsername">نام کاربری مدیر</label><input id="managerResetUsername" required minlength="4" maxlength="40" dir="ltr" autocomplete="off"></div>
+<div><label for="managerResetPassword">رمز موقت جدید</label><input id="managerResetPassword" type="password" required minlength="10" maxlength="128" dir="ltr" autocomplete="new-password"></div>
+</div>
+<div style="margin-top:14px"><button class="primary" id="managerResetSubmit" type="submit">بازنشانی رمز مدیر</button></div>
+</form>
+</section>
+<section class="card">
 <h2>گزارش فعالیت مدیر کل</h2>
 <div id="audit"><div class="empty">هنوز گزارشی ثبت نشده است.</div></div>
 </section>
@@ -118,6 +130,11 @@ function fillManagerSchools(){
  }
  select.disabled=false;$("inviteManagerSubmit").disabled=false;
  for(const school of eligible){const option=node("option","",school.name+" · "+(school.school_code||school.slug)+(school.owner_auth_user_id?" · دارای مدیر؛ جایگزینی با تأیید":" · بدون مدیر"));option.value=school.id;select.append(option);}
+ const resetSelect=$("managerResetSchool");resetSelect.replaceChildren();
+ const owned=state.schools.filter(s=>s.status==="active"&&s.owner_auth_user_id);
+ for(const school of owned){const option=node("option","",school.name+" · "+(school.school_code||school.slug));option.value=school.id;resetSelect.append(option);}
+ if(!owned.length){const option=node("option","","مدرسه دارای مدیر فعالی وجود ندارد");option.value="";resetSelect.append(option);}
+ resetSelect.disabled=!owned.length;$("managerResetSubmit").disabled=!owned.length;
 }
 function renderMetrics(metrics){
  $("metrics").replaceChildren();
@@ -257,6 +274,23 @@ $("inviteManager").onsubmit=async event=>{
   show("حساب مدیر ساخته شد و به مدرسه متصل شد. مدیر باید در نخستین ورود رمز اولیه را تغییر دهد.","success");
   await load();
  }catch(error){show(error.message||"ارسال دعوت‌نامه مدیر مدرسه انجام نشد.","error");}
+ finally{button.disabled=false;}
+};
+$("resetManagerPassword").onsubmit=async event=>{
+ event.preventDefault();
+ const button=$("managerResetSubmit");
+ const username=$("managerResetUsername").value.trim();
+ const password=$("managerResetPassword").value;
+ if(password.length<10||password.length>128){show("رمز موقت باید بین ۱۰ تا ۱۲۸ نویسه باشد.","error");return;}
+ if(password===username){show("رمز موقت نباید با نام کاربری یکسان باشد.","error");return;}
+ if(!window.confirm("رمز مدیر اصلی این مدرسه بازنشانی و ورود بعدی او به تغییر رمز اجباری می‌شود. ادامه می‌دهید؟"))return;
+ button.disabled=true;
+ try{
+  await api({action:"reset_school_manager_password",school_id:$("managerResetSchool").value,username,temporary_password:password});
+  $("resetManagerPassword").reset();
+  show("رمز موقت مدیر بازنشانی شد. مدیر باید در ورود بعدی رمز شخصی تازه‌ای تعیین کند.","success");
+  await load();
+ }catch(error){show(error.message||"بازنشانی رمز مدیر انجام نشد.","error");}
  finally{button.disabled=false;}
 };
 if(token)load();else show("برای ورود، اطلاعات حساب مدیر کل را وارد کنید.");

@@ -7,13 +7,16 @@ assert.ok(html.includes("supabaseUrl+'/auth/v1/user'") && html.includes("session
 assert.ok(html.includes("educational_deputy:'deputy'") && html.includes("executive_deputy:'deputy'") && html.includes("pastoral_deputy:'deputy'"), "All deputy account roles must return to the shared deputy portal");
 
 assert.ok(html.includes("/functions/v1/school-portal-login"), "Portal must use the school-code aware portal login function");
-assert.ok(html.includes("/functions/v1/request-manager-password-recovery") && html.includes('selectedRole.id!=="manager"'), "Portal must expose manager-only password recovery through the dedicated endpoint");
-assert.ok(html.includes('recoveryType==="recovery"') && html.includes('/auth/v1/user'), "Manager recovery callback must require a recovery session before changing the password");
-assert.ok(html.includes("managerRecoveryConfirm") && html.includes("رمز عبور با موفقیت تغییر کرد"), "Manager recovery page must confirm and save the new password");
+assert.ok(!html.includes("request-manager-password-recovery") && !html.includes('id="recoverPassword"') && !html.includes('step==="recover"'), "School portal must not expose email-based manager recovery");
 const managerRecovery = readFileSync("supabase/functions/request-manager-password-recovery/index.ts", "utf8");
-assert.ok(managerRecovery.includes('.eq("role", "manager")') && managerRecovery.includes("owner_auth_user_id"), "Recovery requests must be limited to the actual school owner-manager");
-assert.ok(managerRecovery.includes('.eq("is_active", true)') && managerRecovery.includes("email_confirmed_at"), "Recovery requests must require an active manager membership and confirmed email");
-assert.ok(managerRecovery.includes("/auth/v1/recover") && !managerRecovery.includes("return reply({ email"), "Recovery must use Supabase Auth email delivery without exposing account email addresses");
+assert.ok(managerRecovery.includes("status: 410") && !managerRecovery.includes("/auth/v1/recover"), "Legacy email recovery endpoint must be disabled");
+const managerResetAdminPage = readFileSync("platform-admin.html", "utf8");
+assert.ok(managerResetAdminPage.includes('id="resetManagerPassword"') && managerResetAdminPage.includes("reset_school_manager_password"), "Authenticated platform admin must be able to reset a school manager password");
+assert.ok(managerResetAdminPage.includes("تغییر رمز اجباری"), "Platform admin reset UI must explain the forced next-login password change");
+const platformManagement = readFileSync("supabase/functions/platform-management/index.ts", "utf8");
+assert.ok(platformManagement.includes('action === "reset_school_manager_password"') && platformManagement.includes("platform_admins"), "Manager password reset must be protected by platform-admin authentication");
+assert.ok(platformManagement.includes("owner_auth_user_id") && platformManagement.includes('.eq("role", "manager")') && platformManagement.includes('.eq("is_active", true)'), "Manager reset must target only the active owner-manager of the selected school");
+assert.ok(platformManagement.includes("must_change_password: true") && platformManagement.includes("updateUserById(managerUserId"), "Reset must set a temporary password and enforce a new password at next login");
 
 assert.ok(html.includes('id="schoolCodeRow"') && html.includes('id="schoolCode"'), "Portal must collect a school code for every role");
 assert.ok(html.includes("school_code:document.getElementById('schoolCode').value.trim()"), "Portal must submit the selected school code");
