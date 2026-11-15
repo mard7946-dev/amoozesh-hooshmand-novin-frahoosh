@@ -60,6 +60,28 @@ Deno.serve(async (req: Request) => {
     const action = clean(body.action);
     const schoolId = profile.tenant_school_id;
 
+    if (action === "guest_link") {
+      const meetingId = clean(body.meeting_id);
+      if (!meetingId) return reply({ message: "شناسه جلسه معتبر نیست." }, 400);
+      const { data: meeting, error: meetingError } = await admin.from("classroom_ad_hoc_meetings")
+        .select("id,status,expires_at,tenant_school_id").eq("id", meetingId).eq("tenant_school_id", schoolId).maybeSingle();
+      if (meetingError) throw meetingError;
+      if (!meeting || meeting.status !== "active" || new Date(meeting.expires_at).getTime() <= Date.now()) {
+        return reply({ message: "برای این جلسه فعال امکان ساخت لینک مهمان وجود ندارد." }, 409);
+      }
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const rawToken = btoa(String.fromCharCode(...bytes)).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)));
+      const tokenHash = [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
+      const expiresAt = new Date(Math.min(new Date(meeting.expires_at).getTime(), Date.now() + 20 * 60_000)).toISOString();
+      const { error: insertError } = await admin.from("classroom_guest_invites").insert({
+        meeting_id: meeting.id, tenant_school_id: schoolId, token_hash: tokenHash,
+        max_uses: 1, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
+      });
+      if (insertError) throw insertError;
+      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, single_use: true });
+    }
+
     if (action === "list") {
       const { data, error } = await admin.from("classroom_ad_hoc_meetings")
         .select("id,title,description,audience_type,audience_roles,join_code,status,expires_at,created_at,ended_at")
