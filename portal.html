@@ -174,8 +174,10 @@ async function restorePanelOrShowEntry(){
  if(step==='panel'){
   const savedToken=sessionStorage.getItem('frahoosh_novin_access_token')||'';
   const savedRole=sessionStorage.getItem('frahoosh_novin_role')||'';
+  const savedSchoolId=sessionStorage.getItem('frahoosh_novin_school_id')||'';
+  const savedSchoolName=sessionStorage.getItem('frahoosh_novin_school_name')||'';
   const panelRole=panelRoleAliases[savedRole]||roleId;
-  if(savedToken&&roles.some(x=>x.id===panelRole)){
+  if(savedToken&&savedSchoolId&&roles.some(x=>x.id===panelRole)){
    let authStatus=0;
    try{
     const response=await fetch(supabaseUrl+'/auth/v1/user',{headers:{apikey:supabaseAnonKey,'Authorization':'Bearer '+savedToken}});
@@ -195,6 +197,7 @@ async function restorePanelOrShowEntry(){
     }
    }
   }
+  if(savedToken&&!savedSchoolId){sessionStorage.removeItem('frahoosh_novin_access_token');sessionStorage.removeItem('frahoosh_novin_role');sessionStorage.removeItem('frahoosh_novin_school_id');sessionStorage.removeItem('frahoosh_novin_school_name');restoreNotice='نشست قبلی فاقد شناسه مدرسه بود؛ برای جلوگیری از نمایش اطلاعات مدرسهٔ اشتباه، لطفاً دوباره وارد شوید.';}
  }
  if(step==='home'||!initial){showStep('home');return;}
  render(initial.id);
