@@ -17,12 +17,12 @@ assert.ok(migration.includes("security definer") && migration.includes("set sear
 assert.ok(migration.includes("school.created") && migration.includes("school.status_changed") && migration.includes("subscription.created"), "All privileged school and subscription changes must be audited");
 
 const featureMigration = readFileSync("supabase/migrations/20261113150000_platform_classroom_control_and_demo_trials.sql", "utf8");
+const pricingTrialMigration = readFileSync("supabase/migrations/20261115100000_remove_subscription_pricing_and_extend_demo_trial.sql", "utf8");
 for (const marker of [
   "platform_feature_flags",
   "classroom_online_enabled",
   "frahoosh_platform_set_classroom_service_enabled",
   "frahoosh_platform_create_demo_school",
-  "interval '7 days'",
   "private.frahoosh_is_platform_admin()",
   "school.demo_created",
   "classroom.service_toggled",
@@ -95,8 +95,8 @@ assert.ok(page.includes("managerInitialPassword") && !page.includes("managerEmai
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
 assert.ok(page.includes("frahoosh_novin_access_token"), "Platform admin UI must reuse the authenticated session token");
 assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No service-role or secret key may appear in the browser");
-assert.ok(!page.includes("money(plan.price_irr)") && !page.includes("money(sub.price_irr)") && !page.includes("ریال"), "Unverified subscription prices must not be displayed in the platform dashboard");
-for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق", "کنترل سراسری کلاس آنلاین", "ایجاد نسخه آزمایشی رایگان ۷ روزه"]) {
+assert.ok(!page.includes("money(plan.price_irr)") && !page.includes("money(sub.price_irr)") && !page.includes("price_irr") && !page.includes("قیمت") && !page.includes("ریال"), "Subscription pricing must be completely absent from the platform dashboard");
+for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق", "کنترل سراسری کلاس آنلاین", "ایجاد نسخه آزمایشی رایگان یک‌ماهه"]) {
   assert.ok(page.includes(feature), "Platform admin UI missing feature: " + feature);
 }
 const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x => x[1]).filter(x => x.trim());
@@ -133,5 +133,6 @@ for (const source of [classroomAuthorize, classroomRealtime, classroomMeetings])
 }
 assert.ok(classroomAuthorize.includes("این سرویس در زمان غیرحضوری فعال خواهد شد."), "Teachers must receive the non-attendance mode message");
 assert.ok(classroomAuthorize.includes("این سرویس با خرید سرور بیرونی فعال خواهد شد."), "School managers must receive the external-server message");
-assert.ok(featureMigration.includes("student_limit, price_irr") && featureMigration.includes("2147483647, 0"), "Seven-day demo subscriptions must be free and must not impose the incorrect small student cap");
-console.log("Global classroom control and seven-day isolated trial checks passed.");
+assert.ok(pricingTrialMigration.includes("interval '1 month'") && pricingTrialMigration.includes("2147483647"), "Demo schools must receive an isolated one-month trial without a student cap");
+assert.ok(!pricingTrialMigration.includes("price_irr") && !pricingTrialMigration.includes("قیمت طرح اشتراک معتبر نیست"), "Subscription provisioning must not depend on or expose pricing");
+console.log("Global classroom control, price-free subscriptions, and one-month isolated trial checks passed.");
