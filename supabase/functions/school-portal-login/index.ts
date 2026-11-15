@@ -100,15 +100,24 @@ Deno.serve(async (req: Request) => {
       .eq("auth_user_id", login.user.id)
       .maybeSingle();
 
-    if (profileError || !profile?.tenant_school_id) {
+    if (profileError || !profile) {
       console.error("school portal profile lookup failed", JSON.stringify({
         code: profileError?.code ?? null,
         message: profileError?.message ?? null,
       }));
       return reply({ message: "حساب کاربری به مدرسه مشخصی متصل نیست؛ با مدیر سامانه تماس بگیرید." }, 403);
     }
+    const { data: school, error: schoolError } = await admin.from("schools")
+      .select("id,name,school_code,status")
+      .eq("school_code", schoolCode).maybeSingle();
+    if (schoolError || !school || school.status !== "active") {
+      return reply({ message: "مدرسه انتخاب‌شده فعال نیست یا کد مدرسه معتبر نیست." }, 403);
+    }
+    if (expectedRole !== "manager" && profile.tenant_school_id !== school.id) {
+      return reply({ message: "کد مدرسه با حساب کاربری واردشده مطابقت ندارد." }, 403);
+    }
     const { data: memberships, error: membershipError } = await admin.from("school_memberships")
-      .select("role").eq("school_id", profile.tenant_school_id).eq("auth_user_id", login.user.id).eq("is_active", true);
+      .select("role").eq("school_id", school.id).eq("auth_user_id", login.user.id).eq("is_active", true);
     if (membershipError) {
       console.error("school portal membership lookup failed", membershipError.message);
       return reply({ message: "بررسی سمت‌های فعال حساب انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
@@ -124,17 +133,7 @@ Deno.serve(async (req: Request) => {
     if (roleAllowed(profile.role, "deputy")) availableRoles.push("deputy");
     if (roleAllowed(profile.role, "teacher") || membershipRoles.has("teacher")) availableRoles.push("teacher");
 
-    const { data: school, error: schoolError } = await admin.from("schools")
-      .select("id,name,school_code,status")
-      .eq("id", profile.tenant_school_id)
-      .maybeSingle();
 
-    if (schoolError || !school || school.status !== "active") {
-      return reply({ message: "مدرسه انتخاب‌شده فعال نیست یا حساب به آن متصل نشده است." }, 403);
-    }
-    if (normalize(school.school_code) !== normalize(schoolCode)) {
-      return reply({ message: "کد مدرسه با حساب کاربری واردشده مطابقت ندارد." }, 403);
-    }
 
     const { data: subscriptions, error: subscriptionError } = await admin.from("school_subscriptions")
       .select("status,starts_at,ends_at,grace_days")
