@@ -177,9 +177,11 @@ Deno.serve(async (req: Request) => {
       return respond({ message: "بررسی سطح دسترسی انجام نشد؛ دوباره تلاش کنید." }, 503);
     }
     const eligible = (accountRows ?? []).filter((account: { role?: string | null; tenant_school_id?: string | null }) =>
-      expected.includes(clean(account.role)) && Boolean(account.tenant_school_id));
+      expected.includes(clean(account.role)) && (Boolean(account.tenant_school_id) || Boolean(managerSchoolId)));
     if (!eligible.length) return respond({ message: "این حساب اجازه ورود به پنل انتخاب‌شده را ندارد." }, 403);
-    const schoolIds = [...new Set(eligible.map((account: { tenant_school_id?: string | null }) => account.tenant_school_id as string))];
+    const schoolIds = managerSchoolId
+      ? [managerSchoolId]
+      : [...new Set(eligible.map((account: { tenant_school_id?: string | null }) => account.tenant_school_id as string))];
     const { data: memberships, error: membershipError } = await admin
       .from("school_memberships").select("role, school_id")
       .eq("auth_user_id", data.user.id).eq("is_active", true).in("school_id", schoolIds).limit(10);
@@ -211,7 +213,7 @@ Deno.serve(async (req: Request) => {
       if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
       const school = await admin.from("schools").select("school_code,status,owner_auth_user_id").eq("id", managerSchoolId).maybeSingle();
       if (school.error || !school.data || school.data.status !== "active" || school.data.owner_auth_user_id !== data.user.id || clean(school.data.school_code).toUpperCase() !== schoolCode) return respond({ message: "مدرسه یا مالکیت حساب مدیر تأیید نشد." }, 403);
-      const membership = await admin.from("school_memberships").select("id").eq("school_id", account.data?.tenant_school_id).eq("auth_user_id", data.user.id).eq("role", "manager").eq("is_active", true).maybeSingle();
+      const membership = await admin.from("school_memberships").select("id").eq("school_id", managerSchoolId).eq("auth_user_id", data.user.id).eq("role", "manager").eq("is_active", true).maybeSingle();
       if (membership.error || !membership.data) return respond({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
       const nextAppMetadata = { ...(data.user.app_metadata ?? {}), must_change_password: false, password_changed_at: new Date().toISOString() };
       const { error: updateError } = await admin.auth.admin.updateUserById(data.user.id, { password: newPassword, app_metadata: nextAppMetadata });
