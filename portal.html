@@ -47,6 +47,17 @@ const rolesRoot=document.getElementById('roles'),modules=document.getElementById
 let selectedRole=roles[0];
 let portalAuthToken='';
 let portalAuthUserRole='';
+// Share the active, in-memory login session only with another same-origin tab
+// that explicitly requests it. The token is never persisted or placed in a URL.
+if('BroadcastChannel' in window){
+ const classroomSessionChannel=new BroadcastChannel('frahoosh-classroom-session-v1');
+ classroomSessionChannel.addEventListener('message',event=>{
+  const message=event.data||{};
+  if(message.type!=='classroom-session-request'||typeof message.requestId!=='string'||!portalAuthToken)return;
+  classroomSessionChannel.postMessage({type:'classroom-session-response',requestId:message.requestId,access_token:portalAuthToken,active_role:portalAuthUserRole||selectedRole?.id||''});
+ });
+ window.addEventListener('pagehide',()=>classroomSessionChannel.close(),{once:true});
+}
 const params=new URLSearchParams(location.search);
 const step=params.get('step')||'home';
 const roleId=params.get('role');
