@@ -98,7 +98,7 @@ assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI
 assert.ok(page.includes("frahoosh_novin_access_token"), "Platform admin UI must reuse the authenticated session token");
 assert.ok(!page.includes("service_role") && !page.includes("sb_secret_"), "No service-role or secret key may appear in the browser");
 assert.ok(!page.includes("money(plan.price_irr)") && !page.includes("money(sub.price_irr)") && !page.includes("price_irr") && !page.includes("قیمت") && !page.includes("ریال"), "Subscription pricing must be completely absent from the platform dashboard");
-for (const feature of ["ثبت مدرسه جدید", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق", "کنترل سراسری کلاس آنلاین", "ایجاد نسخه آزمایشی رایگان یک‌ماهه"]) {
+for (const feature of ["ثبت مدرسه با اشتراک تجاری", "مدارس ثبت‌شده", "گزارش فعالیت مدیر کل", "ثبت اشتراک جدید", "تعلیق", "کنترل سراسری کلاس آنلاین", "ایجاد نسخه آزمایشی رایگان یک‌ماهه"]) {
   assert.ok(page.includes(feature), "Platform admin UI missing feature: " + feature);
 }
 const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x => x[1]).filter(x => x.trim());
