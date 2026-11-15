@@ -15,6 +15,26 @@ const norm = (value: unknown) => clean(value).toLocaleLowerCase("fa")
 
 const PUBLISHABLE_KEY = "sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 
+function serviceClient() {
+  const url = clean(Deno.env.get("SUPABASE_URL"));
+  let key = clean(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+  const bundleRaw = clean(Deno.env.get("SUPABASE_SECRET_KEYS"));
+  if (bundleRaw) {
+    try {
+      const bundle = JSON.parse(bundleRaw);
+      const candidate = typeof bundle === "string" ? bundle : bundle.default ?? bundle.service_role ?? bundle.serviceRole ?? bundle.service_role_key;
+      if (typeof candidate === "string" && candidate.trim()) key = candidate.trim();
+    } catch {
+      if (bundleRaw.startsWith("sb_secret_") || bundleRaw.startsWith("eyJ")) key = bundleRaw;
+    }
+  }
+  if (!url || !key) throw new Error("اتصال امن پایگاه داده تنظیم نشده است.");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+async function sha256Hex(value: string): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -54,7 +74,6 @@ Deno.serve(async (req: Request) => {
       return reply({ message, service_disabled: true }, 403);
     }
 
-    const body = await req.json().catch(() => ({}));
     const adHocMeetingId = clean(body?.meeting_id);
     if (adHocMeetingId) {
       const joinCode = clean(body?.join_code);
