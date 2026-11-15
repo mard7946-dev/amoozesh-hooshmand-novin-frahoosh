@@ -91,7 +91,7 @@ assert.ok(internalManagerMigration.includes("manager[+]") && internalManagerMigr
 
 const page = readFileSync("platform-admin.html", "utf8");
 assert.ok(page.indexOf("ایجاد نسخه آزمایشی رایگان یک‌ماهه") < page.indexOf("ثبت مدرسه با اشتراک تجاری"), "The free demo flow must be the first school-creation option");
-assert.ok(page.includes("هیچ نیازی به قیمت‌گذاری ندارد"), "The demo flow must clearly state that pricing is not required");
+assert.ok(page.includes("دموی رایگان ۳۰ روزه مستقل از اشتراک تجاری است"), "The demo flow must clearly state that it is independent of commercial subscriptions");
 assert.ok(page.includes("invite_school_manager") && page.includes("دعوت مدیر مدرسه"), "Platform admin UI must provide school-manager invitations");
 assert.ok(page.includes("managerInitialPassword") && !page.includes("managerEmail"), "Manager creation form must request an initial password and contain no email field");
 assert.ok(page.includes("/functions/v1/platform-management"), "Platform admin UI must call its protected Edge Function");
