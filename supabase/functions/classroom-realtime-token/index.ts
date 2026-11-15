@@ -40,6 +40,56 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply({ message: "فقط درخواست POST پذیرفته می‌شود." }, 405);
 
+  const body = await req.json().catch(() => ({}));
+  const guestToken = clean(body?.guest_token);
+  if (guestToken) {
+    try {
+      const admin = serviceClient();
+      const { data: classroomFlag, error: flagError } = await admin.from("platform_feature_flags")
+        .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
+      if (flagError) return reply({ message: "وضعیت سرویس کلاس آنلاین بررسی نشد." }, 503);
+      if (classroomFlag?.enabled !== true) return reply({ message: "سرویس کلاس آنلاین در حال حاضر فعال نیست." }, 403);
+      const guestName = clean(body?.guest_name).replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 50);
+      if (guestName.length < 2) return reply({ message: "نام نمایشی مهمان باید حداقل ۲ نویسه باشد." }, 400);
+      const tokenHash = await sha256Hex(guestToken);
+      const { data: invite, error: inviteError } = await admin.from("classroom_guest_invites")
+        .select("id,meeting_id,tenant_school_id,max_uses,use_count,expires_at,revoked_at")
+        .eq("token_hash", tokenHash).maybeSingle();
+      if (inviteError) throw inviteError;
+      if (!invite || invite.revoked_at || new Date(invite.expires_at).getTime() <= Date.now() || invite.use_count >= invite.max_uses) {
+        return reply({ message: "لینک مهمان نامعتبر، منقضی یا قبلاً استفاده شده است." }, 410);
+      }
+      const { data: meeting, error: meetingError } = await admin.from("classroom_ad_hoc_meetings")
+        .select("id,title,cloudflare_meeting_id,status,expires_at,tenant_school_id")
+        .eq("id", invite.meeting_id).eq("tenant_school_id", invite.tenant_school_id).maybeSingle();
+      if (meetingError) throw meetingError;
+      if (!meeting || meeting.status !== "active" || new Date(meeting.expires_at).getTime() <= Date.now()) {
+        return reply({ message: "جلسه آزمایشی پایان یافته است." }, 410);
+      }
+      const { data: claimed, error: claimError } = await admin.from("classroom_guest_invites")
+        .update({ use_count: invite.use_count + 1 })
+        .eq("id", invite.id).eq("use_count", invite.use_count).is("revoked_at", null)
+        .select("id").maybeSingle();
+      if (claimError) throw claimError;
+      if (!claimed) return reply({ message: "این لینک مهمان هم‌اکنون استفاده شده است." }, 410);
+      const roomName = clean(meeting.cloudflare_meeting_id);
+      if (!roomName.startsWith("frahoosh-")) return reply({ message: "اتاق جلسه آماده ورود مهمان نیست." }, 409);
+      const remaining = Math.floor((new Date(meeting.expires_at).getTime() - Date.now()) / 1000);
+      const identity = "guest-" + crypto.randomUUID();
+      const credentials = await createLiveKitParticipantToken(roomName, identity, guestName, {
+        host: false, screenShare: false, role: "guest", ttlSeconds: Math.min(1800, remaining),
+      });
+      return reply({
+        ok: true, ...credentials, expires_on: credentials.expires_at,
+        profile: { display_name: guestName, role: "guest" },
+        room: { id: meeting.id, title: meeting.title, subject: "جلسه آزمایشی", class_name: "", teacher: "مدیریت مدرسه" },
+      });
+    } catch (error) {
+      console.error("classroom guest token failed", String(error));
+      return reply({ message: "صدور دسترسی مهمان انجام نشد؛ مدیر جلسه را مطلع کنید." }, 503);
+    }
+  }
+
   const bearer = clean(req.headers.get("authorization")).replace(/^Bearer\s+/i, "");
   if (!bearer) return reply({ message: "ابتدا وارد سامانه شوید." }, 401);
 
