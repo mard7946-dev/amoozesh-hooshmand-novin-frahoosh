@@ -36,20 +36,6 @@
 <p id="classroomServiceHelp" class="muted">با غیرفعال‌سازی، ورود به همه کلاس‌ها و جلسه‌های آنلاین از سمت سرور مسدود می‌شود.</p>
 </section>
 <section class="card">
-<h2>ثبت مدرسه جدید</h2>
-<p class="muted">با ثبت مدرسه، یک فضای مستقل و اشتراک اولیه ساخته می‌شود. ساخت حساب مدیر مدرسه و دعوت‌نامه ورود، مرحله بعدی راه‌اندازی مشتری است.</p>
-<form id="createSchool">
-<div class="grid">
-<div><label for="schoolName">نام مدرسه</label><input id="schoolName" required maxlength="180" placeholder="مثلاً دبیرستان نمونه"></div>
-<div><label for="schoolSlug">شناسه لاتین مدرسه</label><input id="schoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nemoneh-school" dir="ltr"></div>
-<div><label for="schoolCode">کد مدرسه</label><input id="schoolCode" required maxlength="40" placeholder="NEM001" dir="ltr"></div>
-<div><label for="newPlan">طرح اشتراک اولیه</label><select id="newPlan" required></select></div>
-<div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
-</div>
-<div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه و ایجاد اشتراک</button></div>
-</form>
-</section>
-<section class="card">
 <h2>ایجاد نسخه آزمایشی رایگان یک‌ماهه</h2>
 <p class="muted">برای هر مدرسه یک فضای مستقل با کد و شناسه جداگانه ساخته می‌شود. زمان آزمایش از لحظه ایجاد مدرسه آغاز می‌شود و پس از یک ماه دسترسی آن پایان می‌یابد. برای ورود مدیر، سپس از بخش «دعوت مدیر مدرسه» استفاده کنید.</p>
 <form id="createDemoSchool">
@@ -61,6 +47,21 @@
 <div style="margin-top:14px"><button class="primary" type="submit">ایجاد مدرسه آزمایشی یک‌ماهه</button></div>
 </form>
 </section>
+<section class="card">
+<h2>ثبت مدرسه با اشتراک تجاری</h2>
+<p class="muted">این بخش برای اشتراک تجاری است و فقط پس از تعیین قیمت طرح قابل استفاده خواهد بود. برای ساخت دمو، فرم بالاتر را انتخاب کنید؛ دموی رایگان ۳۰ روزه هیچ نیازی به قیمت‌گذاری ندارد.</p>
+<form id="createSchool">
+<div class="grid">
+<div><label for="schoolName">نام مدرسه</label><input id="schoolName" required maxlength="180" placeholder="مثلاً دبیرستان نمونه"></div>
+<div><label for="schoolSlug">شناسه لاتین مدرسه</label><input id="schoolSlug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nemoneh-school" dir="ltr"></div>
+<div><label for="schoolCode">کد مدرسه</label><input id="schoolCode" required maxlength="40" placeholder="NEM001" dir="ltr"></div>
+<div><label for="newPlan">طرح اشتراک اولیه</label><select id="newPlan" required></select></div>
+<div><label for="graceDays">مهلت ارفاق (روز)</label><input id="graceDays" type="number" min="0" max="30" value="7" required></div>
+</div>
+<div style="margin-top:14px"><button class="primary" type="submit">ثبت مدرسه با اشتراک تجاری</button></div>
+</form>
+</section>
+
 <section class="card">
 <h2>مدارس ثبت‌شده</h2>
 <div id="schools"><div class="empty">در حال دریافت فهرست مدارس…</div></div>
