@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081326"><title>دستیار هوشمند مدیر | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#10213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#f5ce7a;--red:#ffaaaa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font:14px Tahoma,"Segoe UI",sans-serif}main{max-width:1180px;margin:auto;padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 2px 18px}.top h1{margin:0 0 7px;font-size:clamp(22px,4vw,30px);color:var(--mint)}p,.muted{color:var(--muted);line-height:1.9}.muted{font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}button,a.btn{font:inherit;text-decoration:none;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;cursor:pointer}button.primary{background:#135c50;border-color:var(--mint)}button:disabled{opacity:.55;cursor:wait}.status{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#10213a;margin:8px 0 14px;line-height:1.8}.status.error{border-color:#824d4d;background:#3a2228;color:#ffd0d0}.status.ok{border-color:#276b57;color:#b8f5da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin:14px 0}.metric,.panel{border:1px solid var(--line);border-radius:15px;background:#0e1b32;padding:15px}.metric small{display:block;color:var(--muted);line-height:1.8}.metric strong{display:block;font-size:27px;color:var(--mint);margin-top:8px;font-variant-numeric:tabular-nums}.panel{margin:14px 0}.panel h2{font-size:17px;margin:0 0 12px}.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.list{display:grid;gap:8px}.item{padding:10px;border:1px solid #293e5a;border-radius:10px;background:#0a172b;line-height:1.8}.item strong{display:block}.empty{color:var(--muted);padding:12px;text-align:center}.pill{display:inline-block;border:1px solid #725b2d;color:#ffe4a5;border-radius:30px;padding:3px 8px;font-size:11px;margin-inline-start:6px}.shortcuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px}.shortcuts a{display:block;border:1px solid var(--line);border-radius:11px;background:#142944;padding:12px;color:var(--text);text-decoration:none;line-height:1.8}.shortcuts a:hover{border-color:var(--mint)}.foot{font-size:11px;color:var(--muted);line-height:1.9;margin:18px 0}@media(max-width:520px){main{padding:12px}.metric strong{font-size:23px}}
+</style></head>
+<body><main>
+<header class="top"><div><h1>🧠 دستیار هوشمند مدیر</h1><div class="muted" id="schoolName">در حال شناسایی مدرسه…</div><p>نمای روزانهٔ مدرسه بر اساس اطلاعات ثبت‌شده و قابل دسترس در پایگاه داده</p></div><div class="actions"><button id="refresh" class="primary">به‌روزرسانی اطلاعات</button><button id="back">بازگشت به پنل مدیریت</button></div></header>
+<div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست و دریافت گزارش‌های مدرسه…</div>
+<section id="dashboard" hidden>
+<div class="muted" id="updatedAt"></div>
+<div class="grid">
+<div class="metric"><small>دانش‌آموزان ثبت‌شده</small><strong id="students">—</strong></div>
+<div class="metric"><small>دبیران ثبت‌شده</small><strong id="teachers">—</strong></div>
+<div class="metric"><small>کلاس‌های فعال</small><strong id="classes">—</strong></div>
+<div class="metric"><small>ثبت‌های حضور و غیاب امروز</small><strong id="todayAttendance">—</strong></div>
+<div class="metric"><small>غیبت امروز</small><strong id="todayAbsence">—</strong></div>
+<div class="metric"><small>تأخیر امروز</small><strong id="todayLate">—</strong></div>
+</div>
+<div class="split">
+<section class="panel"><h2>نیازمند بررسی مدیر <span class="pill" id="pendingCount">۰</span></h2><div id="pendingList" class="list"></div></section>
+<section class="panel"><h2>خلاصهٔ حضور و غیاب امروز</h2><div id="attendanceSummary" class="list"></div></section>
+</div>
+<section class="panel"><h2>آخرین درخواست‌های اجرایی</h2><div id="recentRequests" class="list"></div></section>
+<section class="panel"><h2>دسترسی سریع به بخش‌های موجود</h2><div class="shortcuts">
+<a href="reports.html?role=manager">📊 گزارش‌های مدرسه<br><small>جزئیات حضور، نمرات و انضباط</small></a>
+<a href="users.html">👥 کاربران و نقش‌ها<br><small>مدیریت حساب‌های مدرسه</small></a>
+<a href="academic-review.html">🗂️ بررسی اطلاعات آموزشی<br><small>بررسی و انتشار اطلاعات آموزشی</small></a>
+<a href="family-invitations-review.html">📨 تأیید دعوت‌نامه‌های اولیا<br><small>درخواست‌های خانواده</small></a>
+<a href="classroom/management.html?tab=classes">🏫 کلاس‌ها و برنامه هفتگی<br><small>برنامه و وضعیت کلاس‌ها</small></a>
+<a href="finance.html">💳 امور مالی<br><small>دفتر مالی مدرسه</small></a>
+</div></section>
+</section>
+<div class="foot">این داشبورد فقط داده‌هایی را نمایش می‌دهد که در ماژول‌های متصل ثبت شده‌اند. نبودن رکورد به معنی انجام‌نشدن فعالیت نیست؛ ممکن است هنوز اطلاعاتی در سامانه ثبت نشده باشد. اطلاعات مدارس با شناسهٔ مدرسهٔ حساب واردشده محدود می‌شود.</div>
+</main>
+<script>
+"use strict";
+const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/school-reports";
+const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const schoolId=sessionStorage.getItem("frahoosh_novin_school_id")||"";
+const $=id=>document.getElementById(id);
+const fa=v=>String(v??0).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[+d]);
+function setStatus(message,error=false){$("status").textContent=message;$("status").className="status"+(error?" error":"")}
+function normalizedDate(value){
+ if(!value)return "";
+ let s=String(value).trim().replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+ if(/^\d{4}-\d{2}-\d{2}/.test(s)){
+  const d=new Date(s.slice(0,10)+"T12:00:00");
+  if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).format(d).replace(/,/g,"").replace(/\s/g,"/");
+ }
+ const m=s.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+ return m?m[1]+"/"+m[2].padStart(2,"0")+"/"+m[3].padStart(2,"0"):"";
+}
+function todayJalali(){const p=new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=k=>p.find(x=>x.type===k)?.value||"";return v("year")+"/"+v("month").padStart(2,"0")+"/"+v("day").padStart(2,"0")}
+function nameOf(s){return [s?.first_name,s?.last_name].filter(Boolean).join(" ")||"بدون نام"}
+function addItem(parent,title,detail,badge){const d=document.createElement("div");d.className="item";const b=document.createElement("strong");b.textContent=title;const p=document.createElement("div");p.textContent=detail||"جزئیات ثبت نشده است.";d.append(b,p);if(badge){const x=document.createElement("span");x.className="pill";x.textContent=badge;d.append(x)}parent.append(d)}
+function isPending(status){const s=String(status??"").trim().toLowerCase();return !["approved","تأیید","تایید","تأییدشده","تاییدشده","done","completed","closed","بسته","ردشده","rejected","لغوشده","cancelled"].includes(s)}
+function render(data){
+ const students=data.students||[],teachers=data.teachers||[],classes=(data.teacherClasses||[]).filter(x=>x.active===1||x.active===true);
+ const today=todayJalali(),todayRows=(data.attendance||[]).filter(x=>normalizedDate(x.attendance_date||x.date)===today);
+ const kind=x=>{const s=String(x.status||"").toLowerCase();if(["absent","غایب","غیبت"].includes(s))return"غیبت";if(["late","تأخیر","تاخیر","دیرکرد"].includes(s))return"تأخیر";if(["present","حاضر","حضور"].includes(s))return"حاضر";if(["excused","موجه","غیبت موجه"].includes(s))return"موجه";return String(x.status||"نامشخص")};
+ const count=k=>todayRows.filter(x=>kind(x)===k).length;
+ $("schoolName").textContent=data.school?.name||sessionStorage.getItem("frahoosh_novin_school_name")||"مدرسه";
+ $("students").textContent=fa(students.length);$("teachers").textContent=fa(teachers.length);$("classes").textContent=fa(new Set(classes.map(x=>x.class_name).filter(Boolean)).size);
+ $("todayAttendance").textContent=fa(todayRows.length);$("todayAbsence").textContent=fa(count("غیبت"));$("todayLate").textContent=fa(count("تأخیر"));
+ const pending=[];
+ for(const x of data.attendance||[])if(isPending(x.approval_status))pending.push({title:"حضور و غیاب در انتظار بررسی",detail:[x.class_name,x.subject,x.attendance_date||x.date].filter(Boolean).join(" · ")||"ثبت حضور و غیاب"});
+ for(const x of data.executiveRequests||[])if(isPending(x.status))pending.push({title:"درخواست اجرایی: "+(x.title||"بدون عنوان"),detail:[x.requester,x.request_date||x.created_at,x.description].filter(Boolean).join(" · ")});
+ for(const x of data.transportRequests||[])if(isPending(x.status))pending.push({title:"درخواست سرویس دانش‌آموز",detail:[x.parent_username,x.origin,x.destination].filter(Boolean).join(" · ")});
+ for(const x of data.certificateRequests||[])if(isPending(x.status))pending.push({title:"درخواست گواهی",detail:[x.student_name,x.destination,x.request_date].filter(Boolean).join(" · ")});
+ $("pendingCount").textContent=fa(pending.length);$("pendingList").replaceChildren();
+ if(!pending.length){const d=document.createElement("div");d.className="empty";d.textContent="در داده‌های دریافت‌شده، موردی با وضعیت در انتظار بررسی پیدا نشد."; $("pendingList").append(d)}
+ else pending.slice(0,12).forEach(x=>addItem($("pendingList"),x.title,x.detail,"نیازمند بررسی"));
+ $("attendanceSummary").replaceChildren();
+ const kinds=["حاضر","غیبت","تأخیر","موجه"];
+ if(!todayRows.length){const d=document.createElement("div");d.className="empty";d.textContent="برای امروز رکورد حضور و غیاب ثبت‌شده‌ای دریافت نشد.";$("attendanceSummary").append(d)}
+ else kinds.forEach(k=>addItem($("attendanceSummary"),k,fa(count(k))+" ثبت"));
+ const requests=(data.executiveRequests||[]).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,6);
+ $("recentRequests").replaceChildren();
+ if(!requests.length){const d=document.createElement("div");d.className="empty";d.textContent="درخواست اجرایی ثبت‌شده‌ای در داده‌های دریافتی وجود ندارد.";$("recentRequests").append(d)}
+ else requests.forEach(x=>addItem($("recentRequests"),x.title||"درخواست بدون عنوان",[x.requester,x.request_date||x.created_at,x.status].filter(Boolean).join(" · ")));
+ $("updatedAt").textContent="آخرین دریافت: "+new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"full",timeStyle:"short"}).format(new Date());
+ $("dashboard").hidden=false;
+}
+async function load(){
+ if(!token||role!=="manager"||!schoolId){setStatus("برای استفاده از دستیار هوشمند، با حساب مدیر همان مدرسه دوباره وارد شوید.",true);return}
+ const button=$("refresh");button.disabled=true;setStatus("در حال دریافت آمار واقعی مدرسه از سرویس گزارش‌ها…");
+ try{
+  const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action:"get"})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.message||"دریافت اطلاعات مدرسه ناموفق بود.");
+  if(!data.school?.id||String(data.school.id)!==String(schoolId))throw new Error("شناسه مدرسه با نشست مدیر یکسان نیست؛ برای جلوگیری از نمایش اطلاعات مدرسه دیگر، دوباره وارد شوید.");
+  render(data);setStatus("اطلاعات مدرسه با موفقیت و بر اساس دسترسی حساب مدیر دریافت شد.");$("status").classList.add("ok");
+ }catch(error){setStatus(error.message||"ارتباط با سرویس گزارش‌ها برقرار نشد.",true)}
+ finally{button.disabled=false}
+}
+$("refresh").addEventListener("click",load);
+$("back").addEventListener("click",()=>{location.href="portal.html?step=panel&role=manager"});
+load();
+</script></body></html>
