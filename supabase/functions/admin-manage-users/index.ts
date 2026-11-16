@@ -51,13 +51,13 @@ Deno.serve(async (req: Request) => {
     const displayName = clean(body.display_name);
     const username = clean(body.username).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
     const password = String(body.password ?? "");
-    const phone = clean(body.phone).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\\D/g, "");
+    const phone = clean(body.phone).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\D/g, "");
     if (displayName.length < 3 || displayName.length > 120) return reply({ message: "نام و نام خانوادگی مشاور را کامل وارد کنید." }, 400);
-    if (!/^\\d{8,12}$/.test(username)) return reply({ message: "نام کاربری مشاور باید عددی و بین ۸ تا ۱۲ رقم باشد." }, 400);
-    if (password.length < 10 || password.length > 128 || password === username || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    if (!/^\d{8,12}$/.test(username)) return reply({ message: "نام کاربری مشاور باید عددی و بین ۸ تا ۱۲ رقم باشد." }, 400);
+    if (password.length < 10 || password.length > 128 || password === username || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
       return reply({ message: "رمز اولیه باید حداقل ۱۰ نویسه و شامل حرف کوچک، حرف بزرگ، عدد و نماد باشد." }, 400);
     }
-    if (phone && !/^09\\d{9}$/.test(phone)) return reply({ message: "شماره همراه باید با قالب 09123456789 وارد شود." }, 400);
+    if (phone && !/^09\d{9}$/.test(phone)) return reply({ message: "شماره همراه باید با قالب 09123456789 وارد شود." }, 400);
     const { data: existing, error: existingError } = await admin.from("account_settings")
       .select("username").eq("username", username).limit(1);
     if (existingError) return reply({ message: "بررسی یکتایی نام کاربری انجام نشد." }, 500);
