@@ -253,7 +253,7 @@ async function boot(){
    $("selector").classList.add("hidden");
    $("hostLogin").classList.remove("hidden");
    $("hostRole").value=query.has("meeting_id")?"manager":"teacher";
-   say("برای برای ورود میزبان، اطلاعات حساب فراهوش را در فرم زیر وارد کنید.");
+   say("برای ورود میزبان، اطلاعات حساب فراهوش را در فرم زیر وارد کنید.");
    $("hostLoginForm").addEventListener("submit",async event=>{
     event.preventDefault();
     const submit=$("hostLoginSubmit");submit.disabled=true;
