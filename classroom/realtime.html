@@ -102,7 +102,7 @@ function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnTo
 $("back").addEventListener("click",returnToPanel);
 function offerEntry(room,scheduleEntryId,adHoc=null){
  const button=document.createElement("button");button.className="room";
- button.textContent="ورود به "+(room.title||room.subject||"جلسه آنلاین");
+ button.textContent=adHoc?"ورود میزبان به جلسه":"ورود به "+(room.title||room.subject||"جلسه آنلاین");
  button.addEventListener("click",()=>enterRoom(room,scheduleEntryId,adHoc));
  $("roomList").replaceChildren(button);
  $("selector").classList.remove("hidden");
