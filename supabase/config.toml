@@ -2,3 +2,7 @@
 # The function still validates normal school JWTs itself for all existing authenticated flows.
 [functions.classroom-realtime-token]
 verify_jwt = false
+
+# The host login resolves the full name within an active school membership before delegating to school-portal-login.
+[functions.classroom-host-login]
+verify_jwt = false
