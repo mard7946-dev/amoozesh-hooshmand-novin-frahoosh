@@ -353,4 +353,6 @@ assert.ok(managerAssistant.includes('role!=="manager"') && managerAssistant.incl
 assert.ok(managerAssistant.includes("data.school?.id") && managerAssistant.includes("schoolId"), "Manager assistant must verify the returned school matches the active session");
 assert.ok(managerAssistant.includes("tenant_school_id") === false, "Manager assistant must not query tenant data directly from the browser");
 assert.ok(managerAssistant.includes("data.attendance") && managerAssistant.includes("data.executiveRequests") && managerAssistant.includes("data.transportRequests"), "Manager assistant must summarize real attendance and pending operational requests");
+assert.ok(managerAssistant.includes("formatToParts") && managerAssistant.includes("todayJalali"), "Manager assistant must compare attendance dates using Persian calendar parts");
+assert.ok(managerAssistant.includes('["pending","در انتظار","در انتظار بررسی"'), "Manager assistant must count only explicit pending workflow statuses");
 assert.ok(managerAssistant.includes("academic-review.html") && managerAssistant.includes("family-invitations-review.html") && managerAssistant.includes("reports.html"), "Manager assistant must link to existing operational modules");
