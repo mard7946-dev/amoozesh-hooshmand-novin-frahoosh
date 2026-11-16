@@ -47,6 +47,59 @@ Deno.serve(async (req: Request) => {
   if (managerMembershipError || !managerMembership) return reply({ message: "عضویت فعال مدیر برای این مدرسه تأیید نشد." }, 403);
 
   const action = clean(body.action || "list");
+  if (action === "create_counselor") {
+    const displayName = clean(body.display_name);
+    const username = clean(body.username).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const password = String(body.password ?? "");
+    const phone = clean(body.phone).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\D/g, "");
+    if (displayName.length < 3 || displayName.length > 120) return reply({ message: "نام و نام خانوادگی مشاور را کامل وارد کنید." }, 400);
+    if (!/^\d{8,12}$/.test(username)) return reply({ message: "نام کاربری مشاور باید عددی و بین ۸ تا ۱۲ رقم باشد." }, 400);
+    if (password.length < 10 || password.length > 128 || password === username || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return reply({ message: "رمز اولیه باید حداقل ۱۰ نویسه و شامل حرف کوچک، حرف بزرگ، عدد و نماد باشد." }, 400);
+    }
+    if (phone && !/^09\d{9}$/.test(phone)) return reply({ message: "شماره همراه باید با قالب 09123456789 وارد شود." }, 400);
+    const { data: existing, error: existingError } = await admin.from("account_settings")
+      .select("username").eq("username", username).limit(1);
+    if (existingError) return reply({ message: "بررسی یکتایی نام کاربری انجام نشد." }, 500);
+    if (existing?.length) return reply({ message: "این نام کاربری قبلاً در فراهوش ثبت شده است." }, 409);
+    const email = username + "@advisor.frahoosh.invalid";
+    const { data: authCreated, error: authCreateError } = await admin.auth.admin.createUser({
+      email, password, email_confirm: true,
+      user_metadata: { username, display_name: displayName, role: "advisor", tenant_school_id: schoolId },
+      app_metadata: { must_change_password: true, password_reset_at: new Date().toISOString() },
+    });
+    if (authCreateError || !authCreated.user) {
+      console.error("admin-manage-users create counselor auth failed", authCreateError?.message ?? "missing user");
+      return reply({ message: "ساخت حساب ورود مشاور انجام نشد؛ نام کاربری و رمز را بررسی کنید." }, 400);
+    }
+    const authUserId = authCreated.user.id;
+    try {
+      const { error: accountError } = await admin.from("account_settings").insert({
+        username, display_name: displayName, email, role: "advisor", auth_user_id: authUserId,
+        phone: phone || null, tenant_school_id: schoolId, preferences: "{}",
+      });
+      if (accountError) throw accountError;
+      const { data: membership, error: membershipReadError } = await admin.from("school_memberships")
+        .select("id,is_active").eq("auth_user_id", authUserId).eq("school_id", schoolId).eq("role", "advisor").maybeSingle();
+      if (membershipReadError) throw membershipReadError;
+      if (membership) {
+        if (!membership.is_active) {
+          const { error } = await admin.from("school_memberships").update({ is_active: true, updated_at: new Date().toISOString() }).eq("id", membership.id);
+          if (error) throw error;
+        }
+      } else {
+        const { error } = await admin.from("school_memberships").insert({ auth_user_id: authUserId, school_id: schoolId, role: "advisor", is_active: true });
+        if (error) throw error;
+      }
+      return reply({ success: true, username, role: "advisor", message: "حساب مشاور ایجاد شد؛ تغییر رمز در نخستین ورود اجباری است." }, 201);
+    } catch (error) {
+      await admin.from("school_memberships").delete().eq("auth_user_id", authUserId).eq("school_id", schoolId);
+      await admin.from("account_settings").delete().eq("auth_user_id", authUserId).eq("tenant_school_id", schoolId);
+      await admin.auth.admin.deleteUser(authUserId);
+      console.error("admin-manage-users create counselor profile failed", String((error as any)?.code ?? "unknown"));
+      return reply({ message: "ذخیره حساب مشاور در مدرسه انجام نشد؛ حساب ناقص پاک‌سازی شد." }, 500);
+    }
+  }
   if (action === "list") {
     const { data: accounts, error } = await admin.from("account_settings")
       .select("username,display_name,role,auth_user_id,national_code,phone,tenant_school_id")
