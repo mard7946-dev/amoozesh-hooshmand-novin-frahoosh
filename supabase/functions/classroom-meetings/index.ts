@@ -90,6 +90,30 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, meetings: data ?? [] });
     }
 
+    if (action === "delete_expired") {
+      const id = clean(body.meeting_id);
+      if (!id) return reply({ message: "شناسه جلسه معتبر نیست." }, 400);
+      const { data: meeting, error: lookupError } = await admin.from("classroom_ad_hoc_meetings")
+        .select("id,cloudflare_meeting_id,status,expires_at")
+        .eq("id", id).eq("tenant_school_id", schoolId).maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!meeting) return reply({ message: "جلسه پیدا نشد یا قبلاً حذف شده است." }, 404);
+      const expired = new Date(meeting.expires_at).getTime() <= Date.now();
+      if (meeting.status === "active" && !expired) {
+        return reply({ message: "جلسه هنوز فعال است؛ ابتدا باید جلسه را پایان دهید یا تا زمان انقضا صبر کنید." }, 409);
+      }
+      const storedRoomName = clean(meeting.cloudflare_meeting_id);
+      if (meeting.status === "active" && expired && storedRoomName.startsWith("frahoosh-")) {
+        await deleteLiveKitRoom(storedRoomName).catch((error) => {
+          console.warn("expired classroom room cleanup failed", String(error));
+        });
+      }
+      const { error: deleteError } = await admin.from("classroom_ad_hoc_meetings")
+        .delete().eq("id", id).eq("tenant_school_id", schoolId);
+      if (deleteError) throw deleteError;
+      return reply({ ok: true, deleted: true });
+    }
+
     if (action === "create") {
       const title = clean(body.title);
       const description = clean(body.description).slice(0, 1000);
