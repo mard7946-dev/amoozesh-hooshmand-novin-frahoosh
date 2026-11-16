@@ -13,7 +13,17 @@ h1{font-size:18px;margin:0}small,.muted{color:var(--muted)}
 button,.tool{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 13px;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
 main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
-.panel{background:#f2f3f5;color:#182638;border:1px solid #ffffff;border-radius:14px;padding:18px;box-shadow:0 18px 55px #06132166}label{display:block;color:#526174;font-size:12px;margin:9px 0}input,select{display:block;width:100%;margin-top:6px;padding:12px;border-radius:8px;border:1px solid #a8c99c;background:#fff;color:#172536;font:inherit}form{display:grid;gap:6px}#hostLogin{width:min(100%,440px);margin:5vh auto 0;padding:24px 26px}#hostLogin>strong{display:block;text-align:center;font-size:22px;color:#172536;margin:4px 0 10px}#hostLogin .muted{text-align:center;color:#667386;line-height:1.9}#hostLogin button[type=submit]{background:#17b9c7;color:#092b37;border:0;font-weight:700;padding:13px;border-radius:8px}#hostLogin button[type=submit]:hover{filter:brightness(1.05)}#guestEntry{width:min(100%,440px);margin:5vh auto 0;padding:24px 26px}#guestEntry>strong{display:block;text-align:center;font-size:20px;color:#172536;margin-bottom:8px}#guestEntry .muted{color:#667386;text-align:center}
+.panel{background:#f2f3f5;color:#182638;border:1px solid #ffffff;border-radius:14px;padding:18px;box-shadow:0 18px 55px #06132166}label{display:block;color:#526174;font-size:12px;margin:9px 0}input,select{display:block;width:100%;margin-top:6px;padding:12px;border-radius:8px;border:1px solid #a8c99c;background:#fff;color:#172536;font:inherit}form{display:grid;gap:6px}#hostLogin{width:min(100%,440px);margin:5vh auto 0;padding:24px 26px}#hostLogin>strong{display:block;text-align:center;font-size:22px;color:#172536;margin:4px 0 10px}#hostLogin .muted{text-align:center;color:#667386;line-height:1.9}#hostLogin button[type=submit]{background:#17b9c7;color:#092b37;border:0;font-weight:700;padding:13px;border-radius:8px}#hostLogin button[type=submit]:hover{filter:brightness(1.05)}#guestEntry{width:min(100%,440px);margin:2vh auto 0;padding:24px 26px}#guestEntry>strong{display:block;text-align:center;font-size:20px;color:#172536;margin-bottom:8px}#guestEntry .muted{color:#667386;text-align:center}
+#entryChooser{width:min(100%,470px);margin:5vh auto 0;padding:24px 28px;text-align:center}
+.brand-logo{width:148px;height:130px;object-fit:contain;display:block;margin:0 auto 4px;filter:drop-shadow(0 8px 16px #b8791d55)}
+.brand-title{font-size:27px;font-weight:800;color:#172536;margin:0 0 8px}
+.brand-school{font-size:16px;font-weight:700;color:#34465b;line-height:1.9}
+.brand-tagline{font-size:12px;color:#758196;margin:4px 0 20px}
+.entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.entry-actions button{font-weight:700;padding:13px 8px;border:0;color:#fff;background:linear-gradient(135deg,#d79a25,#a86b12);box-shadow:0 5px 16px #a86b1233}
+.entry-actions button:first-child{background:linear-gradient(135deg,#20bdc6,#168b9e)}
+#hostLogin{margin:2vh auto 0}
+@media(max-width:420px){.brand-title{font-size:23px}.brand-school{font-size:14px}.entry-actions{grid-template-columns:1fr}}
 #roomList{display:grid;gap:8px}.room{width:100%;text-align:right;line-height:1.8}
 #meetingMount{min-height:420px;overflow:hidden;border-radius:12px;background:#111827;padding:10px}
 #participants{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -37,6 +47,16 @@ main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="back">بازگشت به پنل</button></div>
 </header>
 <main>
+ <section class="panel hidden" id="entryChooser">
+  <img class="brand-logo" src="assets/frahoosh-golden-brain.svg" alt="نشان مغز طلایی فراهوش نوین">
+  <h2 class="brand-title">فراهوش نوین</h2>
+  <div class="brand-school">دبیرستان سردار شهید حاجی‌زاده ۲</div>
+  <div class="brand-tagline">سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق</div>
+  <div class="entry-actions">
+   <button id="chooseGuest" type="button">ورود میهمان</button>
+   <button id="chooseHost" type="button">ورود میزبان</button>
+  </div>
+ </section>
  <section class="panel hidden" id="guestEntry">
   <strong>ورود میهمان</strong>
   <p class="muted">برای ورود به جلسه، نام و نام خانوادگی خود را وارد کنید. حساب کاربری مدرسه لازم نیست.</p>
@@ -48,11 +68,7 @@ main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
   <strong>ورود میزبان</strong>
   <p class="muted">مدیر یا دبیر با حساب فراهوش وارد می‌شود و مستقیماً به همین جلسه متصل خواهد شد. نیازی به باز بودن پنل در تب دیگر نیست.</p>
   <form id="hostLoginForm">
-   <label for="hostRole">نوع حساب
-    <select id="hostRole"><option value="manager">مدیر مدرسه</option><option value="teacher">دبیر</option></select>
-   </label>
-   <label for="hostSchoolCode">کد مدرسه<input id="hostSchoolCode" maxlength="40" autocomplete="organization" required placeholder="کد مدرسه"></label>
-   <label for="hostUsername">نام کاربری<input id="hostUsername" maxlength="160" autocomplete="username" required placeholder="نام کاربری"></label>
+   <label for="hostFullName">نام و نام خانوادگی<input id="hostFullName" maxlength="100" autocomplete="name" required placeholder="نام و نام خانوادگی مطابق حساب فراهوش"></label>
    <label for="hostPassword">رمز عبور<input id="hostPassword" type="password" maxlength="1024" autocomplete="current-password" required placeholder="رمز عبور"></label>
    <button id="hostLoginSubmit" type="submit">ورود میزبان و اتصال به جلسه</button>
   </form>
@@ -252,20 +268,22 @@ async function boot(){
   if(!accessToken){
    $("selector").classList.add("hidden");
    $("hostLogin").classList.remove("hidden");
-   $("hostRole").value=query.has("meeting_id")?"manager":"teacher";
-   say("برای ورود میزبان، اطلاعات حساب فراهوش را در فرم زیر وارد کنید.");
+   $("entryChooser").classList.remove("hidden");
+   say("یکی از روش‌های ورود را انتخاب کنید.");
+   $("chooseHost").addEventListener("click",()=>{$("entryChooser").classList.add("hidden");$("hostLogin").classList.remove("hidden");say("نام و نام خانوادگی و رمز عبور حساب فراهوش را وارد کنید.");});
+   $("chooseGuest").addEventListener("click",()=>{if(!guestToken){say("برای ورود میهمان، باید لینک اختصاصی یک‌بارمصرف میهمان را باز کنید.");return;}$("entryChooser").classList.add("hidden");$("guestEntry").classList.remove("hidden");say("نام و نام خانوادگی را وارد کنید.");});
    $("hostLoginForm").addEventListener("submit",async event=>{
     event.preventDefault();
     const submit=$("hostLoginSubmit");submit.disabled=true;
     say("در حال بررسی حساب و عضویت فعال مدرسه…");
     try{
-     const response=await fetch(SUPABASE_URL+"/functions/v1/school-portal-login",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},body:JSON.stringify({username:$("hostUsername").value.trim(),password:$("hostPassword").value,role:$("hostRole").value,school_code:$("hostSchoolCode").value.trim()})});
+     const response=await fetch(SUPABASE_URL+"/functions/v1/classroom-host-login",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},body:JSON.stringify({full_name:$("hostFullName").value.trim(),password:$("hostPassword").value,meeting_id:query.get("meeting_id")||"",join_code:query.get("join_code")||""})});
      const data=await response.json().catch(()=>({}));
      if(!response.ok||!data.session?.access_token||!data.user?.id){
       if(response.status===428&&data.must_change_password)throw new Error("رمز اولیه این حساب باید ابتدا از مسیر ورود فراهوش تغییر کند؛ سپس دوباره به این صفحه برگردید.");
       throw new Error(data.message||"ورود انجام نشد؛ اطلاعات حساب و کد مدرسه را بررسی کنید.");
      }
-     accessToken=data.session.access_token;activeRole=$("hostRole").value;profile=data.profile||{role:activeRole};
+     accessToken=data.session.access_token;activeRole=data.classroom_role||"teacher";profile=data.profile||{role:activeRole};
      sessionStorage.setItem("frahoosh_novin_access_token",accessToken);
      sessionStorage.setItem("frahoosh_novin_role",activeRole);
      if(data.profile?.school_id)sessionStorage.setItem("frahoosh_novin_school_id",data.profile.school_id);
