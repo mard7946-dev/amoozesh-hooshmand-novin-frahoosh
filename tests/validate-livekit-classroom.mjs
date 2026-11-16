@@ -21,7 +21,7 @@ assert.match(hostLoginFunction, /from\("school_memberships"\)/, "Full-name host 
 assert.match(hostLoginFunction, /school-portal-login/, "Host login must delegate password verification to the existing secure portal login");
 assert.match(supabaseConfig, /\[functions\.classroom-host-login\][\s\S]*verify_jwt = false/);
 assert.match(meetingsHtml, /id="duration" type="time"/, "Meeting duration must use a digital time control");
-assert.match(meetingsHtml, /duration_minutes:\\(\\(\\)=>/, "Digital duration must be converted to minutes for the existing API");
+assert.ok(meetingsHtml.includes("duration_minutes:(()=>"), "Digital duration must be converted to minutes for the existing API");
 assert.doesNotMatch(html, /recoverSessionFromOpenPortal|پنل فراهوش را در همین مرورگر باز نگه دارید/, "Classroom entry must not depend on another open portal tab");
 assert.match(html, /querySelectorAll\("button"\)\.forEach\(button=>button.disabled=false\)/, "Leaving a room must allow users to re-enter");
 assert.doesNotMatch(html, /@cloudflare\/realtimekit/i);
