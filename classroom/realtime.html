@@ -32,6 +32,17 @@ main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
 .participant .name{position:absolute;bottom:8px;right:8px;padding:5px 9px;border-radius:7px;background:#000a;color:#fff;font-size:12px;z-index:2}
 .participant .avatar{font-size:14px;color:var(--muted);padding:18px;text-align:center}
 .participant audio{display:none}
+.whiteboard-panel{margin:12px 0 16px;background:#e8edf2;border:1px solid #c8d1dc;border-radius:12px;padding:10px;color:#172536}
+.whiteboard-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.whiteboard-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+.whiteboard-tools button{padding:8px 11px;background:#fff;color:#172536}
+.whiteboard-tools button.active{background:#d8f4f4;border-color:#159eaa;color:#07545a}
+.whiteboard-tools label{display:flex;align-items:center;gap:6px;margin:0;color:#35465b;font-size:12px}
+.whiteboard-tools input[type=color]{width:38px;height:34px;margin:0;padding:2px}
+.whiteboard-tools input[type=range]{width:90px;margin:0;padding:0}
+.whiteboard-tools input[type=text]{width:150px;margin:0;padding:8px}
+#whiteboard{display:block;width:100%;height:min(58vh,480px);min-height:260px;background:#fff;border:1px solid #aeb8c4;border-radius:8px;touch-action:none;cursor:crosshair}
+.whiteboard-note{font-size:12px;color:#58677a;margin:7px 2px 0}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
 .toolbar button.active{background:#17463f;border-color:var(--accent)}
 .toolbar button.leave{background:#54232b;border-color:#a94b58}
@@ -82,6 +93,22 @@ main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
    <strong id="meetingTitle">کلاس زنده</strong><small id="meetingDetail"></small>
   </div>
+  <section class="whiteboard-panel" aria-label="تخته آموزشی کلاس">
+   <div class="whiteboard-heading"><strong>تخته آموزشی کلاس</strong><small id="boardPermission">در حال بررسی دسترسی…</small></div>
+   <div class="whiteboard-tools" id="boardTools">
+    <button type="button" id="boardPen" class="active">✎ قلم</button>
+    <button type="button" id="boardEraser">پاک‌کن</button>
+    <button type="button" id="boardText">متن</button>
+    <label>رنگ <input id="boardColor" type="color" value="#172536" aria-label="رنگ قلم"></label>
+    <label>ضخامت قلم <input id="boardSize" type="range" min="1" max="18" value="4" aria-label="ضخامت قلم"></label>
+    <label>اندازه متن <input id="boardFontSize" type="range" min="12" max="36" value="20" aria-label="اندازه متن"></label>
+    <input id="boardTextValue" type="text" maxlength="120" placeholder="متن برای درج روی تخته" aria-label="متن تخته">
+    <button type="button" id="boardUndo">بازگردانی</button>
+    <button type="button" id="boardClear">پاک‌کردن تخته</button>
+   </div>
+   <canvas id="whiteboard" aria-label="تخته سفید کلاس"></canvas>
+   <div class="whiteboard-note" id="boardNote">ابزارهای تخته برای دبیر و مدیر فعال است؛ سایر شرکت‌کنندگان نوشته‌ها را به‌صورت زنده می‌بینند.</div>
+  </section>
   <div id="meetingMount"><div id="participants"></div></div>
   <div class="toolbar">
    <button id="micToggle" type="button">فعال‌کردن میکروفن</button>
@@ -104,6 +131,102 @@ const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:
 const $=id=>document.getElementById(id);
 let profile=null,liveRoom=null,micOn=false,cameraOn=false,screenOn=false;
 const participantTiles=new Map();
+const BOARD_TOPIC="frahoosh-whiteboard-v1";
+let boardItems=[],boardCanEdit=false,boardMode="pen",boardDrawing=false,boardCurrent=null,boardSnapshotParts=new Map();
+const boardCanvas=$("whiteboard"),boardCtx=boardCanvas.getContext("2d");
+function resizeBoard(){
+ const width=Math.max(280,boardCanvas.clientWidth||640);
+ boardCanvas.width=width;boardCanvas.height=480;renderBoard();
+}
+function renderBoard(){
+ if(!boardCtx)return;
+ boardCtx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
+ for(const item of boardItems){
+  if(item.type==="text"){
+   boardCtx.globalCompositeOperation="source-over";boardCtx.fillStyle=item.color;
+   boardCtx.font=`${item.fontSize||20}px Tahoma, sans-serif`;boardCtx.textAlign="right";
+   boardCtx.fillText(item.text,item.x*boardCanvas.width,item.y*boardCanvas.height);
+   continue;
+  }
+  if(!item.points?.length)continue;
+  boardCtx.globalCompositeOperation=item.mode==="eraser"?"destination-out":"source-over";
+  boardCtx.strokeStyle=item.color;boardCtx.lineWidth=item.size;boardCtx.lineCap="round";boardCtx.lineJoin="round";
+  boardCtx.beginPath();boardCtx.moveTo(item.points[0].x*boardCanvas.width,item.points[0].y*boardCanvas.height);
+  for(const point of item.points.slice(1))boardCtx.lineTo(point.x*boardCanvas.width,point.y*boardCanvas.height);
+  if(item.points.length===1){boardCtx.lineTo(item.points[0].x*boardCanvas.width+.1,item.points[0].y*boardCanvas.height+.1);}
+  boardCtx.stroke();
+ }
+ boardCtx.globalCompositeOperation="source-over";
+}
+function boardPoint(event){
+ const rect=boardCanvas.getBoundingClientRect();
+ return {x:Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height))};
+}
+async function sendBoardSnapshot(){
+ if(!liveRoom||!boardCanEdit)return;
+ const snapshotId=crypto.randomUUID(),chunkSize=5,total=Math.max(1,Math.ceil(boardItems.length/chunkSize));
+ for(let index=0;index<total;index++){
+  const message={type:"snapshot-part",snapshotId,index,total,items:boardItems.slice(index*chunkSize,(index+1)*chunkSize)};
+  await sendBoardMessage(message);
+ }
+}
+async function sendBoardMessage(message){
+ if(!liveRoom||!boardCanEdit)return;
+ try{await liveRoom.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(message)),{reliable:true,topic:BOARD_TOPIC});}
+ catch(error){say("ارسال تغییرات تخته انجام نشد؛ اتصال کلاس را بررسی کنید.");}
+}
+function setBoardMode(mode){
+ boardMode=mode;
+ for(const id of ["boardPen","boardEraser","boardText"])$(id).classList.toggle("active",id===({pen:"boardPen",eraser:"boardEraser",text:"boardText"}[mode]));
+ boardCanvas.style.cursor=mode==="text"?"text":mode==="eraser"?"cell":"crosshair";
+}
+function setBoardEditor(enabled){
+ boardCanEdit=Boolean(enabled);
+ $("boardTools").querySelectorAll("button,input").forEach(control=>control.disabled=!boardCanEdit);
+ $("boardPermission").textContent=boardCanEdit?"ابزار نوشتن برای شما فعال است":"حالت مشاهده؛ ابزار نوشتن فقط برای دبیر و مدیر فعال است";
+ $("boardNote").textContent=boardCanEdit?"با قلم روی تخته بکشید؛ پاک‌کن، متن، بازگردانی و پاک‌کردن تخته هم فعال است.":"تخته به‌صورت زنده نمایش داده می‌شود؛ برای نوشتن، دبیر یا مدیر باید وارد شود.";
+ boardCanvas.style.cursor=boardCanEdit?"crosshair":"default";
+}
+function receiveBoardMessage(message){
+ if(!message||typeof message!=="object")return;
+ if(message.type==="snapshot-part"&&typeof message.snapshotId==="string"&&Array.isArray(message.items)){const part=boardSnapshotParts.get(message.snapshotId)||{total:message.total,parts:[]};part.parts[message.index]=message.items;boardSnapshotParts.set(message.snapshotId,part);if(part.parts.filter(Boolean).length===part.total){boardItems=part.parts.flat().slice(-40);boardSnapshotParts.delete(message.snapshotId);renderBoard();}}
+ if(message.type==="stroke"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
+ if(message.type==="text"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
+ if(message.type==="undo"){boardItems.pop();renderBoard();}
+ if(message.type==="clear"){boardItems=[];renderBoard();}
+}
+boardCanvas.addEventListener("pointerdown",event=>{
+ if(!boardCanEdit||!liveRoom)return;
+ event.preventDefault();boardCanvas.setPointerCapture(event.pointerId);
+ const point=boardPoint(event);
+ if(boardMode==="text"){
+  const value=$("boardTextValue").value.trim();if(!value){say("ابتدا متن را در کادر تخته بنویسید.");return;}
+  const item={type:"text",text:value,x:point.x,y:point.y,color:$("boardColor").value,fontSize:Number($("boardFontSize").value)};
+  boardItems.push(item);boardItems=boardItems.slice(-40);renderBoard();sendBoardMessage({type:"text",item});return;
+ }
+ boardDrawing=true;boardCurrent={type:"stroke",mode:boardMode,color:$("boardColor").value,size:Number($("boardSize").value),points:[point]};
+ boardItems.push(boardCurrent);renderBoard();
+});
+boardCanvas.addEventListener("pointermove",event=>{
+ if(!boardDrawing||!boardCurrent)return;
+ const point=boardPoint(event),last=boardCurrent.points[boardCurrent.points.length-1];
+ if(Math.hypot((point.x-last.x)*boardCanvas.width,(point.y-last.y)*boardCanvas.height)<2)return;
+ boardCurrent.points.push(point);if(boardCurrent.points.length>96)boardCurrent.points=boardCurrent.points.filter((_,i)=>i%2===0);
+ renderBoard();
+});
+function finishBoardStroke(){
+ if(!boardDrawing||!boardCurrent)return;
+ boardDrawing=false;const item=boardCurrent;boardCurrent=null;
+ sendBoardMessage({type:"stroke",item});
+}
+boardCanvas.addEventListener("pointerup",finishBoardStroke);
+boardCanvas.addEventListener("pointercancel",finishBoardStroke);
+$("boardPen").addEventListener("click",()=>setBoardMode("pen"));
+$("boardEraser").addEventListener("click",()=>setBoardMode("eraser"));
+$("boardText").addEventListener("click",()=>setBoardMode("text"));
+$("boardUndo").addEventListener("click",()=>{if(!boardCanEdit||!boardItems.length)return;boardItems.pop();renderBoard();sendBoardMessage({type:"undo"});});
+$("boardClear").addEventListener("click",()=>{if(!boardCanEdit||!confirm("تمام نوشته‌ها و نقاشی‌های تخته پاک شود؟"))return;boardItems=[];renderBoard();sendBoardMessage({type:"clear"});});
+window.addEventListener("resize",resizeBoard);resizeBoard();
 function say(text){$("status").textContent=text;$("notice").textContent=text;}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
@@ -167,7 +290,11 @@ function bindRoomEvents(room){
  room.on(window.LivekitClient.RoomEvent.TrackSubscribed,(track,publication,participant)=>attachTrack(track,participant));
  room.on(window.LivekitClient.RoomEvent.TrackUnsubscribed,(track)=>detachTrack(track));
  room.on(window.LivekitClient.RoomEvent.TrackUnpublished,(publication)=>{if(publication.track)detachTrack(publication.track);});
- room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>getTile(participant));
+ room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>{getTile(participant);if(boardCanEdit)sendBoardSnapshot();});
+ room.on(window.LivekitClient.RoomEvent.DataReceived,(payload,participant,kind,topic)=>{
+  if(topic!==BOARD_TOPIC||!participant)return;
+  try{receiveBoardMessage(JSON.parse(new TextDecoder().decode(payload)));}catch(_){}
+ });
  room.on(window.LivekitClient.RoomEvent.ParticipantDisconnected,(participant)=>removeTile(participant.identity));
  room.on(window.LivekitClient.RoomEvent.Disconnected,()=>{say("ارتباط با کلاس پایان یافت.");});
  room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged,(state)=>{$("status").textContent="وضعیت اتصال: "+state;});
@@ -201,6 +328,7 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
   }
   for(const publication of liveRoom.localParticipant.trackPublications.values())if(publication.track&&publication.track.kind===sdk.Track.Kind.Video)attachTrack(publication.track,liveRoom.localParticipant);
   profile=credentials.profile||profile;
+  setBoardEditor(Boolean(credentials.can_share_screen));
   $("meetingTitle").textContent=credentials.room?.title||room.title||room.subject||"کلاس آنلاین";
   $("meetingDetail").textContent=adHoc?"جلسه اختصاصی مدیریت · ورود با مجوز مدرسه":[room.class_name,room.teacher].filter(Boolean).join(" · ");
   $("meetingPanel").classList.remove("hidden");$("selector").classList.add("hidden");
@@ -235,7 +363,7 @@ async function leaveRoom(){
  $("audioStart").classList.add("hidden");
  $("roomList").querySelectorAll("button").forEach(button=>button.disabled=false);
  for(const identity of [...participantTiles.keys()])removeTile(identity);
- micOn=false;cameraOn=false;screenOn=false;
+ micOn=false;cameraOn=false;screenOn=false;boardItems=[];renderBoard();setBoardEditor(false);
  $("micToggle").textContent="فعال‌کردن میکروفن";$("cameraToggle").textContent="فعال‌کردن دوربین";$("screenToggle").textContent="اشتراک‌گذاری صفحه";
  $("micToggle").classList.remove("active");$("cameraToggle").classList.remove("active");$("screenToggle").classList.remove("active");
  $("meetingPanel").classList.add("hidden");$("selector").classList.remove("hidden");

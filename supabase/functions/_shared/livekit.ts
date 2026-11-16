@@ -140,7 +140,7 @@ export async function createLiveKitParticipantToken(
     room: roomName,
     canPublish: true,
     canSubscribe: true,
-    canPublishData: false,
+    canPublishData: Boolean(options.host),
     canPublishSources: publishSources,
     ...(options.host ? { roomAdmin: true } : {}),
   });
