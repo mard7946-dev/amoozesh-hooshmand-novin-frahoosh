@@ -345,3 +345,12 @@ for (const source of [...academicReviewPage.matchAll(/<script[^>]*>([\s\S]*?)<\/
   assert.doesNotThrow(() => new Function(source), "Academic review page script must have valid JavaScript syntax");
 }
 console.log("Academic review checks passed: manager/deputy approval, server-side parent publication filters, and deployed review page.");
+
+const managerAssistant = readFileSync("manager-assistant.html", "utf8");
+assert.ok(html.includes("دستیار هوشمند مدیر") && html.includes("manager-assistant.html?v=20261116-1"), "Manager portal must expose the authenticated manager assistant entry");
+assert.ok(managerAssistant.includes("/functions/v1/school-reports") && managerAssistant.includes("frahoosh_novin_access_token"), "Manager assistant must load data from the authenticated school reports service");
+assert.ok(managerAssistant.includes('role!=="manager"') && managerAssistant.includes("frahoosh_novin_school_id"), "Manager assistant must require a manager session and school context");
+assert.ok(managerAssistant.includes("data.school.id") && managerAssistant.includes("schoolId"), "Manager assistant must verify the returned school matches the active session");
+assert.ok(managerAssistant.includes("tenant_school_id") === false, "Manager assistant must not query tenant data directly from the browser");
+assert.ok(managerAssistant.includes("data.attendance") && managerAssistant.includes("data.executiveRequests") && managerAssistant.includes("data.transportRequests"), "Manager assistant must summarize real attendance and pending operational requests");
+assert.ok(managerAssistant.includes("academic-review.html") && managerAssistant.includes("family-invitations-review.html") && managerAssistant.includes("reports.html"), "Manager assistant must link to existing operational modules");
