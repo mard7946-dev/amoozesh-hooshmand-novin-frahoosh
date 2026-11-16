@@ -253,9 +253,11 @@ async function boot(){
   if(guestToken){
    guestMode=true;
    $("selector").classList.add("hidden");
-   $("guestEntry").classList.remove("hidden");
-   $("status").textContent="لینک میهمان شناسایی شد؛ نام و نام خانوادگی را وارد کنید.";
+   $("entryChooser").classList.remove("hidden");
+   $("status").textContent="لینک اختصاصی میهمان شناسایی شد؛ روش ورود را انتخاب کنید.";
    $("notice").textContent="دسترسی میهمان فقط به همین جلسه محدود است؛ میکروفن و دوربین در ابتدا خاموش هستند.";
+   $("chooseHost").addEventListener("click",()=>{$("entryChooser").classList.add("hidden");$("hostLogin").classList.remove("hidden");say("نام و نام خانوادگی و رمز عبور حساب فراهوش را وارد کنید.");});
+   $("chooseGuest").addEventListener("click",()=>{$("entryChooser").classList.add("hidden");$("guestEntry").classList.remove("hidden");say("نام و نام خانوادگی را وارد کنید.");});
    $("guestJoin").addEventListener("click",async()=>{
     const name=[$("guestFirstName").value.trim(),$("guestLastName").value.trim()].filter(Boolean).join(" ");
     if($("guestFirstName").value.trim().length<2||$("guestLastName").value.trim().length<2){say("نام و نام خانوادگی را کامل وارد کنید.");return;}
