@@ -257,6 +257,27 @@ Deno.serve(async (req: Request) => {
       }
       return respond({ password_changed: true, message: "رمز عبور دانش‌آموز با موفقیت تغییر کرد. اکنون با رمز جدید وارد شوید." });
     }
+    if (accountRole === "advisor" && requestedRole === "counselor") {
+      if (action !== "change_counselor_initial_password") {
+        return respond({ message: "برای نخستین ورود مشاور، ابتدا باید رمز عبور اولیه را تغییر دهید.", must_change_password: true }, 428);
+      }
+      if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) {
+        return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
+      }
+      const schoolCode = clean(body?.school_code).toUpperCase();
+      if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
+      const school = await admin.from("schools").select("id,school_code,status").eq("id", account.data?.tenant_school_id).maybeSingle();
+      if (school.error || !school.data || school.data.status !== "active" || clean(school.data.school_code).toUpperCase() !== schoolCode) {
+        return respond({ message: "کد مدرسه با حساب مشاور مطابقت ندارد." }, 403);
+      }
+      const membership = await admin.from("school_memberships").select("id")
+        .eq("auth_user_id", data.user.id).eq("school_id", school.data.id).eq("role", "advisor").eq("is_active", true).maybeSingle();
+      if (membership.error || !membership.data) return respond({ message: "عضویت فعال مشاور در این مدرسه تأیید نشد." }, 403);
+      const nextAppMetadata = { ...(data.user.app_metadata ?? {}), must_change_password: false, password_changed_at: new Date().toISOString() };
+      const { error: updateError } = await admin.auth.admin.updateUserById(data.user.id, { password: newPassword, app_metadata: nextAppMetadata });
+      if (updateError) { console.error("counselor initial password update failed", updateError.message); return respond({ message: "ثبت رمز جدید انجام نشد؛ دوباره تلاش کنید." }, 500); }
+      return respond({ password_changed: true, message: "رمز عبور مشاور تغییر کرد. اکنون با رمز جدید وارد شوید." });
+    }
     if (accountRole !== "parent" || requestedRole !== "parent") {
       return respond({ message: "برای ادامه، ابتدا باید رمز عبور اولیه حساب تغییر کند.", must_change_password: true }, 428);
     }
