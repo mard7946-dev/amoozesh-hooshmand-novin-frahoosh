@@ -40,8 +40,8 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
  <section class="panel hidden" id="guestEntry">
   <strong>ورود میهمان به جلسه</strong>
   <p class="muted">برای ورود به جلسه، نام و نام خانوادگی خود را وارد کنید. حساب کاربری مدرسه لازم نیست.</p>
-  <label for="guestFirstName">نام<input id="guestFirstName" maxlength="30" autocomplete="given-name" placeholder="نام"></label>
-  <label for="guestLastName">نام خانوادگی<input id="guestLastName" maxlength="40" autocomplete="family-name" placeholder="نام خانوادگی"></label>
+  <label for="guestFirstName">نام<input id="guestFirstName" maxlength="30" autocomplete="given-name" required placeholder="نام"></label>
+  <label for="guestLastName">نام خانوادگی<input id="guestLastName" maxlength="40" autocomplete="family-name" required placeholder="نام خانوادگی"></label>
   <button id="guestJoin" type="button">ورود به جلسه</button>
  </section>
  <section class="panel hidden" id="hostLogin">
@@ -92,7 +92,10 @@ function say(text){$("status").textContent=text;$("notice").textContent=text;}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
  const data=await response.json().catch(()=>({}));
- if(!response.ok||!data.ok)throw new Error(data.message||"درخواست به سرور انجام نشد.");
+ if(!response.ok||!data.ok){
+  if(response.status===401&&accessToken){accessToken="";sessionStorage.removeItem("frahoosh_novin_access_token");sessionStorage.removeItem("frahoosh_novin_role");$("selector").classList.add("hidden");$("hostLogin").classList.remove("hidden");}
+  throw new Error(data.message||"درخواست به سرور انجام نشد.");
+ }
  return data;
 }
 function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
