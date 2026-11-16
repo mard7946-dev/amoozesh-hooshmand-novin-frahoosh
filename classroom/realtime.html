@@ -6,14 +6,14 @@
 <meta name="theme-color" content="#101827">
 <title>کلاس زنده | فراهوش نوین</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--line:#2c3b50;--text:#eef4ff;--muted:#a7b6cc;--accent:#46d6b0}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",sans-serif}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#101a2a;border-bottom:1px solid var(--line);flex-wrap:wrap}
+:root{color-scheme:dark;--bg:#172b3d;--panel:#f2f3f5;--line:#d7dce2;--text:#172536;--muted:#657386;--accent:#18b9c5}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 35%,#29445a 0%,#172b3d 65%,#102132 100%);color:#eef4ff;font-family:Tahoma,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#101a2a99;border-bottom:1px solid #ffffff18;flex-wrap:wrap}
 h1{font-size:18px;margin:0}small,.muted{color:var(--muted)}
 button,.tool{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 13px;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
-main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}label{display:block;color:var(--muted);font-size:12px;margin:9px 0}input,select{display:block;width:100%;margin-top:6px;padding:11px;border-radius:8px;border:1px solid var(--line);background:#0b1423;color:var(--text);font:inherit}form{display:grid;gap:6px}
+main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
+.panel{background:#f2f3f5;color:#182638;border:1px solid #ffffff;border-radius:14px;padding:18px;box-shadow:0 18px 55px #06132166}label{display:block;color:#526174;font-size:12px;margin:9px 0}input,select{display:block;width:100%;margin-top:6px;padding:12px;border-radius:8px;border:1px solid #a8c99c;background:#fff;color:#172536;font:inherit}form{display:grid;gap:6px}#hostLogin{width:min(100%,440px);margin:5vh auto 0;padding:24px 26px}#hostLogin>strong{display:block;text-align:center;font-size:22px;color:#172536;margin:4px 0 10px}#hostLogin .muted{text-align:center;color:#667386;line-height:1.9}#hostLogin button[type=submit]{background:#17b9c7;color:#092b37;border:0;font-weight:700;padding:13px;border-radius:8px}#hostLogin button[type=submit]:hover{filter:brightness(1.05)}#guestEntry{width:min(100%,440px);margin:5vh auto 0;padding:24px 26px}#guestEntry>strong{display:block;text-align:center;font-size:20px;color:#172536;margin-bottom:8px}#guestEntry .muted{color:#667386;text-align:center}
 #roomList{display:grid;gap:8px}.room{width:100%;text-align:right;line-height:1.8}
 #meetingMount{min-height:420px;overflow:hidden;border-radius:12px;background:#111827;padding:10px}
 #participants{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -38,15 +38,15 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 </header>
 <main>
  <section class="panel hidden" id="guestEntry">
-  <strong>ورود میهمان به جلسه</strong>
+  <strong>ورود میهمان</strong>
   <p class="muted">برای ورود به جلسه، نام و نام خانوادگی خود را وارد کنید. حساب کاربری مدرسه لازم نیست.</p>
   <label for="guestFirstName">نام<input id="guestFirstName" maxlength="30" autocomplete="given-name" required placeholder="نام"></label>
   <label for="guestLastName">نام خانوادگی<input id="guestLastName" maxlength="40" autocomplete="family-name" required placeholder="نام خانوادگی"></label>
   <button id="guestJoin" type="button">ورود به جلسه</button>
  </section>
  <section class="panel hidden" id="hostLogin">
-  <strong>ورود میزبان یا عضو مدرسه</strong>
-  <p class="muted">برای ورود امن، مدیر یا دبیر با حساب فراهوش خود وارد شود. لازم نیست پنل در تب دیگری باز باشد. میهمانان بیرون مدرسه باید از لینک اختصاصی میهمان استفاده کنند.</p>
+  <strong>ورود میزبان</strong>
+  <p class="muted">مدیر یا دبیر با حساب فراهوش وارد می‌شود و مستقیماً به همین جلسه متصل خواهد شد. نیازی به باز بودن پنل در تب دیگر نیست.</p>
   <form id="hostLoginForm">
    <label for="hostRole">نوع حساب
     <select id="hostRole"><option value="manager">مدیر مدرسه</option><option value="teacher">دبیر</option></select>
@@ -54,7 +54,7 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
    <label for="hostSchoolCode">کد مدرسه<input id="hostSchoolCode" maxlength="40" autocomplete="organization" required placeholder="کد مدرسه"></label>
    <label for="hostUsername">نام کاربری<input id="hostUsername" maxlength="160" autocomplete="username" required placeholder="نام کاربری"></label>
    <label for="hostPassword">رمز عبور<input id="hostPassword" type="password" maxlength="1024" autocomplete="current-password" required placeholder="رمز عبور"></label>
-   <button id="hostLoginSubmit" type="submit">ورود و ادامه به جلسه</button>
+   <button id="hostLoginSubmit" type="submit">ورود میزبان و اتصال به جلسه</button>
   </form>
  </section>
  <section class="panel" id="selector">
@@ -102,7 +102,7 @@ function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnTo
 $("back").addEventListener("click",returnToPanel);
 function offerEntry(room,scheduleEntryId,adHoc=null){
  const button=document.createElement("button");button.className="room";
- button.textContent="ورود به "+(room.title||room.subject||"جلسه آنلاین");
+ button.textContent=adHoc?"ورود میزبان به جلسه":"ورود به "+(room.title||room.subject||"جلسه آنلاین");
  button.addEventListener("click",()=>enterRoom(room,scheduleEntryId,adHoc));
  $("roomList").replaceChildren(button);
  $("selector").classList.remove("hidden");
@@ -253,7 +253,7 @@ async function boot(){
    $("selector").classList.add("hidden");
    $("hostLogin").classList.remove("hidden");
    $("hostRole").value=query.has("meeting_id")?"manager":"teacher";
-   say("برای ورود میزبان یا عضو مدرسه، اطلاعات حساب فراهوش را در همین صفحه وارد کنید.");
+   say("برای ورود میزبان، اطلاعات حساب فراهوش را در فرم زیر وارد کنید.");
    $("hostLoginForm").addEventListener("submit",async event=>{
     event.preventDefault();
     const submit=$("hostLoginSubmit");submit.disabled=true;
