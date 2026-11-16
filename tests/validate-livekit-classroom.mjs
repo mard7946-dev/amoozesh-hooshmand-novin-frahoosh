@@ -58,7 +58,7 @@ assert.match(meetingsFunction, /createLiveKitRoom/);
 assert.match(meetingsFunction, /deleteLiveKitRoom/);
 assert.doesNotMatch(meetingsFunction, /CLOUDFLARE_REALTIME_API_TOKEN|cloudflare\(/i);
 assert.match(livekitHelper, /roomCreate:\s*true/);
-assert.match(livekitHelper, /canPublishData:\s*false/);
+assert.match(livekitHelper, /canPublishData:\s*Boolean\(options\.host\)/, "Only authorized classroom hosts may publish whiteboard data");
 assert.match(livekitHelper, /canPublishSources/);
 assert.match(livekitHelper, /max_participants:\s*1000/);
 
