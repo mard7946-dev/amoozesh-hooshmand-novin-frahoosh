@@ -100,7 +100,8 @@ main{max-width:1200px;margin:0 auto;padding:22px 14px;display:grid;gap:12px}
     <button type="button" id="boardEraser">پاک‌کن</button>
     <button type="button" id="boardText">متن</button>
     <label>رنگ <input id="boardColor" type="color" value="#172536" aria-label="رنگ قلم"></label>
-    <label>ضخامت <input id="boardSize" type="range" min="1" max="18" value="4" aria-label="ضخامت قلم"></label>
+    <label>ضخامت قلم <input id="boardSize" type="range" min="1" max="18" value="4" aria-label="ضخامت قلم"></label>
+    <label>اندازه متن <input id="boardFontSize" type="range" min="12" max="36" value="20" aria-label="اندازه متن"></label>
     <input id="boardTextValue" type="text" maxlength="120" placeholder="متن برای درج روی تخته" aria-label="متن تخته">
     <button type="button" id="boardUndo">بازگردانی</button>
     <button type="button" id="boardClear">پاک‌کردن تخته</button>
@@ -131,7 +132,7 @@ const $=id=>document.getElementById(id);
 let profile=null,liveRoom=null,micOn=false,cameraOn=false,screenOn=false;
 const participantTiles=new Map();
 const BOARD_TOPIC="frahoosh-whiteboard-v1";
-let boardItems=[],boardCanEdit=false,boardMode="pen",boardDrawing=false,boardCurrent=null;
+let boardItems=[],boardCanEdit=false,boardMode="pen",boardDrawing=false,boardCurrent=null,boardSnapshotParts=new Map();
 const boardCanvas=$("whiteboard"),boardCtx=boardCanvas.getContext("2d");
 function resizeBoard(){
  const width=Math.max(280,boardCanvas.clientWidth||640);
@@ -143,7 +144,7 @@ function renderBoard(){
  for(const item of boardItems){
   if(item.type==="text"){
    boardCtx.globalCompositeOperation="source-over";boardCtx.fillStyle=item.color;
-   boardCtx.font=`18px Tahoma, sans-serif`;boardCtx.textAlign="right";
+   boardCtx.font=`${item.fontSize||20}px Tahoma, sans-serif`;boardCtx.textAlign="right";
    boardCtx.fillText(item.text,item.x*boardCanvas.width,item.y*boardCanvas.height);
    continue;
   }
@@ -160,6 +161,14 @@ function renderBoard(){
 function boardPoint(event){
  const rect=boardCanvas.getBoundingClientRect();
  return {x:Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height))};
+}
+async function sendBoardSnapshot(){
+ if(!liveRoom||!boardCanEdit)return;
+ const snapshotId=crypto.randomUUID(),chunkSize=5,total=Math.max(1,Math.ceil(boardItems.length/chunkSize));
+ for(let index=0;index<total;index++){
+  const message={type:"snapshot-part",snapshotId,index,total,items:boardItems.slice(index*chunkSize,(index+1)*chunkSize)};
+  await sendBoardMessage(message);
+ }
 }
 async function sendBoardMessage(message){
  if(!liveRoom||!boardCanEdit)return;
@@ -180,9 +189,9 @@ function setBoardEditor(enabled){
 }
 function receiveBoardMessage(message){
  if(!message||typeof message!=="object")return;
- if(message.type==="snapshot"&&Array.isArray(message.items)){boardItems=message.items.slice(-8);renderBoard();}
- if(message.type==="stroke"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-8);renderBoard();}
- if(message.type==="text"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-8);renderBoard();}
+ if(message.type==="snapshot-part"&&typeof message.snapshotId==="string"&&Array.isArray(message.items)){const part=boardSnapshotParts.get(message.snapshotId)||{total:message.total,parts:[]};part.parts[message.index]=message.items;boardSnapshotParts.set(message.snapshotId,part);if(part.parts.filter(Boolean).length===part.total){boardItems=part.parts.flat().slice(-40);boardSnapshotParts.delete(message.snapshotId);renderBoard();}}
+ if(message.type==="stroke"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
+ if(message.type==="text"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
  if(message.type==="undo"){boardItems.pop();renderBoard();}
  if(message.type==="clear"){boardItems=[];renderBoard();}
 }
@@ -192,8 +201,8 @@ boardCanvas.addEventListener("pointerdown",event=>{
  const point=boardPoint(event);
  if(boardMode==="text"){
   const value=$("boardTextValue").value.trim();if(!value){say("ابتدا متن را در کادر تخته بنویسید.");return;}
-  const item={type:"text",text:value,x:point.x,y:point.y,color:$("boardColor").value};
-  boardItems.push(item);boardItems=boardItems.slice(-8);renderBoard();sendBoardMessage({type:"text",item});return;
+  const item={type:"text",text:value,x:point.x,y:point.y,color:$("boardColor").value,fontSize:Number($("boardFontSize").value)};
+  boardItems.push(item);boardItems=boardItems.slice(-40);renderBoard();sendBoardMessage({type:"text",item});return;
  }
  boardDrawing=true;boardCurrent={type:"stroke",mode:boardMode,color:$("boardColor").value,size:Number($("boardSize").value),points:[point]};
  boardItems.push(boardCurrent);renderBoard();
@@ -281,7 +290,7 @@ function bindRoomEvents(room){
  room.on(window.LivekitClient.RoomEvent.TrackSubscribed,(track,publication,participant)=>attachTrack(track,participant));
  room.on(window.LivekitClient.RoomEvent.TrackUnsubscribed,(track)=>detachTrack(track));
  room.on(window.LivekitClient.RoomEvent.TrackUnpublished,(publication)=>{if(publication.track)detachTrack(publication.track);});
- room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>{getTile(participant);if(boardCanEdit)sendBoardMessage({type:"snapshot",items:boardItems});});
+ room.on(window.LivekitClient.RoomEvent.ParticipantConnected,(participant)=>{getTile(participant);if(boardCanEdit)sendBoardSnapshot();});
  room.on(window.LivekitClient.RoomEvent.DataReceived,(payload,participant,kind,topic)=>{
   if(topic!==BOARD_TOPIC||!participant)return;
   try{receiveBoardMessage(JSON.parse(new TextDecoder().decode(payload)));}catch(_){}
