@@ -162,6 +162,14 @@ assert.ok(financeMigration.includes("students s") && financeMigration.includes("
 
 const bulletinPage = readFileSync("bulletin.html", "utf8");
 const userAdminPage = readFileSync("users.html", "utf8");
+const userAdminFunction = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+const usernameLoginFunction = readFileSync("supabase/functions/login-by-username/index.ts", "utf8");
+const schoolPortalLoginFunction = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
+assert.ok(userAdminPage.includes('id="createCounselor"') && userAdminPage.includes('action:"create_counselor"'), "Manager must be able to create a counselor account from user administration");
+assert.ok(userAdminFunction.includes('action === "create_counselor"') && userAdminFunction.includes('role: "advisor"') && userAdminFunction.includes('role: "advisor", is_active: true'), "Counselor creation must persist an advisor account and active school membership");
+assert.ok(userAdminFunction.includes('must_change_password: true') && userAdminFunction.includes('tenant_school_id: schoolId'), "New counselor credentials must be school-scoped and require first-login password change");
+assert.ok(usernameLoginFunction.includes('accountRole === "advisor" && requestedRole === "counselor"') && usernameLoginFunction.includes('change_counselor_initial_password'), "Counselor first-login password change must be enforced server-side");
+assert.ok(schoolPortalLoginFunction.includes('change_counselor_initial_password'), "School portal login must pass through the counselor password-change action");
 const counselingPage = readFileSync("counseling.html", "utf8");
 const examPage = readFileSync("exam-center.html", "utf8");
 assert.ok(financePage.includes("frahooshReturnToPanel('manager')"), "Finance back button must return to the manager panel");
