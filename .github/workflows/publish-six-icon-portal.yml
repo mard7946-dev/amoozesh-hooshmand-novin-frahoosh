@@ -18,6 +18,7 @@ on:
       - 'platform-admin.html'
       - 'settings.html'
       - 'reports.html'
+      - 'manager-assistant.html'
       - 'jalali-date.js'
       - 'reports-utils.js'
       - 'parent-management.html'
