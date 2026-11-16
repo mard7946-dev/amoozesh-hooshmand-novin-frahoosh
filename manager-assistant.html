@@ -51,7 +51,7 @@ function normalizedDate(value){
  let s=String(value).trim().replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
  if(/^\d{4}-\d{2}-\d{2}/.test(s)){
   const d=new Date(s.slice(0,10)+"T12:00:00");
-  if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).format(d).replace(/,/g,"").replace(/\s/g,"/");
+  if(!Number.isNaN(d.getTime())){const parts=new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);const part=k=>parts.find(x=>x.type===k)?.value||"";return part("year")+"/"+part("month").padStart(2,"0")+"/"+part("day").padStart(2,"0");}
  }
  const m=s.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
  return m?m[1]+"/"+m[2].padStart(2,"0")+"/"+m[3].padStart(2,"0"):"";
@@ -59,7 +59,7 @@ function normalizedDate(value){
 function todayJalali(){const p=new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=k=>p.find(x=>x.type===k)?.value||"";return v("year")+"/"+v("month").padStart(2,"0")+"/"+v("day").padStart(2,"0")}
 function nameOf(s){return [s?.first_name,s?.last_name].filter(Boolean).join(" ")||"بدون نام"}
 function addItem(parent,title,detail,badge){const d=document.createElement("div");d.className="item";const b=document.createElement("strong");b.textContent=title;const p=document.createElement("div");p.textContent=detail||"جزئیات ثبت نشده است.";d.append(b,p);if(badge){const x=document.createElement("span");x.className="pill";x.textContent=badge;d.append(x)}parent.append(d)}
-function isPending(status){const s=String(status??"").trim().toLowerCase();return !["approved","تأیید","تایید","تأییدشده","تاییدشده","done","completed","closed","بسته","ردشده","rejected","لغوشده","cancelled"].includes(s)}
+function isPending(status){const s=String(status??"").trim().toLowerCase();return ["pending","در انتظار","در انتظار بررسی","در انتظار تأیید","در انتظار تایید","ثبت‌شده","ثبت شده","submitted","waiting","needs_review"].includes(s)}
 function render(data){
  const students=data.students||[],teachers=data.teachers||[],classes=(data.teacherClasses||[]).filter(x=>x.active===1||x.active===true);
  const today=todayJalali(),todayRows=(data.attendance||[]).filter(x=>normalizedDate(x.attendance_date||x.date)===today);
