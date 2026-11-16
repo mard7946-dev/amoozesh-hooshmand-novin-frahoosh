@@ -50,8 +50,10 @@ Deno.serve(async (req: Request) => {
         .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
       if (flagError) return reply({ message: "وضعیت سرویس کلاس آنلاین بررسی نشد." }, 503);
       if (classroomFlag?.enabled !== true) return reply({ message: "سرویس کلاس آنلاین در حال حاضر فعال نیست." }, 403);
-      const guestName = clean(body?.guest_name).replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 50);
-      if (guestName.length < 2) return reply({ message: "نام نمایشی مهمان باید حداقل ۲ نویسه باشد." }, 400);
+      const guestName = clean(body?.guest_name).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").slice(0, 80);
+      if (guestName.length < 3 || guestName.split(" ").filter(Boolean).length < 2) {
+        return reply({ message: "نام و نام خانوادگی مهمان را کامل وارد کنید." }, 400);
+      }
       const tokenHash = await sha256Hex(guestToken);
       const { data: invite, error: inviteError } = await admin.from("classroom_guest_invites")
         .select("id,meeting_id,tenant_school_id,max_uses,use_count,expires_at,revoked_at")

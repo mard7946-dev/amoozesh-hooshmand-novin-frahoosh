@@ -5,6 +5,10 @@ const html = readFileSync("classroom/realtime.html", "utf8");
 assert.match(html, /livekit-client@2\.23\.0/);
 assert.match(html, /id="audioStart"/, "The room must offer a user-gesture audio playback fallback");
 assert.match(html, /AudioPlaybackStatusChanged/, "The room must detect blocked browser audio playback");
+assert.match(html, /id="hostLoginForm"/, "Classroom entry must offer same-page school account authentication");
+assert.match(html, /functions\/v1\/school-portal-login/, "Host entry must reuse the verified school login endpoint");
+assert.match(html, /id="hostSchoolCode"/, "Host entry must be scoped to an explicit school code");
+assert.doesNotMatch(html, /recoverSessionFromOpenPortal|پنل فراهوش را در همین مرورگر باز نگه دارید/, "Classroom entry must not depend on another open portal tab");
 assert.match(html, /querySelectorAll\("button"\)\.forEach\(button=>button.disabled=false\)/, "Leaving a room must allow users to re-enter");
 assert.doesNotMatch(html, /@cloudflare\/realtimekit/i);
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]

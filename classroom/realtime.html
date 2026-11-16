@@ -13,7 +13,7 @@ h1{font-size:18px;margin:0}small,.muted{color:var(--muted)}
 button,.tool{font:inherit;border:1px solid var(--line);border-radius:9px;background:#1a2940;color:var(--text);padding:10px 13px;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
 main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}label{display:block;color:var(--muted);font-size:12px;margin:9px 0}input,select{display:block;width:100%;margin-top:6px;padding:11px;border-radius:8px;border:1px solid var(--line);background:#0b1423;color:var(--text);font:inherit}form{display:grid;gap:6px}
 #roomList{display:grid;gap:8px}.room{width:100%;text-align:right;line-height:1.8}
 #meetingMount{min-height:420px;overflow:hidden;border-radius:12px;background:#111827;padding:10px}
 #participants{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -38,10 +38,24 @@ main{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px}
 </header>
 <main>
  <section class="panel hidden" id="guestEntry">
-  <strong>ورود مهمان به جلسه آزمایشی</strong>
-  <p class="muted">این لینک فقط برای یک بار ورود و همین جلسه صادر شده است. نام نمایشی خود را وارد کنید.</p>
-  <label for="guestName">نام نمایشی<input id="guestName" maxlength="50" autocomplete="name" placeholder="نام شما"></label>
-  <button id="guestJoin" type="button">ورود به جلسه آزمایشی</button>
+  <strong>ورود میهمان به جلسه</strong>
+  <p class="muted">برای ورود به جلسه، نام و نام خانوادگی خود را وارد کنید. حساب کاربری مدرسه لازم نیست.</p>
+  <label for="guestFirstName">نام<input id="guestFirstName" maxlength="30" autocomplete="given-name" required placeholder="نام"></label>
+  <label for="guestLastName">نام خانوادگی<input id="guestLastName" maxlength="40" autocomplete="family-name" required placeholder="نام خانوادگی"></label>
+  <button id="guestJoin" type="button">ورود به جلسه</button>
+ </section>
+ <section class="panel hidden" id="hostLogin">
+  <strong>ورود میزبان یا عضو مدرسه</strong>
+  <p class="muted">برای ورود امن، مدیر یا دبیر با حساب فراهوش خود وارد شود. لازم نیست پنل در تب دیگری باز باشد. میهمانان بیرون مدرسه باید از لینک اختصاصی میهمان استفاده کنند.</p>
+  <form id="hostLoginForm">
+   <label for="hostRole">نوع حساب
+    <select id="hostRole"><option value="manager">مدیر مدرسه</option><option value="teacher">دبیر</option></select>
+   </label>
+   <label for="hostSchoolCode">کد مدرسه<input id="hostSchoolCode" maxlength="40" autocomplete="organization" required placeholder="کد مدرسه"></label>
+   <label for="hostUsername">نام کاربری<input id="hostUsername" maxlength="160" autocomplete="username" required placeholder="نام کاربری"></label>
+   <label for="hostPassword">رمز عبور<input id="hostPassword" type="password" maxlength="1024" autocomplete="current-password" required placeholder="رمز عبور"></label>
+   <button id="hostLoginSubmit" type="submit">ورود و ادامه به جلسه</button>
+  </form>
  </section>
  <section class="panel" id="selector">
   <strong>کلاس‌های مجاز</strong>
@@ -74,31 +88,14 @@ const labels={manager:"مدیر",deputy:"معاون",teacher:"دبیر",student:
 const $=id=>document.getElementById(id);
 let profile=null,liveRoom=null,micOn=false,cameraOn=false,screenOn=false;
 const participantTiles=new Map();
-async function recoverSessionFromOpenPortal(){
- if(accessToken||!('BroadcastChannel' in window))return Boolean(accessToken);
- const channel=new BroadcastChannel('frahoosh-classroom-session-v1');
- const requestId=crypto.randomUUID();
- return await new Promise(resolve=>{
-  let settled=false;
-  const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);channel.close();resolve(value);};
-  const timer=setTimeout(()=>finish(false),1800);
-  channel.addEventListener('message',event=>{
-   const data=event.data||{};
-   if(data.type!=='classroom-session-response'||data.requestId!==requestId||typeof data.access_token!=='string'||!data.access_token)return;
-   accessToken=data.access_token;
-   activeRole=String(data.active_role||activeRole||'');
-   sessionStorage.setItem('frahoosh_novin_access_token',accessToken);
-   if(activeRole)sessionStorage.setItem('frahoosh_novin_role',activeRole);
-   finish(true);
-  });
-  channel.postMessage({type:'classroom-session-request',requestId});
- });
-}
 function say(text){$("status").textContent=text;$("notice").textContent=text;}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
  const data=await response.json().catch(()=>({}));
- if(!response.ok||!data.ok)throw new Error(data.message||"درخواست به سرور انجام نشد.");
+ if(!response.ok||!data.ok){
+  if(response.status===401&&accessToken){accessToken="";sessionStorage.removeItem("frahoosh_novin_access_token");sessionStorage.removeItem("frahoosh_novin_role");$("selector").classList.add("hidden");$("hostLogin").classList.remove("hidden");}
+  throw new Error(data.message||"درخواست به سرور انجام نشد.");
+ }
  return data;
 }
 function returnToPanel(){if(window.frahooshReturnToPanel)window.frahooshReturnToPanel(profile?.role||activeRole||"teacher");else location.href="../index.html";}
@@ -170,8 +167,9 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
  const buttons=$("roomList").querySelectorAll("button");buttons.forEach(button=>button.disabled=true);
  try{
   say("در حال بررسی مجوز زنگ و دریافت توکن امن رسانه…");
+  const guestFullName=[$("guestFirstName").value.trim(),$("guestLastName").value.trim()].filter(Boolean).join(" ");
   const credentials=guestMode
-   ? await postFunction("classroom-realtime-token",{guest_token:guestToken,guest_name:$("guestName").value.trim()})
+   ? await postFunction("classroom-realtime-token",{guest_token:guestToken,guest_name:guestFullName})
    : await postFunction("classroom-realtime-token",adHoc?{meeting_id:adHoc.id,join_code:adHoc.code,active_role:activeRole}:{room_id:Number(room.id),schedule_entry_id:Number(scheduleEntryId||0),active_role:activeRole});
   const sdk=window.LivekitClient;
   if(!sdk||!sdk.Room)throw new Error("کتابخانهٔ کلاس زنده بارگذاری نشد؛ صفحه را دوباره باز کنید.");
@@ -240,19 +238,44 @@ async function boot(){
    guestMode=true;
    $("selector").classList.add("hidden");
    $("guestEntry").classList.remove("hidden");
-   $("status").textContent="لینک مهمان شناسایی شد؛ نام نمایشی را وارد کنید.";
-   $("notice").textContent="دسترسی مهمان فقط به همین جلسه محدود است؛ میکروفن و دوربین در ابتدا خاموش هستند.";
+   $("status").textContent="لینک میهمان شناسایی شد؛ نام و نام خانوادگی را وارد کنید.";
+   $("notice").textContent="دسترسی میهمان فقط به همین جلسه محدود است؛ میکروفن و دوربین در ابتدا خاموش هستند.";
    $("guestJoin").addEventListener("click",async()=>{
-    const name=$("guestName").value.trim();
-    if(name.length<2){say("نام نمایشی را حداقل با ۲ نویسه وارد کنید.");return;}
+    const name=[$("guestFirstName").value.trim(),$("guestLastName").value.trim()].filter(Boolean).join(" ");
+    if($("guestFirstName").value.trim().length<2||$("guestLastName").value.trim().length<2){say("نام و نام خانوادگی را کامل وارد کنید.");return;}
     $("guestJoin").disabled=true;
     await enterRoom({id:"guest",title:"جلسه آزمایشی"},0);
     $("guestJoin").disabled=false;
    });
    return;
   }
-  if(!accessToken)await recoverSessionFromOpenPortal();
-  if(!accessToken){say("نشست ورود پیدا نشد؛ ابتدا پنل فراهوش را در همین مرورگر باز نگه دارید و دوباره از کلاس آنلاین وارد شوید.");return;}
+  if(!accessToken){
+   $("selector").classList.add("hidden");
+   $("hostLogin").classList.remove("hidden");
+   $("hostRole").value=query.has("meeting_id")?"manager":"teacher";
+   say("برای ورود میزبان یا عضو مدرسه، اطلاعات حساب فراهوش را در همین صفحه وارد کنید.");
+   $("hostLoginForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const submit=$("hostLoginSubmit");submit.disabled=true;
+    say("در حال بررسی حساب و عضویت فعال مدرسه…");
+    try{
+     const response=await fetch(SUPABASE_URL+"/functions/v1/school-portal-login",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},body:JSON.stringify({username:$("hostUsername").value.trim(),password:$("hostPassword").value,role:$("hostRole").value,school_code:$("hostSchoolCode").value.trim()})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok||!data.session?.access_token||!data.user?.id){
+      if(response.status===428&&data.must_change_password)throw new Error("رمز اولیه این حساب باید ابتدا از مسیر ورود فراهوش تغییر کند؛ سپس دوباره به این صفحه برگردید.");
+      throw new Error(data.message||"ورود انجام نشد؛ اطلاعات حساب و کد مدرسه را بررسی کنید.");
+     }
+     accessToken=data.session.access_token;activeRole=$("hostRole").value;profile=data.profile||{role:activeRole};
+     sessionStorage.setItem("frahoosh_novin_access_token",accessToken);
+     sessionStorage.setItem("frahoosh_novin_role",activeRole);
+     if(data.profile?.school_id)sessionStorage.setItem("frahoosh_novin_school_id",data.profile.school_id);
+     if(data.profile?.school_name)sessionStorage.setItem("frahoosh_novin_school_name",data.profile.school_name);
+     $("hostPassword").value="";
+     location.reload();
+    }catch(error){say(error.message||"ورود انجام نشد.");submit.disabled=false;}
+   },{once:true});
+   return;
+  }
   const requestedMeetingId=query.get("meeting_id")||"";
   const requestedJoinCode=query.get("join_code")||"";
   if(requestedMeetingId){
