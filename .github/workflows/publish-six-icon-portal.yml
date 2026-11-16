@@ -36,6 +36,7 @@ on:
       - 'classroom.html'
       - 'classroom/index.html'
       - 'classroom/realtime.html'
+      - 'classroom/assets/**'
       - 'classroom/schedule.html'
       - 'classroom/management.html'
       - 'classroom/meetings.html'
@@ -88,6 +89,8 @@ jobs:
           mkdir -p _site/classroom
           cp classroom/index.html _site/classroom/index.html
           cp classroom/realtime.html _site/classroom/realtime.html
+          mkdir -p _site/classroom/assets
+          cp classroom/assets/frahoosh-golden-brain.svg _site/classroom/assets/
           cp classroom/schedule.html _site/classroom/schedule.html
           cp classroom/management.html classroom/weekly-schedule-import.js _site/classroom/
           cp classroom/meetings.html _site/classroom/meetings.html
