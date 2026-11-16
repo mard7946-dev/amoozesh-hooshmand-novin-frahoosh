@@ -180,9 +180,9 @@ function setBoardEditor(enabled){
 }
 function receiveBoardMessage(message){
  if(!message||typeof message!=="object")return;
- if(message.type==="snapshot"&&Array.isArray(message.items)){boardItems=message.items.slice(-40);renderBoard();}
- if(message.type==="stroke"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
- if(message.type==="text"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-40);renderBoard();}
+ if(message.type==="snapshot"&&Array.isArray(message.items)){boardItems=message.items.slice(-8);renderBoard();}
+ if(message.type==="stroke"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-8);renderBoard();}
+ if(message.type==="text"&&message.item){boardItems.push(message.item);boardItems=boardItems.slice(-8);renderBoard();}
  if(message.type==="undo"){boardItems.pop();renderBoard();}
  if(message.type==="clear"){boardItems=[];renderBoard();}
 }
@@ -193,7 +193,7 @@ boardCanvas.addEventListener("pointerdown",event=>{
  if(boardMode==="text"){
   const value=$("boardTextValue").value.trim();if(!value){say("ابتدا متن را در کادر تخته بنویسید.");return;}
   const item={type:"text",text:value,x:point.x,y:point.y,color:$("boardColor").value};
-  boardItems.push(item);boardItems=boardItems.slice(-40);renderBoard();sendBoardMessage({type:"text",item});return;
+  boardItems.push(item);boardItems=boardItems.slice(-8);renderBoard();sendBoardMessage({type:"text",item});return;
  }
  boardDrawing=true;boardCurrent={type:"stroke",mode:boardMode,color:$("boardColor").value,size:Number($("boardSize").value),points:[point]};
  boardItems.push(boardCurrent);renderBoard();
@@ -202,7 +202,7 @@ boardCanvas.addEventListener("pointermove",event=>{
  if(!boardDrawing||!boardCurrent)return;
  const point=boardPoint(event),last=boardCurrent.points[boardCurrent.points.length-1];
  if(Math.hypot((point.x-last.x)*boardCanvas.width,(point.y-last.y)*boardCanvas.height)<2)return;
- boardCurrent.points.push(point);if(boardCurrent.points.length>160)boardCurrent.points=boardCurrent.points.filter((_,i)=>i%2===0);
+ boardCurrent.points.push(point);if(boardCurrent.points.length>96)boardCurrent.points=boardCurrent.points.filter((_,i)=>i%2===0);
  renderBoard();
 });
 function finishBoardStroke(){
