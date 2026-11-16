@@ -17,9 +17,9 @@ assert.match(html, /دبیرستان سردار شهید حاجی‌زاده ۲/
 assert.match(html, /سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق/);
 assert.match(html, /frahoosh-golden-brain\.svg/);
 assert.match(readFileSync("classroom/assets/frahoosh-golden-brain.svg", "utf8"), /<svg/);
-assert.match(hostLoginFunction, /from\\("school_memberships"\\)/, "Full-name host login must verify active school membership");
+assert.match(hostLoginFunction, /from\("school_memberships"\)/, "Full-name host login must verify active school membership");
 assert.match(hostLoginFunction, /school-portal-login/, "Host login must delegate password verification to the existing secure portal login");
-assert.match(supabaseConfig, /\\[functions\\.classroom-host-login\\][\\s\\S]*verify_jwt = false/);
+assert.match(supabaseConfig, /\[functions\.classroom-host-login\][\s\S]*verify_jwt = false/);
 assert.match(meetingsHtml, /id="duration" type="time"/, "Meeting duration must use a digital time control");
 assert.match(meetingsHtml, /duration_minutes:\\(\\(\\)=>/, "Digital duration must be converted to minutes for the existing API");
 assert.doesNotMatch(html, /recoverSessionFromOpenPortal|پنل فراهوش را در همین مرورگر باز نگه دارید/, "Classroom entry must not depend on another open portal tab");
