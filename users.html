@@ -11,6 +11,18 @@
 </style></head>
 <body><main>
 <header><div><h1>مدیریت کاربران و نقش‌ها</h1><p>نقش و عضویت کاربران از پایگاه داده مدرسه خوانده و همان‌جا ذخیره می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
+<section class="card" id="createCounselorCard">
+<h2>ایجاد حساب مشاور مدرسه</h2>
+<p>برای مشاور نام کاربری و رمز اولیه تعیین کنید. حساب فقط به همین مدرسه متصل می‌شود و تغییر رمز در نخستین ورود اجباری است؛ ایمیل دعوت لازم نیست.</p>
+<div class="upload-row">
+<label class="upload-box">نام و نام خانوادگی مشاور<input id="counselorName" type="text" minlength="3" maxlength="120" autocomplete="name" required style="display:block;width:100%;margin-top:8px"></label>
+<label class="upload-box">نام کاربری عددی (۸ تا ۱۲ رقم)<input id="counselorUsername" type="text" inputmode="numeric" pattern="[0-9۰-۹]{8,12}" maxlength="12" autocomplete="off" required style="display:block;width:100%;margin-top:8px"></label>
+<label class="upload-box">شماره همراه (اختیاری)<input id="counselorPhone" type="tel" inputmode="tel" placeholder="09123456789" style="display:block;width:100%;margin-top:8px"></label>
+<label class="upload-box">رمز اولیه قوی<input id="counselorPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password" required style="display:block;width:100%;margin-top:8px"><small>حداقل ۱۰ نویسه، شامل حرف بزرگ، حرف کوچک، عدد و نماد.</small></label>
+</div>
+<div class="actions"><button class="btn primary" id="createCounselor" type="button">ساخت حساب مشاور</button></div>
+<div id="counselorCreateStatus" class="status" role="status" aria-live="polite">حساب مشاور پس از ثبت در فهرست کاربران همین مدرسه نمایش داده می‌شود.</div>
+</section>
 <section class="card"><h2>پرونده معاونین، دبیران و دانش‌آموزان</h2><p>برای دیدن پرونده، گروه را انتخاب کنید و روی نام فرد بزنید. اطلاعات این بخش از پایگاه داده مدرسه خوانده می‌شود.</p><div class="profile-groups" id="profileGroups"><button class="btn profile-group" data-category="deputy" aria-pressed="false">معاونین</button><button class="btn profile-group" data-category="teacher" aria-pressed="false">دبیران</button><button class="btn profile-group" data-category="student" aria-pressed="true">دانش‌آموزان</button><button class="btn" id="reloadProfiles">بارگذاری پرونده‌ها</button></div><div class="actions"><input id="profileSearch" type="search" placeholder="جست‌وجوی نام یا کد ملی"><span class="pill" id="profileCount">در حال بارگذاری…</span></div><div id="profileStatus" class="status" role="status">در حال دریافت پرونده‌ها…</div><div class="profile-grid" id="profileList"></div><div class="profile-detail" id="profileDetail" hidden></div></section>
 
 <section class="card" id="teacherAccountRecovery"><h2>بازیابی رمز فردی دبیران</h2><p>نام یا نام خانوادگی دبیر را جست‌وجو کنید، حساب درست را انتخاب کنید و فقط رمز همان حساب را بازیابی کنید.</p><div class="actions"><input id="teacherAccountSearch" type="search" placeholder="جست‌وجوی نام یا نام خانوادگی دبیر" aria-label="جست‌وجوی دبیر برای بازیابی رمز فردی"><select id="teacherAccountPicker" aria-label="انتخاب دبیر برای بازیابی رمز فردی"><option value="">انتخاب دبیر…</option></select><button class="btn" id="resetSelectedTeacherAccount" type="button" disabled>بازیابی رمز همین دبیر</button></div><div id="teacherResetStatus" class="status" role="status" aria-live="polite">با انتخاب دبیر، دکمهٔ بازیابی فعال می‌شود.</div></section>
@@ -160,6 +172,23 @@ document.getElementById("resetAllStudentAccounts").addEventListener("click",asyn
  finally{button.disabled=false}
 });
 document.getElementById("reloadProfiles").addEventListener("click",loadProfiles);
+document.getElementById("createCounselor").addEventListener("click",async()=>{
+ const button=document.getElementById("createCounselor"),statusBox=document.getElementById("counselorCreateStatus");
+ const display_name=document.getElementById("counselorName").value.trim();
+ const username=document.getElementById("counselorUsername").value.trim();
+ const password=document.getElementById("counselorPassword").value;
+ const phone=document.getElementById("counselorPhone").value.trim();
+ if(display_name.length<3||!/^[0-9۰-۹]{8,12}$/.test(username)||!password){statusBox.className="status error";statusBox.textContent="نام کامل، نام کاربری عددی ۸ تا ۱۲ رقمی و رمز اولیه را وارد کنید.";return;}
+ if(!confirm("حساب مشاور «"+display_name+"» با نام کاربری "+username+" فقط برای همین مدرسه ساخته شود؟"))return;
+ button.disabled=true;statusBox.className="status";statusBox.textContent="در حال ساخت حساب مشاور و عضویت مدرسه…";
+ try{
+  const result=await api({action:"create_counselor",display_name,username,password,phone});
+  statusBox.className="status ok";statusBox.textContent=result.message+" نام کاربری: "+result.username+" · رمز اولیه همان رمزی است که ثبت کردید.";
+  document.getElementById("counselorName").value="";document.getElementById("counselorUsername").value="";document.getElementById("counselorPassword").value="";document.getElementById("counselorPhone").value="";
+  await load();
+ }catch(error){statusBox.className="status error";statusBox.textContent=error.message||"ساخت حساب مشاور ناموفق بود.";}
+ finally{button.disabled=false;}
+});
 
 document.getElementById("parentTemplate").addEventListener("click",()=>downloadTemplate([
  {"کد ملی ولی":"1234567890","نام ولی":"ولی نمونه الف","شماره تماس ولی":"09120000000","نسبت با دانش‌آموز":"مادر","کد ملی دانش‌آموز":"1111111111","نام دانش‌آموز":"فرزند اول","نام خانوادگی دانش‌آموز":"نمونه"},
