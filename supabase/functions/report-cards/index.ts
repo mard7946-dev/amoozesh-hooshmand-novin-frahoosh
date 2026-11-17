@@ -39,10 +39,11 @@ Deno.serve(async(req:Request)=>{
     admin.from("schools").select("id,name").eq("id",schoolId).maybeSingle(),
     admin.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",schoolId).order("last_name"),
     admin.from("teachers").select("id,first_name,last_name,subject,employment_status").eq("tenant_school_id",schoolId).order("last_name"),
-    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false})
+    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false}),
+    admin.from("school_report_card_teachers").select("grade,class_name,subject,teacher_name").eq("school_id",schoolId).order("grade").order("class_name")
    ]);
-   for(const x of [school,students,teachers,cards])if(x.error)throw new Error("دریافت اطلاعات کارنامه ناموفق بود.");
-   return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],cards:cards.data??[],subjects});
+   for(const x of [school,students,teachers,cards,teacherAssignments])if(x.error)throw new Error("دریافت اطلاعات کارنامه ناموفق بود.");
+   return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],teacherAssignments:teacherAssignments.data??[],cards:cards.data??[],subjects});
   }
   if(action==="save_teachers"){
    const grade=clean(body.grade,50),className=clean(body.class_name,80);
