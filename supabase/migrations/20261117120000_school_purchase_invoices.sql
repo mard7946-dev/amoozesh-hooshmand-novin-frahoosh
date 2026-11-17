@@ -92,7 +92,7 @@ with check (
   and created_by = auth.uid()
   and exists (
     select 1 from public.finance_purchase_invoices i
-    where i.id = finance_purchase_attachments.invoice_id and i.tenant_school_id = finance_purchase_attachments.tenant_school_id
+    where i.id = finance_purchase_payments.invoice_id and i.tenant_school_id = finance_purchase_payments.tenant_school_id
   )
 );
 
@@ -105,7 +105,7 @@ using (
   and private.frahoosh_current_role() = any(array['manager','مدیر','مدیریت','accountant'])
   and exists (
     select 1 from public.finance_purchase_invoices i
-    where i.id = invoice_id and i.tenant_school_id = tenant_school_id
+    where i.id = finance_purchase_attachments.invoice_id and i.tenant_school_id = finance_purchase_attachments.tenant_school_id
   )
 )
 with check (
