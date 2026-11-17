@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'family-communication.html'
+      - 'tests/validate-family-communication.mjs'
+      - 'family-communication.html'
+      - 'tests/validate-family-communication.mjs'
       - 'manager-assistant.html'
       - 'tests/validate-novin-portal.mjs'
       - 'question-bank.html'
