@@ -12,8 +12,10 @@ assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, an
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
 assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("function restDaysBetween(previousDate,nextDate)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty, count full rest days, and exclude holidays");
-const restDaysSource = page.match(/function restDaysBetween\\(previousDate,nextDate\\)\\{[^}]*\\}/)?.[0];
-assert.ok(restDaysSource, "Rest-day calculation must be present");
+const restDaysStart = page.indexOf("function restDaysBetween(");
+const restDaysEnd = page.indexOf("}", restDaysStart);
+assert.ok(restDaysStart >= 0 && restDaysEnd > restDaysStart, "Rest-day calculation must be present");
+const restDaysSource = page.slice(restDaysStart, restDaysEnd + 1);
 const restDaysBetween = new Function(restDaysSource + "; return restDaysBetween;")();
 assert.equal(restDaysBetween("2026-01-01", "2026-01-03"), 1, "Two calendar days apart must provide one full rest day");
 assert.equal(restDaysBetween("2026-01-01", "2026-01-05"), 3, "Four calendar days apart must provide three full rest days");
