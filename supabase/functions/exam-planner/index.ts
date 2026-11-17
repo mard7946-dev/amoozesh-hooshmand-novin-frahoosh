@@ -57,6 +57,8 @@ function validatePlan(body: any) {
       if (!label || subjects.has(label)) {
         throw new Error("نام درس‌ها باید کامل و یکتا باشند.");
       }
+      const difficulty = clean(subject.difficulty || "medium", 20);
+      if (!["heavy", "medium", "light"].includes(difficulty)) throw new Error("درجهٔ دشواری یکی از درس‌ها معتبر نیست.");
       subjects.add(label);
     }
   }
@@ -82,6 +84,16 @@ function validatePlan(body: any) {
   }
   const expected = body.grade_plans.reduce((n: number, g: any) => n + g.subjects.length, 0);
   if (body.schedule.length !== expected) throw new Error("تعداد درس‌های برنامه با فهرست درس‌های پایه‌ها برابر نیست.");
+  for (const grade of body.grade_plans) {
+    const ordered = body.schedule.filter((item: any) => clean(item.grade, 40) === clean(grade.grade, 40))
+      .sort((a: any, b: any) => clean(a.exam_date, 10).localeCompare(clean(b.exam_date, 10)));
+    for (let i = 1; i < ordered.length; i++) {
+      const previous = grade.subjects.find((s: any) => clean(s.subject, 100) === clean(ordered[i - 1].subject, 100));
+      const gap = previous?.difficulty === "heavy" ? 3 : previous?.difficulty === "light" ? 1 : 2;
+      const daysBetween = Math.round((Date.parse(ordered[i].exam_date + "T12:00:00Z") - Date.parse(ordered[i - 1].exam_date + "T12:00:00Z")) / 86400000);
+      if (daysBetween < gap) throw new Error("فاصلهٔ مطالعهٔ پایه " + clean(grade.grade, 40) + " رعایت نشده است؛ پس از هر درس باید فاصلهٔ متناسب با دشواری آن حفظ شود.");
+    }
+  }
   return { title, start, end };
 }
 
