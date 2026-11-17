@@ -258,9 +258,9 @@ $('savePurchaseInvoice').onclick=async()=>{
     if(file){
       const path=invoice.id+'/'+crypto.randomUUID()+'-'+file.name.replace(/[^A-Za-z0-9._-]/g,'_');
       const upload=await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':file.type,'x-upsert':'false'},body:file});
-      if(!upload.ok)throw new Error('فاکتور ثبت شد اما بارگذاری فایل ناموفق بود: '+await upload.text());
+      if(!upload.ok){purchaseMessage('فاکتور شماره '+invoice.invoice_number+' ثبت شد، اما بارگذاری پیوست ناموفق بود: '+await upload.text()+'؛ می‌توانی بعداً فاکتور را جداگانه پیوست کنی.');await loadPurchaseData();return;}
       try{await api('finance_purchase_attachments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({invoice_id:invoice.id,file_name:file.name,mime_type:file.type,storage_path:path})});}
-      catch(e){await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'DELETE',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN}}).catch(()=>{});throw e;}
+      catch(e){await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'DELETE',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN}}).catch(()=>{});purchaseMessage('فاکتور شماره '+invoice.invoice_number+' ثبت شد، اما ثبت مشخصات پیوست ناموفق بود: '+String(e?.message||e)+'؛ خود فاکتور محفوظ است.');await loadPurchaseData();return;}
     }
     $('purchaseInvoiceNumber').value='';$('purchaseInvoiceDate').value='';$('purchaseSupplier').value='';$('purchaseSupplierPhone').value='';$('purchaseDescription').value='';$('purchaseSubtotal').value='';$('purchaseDiscount').value='0';$('purchaseTax').value='0';$('purchaseTotal').value='';$('purchaseAttachment').value='';
     await loadPurchaseData();purchaseMessage('فاکتور خرید با موفقیت ثبت شد. اکنون می‌توانی پرداخت کامل یا مرحله‌ای آن را ثبت کنی.',true);
