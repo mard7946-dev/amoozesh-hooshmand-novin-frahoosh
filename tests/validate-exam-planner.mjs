@@ -11,7 +11,7 @@ const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "u
 assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
-assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("function restDaysBetween(previousDate,nextDate)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty, count full rest days, and exclude holidays");
+assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("function restDaysBetween(previousDate,nextDate)") && page.includes("excluded.includes(iso)"), "Generator must arrange subjects by difficulty, count full rest days, and exclude holidays");
 assert.ok(page.includes("function collectExamDates(") && page.includes("startTime+600*86400000"), "Generator must extend the usable calendar horizon instead of failing at the requested end date");
 const dateHelperStart = page.indexOf("function collectExamDates(");
 const dateHelperEnd = page.indexOf("\nfunction generateSchedule()", dateHelperStart);
