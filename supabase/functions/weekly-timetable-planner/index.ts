@@ -122,6 +122,7 @@ Deno.serve(async (req: Request) => {
       if (requirements.length > 1000 || teacherWorkdays.length > 500 || slots.length > 500) {
         return reply({ message: "حجم اطلاعات برنامه از حد مجاز بیشتر است." }, 413);
       }
+      if (!await verifyRequirements(requirements)) return reply({ message: "یکی از تخصیص‌های درس/دبیر/کلاس در فهرست فعال همین مدرسه وجود ندارد." }, 400);
       const validation = validateWeeklyTimetable({ slots, requirements, teacher_workdays: teacherWorkdays });
       if (action === "validate") return reply({ ok: true, validation });
       if (action === "publish" && (!requirements.length || !slots.length || !validation.valid || validation.warnings.length)) {
