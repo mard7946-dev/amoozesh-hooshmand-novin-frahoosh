@@ -49,18 +49,22 @@ function validatePlan(body: any) {
       subjects.add(label);
     }
   }
-  const seen = new Set<string>();
+  const seen = new Set<string>(), gradeDays = new Set<string>();
   for (const item of body.schedule) {
     const grade = clean(item.grade, 40), subject = clean(item.subject, 100), date = clean(item.exam_date, 10);
-    const key = grade + "|" + subject;
+    const key = grade + "|" + subject, dayKey = grade + "|" + date;
+    const settings = body.grade_plans.find((g: any) => clean(g.grade, 40) === grade);
+    const declared = settings?.subjects?.find((s: any) => clean(s.subject, 100) === subject);
     if (!grades.has(grade) || !validDate(date) || date < start || date > end ||
-        !Number.isInteger(Number(item.rotation_no)) || seen.has(key)) {
-      throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر یا تکراری است.");
+        !Number.isInteger(Number(item.rotation_no)) || seen.has(key) || gradeDays.has(dayKey) ||
+        !declared || Number(declared.rotation_no) !== Number(item.rotation_no)) {
+      throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر، تکراری یا ناسازگار با فهرست درس‌ها است.");
     }
+    seen.add(key);
+    gradeDays.add(dayKey);
     if (body.holidays.includes(date) || !body.allowed_weekdays.includes(new Date(date + "T12:00:00Z").getUTCDay())) {
       throw new Error("برنامه شامل تاریخ تعطیل یا روز غیرمجاز است.");
     }
-    const settings = body.grade_plans.find((g: any) => clean(g.grade, 40) === grade);
     if (!settings || clean(item.start_time, 5) !== clean(settings.start_time, 5) ||
         clean(item.end_time, 5) !== clean(settings.end_time, 5)) {
       throw new Error("ساعت یکی از امتحان‌ها با تنظیم ساعت پایه مطابقت ندارد.");
