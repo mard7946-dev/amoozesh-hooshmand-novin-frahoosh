@@ -44,7 +44,7 @@ assert.match(api,/school_report_card_teachers/);
 assert.match(api,/teacherAssignments:teacherAssignments\.data/);
 assert.match(page,/id="executiveName"/);
 assert.match(page,/id="managerName"/);
-assert.match(page,/school-logo-watermark\.txt/);
+assert.match(page,/const logoUrl="data:image\\/jpeg;base64,/,"Logo data is embedded in the report page");
 assert.ok(logo.startsWith("/9j/")&&logo.endsWith("9k="),"Embedded school logo is a JPEG data payload");
 assert.match(portal,/name==='کارنامه میان‌ترم'/);
 assert.match(portal,/selectedRole\.id==='manager'\|\|selectedRole\.id==='deputy'/);
@@ -55,8 +55,7 @@ assert.match(page,/مدیریت آموزش و پرورش شهرستان قدس/)
 assert.match(page,/دبیرستان سردار شهید حاجی‌زاده ۲/);
 assert.match(page,/سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق/);
 assert.match(page,/کارنامه میان نوبت اول/);
-assert.match(page,/await Promise\.all\(images\.map\(img=>img\.decode/,"Printing waits for watermark and header logo decoding");
+assert.match(page,/img\.complete&&img\.naturalWidth>0/,"Printing waits for successful image loading");
 
 assert.match(page,/const logoUrl="data:image\/jpeg;base64,/,"Logo is embedded directly; printing does not depend on fetching a separate text asset");
 assert.doesNotMatch(page,/fetch\("assets\/school-logo-watermark\.txt"\)/,"No network fetch is required for the report-card logo");
-assert.match(page,/img\.complete&&img\.naturalWidth>0/,"Print waits for successful image load");
