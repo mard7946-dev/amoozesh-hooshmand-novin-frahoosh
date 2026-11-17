@@ -123,6 +123,7 @@ jobs:
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
       - name: Validate smart exam planner routing, security, and page syntax
+        if: always()
         run: node tests/validate-exam-planner.mjs
       - name: Validate unified family communication center
         run: node tests/validate-family-communication.mjs
@@ -148,6 +149,7 @@ jobs:
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
       - name: Type-check smart exam planner Edge Function
+        if: always()
         run: deno check supabase/functions/exam-planner/index.ts
       - name: Type-check manager password recovery Edge Function
         run: deno check supabase/functions/request-manager-password-recovery/index.ts
