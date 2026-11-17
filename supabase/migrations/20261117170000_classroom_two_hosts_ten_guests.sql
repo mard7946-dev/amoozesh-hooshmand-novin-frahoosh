@@ -39,6 +39,13 @@ as $$
      and revoked_at is null
      and expires_at > now()
      and use_count < max_uses
+     and exists (
+       select 1 from public.classroom_ad_hoc_meetings m
+        where m.id = classroom_guest_invites.meeting_id
+          and m.tenant_school_id = classroom_guest_invites.tenant_school_id
+          and m.status = 'active'
+          and m.expires_at > now()
+     )
   returning *;
 $$;
 revoke all on function public.claim_classroom_guest_invite(text) from public, anon, authenticated;
