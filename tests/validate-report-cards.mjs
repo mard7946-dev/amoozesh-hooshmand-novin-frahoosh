@@ -56,3 +56,7 @@ assert.match(page,/دبیرستان سردار شهید حاجی‌زاده ۲/)
 assert.match(page,/سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق/);
 assert.match(page,/کارنامه میان نوبت اول/);
 assert.match(page,/await Promise\.all\(images\.map\(img=>img\.decode/,"Printing waits for watermark and header logo decoding");
+
+assert.match(page,/const logoUrl="data:image\/jpeg;base64,/,"Logo is embedded directly; printing does not depend on fetching a separate text asset");
+assert.doesNotMatch(page,/fetch\("assets\/school-logo-watermark\.txt"\)/,"No network fetch is required for the report-card logo");
+assert.match(page,/img\.complete&&img\.naturalWidth>0/,"Print waits for successful image load");
