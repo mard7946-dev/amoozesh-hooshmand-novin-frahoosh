@@ -168,7 +168,10 @@ Deno.serve(async (req: Request) => {
       // Only active school managers/deputies may claim one of the two host seats.
       // The database RPC serializes claims so simultaneous joins cannot create a third host.
       let isHost = false;
-      if (["manager", "deputy"].includes(requestedRole)) {
+      const isMeetingCreator = adHocMeeting.created_by === authData.user.id;
+      // The manager who created the meeting owns the first reserved seat.
+      // Only a deputy may claim the second seat.
+      if ((requestedRole === "manager" && isMeetingCreator) || requestedRole === "deputy") {
         const { data: hostSeat, error: hostSeatError } = await admin.rpc("claim_classroom_meeting_host_slot", {
           p_meeting_id: adHocMeeting.id,
           p_school_id: adHocProfile.tenant_school_id,
