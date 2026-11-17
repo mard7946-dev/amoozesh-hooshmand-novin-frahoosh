@@ -10,7 +10,7 @@ async function getCaller(admin:any,token:string){
  if(error||!user)throw Object.assign(new Error("نشست ورود معتبر نیست؛ دوباره وارد شوید."),{status:401});
  const {data:account,error:accountError}=await admin.from("account_settings").select("auth_user_id,role,tenant_school_id").eq("auth_user_id",user.id).maybeSingle();
  const role=clean(account?.role).toLowerCase();
- if(accountError||!account||(!managerRoles.has(role)&&!executiveRoles.has(role)))throw Object.assign(new Error("فقط مدیر و معاون اجرایی مجاز به مدیریت کارنامه هستند."),{status:403});
+ if(accountError||!account)throw Object.assign(new Error("حساب کاربری مدرسه پیدا نشد."),{status:403});
  const schoolId=clean(account.tenant_school_id,80);
  if(!schoolId)throw Object.assign(new Error("شناسه مدرسه برای حساب شما ثبت نشده است."),{status:409});
  const {data:membership,error:membershipError}=await admin.from("school_memberships").select("id,role").eq("auth_user_id",user.id).eq("school_id",schoolId).eq("is_active",true).limit(1).maybeSingle();
@@ -39,7 +39,7 @@ Deno.serve(async(req:Request)=>{
     admin.from("schools").select("id,name").eq("id",schoolId).maybeSingle(),
     admin.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",schoolId).order("last_name"),
     admin.from("teachers").select("id,first_name,last_name,subject,employment_status").eq("tenant_school_id",schoolId).order("last_name"),
-    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false})
+    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false})
    ]);
    for(const x of [school,students,teachers,cards])if(x.error)throw new Error("دریافت اطلاعات کارنامه ناموفق بود.");
    return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],cards:cards.data??[],subjects});
@@ -62,7 +62,7 @@ Deno.serve(async(req:Request)=>{
    if(new Set(cleanSubjects.map((x:any)=>x.subject)).size!==subjects.length)throw new Error("هر درس باید دقیقاً یک بار ثبت شود.");
    const studentRef=studentId?"student:"+studentId:clean(student.ref,100);
    if(!studentRef||!studentRef.startsWith("manual:")&&!studentRef.startsWith("student:"))throw new Error("شناسه دانش‌آموز معتبر نیست.");
-   const payload={school_id:schoolId,student_ref:studentRef,student_id:studentId,student_name:studentName,grade,class_name:className,academic_year:academicYear,term,subjects:cleanSubjects,created_by:user.id,updated_at:new Date().toISOString()};
+   const payload={school_id:schoolId,student_ref:studentRef,student_id:studentId,student_name:studentName,grade,class_name:className,academic_year:academicYear,term,subjects:cleanSubjects,executive_name:clean(body.executive_name,120),manager_name:clean(body.manager_name,120),created_by:user.id,updated_at:new Date().toISOString()};
    const {data,error}=await admin.from("school_report_cards").upsert(payload,{onConflict:"school_id,student_ref,academic_year,term"}).select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,created_at,updated_at").single();
    if(error)throw new Error("ذخیره کارنامه انجام نشد؛ ساختار پایگاه داده یا اطلاعات را بررسی کنید.");
    return reply({card:data,message:"کارنامه با موفقیت ذخیره شد."});
