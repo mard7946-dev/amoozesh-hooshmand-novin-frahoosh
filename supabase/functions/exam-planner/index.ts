@@ -54,7 +54,7 @@ function validatePlan(body: any) {
     const grade = clean(item.grade, 40), subject = clean(item.subject, 100), date = clean(item.exam_date, 10);
     const key = grade + "|" + subject;
     if (!grades.has(grade) || !validDate(date) || date < start || date > end ||
-        !Number.isInteger(Number(item.rotation_no)) || !seen.add(key)) {
+        !Number.isInteger(Number(item.rotation_no)) || seen.has(key)) {
       throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر یا تکراری است.");
     }
     if (body.holidays.includes(date) || !body.allowed_weekdays.includes(new Date(date + "T12:00:00Z").getUTCDay())) {
