@@ -49,7 +49,10 @@ assert.match(legacyClassroomRpcMigration, /REVOKE EXECUTE ON FUNCTION public\.re
 assert.match(tokenFunction, /createLiveKitParticipantToken/);
 assert.match(tokenFunction, /classroom-authorize/);
 assert.match(tokenFunction, /if \(!activeRoles\.has\(requestedRole\)\) \{/);
-assert.match(tokenFunction, /const isHost = isCreator && requestedRole === "manager";/);
+assert.match(tokenFunction, /claim_classroom_meeting_host_slot/, "Ad-hoc meetings must reserve at most two host seats atomically");
+assert.match(tokenFunction, /\["manager", "deputy"\]\.includes\(requestedRole\)/, "Only active school managers and deputies may claim host seats");
+assert.doesNotMatch(tokenFunction, /const isHost = isCreator && requestedRole === "manager";/, "Host rights must not be limited to the meeting creator alone");
+assert.match(hostLoginFunction, /educational.*executive.*cultural/, "Host login must recognize the school's actual deputy role codes");
 assert.match(tokenFunction, /liveKitRoomName\.startsWith\("frahoosh-"\)/, "Legacy RealtimeKit meeting IDs must not be issued as LiveKit room tokens");
 assert.match(tokenFunction, /update\(\{ cloudflare_meeting_id: candidateRoomName \}\)/, "Existing scheduled room registry rows must migrate to a LiveKit room name");
 assert.match(meetingsFunction, /storedRoomName\.startsWith\("frahoosh-"\)/, "Ending a legacy meeting must not call LiveKit with a RealtimeKit ID");
