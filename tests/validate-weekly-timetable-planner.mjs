@@ -21,7 +21,7 @@ assert.ok(migration.includes("school_id") && migration.includes("auth.users"), "
 assert.ok(!/alter\\s+table\\s+public\\.weekly_schedule_entries|drop\\s+table\\s+public\\.weekly_schedule_entries/i.test(migration), "migration must not alter or drop the live online-class schedule table");
 assert.ok(api.includes("auth.getUser(token)") && api.includes("school_memberships") && api.includes("school_id"), "planner API must authenticate and scope every plan to the current school");
 assert.ok(api.includes('action === "publish"') && api.includes('action === "generate"'), "planner API must support publishing and automatic suggestions");
-assert.ok(validation.includes("week === \"even\"") && validation.includes("week === \"odd\""), "validation must inspect both week patterns");
+assert.ok(validation.includes('["even", "odd"] as const'), "validation must iterate both week patterns independently");
 
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]);
 assert.equal(scripts.length, 1, "planner page should have one application script");
