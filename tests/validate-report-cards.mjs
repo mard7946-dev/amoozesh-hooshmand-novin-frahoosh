@@ -4,7 +4,7 @@ const page=readFileSync("report-cards.html","utf8");
 const api=readFileSync("supabase/functions/report-cards/index.ts","utf8");
 const migration=readFileSync("supabase/migrations/20261118130000_professional_school_report_cards.sql","utf8");
 const portal=readFileSync("portal.html","utf8");
-const logo=readFileSync("assets/school-logo-watermark.txt","utf8").trim();
+const logo=readFileSync("assets/school-logo.svg","utf8").trim();
 const script=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
 assert.ok(script,"Report card page script exists");
 assert.doesNotThrow(()=>new Function(script),"Report card page JavaScript parses");
@@ -44,8 +44,9 @@ assert.match(api,/school_report_card_teachers/);
 assert.match(api,/teacherAssignments:teacherAssignments\.data/);
 assert.match(page,/id="executiveName"/);
 assert.match(page,/id="managerName"/);
-assert.ok(page.includes('const logoUrl="data:image/jpeg;base64,'),"Logo data is embedded in the report page");
-assert.ok(logo.startsWith("/9j/")&&logo.endsWith("9k="),"Embedded school logo is a JPEG data payload");
+assert.match(page,/const logoUrl="assets\/school-logo\.svg"/,"Report cards use the same school logo asset as student identity cards");
+assert.match(logo,/<svg[\s\S]*<\/svg>/,"School logo SVG asset exists and is valid markup");
+assert.doesNotMatch(page,/data:image\/jpeg;base64,/,"Obsolete embedded JPEG payload is removed");
 assert.match(portal,/name==='کارنامه میان‌ترم'/);
 assert.match(portal,/selectedRole\.id==='manager'\|\|selectedRole\.id==='deputy'/);
 console.log("Professional report card feature checks passed.");
@@ -55,7 +56,8 @@ assert.match(page,/مدیریت آموزش و پرورش شهرستان قدس/)
 assert.match(page,/دبیرستان سردار شهید حاجی‌زاده ۲/);
 assert.match(page,/سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق/);
 assert.match(page,/کارنامه میان نوبت اول/);
-assert.match(page,/img\.complete&&img\.naturalWidth>0/,"Printing waits for successful image loading");
+assert.match(page,/image\.decode\(\)/,"Printing pre-decodes the shared logo asset");
+assert.match(page,/z-index:0!important/,"Watermark stays above the report background");
 
 
 assert.doesNotMatch(page,/fetch\("assets\/school-logo-watermark\.txt"\)/,"No network fetch is required for the report-card logo");
