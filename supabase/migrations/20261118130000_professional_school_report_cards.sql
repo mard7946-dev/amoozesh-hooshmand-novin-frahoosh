@@ -9,6 +9,8 @@ create table if not exists public.school_report_cards (
   academic_year text not null,
   term text not null default 'میان‌ترم',
   subjects jsonb not null default '[]'::jsonb check (jsonb_typeof(subjects) = 'array'),
+  executive_name text not null default '',
+  manager_name text not null default '',
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
