@@ -143,8 +143,12 @@ Deno.serve(async (req: Request) => {
     if (!manager && !deputy) return reply({ message: "فقط مدیر و معاونت مجاز به مدیریت برنامهٔ امتحانات هستند." }, 403);
     if (action === "grade_counts") {
       if (!Array.isArray(body.grades) || !body.grades.length || body.grades.length > 20) return reply({ message: "فهرست پایه‌ها معتبر نیست." }, 400);
-      const unique = [...new Set(body.grades.map((g: unknown) => clean(g, 40)).filter(Boolean))];
-      if (unique.length !== body.grades.length) return reply({ message: "نام پایه‌ها باید کامل و یکتا باشد." }, 400);
+      const unique: string[] = [];
+      for (const rawGrade of body.grades as unknown[]) {
+        const grade = clean(rawGrade, 40);
+        if (!grade || unique.includes(grade)) return reply({ message: "نام پایه‌ها باید کامل و یکتا باشد." }, 400);
+        unique.push(grade);
+      }
       const counts = [];
       for (const grade of unique) {
         const pupils = await getStudentsForGrade(admin, schoolId, grade);
