@@ -12,6 +12,15 @@ assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, an
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
 assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("function restDaysBetween(previousDate,nextDate)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty, count full rest days, and exclude holidays");
+assert.ok(page.includes("function collectExamDates(") && page.includes("startTime+600*86400000"), "Generator must extend the usable calendar horizon instead of failing at the requested end date");
+const dateHelperStart = page.indexOf("function collectExamDates(");
+const dateHelperEnd = page.indexOf("}", dateHelperStart);
+const collectDatesSource = page.slice(dateHelperStart, dateHelperEnd + 1);
+const collectDates = new Function(collectDatesSource + "; return collectExamDates;")();
+const expandedDates = collectDates("2026-01-01", "2026-01-05", [4], []);
+assert.ok(expandedDates.length > 1 && expandedDates[0] === "2026-01-01" && expandedDates.at(-1) > "2026-01-05", "A narrow requested range must automatically include later allowed weekdays");
+const holidayDates = collectDates("2026-01-01", "2026-01-05", [4], ["2026-01-01"]);
+assert.ok(!holidayDates.includes("2026-01-01"), "Holiday exclusions must remain effective after automatic range extension");
 const restDaysStart = page.indexOf("function restDaysBetween(");
 const restDaysEnd = page.indexOf("}", restDaysStart);
 assert.ok(restDaysStart >= 0 && restDaysEnd > restDaysStart, "Rest-day calculation must be present");
