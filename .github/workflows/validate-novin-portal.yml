@@ -114,6 +114,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate unified family communication center
+        run: node tests/validate-family-communication.mjs
       - name: Validate comprehensive student dossier and school isolation
         run: node tests/validate-student-dossier.mjs
       - name: Validate central question bank role boundaries and ingestion
