@@ -28,7 +28,7 @@ assert.match(capacityMigration, /check \(max_uses between 1 and 10\)/i);
 assert.match(capacityMigration, /claim_classroom_guest_invite/);
 assert.match(capacityMigration, /claim_classroom_meeting_host_slot/);
 assert.match(capacityMigration, /existing_count >= 2/);
-assert.match(capacityMigration, /select id, tenant_school_id, created_by[\\s\\S]*where status = 'active'/);
+assert.match(capacityMigration, /select id, tenant_school_id, created_by[\s\S]*where status = 'active'/);
 assert.match(token, /admin\.rpc\("claim_classroom_guest_invite"/);
 assert.match(token, /admin\.rpc\("claim_classroom_meeting_host_slot"/);
 assert.match(token, /requestedRole === "manager" && isMeetingCreator/);
