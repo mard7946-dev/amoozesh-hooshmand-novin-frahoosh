@@ -8,7 +8,7 @@ const logo=readFileSync("assets/school-logo-watermark.txt","utf8").trim();
 const script=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
 assert.ok(script,"Report card page script exists");
 assert.doesNotThrow(()=>new Function(script),"Report card page JavaScript parses");
-for(const subject of ["عربی","علوم","زبان","ریاضی","مطالعات","فارسی","انضباط"])assert.ok(page.includes(subject)&&api.includes(subject),subject+" is present in the form and API");
+for(const subject of ["ریاضی","عربی","فارسی","مطالعات","زبان","علوم","انضباط"])assert.ok(page.includes(subject)&&api.includes(subject),subject+" is present in the form and API");
 assert.match(api,/managerRoles/);
 assert.match(api,/executive_deputy/);
 assert.doesNotMatch(api,/administrator/);
@@ -23,7 +23,7 @@ assert.match(migration,/revoke all on public\.school_report_cards from anon, aut
 assert.match(migration,/grant all on public\.school_report_cards to service_role/i);
 assert.match(page,/filter\(x=>x\.subject!=="انضباط"\)/);
 assert.match(page,/sorted\.indexOf\(Number\(value\)\)\+1/);
-assert.match(page,/Number\(x\.score\)<13/);
+assert.match(page,/Number\(x\.score\)<13/);\nassert.match(page,/x.subject!=="انضباط"&&Number\(x.score\)<13/);\nassert.doesNotMatch(page,/status:Number\(x.score\)<13\?"نیاز به کلاس تقویتی":"عادی"/);\nassert.match(page,/id="excelFile"/);\nassert.match(page,/id="importExcelBtn"/);\nassert.match(page,/id="downloadExcelTemplate"/);\nassert.match(page,/XLSX.read/);\nassert.match(page,/کددانشآموزی/);
 assert.match(page,/i\+=4/);
 assert.match(page,/print-sheet/);
 assert.match(page,/id="gradeFilter"/);
