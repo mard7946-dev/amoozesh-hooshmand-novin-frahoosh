@@ -20,7 +20,7 @@ const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const role=sessionStorage.getItem('frahoosh_novin_role')||'';
 const view=new URLSearchParams(location.search).get('view')||'';
 const $=id=>document.getElementById(id);
-const list=$('list');let profiles=[],schedules=[],selectedClass='',currentProfile=null;
+const list=$('list');let profiles=[],schedules=[],selectedClass='',currentProfile=null,academicData=null,academicDataError='';
 const nameOf=p=>String(p.display_name||[p.first_name,p.last_name].filter(Boolean).join(' ')||'بدون نام').trim();
 const norm=v=>String(v||'').trim().toLocaleLowerCase('fa');
 function setStatus(s,error=false){$('status').textContent=s;$('status').className='status'+(error?' error':'')}
@@ -56,6 +56,43 @@ function render(){
   if(!people.length)list.append(el('div','empty','دبیر یا کارمندی در اطلاعات ثبت‌شده پیدا نشد.'));
  }
 }
+function academicDate(v){if(!v)return '—';const raw=String(v);if(/^\\d{4}-\\d{2}-\\d{2}/.test(raw)){const d=new Date(raw.slice(0,10)+'T12:00:00');if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}return raw}
+function addAcademicTable(box,title,headers,rows,emptyText){
+ box.append(el('h2','',title+' · '+rows.length));
+ if(!rows.length){box.append(el('p','empty',emptyText));return}
+ const wrap=el('div','table-wrap'),table=document.createElement('table'),thead=document.createElement('thead'),headRow=document.createElement('tr');
+ for(const h of headers)headRow.append(el('th','',h));thead.append(headRow);
+ const body=document.createElement('tbody');
+ for(const values of rows){const row=document.createElement('tr');for(const value of values)row.append(el('td','',value===null||value===undefined||value===''?'—':String(value)));body.append(row)}
+ table.append(thead,body);wrap.append(table);box.append(wrap);
+}
+function renderStudentAcademicRecord(box,p){
+ if(!academicData){box.append(el('h2','','سوابق آموزشی'),el('p','empty',academicDataError||'سوابق آموزشی در حال حاضر دریافت نشد؛ فهرست پرونده‌ها همچنان در دسترس است.'));return}
+ const id=String(p.id),belongs=x=>String(x.student_id)===id;
+ const attendance=(academicData.attendance||[]).filter(belongs).sort((a,b)=>String(b.attendance_date||b.date||'').localeCompare(String(a.attendance_date||a.date||'')));
+ const grades=[...(academicData.grades||[]).filter(belongs).map(x=>({...x,_source:'ثبت نمره'})),...(academicData.studentGrades||[]).filter(belongs).map(x=>({...x,_source:'ارزشیابی دانش‌آموز'}))].sort((a,b)=>String(b.assessment_date||b.grade_date||b.created_at||'').localeCompare(String(a.assessment_date||a.grade_date||a.created_at||'')));
+ const discipline=(academicData.discipline||[]).filter(belongs).sort((a,b)=>String(b.incident_date||b.created_at||'').localeCompare(String(a.incident_date||a.created_at||'')));
+ const registrations=(academicData.activityRegistrations||[]).filter(belongs),cultural=(academicData.culturalRegistrations||[]).filter(belongs),council=(academicData.studentCouncil||[]).filter(belongs);
+ const activityName=id=>{const item=(academicData.activityPrograms||[]).find(x=>String(x.id)===String(id));return item?.title||'فعالیت ثبت‌شده'};
+ const stats=el('div','fields');
+ for(const [k,v] of [['سوابق حضور و غیاب',attendance.length],['ارزیابی‌ها و نمرات',grades.length],['سوابق انضباطی',discipline.length],['فعالیت‌ها',registrations.length+cultural.length]])stats.append(field(k,v));
+ box.append(el('h2','','خلاصه آموزشی و رفتاری'),stats);
+ addAcademicTable(box,'حضور و غیاب',['تاریخ','وضعیت','درس','کلاس','توضیحات'],attendance.map(x=>[academicDate(x.attendance_date||x.date),x.status,x.subject,x.class_name,x.description]),'برای این دانش‌آموز سابقه حضور و غیاب ثبت نشده است.');
+ addAcademicTable(box,'نمرات و ارزشیابی‌ها',['تاریخ','درس','نوع','عنوان','نمره','از','نوبت','منبع'],grades.map(x=>[academicDate(x.assessment_date||x.grade_date||x.created_at),x.subject,x.grade_type||x.assessment_type,x.title||x.exam_name||x.assessment_title,x.score,x.max_score??'—',x.term,x._source]),'نمره یا ارزشیابی ثبت‌شده‌ای برای این دانش‌آموز وجود ندارد.');
+ addAcademicTable(box,'تعدیلات تأییدشده نمره',['تاریخ ثبت','درس','نوبت','تغییر','نمره هدف','نقش ثبت‌کننده'],(academicData.gradeAdjustments||[]).filter(belongs).map(x=>[academicDate(x.applied_at),x.subject,x.term,x.delta,x.target_score,x.actor_role]),'تعدیل نمره‌ای برای این دانش‌آموز ثبت نشده است.');
+ addAcademicTable(box,'سوابق انضباطی',['تاریخ','عنوان','اولویت','وضعیت','شرح','ثبت‌کننده'],discipline.map(x=>[academicDate(x.incident_date||x.created_at),x.title,x.priority,x.status,x.description||x.note,x.actor_username||x.actor_role]),'سابقه انضباطی ثبت‌شده‌ای برای این دانش‌آموز وجود ندارد.');
+ addAcademicTable(box,'فعالیت‌ها و ثبت‌نام‌ها',['فعالیت','نوع مشارکت','وضعیت','پرداخت','تاریخ ثبت'],registrations.map(x=>[activityName(x.activity_id),x.participation_type||x.competition_type,x.status,x.payment_status,academicDate(x.created_at)]).concat(cultural.map(x=>[x.activity_title||x.activity_kind,'فرهنگی',x.status,x.payment_status,academicDate(x.registration_date||x.created_at)])),'ثبت‌نام فعالیت یا برنامه‌ای برای این دانش‌آموز ثبت نشده است.');
+ addAcademicTable(box,'سوابق شورای دانش‌آموزی',['سال تحصیلی','وضعیت','تاریخ ثبت'],council.map(x=>[x.election_year,x.status,academicDate(x.created_at)]),'سابقه‌ای در شورای دانش‌آموزی برای این دانش‌آموز ثبت نشده است.');
+}
+async function loadAcademicData(){
+ try{
+  const r=await fetch(SUPABASE_URL+'/functions/v1/school-reports',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token},body:JSON.stringify({action:'get'})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.message||'دریافت سوابق آموزشی ناموفق بود ('+r.status+').');
+  if(!d.school?.id||String(d.school.id)!==String(SCHOOL_ID))throw new Error('مدرسهٔ پاسخ‌داده‌شده با مدرسهٔ نشست مدیر یکسان نیست؛ نمایش سوابق متوقف شد.');
+  return d;
+ }catch(e){academicDataError=e.message||'دریافت سوابق آموزشی ناموفق بود.';return null}
+}
 function showProfile(p){
  currentProfile=p;const box=$('detail');box.hidden=false;box.replaceChildren();
  const heading=el('div','heading');heading.append(el('h2','',nameOf(p)),el('span','pill',p.category==='student'?'دانش‌آموز':p.category==='teacher'?'دبیر':'معاون/کارمند'));
@@ -63,6 +100,7 @@ function showProfile(p){
  const values=p.category==='student'?[['کلاس',p.class_name],['پایه',p.grade],['شماره دانش‌آموزی',p.student_code],['شماره تماس دانش‌آموز',p.phone],['شماره تماس والدین',p.parent_phone],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['تاریخ تولد',p.birth_date],['نشانی',p.address]]:[['شماره تماس',p.phone||p.mobile],['کد ملی',p.national_code],['نام پدر',p.father_name],['دین',p.religion],['مذهب',p.sect],['کد پرسنلی',p.employee_code],['درس/مسئولیت',p.subject||p.role],['ایمیل',p.email]];
  for(const [k,v] of values)fields.append(field(k,v));
  box.append(heading,fields);
+ if(p.category==='student')renderStudentAcademicRecord(box,p);
  if(p.category==='teacher'){
   box.append(el('h2','','کلاس‌ها و درس‌های تخصیص‌یافته'));
   const assignments=Array.isArray(p.assigned_classes)?p.assigned_classes:[];
@@ -85,7 +123,7 @@ function showProfile(p){
  for(const s of matches){const row=document.createElement('tr');for(const v of(isStudent?[s.weekday,s.bell,s.subject,s.teacher]:[s.weekday,s.bell,s.class_name,s.subject]))row.append(el('td','',v||'—'));body.append(row)}
  table.append(thead,body);wrap.append(table);box.append(wrap);
 }
-async function load(){if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}if(!SCHOOL_ID){setStatus('شناسه مدرسه انتخاب‌شده در نشست موجود نیست؛ خارج شوید و با کد مدرسه دوباره وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const [d,assignmentMap]=await Promise.all([api({action:'list_profiles'}),loadTeacherAssignments()]);profiles=(Array.isArray(d.profiles)?d.profiles:[]).map(p=>p.category==='teacher'?{...p,assigned_classes:assignmentMap.get(Number(p.id))||p.assigned_classes||[]}:p);schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus('پرونده‌ها و تخصیص دبیران مستقیماً از پایگاه داده دریافت شد.')}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
+async function load(){if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}if(!SCHOOL_ID){setStatus('شناسه مدرسه انتخاب‌شده در نشست موجود نیست؛ خارج شوید و با کد مدرسه دوباره وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const [d,assignmentMap,reportData]=await Promise.all([api({action:'list_profiles'}),loadTeacherAssignments(),loadAcademicData()]);academicData=reportData;profiles=(Array.isArray(d.profiles)?d.profiles:[]).map(p=>p.category==='teacher'?{...p,assigned_classes:assignmentMap.get(Number(p.id))||p.assigned_classes||[]}:p);schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus(academicData?'پرونده‌ها و سوابق آموزشی از سرویس امن مدرسه دریافت شد.':'فهرست پرونده‌ها دریافت شد؛ سوابق آموزشی در دسترس نیست: '+academicDataError,!academicData)}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
 $('search').addEventListener('input',render);$('refresh').addEventListener('click',load);$('backLevel').addEventListener('click',()=>{selectedClass='';$('search').value='';render()});$('back').addEventListener('click',()=>window.frahooshReturnToPanel('manager'));
 load();
 </script><script src="panel-return.js?v=20261106-return"></script></body></html>
