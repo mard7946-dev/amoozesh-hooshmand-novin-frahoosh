@@ -49,7 +49,7 @@ Deno.serve(async(req:Request)=>{
    const grade=clean(body.grade,50),className=clean(body.class_name,80);
    if(!grade||!className||!Array.isArray(body.teachers)||body.teachers.length!==subjects.length)throw new Error("پایه، کلاس و نام دبیران هفت درس الزامی است.");
    const rows=body.teachers.map((x:any)=>({school_id:schoolId,grade,class_name:className,subject:clean(x.subject,40),teacher_name:clean(x.teacher_name,120),created_by:user.id,updated_at:new Date().toISOString()}));
-   if(rows.some(x=>!subjects.includes(x.subject)||x.teacher_name.length<2)||new Set(rows.map(x=>x.subject)).size!==subjects.length)throw new Error("برای هر درس یک نام دبیر معتبر وارد کنید.");
+   if(rows.some((x:{subject:string;teacher_name:string})=>!subjects.includes(x.subject)||x.teacher_name.length<2)||new Set(rows.map((x:{subject:string})=>x.subject)).size!==subjects.length)throw new Error("برای هر درس یک نام دبیر معتبر وارد کنید.");
    const {data:assignments,error}=await admin.from("school_report_card_teachers").upsert(rows,{onConflict:"school_id,grade,class_name,subject"}).select("grade,class_name,subject,teacher_name");
    if(error)throw new Error("ذخیره نام دبیران کلاس انجام نشد؛ ساختار پایگاه داده را بررسی کنید.");
    return reply({assignments:assignments??[],message:"نام دبیران کلاس ذخیره شد."});
