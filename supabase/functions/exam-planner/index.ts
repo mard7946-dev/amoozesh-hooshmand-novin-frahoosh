@@ -42,9 +42,9 @@ function validatePlan(body: any) {
     grades.add(name);
     const subjects = new Set<string>();
     for (const subject of grade.subjects) {
-      const label = clean(subject.subject, 100), rotation = Number(subject.rotation_no);
-      if (!label || subjects.has(label) || !Number.isInteger(rotation) || rotation < 1 || rotation > 999) {
-        throw new Error("نام درس باید یکتا و شمارهٔ چرخشی آن عددی باشد.");
+      const label = clean(subject.subject, 100);
+      if (!label || subjects.has(label)) {
+        throw new Error("نام درس‌ها باید کامل و یکتا باشند.");
       }
       subjects.add(label);
     }
@@ -56,8 +56,7 @@ function validatePlan(body: any) {
     const settings = body.grade_plans.find((g: any) => clean(g.grade, 40) === grade);
     const declared = settings?.subjects?.find((s: any) => clean(s.subject, 100) === subject);
     if (!grades.has(grade) || !validDate(date) || date < start || date > end ||
-        !Number.isInteger(Number(item.rotation_no)) || seen.has(key) || gradeDays.has(dayKey) ||
-        !declared || Number(declared.rotation_no) !== Number(item.rotation_no)) {
+        seen.has(key) || gradeDays.has(dayKey) || !declared) {
       throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر، تکراری یا ناسازگار با فهرست درس‌ها است.");
     }
     seen.add(key);
@@ -117,9 +116,16 @@ Deno.serve(async (req: Request) => {
       const { data: plans, error } = await admin.from("school_exam_plans").select("id,title,start_date,end_date,schedule,published_at")
         .eq("school_id", schoolId).eq("status", "published").order("published_at", { ascending: false }).limit(50);
       if (error) throw error;
+      const { data: seats, error: seatError } = await admin.from("exam_seats")
+        .select("exam_name,seat_no").eq("tenant_school_id", schoolId).eq("student_id", pupil.id);
+      if (seatError) throw seatError;
+      const seatMap = new Map((seats ?? []).map((seat: any) => [seat.exam_name, seat.seat_no]));
       const schedules = (plans ?? []).flatMap((p: any) => (Array.isArray(p.schedule) ? p.schedule : [])
         .filter((item: any) => normalize(item.grade) === normalize(pupil.grade))
-        .map((item: any) => ({ ...item, plan_id: p.id, plan_title: p.title, period_start: p.start_date, period_end: p.end_date })));
+        .map((item: any) => {
+          const examKey = p.id + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10);
+          return { ...item, seat_no: seatMap.get(examKey) ?? null, plan_id: p.id, plan_title: p.title, period_start: p.start_date, period_end: p.end_date };
+        }));
       return reply({ ok: true, student: { grade: pupil.grade, class_name: pupil.class_name }, schedules });
     }
 
@@ -161,13 +167,47 @@ Deno.serve(async (req: Request) => {
       if (!manager) return reply({ message: "انتشار نهایی فقط با تأیید مدیر مدرسه انجام می‌شود." }, 403);
       const id = clean(body.id, 64);
       if (!id) return reply({ message: "شناسهٔ برنامه مشخص نیست." }, 400);
+      const { data: plan, error: planError } = await admin.from("school_exam_plans")
+        .select("id,title,grade_plans,schedule,status,start_date").eq("id", id).eq("school_id", schoolId).maybeSingle();
+      if (planError) throw planError;
+      if (!plan || plan.status !== "draft") return reply({ message: "برنامهٔ پیش‌نویس پیدا نشد یا قبلاً منتشر شده است." }, 409);
+      const assignments: any[] = [];
+      for (const item of (Array.isArray(plan.schedule) ? plan.schedule : [])) {
+        const { data: pupils, error: pupilsError } = await admin.from("students")
+          .select("id,class_name").eq("tenant_school_id", schoolId).eq("grade", item.grade).order("id", { ascending: true });
+        if (pupilsError) throw pupilsError;
+        if (!pupils?.length) throw new Error("برای پایه " + clean(item.grade, 40) + " دانش‌آموزی ثبت نشده است؛ انتشار متوقف شد.");
+        const shuffled = [...pupils];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const bytes = new Uint32Array(1); crypto.getRandomValues(bytes);
+          const j = bytes[0] % (i + 1); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const examKey = plan.id + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10);
+        shuffled.forEach((pupil: any, index: number) => assignments.push({
+          student_id: pupil.id, exam_name: examKey, seat_no: String(index + 1),
+          subject: clean(item.subject, 100), exam_date: clean(item.exam_date, 10),
+          class_name: clean(pupil.class_name, 80), tenant_school_id: schoolId,
+        }));
+      }
+      try {
+        for (let offset = 0; offset < assignments.length; offset += 500) {
+          const { error: insertError } = await admin.from("exam_seats").insert(assignments.slice(offset, offset + 500));
+          if (insertError) throw insertError;
+        }
+      } catch (allocationError) {
+        await admin.from("exam_seats").delete().eq("tenant_school_id", schoolId).like("exam_name", plan.id + "|%");
+        throw allocationError;
+      }
       const { data, error } = await admin.from("school_exam_plans").update({
         status: "published", published_by: auth.user.id, published_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       }).eq("id", id).eq("school_id", schoolId).eq("status", "draft")
         .select("id,title,status,published_at").maybeSingle();
-      if (error) throw error;
-      if (!data) return reply({ message: "برنامهٔ پیش‌نویس پیدا نشد یا قبلاً منتشر شده است." }, 409);
-      return reply({ ok: true, plan: data });
+      if (error || !data) {
+        await admin.from("exam_seats").delete().eq("tenant_school_id", schoolId).like("exam_name", plan.id + "|%");
+        if (error) throw error;
+        return reply({ message: "انتشار برنامه انجام نشد؛ شماره‌های صندلی پاک‌سازی شدند." }, 409);
+      }
+      return reply({ ok: true, plan: data, allocated_seats: assignments.length });
     }
     return reply({ message: "عملیات درخواستی شناخته نشد." }, 400);
   } catch (error) {
