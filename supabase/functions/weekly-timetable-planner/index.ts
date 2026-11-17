@@ -57,6 +57,21 @@ Deno.serve(async (req: Request) => {
     const callerId = authData.user.id;
     const callerName = clean(profile.display_name) || clean(profile.username) || "مدیریت";
     const action = clean(body.action);
+    const verifyRequirements = async (requirements: Requirement[]) => {
+      const teacherIds = [...new Set(requirements.map(row => Number(row.teacher_id)).filter(id => Number.isInteger(id) && id > 0))];
+      if (!requirements.length) return true;
+      if (!teacherIds.length) return false;
+      const { data: activeAssignments, error } = await admin.from("teacher_classes")
+        .select("teacher_id,teacher_name,subject,class_name")
+        .eq("tenant_school_id", schoolId).eq("active", 1).in("teacher_id", teacherIds).limit(2000);
+      if (error) throw error;
+      const allowed = new Set((activeAssignments ?? []).map((row: any) =>
+        [norm(row.class_name), norm(row.subject), Number(row.teacher_id)].join("|")
+      ));
+      return requirements.every(row =>
+        allowed.has([norm(row.class_name), norm(row.subject), Number(row.teacher_id)].join("|"))
+      );
+    };
 
     if (action === "bootstrap") {
       const [teachersResult, assignmentsResult, plansResult] = await Promise.all([
@@ -108,7 +123,7 @@ Deno.serve(async (req: Request) => {
       }
       const validation = validateWeeklyTimetable({ slots, requirements, teacher_workdays: teacherWorkdays });
       if (action === "validate") return reply({ ok: true, validation });
-      if (action === "publish" && (!validation.valid || validation.warnings.length)) {
+      if (action === "publish" && (!requirements.length || !slots.length || !validation.valid || validation.warnings.length)) {
         return reply({ ok: false, validation, message: validation.errors[0] || validation.warnings[0] || "برنامه آماده انتشار نیست." }, 409);
       }
       const planId = clean(body.plan_id);
