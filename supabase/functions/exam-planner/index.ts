@@ -97,9 +97,9 @@ Deno.serve(async (req: Request) => {
     if (membershipError || !memberships?.length) return reply({ message: "عضویت فعال در این مدرسه تأیید نشد." }, 403);
     const roles = new Set(memberships.map((m: any) => normalize(m.role)));
     const role = normalize(profile.role);
-    const manager = managerRoles.has(role) || roles.has("manager");
-    const deputy = deputyRoles.has(role) || [...roles].some(r => deputyRoles.has(r));
-    const student = studentRoles.has(role) || roles.has("student");
+    const manager = managerRoles.has(role) && [...roles].some(r => managerRoles.has(r));
+    const deputy = deputyRoles.has(role) && [...roles].some(r => deputyRoles.has(r));
+    const student = studentRoles.has(role) && [...roles].some(r => studentRoles.has(r));
     const body = await req.json().catch(() => ({}));
     const action = clean(body.action, 40);
 
