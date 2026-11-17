@@ -35,14 +35,24 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json().catch(()=>({}));
   const action=clean(body.action||"list",20);
   if(action==="list"){
-   const [school,students,teachers,cards]=await Promise.all([
+   const [school,students,teachers,cards,teacherAssignments]=await Promise.all([
     admin.from("schools").select("id,name").eq("id",schoolId).maybeSingle(),
     admin.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",schoolId).order("last_name"),
     admin.from("teachers").select("id,first_name,last_name,subject,employment_status").eq("tenant_school_id",schoolId).order("last_name"),
-    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false})
+    admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false}),
+    admin.from("school_report_card_teachers").select("grade,class_name,subject,teacher_name").eq("school_id",schoolId).order("grade").order("class_name")
    ]);
-   for(const x of [school,students,teachers,cards])if(x.error)throw new Error("دریافت اطلاعات کارنامه ناموفق بود.");
-   return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],cards:cards.data??[],subjects});
+   for(const x of [school,students,teachers,cards,teacherAssignments])if(x.error)throw new Error("دریافت اطلاعات کارنامه ناموفق بود.");
+   return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],teacherAssignments:teacherAssignments.data??[],cards:cards.data??[],subjects});
+  }
+  if(action==="save_teachers"){
+   const grade=clean(body.grade,50),className=clean(body.class_name,80);
+   if(!grade||!className||!Array.isArray(body.teachers)||body.teachers.length!==subjects.length)throw new Error("پایه، کلاس و نام دبیران هفت درس الزامی است.");
+   const rows=body.teachers.map((x:any)=>({school_id:schoolId,grade,class_name:className,subject:clean(x.subject,40),teacher_name:clean(x.teacher_name,120),created_by:user.id,updated_at:new Date().toISOString()}));
+   if(rows.some((x:{subject:string;teacher_name:string})=>!subjects.includes(x.subject)||x.teacher_name.length<2)||new Set(rows.map((x:{subject:string})=>x.subject)).size!==subjects.length)throw new Error("برای هر درس یک نام دبیر معتبر وارد کنید.");
+   const {data:assignments,error}=await admin.from("school_report_card_teachers").upsert(rows,{onConflict:"school_id,grade,class_name,subject"}).select("grade,class_name,subject,teacher_name");
+   if(error)throw new Error("ذخیره نام دبیران کلاس انجام نشد؛ ساختار پایگاه داده را بررسی کنید.");
+   return reply({assignments:assignments??[],message:"نام دبیران کلاس ذخیره شد."});
   }
   if(action==="save"){
    const student=body.student??{};let studentName=clean(student.name,160),grade=clean(student.grade,50),className=clean(student.class_name,80);
