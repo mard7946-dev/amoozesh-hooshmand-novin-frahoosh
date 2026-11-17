@@ -70,7 +70,7 @@ function render(summary){
  const low=rows.filter(x=>x.grade_average!==null&&Number(x.grade_average)<12);
  low.forEach(x=>addSuggestion(suggestions,"بررسی نتیجهٔ ارزشیابی · "+x.class_name+" · "+x.subject,"میانگین نمره‌های ثبت‌شده "+fa(x.grade_average)+" از ۲۰ است؛ پیش از هر اقدام، تعداد و نوع ارزشیابی‌ها را بررسی کنید."));
  if(!suggestions.children.length)addSuggestion(suggestions,"وضعیت ثبت‌شده نیازمند اقدام فوری نشان نمی‌دهد","برای به‌روز ماندن گزارش، اطلاعات کلاس‌ها و فعالیت‌ها را پس از هر جلسه ثبت کنید.",true);
- const due=$("dueSoon");due.replaceChildren();const upcoming=rows.flatMap(x=>(x.assignments||[]).filter(a=>a.due_date).map(a=>({class_name:x.class_name,subject:x.subject,title:a.title,due_date:a.due_date}))).sort((a,b)=>a.due_date.localeCompare(b.due_date));
+ const due=$("dueSoon");due.replaceChildren();const today=new Date().toISOString().slice(0,10);const horizon=new Date(Date.now()+7*86400000).toISOString().slice(0,10);const upcoming=rows.flatMap(x=>(x.assignments||[]).filter(a=>a.due_date&&a.due_date>=today&&a.due_date<=horizon).map(a=>({class_name:x.class_name,subject:x.subject,title:a.title,due_date:a.due_date}))).sort((a,b)=>a.due_date.localeCompare(b.due_date));
  if(!upcoming.length)addItem(due,"تکلیف دارای موعد ثبت‌شده‌ای پیدا نشد","تکالیف فعال و تاریخ‌دار اینجا نمایش داده می‌شوند.");
  else upcoming.slice(0,12).forEach(x=>addItem(due,x.title,x.class_name+" · "+x.subject+" · موعد: "+x.due_date));
  const breakdown=$("classBreakdown");breakdown.replaceChildren();
