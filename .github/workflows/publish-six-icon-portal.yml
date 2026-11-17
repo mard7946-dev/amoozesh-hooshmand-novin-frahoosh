@@ -1,5 +1,5 @@
 name: Publish Frahoosh Six-Icon Portal
-# Include operational parent, messaging, reports, and ad-hoc meeting pages in the deployed site.
+# Include operational parent, messaging, reports, finance, and school cashbook pages in the deployed site.
 
 on:
   push:
@@ -12,6 +12,7 @@ on:
       - 'assets/**'
       - 'about.html'
       - 'finance.html'
+      - 'cashbook.html'
       - 'portal.html'
       - 'panel-return.js'
       - 'student-module.html'
@@ -76,8 +77,8 @@ jobs:
         run: |
           mkdir -p _site
           cp manager-assistant.html teacher-assistant.html school-library.html question-bank.html index.html manifest.webmanifest service-worker.js portal.html panel-return.js student-module.html platform-admin.html settings.html reports.html family-communication.html parent-management.html parent-meetings.html family-invitations.html family-invitations-review.html parent-invitations.html academic-review.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html _site/
-          cp finance.html about.html _site/
-          printf '%s' "{\\\"build\\\":\\\"$GITHUB_RUN_NUMBER\\\",\\\"commit\\\":\\\"\${GITHUB_SHA:0:7}\\\",\\\"built_at\\\":\\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"}" > _site/build-info.json
+          cp finance.html cashbook.html about.html _site/
+          printf '%s' "{\\\"build\\\":\\\"$GITHUB_RUN_NUMBER\\\",\\\"commit\\\":\\\"${GITHUB_SHA:0:7}\\\",\\\"built_at\\\":\\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"}" > _site/build-info.json
           cp jalali-date.js reports-utils.js _site/
           mkdir -p _site/assets
           cp assets/school-logo.svg _site/assets/
