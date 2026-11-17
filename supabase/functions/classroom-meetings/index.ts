@@ -55,6 +55,13 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "این سرویس با خرید سرور بیرونی فعال خواهد شد.", service_disabled: true }, 403);
     }
     if (!isManager(profile.role)) return reply({ message: "فقط مدیر مدرسه اجازه ساخت و مدیریت جلسه اختصاصی را دارد." }, 403);
+    const { data: managerMemberships, error: managerMembershipError } = await admin.from("school_memberships")
+      .select("role").eq("school_id", profile.tenant_school_id)
+      .eq("auth_user_id", authData.user.id).eq("is_active", true);
+    if (managerMembershipError) throw managerMembershipError;
+    if (!(managerMemberships ?? []).some((membership: any) => isManager(membership.role))) {
+      return reply({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = clean(body.action);
@@ -76,10 +83,10 @@ Deno.serve(async (req: Request) => {
       const expiresAt = new Date(Math.min(new Date(meeting.expires_at).getTime(), Date.now() + 20 * 60_000)).toISOString();
       const { error: insertError } = await admin.from("classroom_guest_invites").insert({
         meeting_id: meeting.id, tenant_school_id: schoolId, token_hash: tokenHash,
-        max_uses: 1, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
+        max_uses: 10, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
       });
       if (insertError) throw insertError;
-      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, single_use: true });
+      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, max_uses: 10, single_use: false });
     }
 
     if (action === "list") {
@@ -143,6 +150,17 @@ Deno.serve(async (req: Request) => {
       if (error) {
         await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
         throw error;
+      }
+      // Reserve the first host seat for the manager who created the meeting.
+      const { error: hostSeatError } = await admin.from("classroom_meeting_host_slots").insert({
+        meeting_id: data.id,
+        tenant_school_id: schoolId,
+        auth_user_id: authData.user.id,
+      });
+      if (hostSeatError) {
+        await admin.from("classroom_ad_hoc_meetings").delete().eq("id", data.id).eq("tenant_school_id", schoolId);
+        await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+        throw hostSeatError;
       }
       return reply({ ok: true, meeting: data });
     }

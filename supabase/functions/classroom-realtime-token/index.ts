@@ -69,12 +69,6 @@ Deno.serve(async (req: Request) => {
       if (!meeting || meeting.status !== "active" || new Date(meeting.expires_at).getTime() <= Date.now()) {
         return reply({ message: "جلسه آزمایشی پایان یافته است." }, 410);
       }
-      const { data: claimed, error: claimError } = await admin.from("classroom_guest_invites")
-        .update({ use_count: invite.use_count + 1 })
-        .eq("id", invite.id).eq("use_count", invite.use_count).is("revoked_at", null)
-        .select("id").maybeSingle();
-      if (claimError) throw claimError;
-      if (!claimed) return reply({ message: "این لینک مهمان هم‌اکنون استفاده شده است." }, 410);
       const roomName = clean(meeting.cloudflare_meeting_id);
       if (!roomName.startsWith("frahoosh-")) return reply({ message: "اتاق جلسه آماده ورود مهمان نیست." }, 409);
       const remaining = Math.floor((new Date(meeting.expires_at).getTime() - Date.now()) / 1000);
@@ -82,6 +76,14 @@ Deno.serve(async (req: Request) => {
       const credentials = await createLiveKitParticipantToken(roomName, identity, guestName, {
         host: false, screenShare: false, role: "guest", ttlSeconds: Math.min(1800, remaining),
       });
+      const { data: claimedRows, error: claimError } = await admin.rpc("claim_classroom_guest_invite", {
+        p_token_hash: tokenHash,
+      });
+      if (claimError) throw claimError;
+      const claimed = Array.isArray(claimedRows) ? claimedRows[0] : claimedRows;
+      if (!claimed || claimed.id !== invite.id) {
+        return reply({ message: "ظرفیت ۱۰ ورود این لینک تکمیل شده یا لینک منقضی شده است." }, 410);
+      }
       return reply({
         ok: true, ...credentials, expires_on: credentials.expires_at,
         profile: { display_name: guestName, role: "guest" },
@@ -154,26 +156,39 @@ Deno.serve(async (req: Request) => {
         if (role === "teacher" || role.includes("دبیر") || role.includes("معلم")) return "teacher";
         if (role === "student" || role.includes("دانشآموز") || role.includes("دانش آموز")) return "student";
         if (role === "parent" || role.includes("ولی") || role.includes("والد")) return "parent";
-        if (role === "counselor" || role.includes("مشاور")) return "counselor";
-        if (role === "deputy" || role.includes("معاون") || role.endsWith("_deputy") || ["educational","executive","cultural","advisor"].includes(role)) return "deputy";
+        if (role === "counselor" || role === "advisor" || role.includes("مشاور")) return "counselor";
+        if (role === "deputy" || role.includes("معاون") || role.endsWith("_deputy") || ["educational","executive","cultural"].includes(role)) return "deputy";
         return role;
       };
       const activeRoles = new Set((memberships ?? []).map((item: any) => roleKey(item.role)));
       const requestedRole = roleKey(body?.active_role || adHocProfile.role);
-      const isCreator = adHocMeeting.created_by === authData.user.id;
       if (!activeRoles.has(requestedRole)) {
         return reply({ message: "سمت فعال این حساب در مدرسه تأیید نشد." }, 403);
+      }
+      // Only active school managers/deputies may claim one of the two host seats.
+      // The database RPC serializes claims so simultaneous joins cannot create a third host.
+      let isHost = false;
+      const isMeetingCreator = adHocMeeting.created_by === authData.user.id;
+      // The manager who created the meeting owns the first reserved seat.
+      // Only a deputy may claim the second seat.
+      if ((requestedRole === "manager" && isMeetingCreator) || requestedRole === "deputy") {
+        const { data: hostSeat, error: hostSeatError } = await admin.rpc("claim_classroom_meeting_host_slot", {
+          p_meeting_id: adHocMeeting.id,
+          p_school_id: adHocProfile.tenant_school_id,
+          p_auth_user_id: authData.user.id,
+        });
+        if (hostSeatError) throw hostSeatError;
+        isHost = hostSeat === true;
       }
       const isAudienceAllowed = adHocMeeting.audience_type === "all_school"
         ? activeRoles.size > 0
         : (Array.isArray(adHocMeeting.audience_roles) && adHocMeeting.audience_roles.map(roleKey).includes(requestedRole));
-      if (!isAudienceAllowed && !isCreator) return reply({ message: "این جلسه برای گروه کاربری شما دعوت نشده است." }, 403);
+      if (!isAudienceAllowed && !isHost) return reply({ message: "این جلسه برای گروه کاربری شما دعوت نشده است یا ظرفیت دو میزبان تکمیل شده است." }, 403);
 
       const liveKitRoomName = clean(adHocMeeting.cloudflare_meeting_id);
       if (!liveKitRoomName.startsWith("frahoosh-")) {
         return reply({ message: "این جلسه پیش از انتقال سرویس ساخته شده است؛ لطفاً مدیر جلسهٔ جدیدی ایجاد کند." }, 409);
       }
-      const isHost = isCreator && requestedRole === "manager";
       const isStudent = requestedRole === "student";
       const displayName = isStudent ? `دانش‌آموز-${authData.user.id.slice(-4)}`
         : (clean(adHocProfile.display_name) || clean(adHocProfile.username) || "کاربر فراهوش");
