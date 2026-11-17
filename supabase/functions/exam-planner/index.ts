@@ -57,8 +57,8 @@ function validatePlan(body: any) {
       if (!label || subjects.has(label)) {
         throw new Error("نام درس‌ها باید کامل و یکتا باشند.");
       }
-      const difficulty = clean(subject.difficulty || "medium", 20);
-      if (!["heavy", "medium", "light"].includes(difficulty)) throw new Error("درجهٔ دشواری یکی از درس‌ها معتبر نیست.");
+      const gapDays = subject.gap_days === undefined ? 1 : Number(subject.gap_days);
+      if (!Number.isInteger(gapDays) || gapDays < 0 || gapDays > 30) throw new Error("فاصلهٔ روز هر درس باید عددی صحیح بین صفر تا ۳۰ باشد.");
       subjects.add(label);
     }
   }
@@ -69,7 +69,8 @@ function validatePlan(body: any) {
     const settings = body.grade_plans.find((g: any) => clean(g.grade, 40) === grade);
     const declared = settings?.subjects?.find((s: any) => clean(s.subject, 100) === subject);
     if (!grades.has(grade) || !validDate(date) || date < start || date > end ||
-        seen.has(key) || gradeDays.has(dayKey) || !declared) {
+        seen.has(key) || gradeDays.has(dayKey) || !declared ||
+        Number(item.gap_days ?? declared.gap_days ?? 1) !== Number(declared.gap_days ?? 1)) {
       throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر، تکراری یا ناسازگار با فهرست درس‌ها است.");
     }
     seen.add(key);
@@ -88,11 +89,11 @@ function validatePlan(body: any) {
     const ordered = body.schedule.filter((item: any) => clean(item.grade, 40) === clean(grade.grade, 40))
       .sort((a: any, b: any) => clean(a.exam_date, 10).localeCompare(clean(b.exam_date, 10)));
     for (let i = 1; i < ordered.length; i++) {
-      const previous = grade.subjects.find((s: any) => clean(s.subject, 100) === clean(ordered[i - 1].subject, 100));
-      const gap = previous?.difficulty === "heavy" ? 3 : previous?.difficulty === "light" ? 1 : 2;
+      const current = grade.subjects.find((s: any) => clean(s.subject, 100) === clean(ordered[i].subject, 100));
+      const gap = Number(current?.gap_days ?? 1);
       const daysBetween = Math.round((Date.parse(ordered[i].exam_date + "T12:00:00Z") - Date.parse(ordered[i - 1].exam_date + "T12:00:00Z")) / 86400000);
       const restDays = Math.max(0, daysBetween - 1);
-      if (restDays < gap) throw new Error("فاصلهٔ مطالعهٔ پایه " + clean(grade.grade, 40) + " رعایت نشده است؛ پس از هر درس باید فاصلهٔ متناسب با دشواری آن حفظ شود.");
+      if (restDays < gap) throw new Error("فاصلهٔ تعیین‌شده از امتحان قبلی در پایه " + clean(grade.grade, 40) + " رعایت نشده است.");
     }
   }
   return { title, start, end };
