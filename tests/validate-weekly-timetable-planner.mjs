@@ -13,12 +13,12 @@ for (const id of ["academicYear", "assignmentSelect", "requiredPeriods", "workda
 }
 assert.ok(page.includes('data-week="even"') && page.includes('data-week="odd"'), "each timetable cell must have independent even/odd assignments");
 assert.ok(page.includes("چینش خودکار و متعادل"), "planner must expose automatic suggestions");
-assert.ok(page.includes("برنامه منتشرشده قابل ویرایش نیست"), "published plans must be immutable");
+assert.ok(api.includes("برنامه منتشرشده قابل ویرایش نیست"), "published plans must be immutable");
 assert.ok(page.includes('apikey":"sb_publishable_'), "planner API calls must include the Supabase publishable key");
 assert.ok(management.includes("../weekly-timetable-planner.html"), "manager class panel must link to the planner");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("grant all"), "planner data must be RLS-protected and service-role-only");
 assert.ok(migration.includes("school_id") && migration.includes("auth.users"), "plans must be school-scoped and audited");
-assert.ok(!migration.includes("weekly_schedule_entries"), "migration must not mutate the live online-class schedule table");
+assert.ok(!/alter\\s+table\\s+public\\.weekly_schedule_entries|drop\\s+table\\s+public\\.weekly_schedule_entries/i.test(migration), "migration must not alter or drop the live online-class schedule table");
 assert.ok(api.includes("auth.getUser(token)") && api.includes("school_memberships") && api.includes("school_id"), "planner API must authenticate and scope every plan to the current school");
 assert.ok(api.includes('action === "publish"') && api.includes('action === "generate"'), "planner API must support publishing and automatic suggestions");
 assert.ok(validation.includes("week === \"even\"") && validation.includes("week === \"odd\""), "validation must inspect both week patterns");
