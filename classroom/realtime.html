@@ -400,7 +400,7 @@ async function boot(){
    $("entryChooser").classList.remove("hidden");
    say("یکی از روش‌های ورود را انتخاب کنید.");
    $("chooseHost").addEventListener("click",()=>{$("entryChooser").classList.add("hidden");$("hostLogin").classList.remove("hidden");say("نام و نام خانوادگی و رمز عبور حساب فراهوش را وارد کنید.");});
-   $("chooseGuest").addEventListener("click",()=>{if(!guestToken){say("این لینک برای میزبان و اعضای مدرسه است. برای میهمان، مدیر باید در صفحه «جلسات آنلاین اختصاصی» دکمه «ساخت لینک مهمان یک‌بارمصرف» را بزند و لینک جداگانه را برای میهمان بفرستد.");return;}$("entryChooser").classList.add("hidden");$("guestEntry").classList.remove("hidden");say("نام و نام خانوادگی را وارد کنید.");});
+   $("chooseGuest").addEventListener("click",()=>{if(!guestToken){say("این لینک برای میزبان و اعضای مدرسه است. برای میهمان، مدیر باید در صفحه «جلسات آنلاین اختصاصی» دکمه «ساخت لینک مهمان برای حداکثر ۱۰ نفر» را بزند و لینک جداگانه را برای میهمان بفرستد.");return;}$("entryChooser").classList.add("hidden");$("guestEntry").classList.remove("hidden");say("نام و نام خانوادگی را وارد کنید.");});
    $("hostLoginForm").addEventListener("submit",async event=>{
     event.preventDefault();
     const submit=$("hostLoginSubmit");submit.disabled=true;
