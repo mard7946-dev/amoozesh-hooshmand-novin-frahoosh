@@ -844,6 +844,81 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, saved: data?.length ?? inserts.length });
     }
 
+
+    if (action === "teacher_assistant_summary") {
+      if (!teacher || !teacherRecordId) return reply({ message: "دستیار هوشمند فقط برای دبیر دارای عضویت فعال و پرونده همکار متصل فعال است." }, 403);
+      const { data: assignments, error: assignmentError } = await admin.from("teacher_classes")
+        .select("id,teacher_id,teacher_name,subject,grade,class_name")
+        .eq("tenant_school_id", school).eq("teacher_id", teacherRecordId).eq("active", 1)
+        .order("class_name", { ascending: true }).limit(300);
+      if (assignmentError) throw assignmentError;
+      const pairs = [...new Map((assignments ?? []).map((row: any) => {
+        const key = norm(row.class_name) + "|" + norm(row.subject);
+        return [key, { class_name: clean(row.class_name), subject: clean(row.subject), grade: clean(row.grade) }];
+      })).values()];
+      if (!pairs.length) return reply({ ok: true, summary: { classes: [], totals: { students: 0, attendance_records_30d: 0, absences_30d: 0, late_30d: 0, grades: 0, assignments: 0, pending_submissions: 0, discipline_records_30d: 0 }, generated_at: new Date().toISOString() } });
+      const classNames = [...new Set(pairs.map((x: any) => x.class_name))];
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10);
+      const [studentsResult, pairResults] = await Promise.all([
+        admin.from("students").select("id,class_name").eq("tenant_school_id", school).in("class_name", classNames).limit(2000),
+        Promise.all(pairs.map(async (pair: any) => {
+          const [attendanceResult, gradesResult, assignmentsResult, disciplineResult] = await Promise.all([
+            admin.from("attendance").select("id,status,attendance_date,date").eq("tenant_school_id", school)
+              .eq("class_name", pair.class_name).eq("subject", pair.subject).gte("attendance_date", since).limit(1500),
+            admin.from("student_grades").select("id,score,manager_released,term").eq("tenant_school_id", school)
+              .eq("class_name", pair.class_name).eq("subject", pair.subject).limit(1500),
+            admin.from("assignments").select("id,title,due_date,status").eq("tenant_school_id", school)
+              .eq("class_name", pair.class_name).eq("subject", pair.subject).eq("status", "active").limit(100),
+            admin.from("discipline_records").select("id,record_type,incident_date").eq("tenant_school_id", school)
+              .eq("class_name", pair.class_name).eq("subject", pair.subject).eq("actor_role", "teacher")
+              .eq("actor_username", clean(profile.username)).is("deleted_at", null).gte("incident_date", since).limit(1000)
+          ]);
+          const failed = [attendanceResult, gradesResult, assignmentsResult, disciplineResult].find((x: any) => x.error);
+          if (failed) throw failed.error;
+          const assignmentsForPair = assignmentsResult.data ?? [];
+          const assignmentIds = assignmentsForPair.map((x: any) => Number(x.id)).filter(Boolean);
+          const submissionsResult = assignmentIds.length
+            ? await admin.from("assignment_submissions").select("id,assignment_id,status")
+              .eq("tenant_school_id", school).in("assignment_id", assignmentIds).limit(3000)
+            : { data: [], error: null };
+          if (submissionsResult.error) throw submissionsResult.error;
+          const attendanceRows = attendanceResult.data ?? [];
+          const grades = gradesResult.data ?? [];
+          const submissions = submissionsResult.data ?? [];
+          const absent = attendanceRows.filter((x: any) => ["غایب", "غیرموجه", "absent"].includes(norm(x.status))).length;
+          const late = attendanceRows.filter((x: any) => ["تأخیر", "تاخیر", "late"].includes(norm(x.status))).length;
+          const pending = submissions.filter((x: any) => ["not_done", "incomplete"].includes(norm(x.status))).length;
+          const scoreValues = grades.map((x: any) => Number(x.score)).filter((x: number) => Number.isFinite(x));
+          const average = scoreValues.length ? Number((scoreValues.reduce((a: number, b: number) => a + b, 0) / scoreValues.length).toFixed(2)) : null;
+          const dueSoon = assignmentsForPair.filter((x: any) => clean(x.due_date) >= today && clean(x.due_date) <= new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+          return {
+            ...pair,
+            attendance_records_30d: attendanceRows.length,
+            absences_30d: absent,
+            late_30d: late,
+            grade_count: grades.length,
+            grade_average: average,
+            assignments: assignmentsForPair.map((x: any) => ({ title: clean(x.title), due_date: clean(x.due_date) })),
+            assignment_count: assignmentsForPair.length,
+            submission_count: submissions.length,
+            pending_submissions: pending,
+            due_soon_count: dueSoon.length,
+            discipline_records_30d: (disciplineResult.data ?? []).length
+          };
+        }))
+      ]);
+      if (studentsResult.error) throw studentsResult.error;
+      const studentCounts = new Map<string, number>();
+      for (const student of studentsResult.data ?? []) studentCounts.set(clean(student.class_name), (studentCounts.get(clean(student.class_name)) ?? 0) + 1);
+      const classes = pairResults.map((row: any) => ({ ...row, student_count: studentCounts.get(row.class_name) ?? 0 }));
+      const totals = classes.reduce((sum: any, row: any) => {
+        for (const key of ["student_count", "attendance_records_30d", "absences_30d", "late_30d", "grade_count", "assignment_count", "pending_submissions", "discipline_records_30d"]) sum[key === "student_count" ? "students" : key] += Number(row[key] || 0);
+        return sum;
+      }, { students: 0, attendance_records_30d: 0, absences_30d: 0, late_30d: 0, grade_count: 0, assignment_count: 0, pending_submissions: 0, discipline_records_30d: 0 });
+      return reply({ ok: true, summary: { classes, totals, period_start: since, generated_at: new Date().toISOString() } });
+    }
+
     return reply({ message: "عملیات درخواستی پشتیبانی نمی‌شود." }, 400);
   } catch (error) {
     const detail = error && typeof error === "object"
