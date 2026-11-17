@@ -63,7 +63,7 @@ Deno.serve(async(req:Request)=>{
    const studentRef=studentId?"student:"+studentId:clean(student.ref,100);
    if(!studentRef||!studentRef.startsWith("manual:")&&!studentRef.startsWith("student:"))throw new Error("شناسه دانش‌آموز معتبر نیست.");
    const payload={school_id:schoolId,student_ref:studentRef,student_id:studentId,student_name:studentName,grade,class_name:className,academic_year:academicYear,term,subjects:cleanSubjects,executive_name:clean(body.executive_name,120),manager_name:clean(body.manager_name,120),created_by:user.id,updated_at:new Date().toISOString()};
-   const {data,error}=await admin.from("school_report_cards").upsert(payload,{onConflict:"school_id,student_ref,academic_year,term"}).select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,created_at,updated_at").single();
+   const {data,error}=await admin.from("school_report_cards").upsert(payload,{onConflict:"school_id,student_ref,academic_year,term"}).select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").single();
    if(error)throw new Error("ذخیره کارنامه انجام نشد؛ ساختار پایگاه داده یا اطلاعات را بررسی کنید.");
    return reply({card:data,message:"کارنامه با موفقیت ذخیره شد."});
   }
