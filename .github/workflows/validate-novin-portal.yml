@@ -47,6 +47,7 @@ on:
       - 'counseling.html'
       - 'exam-center.html'
       - 'directory.html'
+      - 'tests/validate-student-dossier.mjs'
       - 'supabase/functions/assessment-center/index.ts'
       - 'supabase/functions/classroom-login/index.ts'
       - 'supabase/migrations/20261030160000_independent_assessment_builder.sql'
@@ -109,6 +110,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate comprehensive student dossier and school isolation
+        run: node tests/validate-student-dossier.mjs
       - name: Validate central question bank role boundaries and ingestion
         run: node tests/validate-question-bank.mjs
       - name: Validate school learning library access and PDF handling
