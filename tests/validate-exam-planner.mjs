@@ -14,6 +14,9 @@ assert.ok(page.includes("function generateSchedule()") && page.includes("holiday
 assert.ok(!page.includes("rotation_no") && !page.includes("subject-rotation") && !page.includes("شماره چرخشی"), "Subject rotation must be fully removed");
 assert.ok(page.includes("شماره صندلی") && page.includes("x.seat_no"), "Published student schedules must display the assigned seat number");
 assert.ok(api.includes("crypto.getRandomValues") && api.includes("previousSeatByGrade") && api.includes("exam_seats"), "Publishing must randomly allocate and persist different seat numbers per exam");
+assert.ok(page.includes("gradeCountsPanel") && page.includes("refreshGradeCounts") && page.includes("محدوده شماره صندلی"), "Manager preview must show a separate student count and seat range for every grade");
+assert.ok(api.includes('action === "grade_counts"') && api.includes("getStudentsForGrade") && api.includes('.eq("tenant_school_id", schoolId).eq("grade", grade)'), "Grade counts must be derived from students belonging to the active school and exact grade");
+assert.ok(api.includes(".range(from, from + 999)") && api.includes("seat_to: pupils.length || null"), "Student counts and seat allocation must support paginated grade rosters and the exact 1..N range");
 assert.ok(api.includes("seatMap.get(examKey)") && api.includes('.eq("student_id", pupil.id)'), "Student endpoint must retrieve only the signed-in student's seat assignments");
 assert.ok(page.includes('role==="student"') && page.includes('action:"student_list"'), "Student view must load only published grade schedules");
 assert.ok(api.includes('if (!manager && !deputy)') && api.includes("انتشار نهایی فقط با تأیید مدیر"), "Only manager/deputy may manage; only manager may publish");
