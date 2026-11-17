@@ -93,7 +93,7 @@ if(requestedTab&&validTabs.includes(requestedTab)&&(requestedTab!=='verification
   }
 }
 
-function scheduleMinute(value){const match=String(value||'').match(/^(\\d{1,2}):(\\d{2})/);return match?Number(match[1])*60+Number(match[2]):-1}
+function scheduleMinute(value){const parts=String(value||'').split(':');if(parts.length<2)return -1;const hour=Number(parts[0]),minute=Number(parts[1]);return Number.isInteger(hour)&&Number.isInteger(minute)&&hour>=0&&hour<=23&&minute>=0&&minute<60?hour*60+minute:-1}
 function scheduleConflictRows(entries){
  const conflicts=[];
  for(let i=0;i<entries.length;i++)for(let j=i+1;j<entries.length;j++){
