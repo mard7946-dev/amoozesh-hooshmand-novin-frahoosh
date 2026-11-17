@@ -144,6 +144,17 @@ Deno.serve(async (req: Request) => {
         await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
         throw error;
       }
+      // Reserve the first host seat for the manager who created the meeting.
+      const { error: hostSeatError } = await admin.from("classroom_meeting_host_slots").insert({
+        meeting_id: data.id,
+        tenant_school_id: schoolId,
+        auth_user_id: authData.user.id,
+      });
+      if (hostSeatError) {
+        await admin.from("classroom_ad_hoc_meetings").delete().eq("id", data.id).eq("tenant_school_id", schoolId);
+        await deleteLiveKitRoom(liveKitRoomName).catch(() => {});
+        throw hostSeatError;
+      }
       return reply({ ok: true, meeting: data });
     }
 
