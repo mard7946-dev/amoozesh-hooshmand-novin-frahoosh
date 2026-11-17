@@ -25,6 +25,14 @@ alter table public.classroom_meeting_host_slots enable row level security;
 revoke all on public.classroom_meeting_host_slots from anon, authenticated;
 grant all on public.classroom_meeting_host_slots to service_role;
 
+-- Preserve the manager creator as host one for meetings already active when
+-- this migration is applied. New meetings reserve this seat in the Edge Function.
+insert into public.classroom_meeting_host_slots(meeting_id, tenant_school_id, auth_user_id)
+select id, tenant_school_id, created_by
+  from public.classroom_ad_hoc_meetings
+ where status = 'active'
+on conflict (meeting_id, auth_user_id) do nothing;
+
 -- Atomic guest-use claim: concurrent joins cannot overrun max_uses or spuriously
 -- reject all but one request that observed the same previous use_count.
 create or replace function public.claim_classroom_guest_invite(p_token_hash text)
