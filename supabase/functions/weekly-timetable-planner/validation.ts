@@ -90,3 +90,80 @@ export function validateWeeklyTimetable(input: {
   }
   return { valid: errors.length === 0, errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
+
+export function generateWeeklyTimetable(input: {
+  requirements: Requirement[];
+  teacher_workdays: TeacherWorkdays[];
+}) {
+  const days = [...WEEKDAYS];
+  const workdays = new Map(input.teacher_workdays.map(row => [Number(row.teacher_id), new Set((row.weekdays ?? []).map(key))]));
+  const cells = new Map<string, Slot>();
+  const teacherBusy: Record<WeekType, Set<string>> = { even: new Set(), odd: new Set() };
+  const classDayLoad: Record<WeekType, Map<string, number>> = { even: new Map(), odd: new Map() };
+  const subjectDayLoad: Record<WeekType, Map<string, number>> = { even: new Map(), odd: new Map() };
+  const errors: string[] = [];
+  const normalizedRequirements = [...input.requirements].sort((a, b) => Number(b.weekly_periods) - Number(a.weekly_periods));
+  for (const requirement of normalizedRequirements) {
+    const className = clean(requirement.class_name), subject = clean(requirement.subject);
+    const teacherId = Number(requirement.teacher_id), needed = Number(requirement.weekly_periods);
+    if (!className || !subject || !Number.isInteger(teacherId) || teacherId <= 0 || !Number.isInteger(needed) || needed < 1 || needed > 15) {
+      errors.push("برای چینش خودکار، تمام نیازهای کلاس، درس، دبیر و تعداد زنگ باید معتبر باشند.");
+      continue;
+    }
+    const availableDays = workdays.get(teacherId);
+    if (!availableDays?.size) {
+      errors.push(`روزهای کاری دبیر ${clean(requirement.teacher_name)} را پیش از چینش خودکار تعیین کنید.`);
+      continue;
+    }
+    for (const week of ["even", "odd"] as const) {
+      for (let lesson = 0; lesson < needed; lesson++) {
+        const candidates: Array<{ day: string; period: number; score: number; cellKey: string }> = [];
+        for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
+          const day = days[dayIndex];
+          if (!availableDays.has(key(day))) continue;
+          for (let period = 1; period <= 3; period++) {
+            const cellKey = [key(className), key(day), period].join("|");
+            const teacherKey = [teacherId, key(day), period].join("|");
+            if (cells.get(cellKey)?.[week] || teacherBusy[week].has(teacherKey)) continue;
+            const dayLoadKey = [key(className), key(day)].join("|");
+            const subjectLoadKey = [key(className), key(subject), key(day)].join("|");
+            const adjacent = [period - 1, period + 1].filter(p => p >= 1 && p <= 3).some(p => {
+              const neighbor = cells.get([key(className), key(day), p].join("|"))?.[week];
+              return neighbor && key(neighbor.subject) === key(subject);
+            });
+            const score = (subjectDayLoad[week].get(subjectLoadKey) ?? 0) * 100
+              + (classDayLoad[week].get(dayLoadKey) ?? 0) * 10
+              + (adjacent ? 1000 : 0)
+              + dayIndex * 0.001 + period * 0.0001;
+            candidates.push({ day, period, score, cellKey });
+          }
+        }
+        candidates.sort((a, b) => a.score - b.score);
+        const selected = candidates[0];
+        if (!selected) {
+          errors.push(`برای ${className} / ${subject} در هفته ${week === "even" ? "زوج" : "فرد"} جای خالی سازگار پیدا نشد.`);
+          continue;
+        }
+        const existing = cells.get(selected.cellKey) ?? {
+          class_name: className, weekday: selected.day, period: selected.period, even: null, odd: null,
+        };
+        existing[week] = { subject, teacher_id: teacherId, teacher_name: clean(requirement.teacher_name) };
+        cells.set(selected.cellKey, existing);
+        teacherBusy[week].add([teacherId, key(selected.day), selected.period].join("|"));
+        const dayLoadKey = [key(className), key(selected.day)].join("|");
+        const subjectLoadKey = [key(className), key(subject), key(selected.day)].join("|");
+        classDayLoad[week].set(dayLoadKey, (classDayLoad[week].get(dayLoadKey) ?? 0) + 1);
+        subjectDayLoad[week].set(subjectLoadKey, (subjectDayLoad[week].get(subjectLoadKey) ?? 0) + 1);
+      }
+    }
+  }
+  const slots = [...cells.values()].sort((a, b) =>
+    key(a.class_name).localeCompare(key(b.class_name), "fa")
+    || days.indexOf(a.weekday as typeof WEEKDAYS[number]) - days.indexOf(b.weekday as typeof WEEKDAYS[number])
+    || a.period - b.period
+  );
+  const validation = validateWeeklyTimetable({
+    slots, requirements: input.requirements, teacher_workdays: input.teacher_workdays,
+  });
+  return { slots, errors: [...new Set([...errors, ...validation.errors])], warnings: validation.warnings };
+}
