@@ -10,7 +10,11 @@ const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "u
 assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
-assert.ok(page.includes("function generateSchedule()") && page.includes("holidays.includes(iso)") && page.includes("rotation_no"), "Generator must order subjects and exclude holidays");
+assert.ok(page.includes("function generateSchedule()") && page.includes("holidays.includes(iso)") && page.includes("g.subjects.forEach"), "Generator must preserve entered subject order and exclude holidays");
+assert.ok(!page.includes("rotation_no") && !page.includes("subject-rotation") && !page.includes("شماره چرخشی"), "Subject rotation must be fully removed");
+assert.ok(page.includes("شماره صندلی") && page.includes("x.seat_no"), "Published student schedules must display the assigned seat number");
+assert.ok(api.includes("crypto.getRandomValues") && api.includes("previousSeatByGrade") && api.includes("exam_seats"), "Publishing must randomly allocate and persist different seat numbers per exam");
+assert.ok(api.includes("seatMap.get(examKey)") && api.includes('.eq("student_id", pupil.id)'), "Student endpoint must retrieve only the signed-in student's seat assignments");
 assert.ok(page.includes('role==="student"') && page.includes('action:"student_list"'), "Student view must load only published grade schedules");
 assert.ok(api.includes('if (!manager && !deputy)') && api.includes("انتشار نهایی فقط با تأیید مدیر"), "Only manager/deputy may manage; only manager may publish");
 assert.ok(api.includes('.eq("school_id", schoolId)') && api.includes('.eq("tenant_school_id", schoolId)'), "All planner and student queries must be school-scoped");
