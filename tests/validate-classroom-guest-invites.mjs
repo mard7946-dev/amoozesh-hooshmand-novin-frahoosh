@@ -22,6 +22,8 @@ assert.match(token, /host: false, screenShare: false, role: "guest"/);
 assert.match(token, /auth\.getUser\(bearer\)/);
 assert.match(meetings, /if \(action === "guest_link"\)/);
 assert.match(meetings, /max_uses: 10, use_count: 0/);
+assert.match(meetings, /from\("school_memberships"\)/);
+assert.match(meetings, /from\("classroom_meeting_host_slots"\)\.insert/);
 assert.match(capacityMigration, /check \(max_uses between 1 and 10\)/i);
 assert.match(capacityMigration, /claim_classroom_guest_invite/);
 assert.match(capacityMigration, /claim_classroom_meeting_host_slot/);
