@@ -91,7 +91,8 @@ function validatePlan(body: any) {
       const previous = grade.subjects.find((s: any) => clean(s.subject, 100) === clean(ordered[i - 1].subject, 100));
       const gap = previous?.difficulty === "heavy" ? 3 : previous?.difficulty === "light" ? 1 : 2;
       const daysBetween = Math.round((Date.parse(ordered[i].exam_date + "T12:00:00Z") - Date.parse(ordered[i - 1].exam_date + "T12:00:00Z")) / 86400000);
-      if (daysBetween < gap) throw new Error("فاصلهٔ مطالعهٔ پایه " + clean(grade.grade, 40) + " رعایت نشده است؛ پس از هر درس باید فاصلهٔ متناسب با دشواری آن حفظ شود.");
+      const restDays = Math.max(0, daysBetween - 1);
+      if (restDays < gap) throw new Error("فاصلهٔ مطالعهٔ پایه " + clean(grade.grade, 40) + " رعایت نشده است؛ پس از هر درس باید فاصلهٔ متناسب با دشواری آن حفظ شود.");
     }
   }
   return { title, start, end };
