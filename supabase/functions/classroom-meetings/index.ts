@@ -55,6 +55,13 @@ Deno.serve(async (req: Request) => {
       return reply({ message: "این سرویس با خرید سرور بیرونی فعال خواهد شد.", service_disabled: true }, 403);
     }
     if (!isManager(profile.role)) return reply({ message: "فقط مدیر مدرسه اجازه ساخت و مدیریت جلسه اختصاصی را دارد." }, 403);
+    const { data: managerMemberships, error: managerMembershipError } = await admin.from("school_memberships")
+      .select("role").eq("school_id", profile.tenant_school_id)
+      .eq("auth_user_id", authData.user.id).eq("is_active", true);
+    if (managerMembershipError) throw managerMembershipError;
+    if (!(managerMemberships ?? []).some((membership: any) => isManager(membership.role))) {
+      return reply({ message: "عضویت فعال مدیر در این مدرسه تأیید نشد." }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = clean(body.action);
