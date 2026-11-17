@@ -78,8 +78,9 @@ jobs:
       - name: Prepare static portal
         run: |
           mkdir -p _site
-          cp manager-assistant.html teacher-assistant.html report-cards.html school-library.html question-bank.html index.html manifest.webmanifest service-worker.js portal.html panel-return.js student-module.html platform-admin.html settings.html reports.html family-communication.html parent-management.html parent-meetings.html family-invitations.html family-invitations-review.html parent-invitations.html academic-review.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html exam-planner.html _site/
+          cp manager-assistant.html teacher-assistant.html school-library.html question-bank.html index.html manifest.webmanifest service-worker.js portal.html panel-return.js student-module.html platform-admin.html settings.html reports.html family-communication.html parent-management.html parent-meetings.html family-invitations.html family-invitations-review.html parent-invitations.html academic-review.html messages.html users.html bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html exam-planner.html _site/
           cp finance.html cashbook.html about.html _site/
+          cp report-cards.html _site/
           printf '%s' "{\\\"build\\\":\\\"$GITHUB_RUN_NUMBER\\\",\\\"commit\\\":\\\"${GITHUB_SHA:0:7}\\\",\\\"built_at\\\":\\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"}" > _site/build-info.json
           cp jalali-date.js reports-utils.js _site/
           mkdir -p _site/assets
