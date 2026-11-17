@@ -96,7 +96,7 @@ export function generateWeeklyTimetable(input: {
   teacher_workdays: TeacherWorkdays[];
 }) {
   const days = [...WEEKDAYS];
-  const workdays = new Map(input.teacher_workdays.map(row => [Number(row.teacher_id), new Set((row.weekdays ?? []).map(key))]));
+  const workdays = new Map<number, Set<string>>(input.teacher_workdays.map(row => [Number(row.teacher_id), new Set((row.weekdays ?? []).map(key))] as const));
   const cells = new Map<string, Slot>();
   const teacherBusy: Record<WeekType, Set<string>> = { even: new Set(), odd: new Set() };
   const classDayLoad: Record<WeekType, Map<string, number>> = { even: new Map(), odd: new Map() };
