@@ -9,7 +9,7 @@ const cors = {
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...cors, "Content-Type": "application/json; charset=utf-8" },
 });
-const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
+const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();\nconst digits = (value: string) => value.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 const norm = (value: unknown) => clean(value).replace(/\s+/g, "").toLocaleLowerCase("fa");
 const managerRoles = ["manager", "مدیر", "مدیریت", "executive", "educational", "deputy", "معاون", "معاون اجرایی", "معاون آموزشی"];
 const isManagerRole = (role: unknown) => managerRoles.some(item => norm(role).includes(norm(item)));
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "validate" || action === "save_draft" || action === "publish") {
-      const academicYear = clean(body.academic_year);
+      const academicYear = digits(clean(body.academic_year));
       const title = clean(body.title) || "برنامه اصلی";
       const requirements = Array.isArray(body.requirements) ? body.requirements as Requirement[] : [];
       const teacherWorkdays = Array.isArray(body.teacher_workdays) ? body.teacher_workdays as TeacherWorkdays[] : [];
