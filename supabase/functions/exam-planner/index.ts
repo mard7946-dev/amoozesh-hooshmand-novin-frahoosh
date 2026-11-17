@@ -172,22 +172,51 @@ Deno.serve(async (req: Request) => {
       if (planError) throw planError;
       if (!plan || plan.status !== "draft") return reply({ message: "برنامهٔ پیش‌نویس پیدا نشد یا قبلاً منتشر شده است." }, 409);
       const assignments: any[] = [];
+      const previousSeatByGrade = new Map<string, Map<number, number>>();
       for (const item of (Array.isArray(plan.schedule) ? plan.schedule : [])) {
         const { data: pupils, error: pupilsError } = await admin.from("students")
           .select("id,class_name").eq("tenant_school_id", schoolId).eq("grade", item.grade).order("id", { ascending: true });
         if (pupilsError) throw pupilsError;
         if (!pupils?.length) throw new Error("برای پایه " + clean(item.grade, 40) + " دانش‌آموزی ثبت نشده است؛ انتشار متوقف شد.");
-        const shuffled = [...pupils];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const bytes = new Uint32Array(1); crypto.getRandomValues(bytes);
-          const j = bytes[0] % (i + 1); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        const previous = previousSeatByGrade.get(clean(item.grade, 40)) ?? new Map<number, number>();
+        let shuffled = [...pupils];
+        const shuffle = (list: any[]) => {
+          const copy = [...list];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const bytes = new Uint32Array(1); crypto.getRandomValues(bytes);
+            const j = bytes[0] % (i + 1); [copy[i], copy[j]] = [copy[j], copy[i]];
+          }
+          return copy;
+        };
+        if (previous.size) {
+          let valid = false;
+          for (let attempt = 0; attempt < 100 && !valid; attempt++) {
+            shuffled = shuffle(pupils);
+            valid = shuffled.every((pupil: any, index: number) => previous.get(pupil.id) !== index + 1);
+          }
+          if (!valid) {
+            const ordered = [...pupils].sort((a: any, b: any) => (previous.get(a.id) ?? 0) - (previous.get(b.id) ?? 0));
+            shuffled = ordered.reverse();
+            if (shuffled.some((pupil: any, index: number) => previous.get(pupil.id) === index + 1)) {
+              shuffled = [...pupils].sort((a: any, b: any) => a.id - b.id);
+              const seats = shuffled.map((pupil: any) => ({ pupil, seat: ((previous.get(pupil.id) ?? 0) % pupils.length) + 1 }));
+              seats.sort((a: any, b: any) => a.seat - b.seat);
+              shuffled = seats.map((entry: any) => entry.pupil);
+            }
+          }
         }
+        const next = new Map<number, number>();
         const examKey = plan.id + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10);
-        shuffled.forEach((pupil: any, index: number) => assignments.push({
-          student_id: pupil.id, exam_name: examKey, seat_no: String(index + 1),
-          subject: clean(item.subject, 100), exam_date: clean(item.exam_date, 10),
-          class_name: clean(pupil.class_name, 80), tenant_school_id: schoolId,
-        }));
+        shuffled.forEach((pupil: any, index: number) => {
+          const seat = index + 1;
+          next.set(pupil.id, seat);
+          assignments.push({
+            student_id: pupil.id, exam_name: examKey, seat_no: String(seat),
+            subject: clean(item.subject, 100), exam_date: clean(item.exam_date, 10),
+            class_name: clean(pupil.class_name, 80), tenant_school_id: schoolId,
+          });
+        });
+        previousSeatByGrade.set(clean(item.grade, 40), next);
       }
       try {
         for (let offset = 0; offset < assignments.length; offset += 500) {
