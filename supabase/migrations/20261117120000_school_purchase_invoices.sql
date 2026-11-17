@@ -82,7 +82,7 @@ using (
   and private.frahoosh_current_role() = any(array['manager','مدیر','مدیریت','accountant'])
   and exists (
     select 1 from public.finance_purchase_invoices i
-    where i.id = invoice_id and i.tenant_school_id = tenant_school_id
+    where i.id = finance_purchase_payments.invoice_id and i.tenant_school_id = finance_purchase_payments.tenant_school_id
   )
 )
 with check (
@@ -92,7 +92,7 @@ with check (
   and created_by = auth.uid()
   and exists (
     select 1 from public.finance_purchase_invoices i
-    where i.id = invoice_id and i.tenant_school_id = tenant_school_id
+    where i.id = finance_purchase_attachments.invoice_id and i.tenant_school_id = finance_purchase_attachments.tenant_school_id
   )
 );
 
@@ -163,3 +163,45 @@ using (
       and private.frahoosh_school_access_active(i.tenant_school_id)
   )
 );
+
+-- Serialize supplier payment inserts against the invoice row so concurrent
+-- payments cannot make the paid total exceed the invoice amount.
+create or replace function private.finance_purchase_payment_guard()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_total numeric(18,0);
+  v_school uuid;
+  v_paid numeric(18,0);
+begin
+  if auth.uid() is null then raise exception 'نشست معتبر نیست'; end if;
+  select i.total_amount,i.tenant_school_id
+    into v_total,v_school
+  from public.finance_purchase_invoices i
+  where i.id = new.invoice_id
+  for update;
+  if not found then raise exception 'فاکتور خرید پیدا نشد'; end if;
+  if v_school <> private.frahoosh_current_school_id()
+     or new.tenant_school_id <> v_school
+     or not private.frahoosh_school_access_active(v_school) then
+    raise exception 'فاکتور متعلق به مدرسه فعال نیست';
+  end if;
+  if private.frahoosh_current_role() <> all(array['manager','مدیر','مدیریت','accountant']) then
+    raise exception 'فقط مدیر یا حسابدار مجاز به ثبت پرداخت است';
+  end if;
+  select coalesce(sum(p.amount),0) into v_paid
+  from public.finance_purchase_payments p
+  where p.invoice_id = new.invoice_id;
+  if v_paid + new.amount > v_total then
+    raise exception 'مبلغ پرداخت از مانده فاکتور بیشتر است';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists finance_purchase_payment_guard on public.finance_purchase_payments;
+create trigger finance_purchase_payment_guard
+before insert on public.finance_purchase_payments
+for each row execute function private.finance_purchase_payment_guard();
