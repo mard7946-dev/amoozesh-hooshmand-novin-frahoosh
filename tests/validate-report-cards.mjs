@@ -10,6 +10,8 @@ assert.ok(script,"Report card page script exists");
 assert.doesNotThrow(()=>new Function(script),"Report card page JavaScript parses");
 for(const subject of ["عربی","علوم","زبان","ریاضی","مطالعات","فارسی","انضباط"])assert.ok(page.includes(subject)&&api.includes(subject),subject+" is present in the form and API");
 assert.match(api,/managerRoles/);
+assert.match(api,/executive_deputy/);
+assert.doesNotMatch(api,/administrator/);
 assert.match(api,/executiveRoles/);
 assert.match(api,/school_memberships/);
 assert.match(api,/is_active",true/);
