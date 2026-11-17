@@ -6,3 +6,6 @@ verify_jwt = false
 # The host login resolves the full name within an active school membership before delegating to school-portal-login.
 [functions.classroom-host-login]
 verify_jwt = false
+
+[functions.report-cards]
+verify_jwt = false
