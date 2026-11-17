@@ -21,7 +21,17 @@ Deno.serve(async (req: Request) => {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return reply({ message: "ابتدا وارد سامانه شوید." }, 401);
   const url = (Deno.env.get("SUPABASE_URL") ?? "").trim();
-  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  let serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const secretBundle = (Deno.env.get("SUPABASE_SECRET_KEYS") ?? "").trim();
+  if (secretBundle) {
+    try {
+      const parsed = JSON.parse(secretBundle);
+      const candidate = typeof parsed === "string" ? parsed : parsed.default ?? parsed.service_role ?? parsed.serviceRole ?? parsed.service_role_key;
+      if (typeof candidate === "string" && candidate.trim()) serviceKey = candidate.trim();
+    } catch {
+      if (secretBundle.startsWith("sb_secret_") || secretBundle.startsWith("eyJ")) serviceKey = secretBundle;
+    }
+  }
   if (!url || !serviceKey) return reply({ message: "اتصال امن پایگاه داده تنظیم نشده است." }, 503);
   try {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
