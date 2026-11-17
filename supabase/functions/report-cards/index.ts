@@ -2,8 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const clean=(v:unknown,max=180)=>String(v??"").trim().slice(0,max);
-const managerRoles=new Set(["manager","مدیر","مدیریت","principal","administrator","admin"]);
-const executiveRoles=new Set(["executive","معاون اجرایی","معاونت اجرایی","معاون اجرایی مدرسه"]);
+const managerRoles=new Set(["manager","مدیر","مدیریت"]);
+const executiveRoles=new Set(["executive","executive_deputy","معاون اجرایی","معاونت اجرایی","معاون اجرایی مدرسه"]);
 const subjects=["عربی","علوم","زبان","ریاضی","مطالعات","فارسی","انضباط"];
 async function getCaller(admin:any,token:string){
  const {data:{user},error}=await admin.auth.getUser(token);
@@ -45,13 +45,14 @@ Deno.serve(async(req:Request)=>{
    return reply({school:school.data,students:students.data??[],teachers:teachers.data??[],cards:cards.data??[],subjects});
   }
   if(action==="save"){
-   const student=body.student??{},studentName=clean(student.name,160),grade=clean(student.grade,50),className=clean(student.class_name,80);
+   const student=body.student??{};let studentName=clean(student.name,160),grade=clean(student.grade,50),className=clean(student.class_name,80);
    const academicYear=clean(body.academic_year,30),term=clean(body.term||"میان‌ترم",40);
    if(studentName.length<2||!grade||!className||!academicYear)throw new Error("نام دانش‌آموز، پایه، کلاس و سال تحصیلی الزامی است.");
    const studentId=Number.isInteger(Number(student.id))&&Number(student.id)>0?Number(student.id):null;
    if(studentId){
     const {data:existing,error}=await admin.from("students").select("id,first_name,last_name,grade,class_name").eq("id",studentId).eq("tenant_school_id",schoolId).maybeSingle();
     if(error||!existing)throw new Error("دانش‌آموز انتخاب‌شده متعلق به این مدرسه نیست.");
+    studentName=clean([existing.first_name,existing.last_name].filter(Boolean).join(" "),160);grade=clean(existing.grade,50);className=clean(existing.class_name,80);
    }
    if(!Array.isArray(body.subjects)||body.subjects.length!==subjects.length)throw new Error("اطلاعات هر هفت درس باید تکمیل شود.");
    const cleanSubjects=body.subjects.map((x:any)=>{
