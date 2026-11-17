@@ -17,6 +17,17 @@ const deputyRoles = new Set(["deputy", "معاون", "معاونت", "executive"
   "معاون پرورشی", "معاونت اجرایی", "معاونت آموزشی", "معاونت پرورشی"]);
 const studentRoles = new Set(["student", "دانش آموز", "دانش‌آموز", "دانشآموز"]);
 function validDate(value: unknown) { const v = String(value ?? ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = new Date(v + "T00:00:00Z"); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; }
+async function getStudentsForGrade(admin: any, schoolId: string, grade: string) {
+  const all: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await admin.from("students").select("id,class_name")
+      .eq("tenant_school_id", schoolId).eq("grade", grade).order("id", { ascending: true }).range(from, from + 999);
+    if (error) throw error;
+    const batch = data ?? []; all.push(...batch);
+    if (batch.length < 1000) break;
+  }
+  return all;
+}
 function validatePlan(body: any) {
   const title = clean(body.title, 160), start = clean(body.start_date, 10), end = clean(body.end_date, 10);
   if (title.length < 2 || !validDate(start) || !validDate(end) || end < start) throw new Error("عنوان و بازهٔ زمانی معتبر وارد کنید.");
@@ -130,6 +141,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!manager && !deputy) return reply({ message: "فقط مدیر و معاونت مجاز به مدیریت برنامهٔ امتحانات هستند." }, 403);
+    if (action === "grade_counts") {
+      if (!Array.isArray(body.grades) || !body.grades.length || body.grades.length > 20) return reply({ message: "فهرست پایه‌ها معتبر نیست." }, 400);
+      const unique = [...new Set(body.grades.map((g: unknown) => clean(g, 40)).filter(Boolean))];
+      if (unique.length !== body.grades.length) return reply({ message: "نام پایه‌ها باید کامل و یکتا باشد." }, 400);
+      const counts = [];
+      for (const grade of unique) {
+        const pupils = await getStudentsForGrade(admin, schoolId, grade);
+        counts.push({ grade, student_count: pupils.length, seat_from: pupils.length ? 1 : null, seat_to: pupils.length || null, class_count: new Set(pupils.map((p: any) => clean(p.class_name, 80)).filter(Boolean)).size });
+      }
+      return reply({ ok: true, counts });
+    }
     if (action === "list") {
       const { data, error } = await admin.from("school_exam_plans")
         .select("id,title,start_date,end_date,allowed_weekdays,holidays,grade_plans,schedule,status,published_at,updated_at")
@@ -174,10 +196,8 @@ Deno.serve(async (req: Request) => {
       const assignments: any[] = [];
       const previousSeatByGrade = new Map<string, Map<number, number>>();
       for (const item of (Array.isArray(plan.schedule) ? plan.schedule : [])) {
-        const { data: pupils, error: pupilsError } = await admin.from("students")
-          .select("id,class_name").eq("tenant_school_id", schoolId).eq("grade", item.grade).order("id", { ascending: true });
-        if (pupilsError) throw pupilsError;
-        if (!pupils?.length) throw new Error("برای پایه " + clean(item.grade, 40) + " دانش‌آموزی ثبت نشده است؛ انتشار متوقف شد.");
+        const pupils = await getStudentsForGrade(admin, schoolId, clean(item.grade, 40));
+        if (!pupils.length) throw new Error("برای پایه " + clean(item.grade, 40) + " دانش‌آموزی ثبت نشده است؛ انتشار متوقف شد.");
         const previous = previousSeatByGrade.get(clean(item.grade, 40)) ?? new Map<number, number>();
         let shuffled = [...pupils];
         const shuffle = (list: any[]) => {
