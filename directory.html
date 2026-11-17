@@ -56,7 +56,7 @@ function render(){
   if(!people.length)list.append(el('div','empty','دبیر یا کارمندی در اطلاعات ثبت‌شده پیدا نشد.'));
  }
 }
-function academicDate(v){if(!v)return '—';const raw=String(v);if(/^\\d{4}-\\d{2}-\\d{2}/.test(raw)){const d=new Date(raw.slice(0,10)+'T12:00:00');if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}return raw}
+function academicDate(v){if(!v)return '—';const raw=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(raw)){const d=new Date(raw.slice(0,10)+'T12:00:00');if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}return raw}
 function addAcademicTable(box,title,headers,rows,emptyText){
  box.append(el('h2','',title+' · '+rows.length));
  if(!rows.length){box.append(el('p','empty',emptyText));return}
