@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081326"><title>دستیار هوشمند دبیر | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#10213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#f5ce7a;--red:#ffaaaa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font:14px Tahoma,"Segoe UI",sans-serif}main{max-width:1180px;margin:auto;padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 2px 18px}.top h1{margin:0 0 7px;font-size:clamp(22px,4vw,30px);color:var(--mint)}p,.muted{color:var(--muted);line-height:1.9}.muted{font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}button,a.btn{font:inherit;text-decoration:none;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;cursor:pointer}button.primary{background:#135c50;border-color:var(--mint)}button:disabled{opacity:.55;cursor:wait}.status{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#10213a;margin:8px 0 14px;line-height:1.8}.status.error{border-color:#824d4d;background:#3a2228;color:#ffd0d0}.status.ok{border-color:#276b57;color:#b8f5da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin:14px 0}.metric,.panel{border:1px solid var(--line);border-radius:15px;background:#0e1b32;padding:15px}.metric small{display:block;color:var(--muted);line-height:1.8}.metric strong{display:block;font-size:27px;color:var(--mint);margin-top:8px;font-variant-numeric:tabular-nums}.panel{margin:14px 0}.panel h2{font-size:17px;margin:0 0 12px}.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.list{display:grid;gap:8px}.item{padding:11px;border:1px solid #293e5a;border-radius:10px;background:#0a172b;line-height:1.9}.item strong{display:block}.empty{color:var(--muted);padding:12px;text-align:center}.pill{display:inline-block;border:1px solid #725b2d;color:#ffe4a5;border-radius:30px;padding:3px 8px;font-size:11px;margin-inline-start:6px}.shortcuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px}.shortcuts a{display:block;border:1px solid var(--line);border-radius:11px;background:#142944;padding:12px;color:var(--text);text-decoration:none;line-height:1.8}.shortcuts a:hover{border-color:var(--mint)}.foot{font-size:11px;color:var(--muted);line-height:1.9;margin:18px 0}.class-card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#0a172b}.class-card h3{font-size:15px;margin:0 0 9px}.class-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}.class-stats div{background:#142944;border-radius:8px;padding:8px}.class-stats b{display:block;color:var(--mint);font-size:18px}.class-stats small{color:var(--muted)}.class-list{display:grid;gap:10px}.suggestion{border-right:3px solid var(--gold);padding:10px 12px;background:#17263a;border-radius:8px;line-height:1.9}.suggestion.info{border-color:var(--mint)}@media(max-width:520px){main{padding:12px}.metric strong{font-size:23px}}
+</style>
+</head>
+<body><main>
+<header class="top"><div><h1>🧠 دستیار هوشمند دبیر</h1><div class="muted" id="teacherName">در حال بررسی حساب دبیر…</div><p>نمای یکپارچهٔ کلاس‌های تخصیص‌یافته، تکالیف، حضور و غیاب و ارزشیابی</p></div><div class="actions"><button id="refresh" class="primary">به‌روزرسانی اطلاعات</button><button id="back">بازگشت به پنل دبیر</button></div></header>
+<div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست و دریافت اطلاعات…</div>
+<section id="dashboard" hidden>
+<div class="muted" id="updatedAt"></div>
+<div class="grid">
+<div class="metric"><small>کلاس و درس تخصیص‌یافته</small><strong id="classes">—</strong></div>
+<div class="metric"><small>دانش‌آموزان کلاس‌های من</small><strong id="students">—</strong></div>
+<div class="metric"><small>غیبت‌های ۳۰ روز اخیر</small><strong id="absences">—</strong></div>
+<div class="metric"><small>تأخیرهای ۳۰ روز اخیر</small><strong id="late">—</strong></div>
+<div class="metric"><small>تکالیف باقیمانده</small><strong id="pending">—</strong></div>
+<div class="metric"><small>میانگین نمرات ثبت‌شده</small><strong id="average">—</strong></div>
+</div>
+<div class="split">
+<section class="panel"><h2>پیشنهادهای پیگیری</h2><div id="suggestions" class="list"></div></section>
+<section class="panel"><h2>موارد نزدیک به موعد</h2><div id="dueSoon" class="list"></div></section>
+</div>
+<section class="panel"><h2>وضعیت کلاس‌ها و درس‌های من</h2><div id="classBreakdown" class="class-list"></div></section>
+<section class="panel"><h2>میانبرهای کاری</h2><div class="shortcuts">
+<a href="classroom/management.html?tab=classes">🗓️ برنامه روزانه و هفتگی<br><small>مشاهده برنامه کلاس‌های من</small></a>
+<a href="classroom/management.html?tab=attendance">🕒 حضور و غیاب<br><small>ثبت و پیگیری وضعیت حضور</small></a>
+<a href="classroom/management.html?tab=grades">🧮 ارزشیابی و نمرات<br><small>ثبت نمره و ارزیابی</small></a>
+<a href="classroom/management.html?tab=assignments">📚 تکالیف<br><small>ثبت تکلیف و بررسی انجام آن</small></a>
+<a href="classroom/management.html?tab=discipline">⚖️ انضباط و تشویق<br><small>ثبت و پیگیری سوابق کلاس</small></a>
+<a href="question-bank.html">📖 بانک سؤال<br><small>انتخاب سؤال از بانک مدرسه</small></a>
+</div></section>
+</section>
+<div class="foot">این دستیار از داده‌های عملیاتی ثبت‌شده در سامانه گزارش می‌سازد و پیشنهادهای آن قطعی یا جایگزین تصمیم دبیر نیست. اطلاعات فقط برای عضویت فعال دبیر، مدرسهٔ همان حساب و کلاس‌ها و درس‌های تخصیص‌یافته نمایش داده می‌شود. نبودن رکورد لزوماً به معنی انجام‌نشدن فعالیت نیست.</div>
+</main>
+<script src="panel-return.js"></script>
+<script>
+"use strict";
+const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/classroom-management";
+const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const $=id=>document.getElementById(id);
+const fa=value=>String(value??0).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+function setStatus(message,error=false){$("status").textContent=message;$("status").className="status"+(error?" error":"")}
+function addItem(root,title,detail){const item=document.createElement("div");item.className="item";const strong=document.createElement("strong");strong.textContent=title;const small=document.createElement("div");small.className="muted";small.textContent=detail;item.append(strong,small);root.append(item)}
+function addSuggestion(root,title,detail,info=false){const item=document.createElement("div");item.className="suggestion"+(info?" info":"");const strong=document.createElement("strong");strong.textContent=title;const small=document.createElement("div");small.textContent=detail;item.append(strong,small);root.append(item)}
+function render(summary){
+ const rows=summary.classes||[],totals=summary.totals||{};
+ $("classes").textContent=fa(rows.length);
+ $("students").textContent=fa(totals.students||0);
+ $("absences").textContent=fa(totals.absences_30d||0);
+ $("late").textContent=fa(totals.late_30d||0);
+ $("pending").textContent=fa(totals.pending_submissions||0);
+ const gradeRows=rows.filter(x=>Number.isFinite(Number(x.grade_average))&&x.grade_average!==null);
+ const gradeCount=gradeRows.reduce((n,x)=>n+Number(x.grade_count||0),0);
+ const average=gradeCount?gradeRows.reduce((n,x)=>n+Number(x.grade_average||0)*Number(x.grade_count||0),0)/gradeCount:null;
+ $("average").textContent=average===null?"—":fa(average.toFixed(2));
+ $("updatedAt").textContent="آخرین به‌روزرسانی: "+new Intl.DateTimeFormat("fa-IR",{dateStyle:"medium",timeStyle:"short"}).format(new Date(summary.generated_at||Date.now()));
+ const suggestions=$("suggestions");suggestions.replaceChildren();
+ if(!rows.length)addSuggestion(suggestions,"اتصال برنامه تدریس پیدا نشد","از مدیریت مدرسه بخواهید عضویت دبیر و تخصیص کلاس/درس را بررسی کند.");
+ if(rows.length&&totals.attendance_records_30d===0)addSuggestion(suggestions,"حضور و غیاب ثبت‌شده‌ای در ۳۰ روز اخیر نیست","اگر کلاس‌ها برگزار شده‌اند، دفتر حضور و غیاب را برای درس‌های خود تکمیل کنید.");
+ if(totals.pending_submissions>0)addSuggestion(suggestions,"پیگیری تکالیف باقی‌مانده","برای "+fa(totals.pending_submissions)+" وضعیت تکلیف هنوز انجام‌نشده یا ناقص ثبت شده است.");
+ if(totals.absences_30d>0)addSuggestion(suggestions,"مرور وضعیت غیبت‌ها","در ۳۰ روز اخیر "+fa(totals.absences_30d)+" رکورد غیبت ثبت شده؛ در صورت نیاز سوابق را با دفتر کلاس تطبیق دهید.");
+ if(totals.late_30d>0)addSuggestion(suggestions,"مرور تأخیرها","در ۳۰ روز اخیر "+fa(totals.late_30d)+" رکورد تأخیر ثبت شده است.");
+ const low=rows.filter(x=>x.grade_average!==null&&Number(x.grade_average)<12);
+ low.forEach(x=>addSuggestion(suggestions,"بررسی نتیجهٔ ارزشیابی · "+x.class_name+" · "+x.subject,"میانگین نمره‌های ثبت‌شده "+fa(x.grade_average)+" از ۲۰ است؛ پیش از هر اقدام، تعداد و نوع ارزشیابی‌ها را بررسی کنید."));
+ if(!suggestions.children.length)addSuggestion(suggestions,"وضعیت ثبت‌شده نیازمند اقدام فوری نشان نمی‌دهد","برای به‌روز ماندن گزارش، اطلاعات کلاس‌ها و فعالیت‌ها را پس از هر جلسه ثبت کنید.",true);
+ const due=$("dueSoon");due.replaceChildren();const upcoming=rows.flatMap(x=>(x.assignments||[]).filter(a=>a.due_date).map(a=>({class_name:x.class_name,subject:x.subject,title:a.title,due_date:a.due_date}))).sort((a,b)=>a.due_date.localeCompare(b.due_date));
+ if(!upcoming.length)addItem(due,"تکلیف دارای موعد ثبت‌شده‌ای پیدا نشد","تکالیف فعال و تاریخ‌دار اینجا نمایش داده می‌شوند.");
+ else upcoming.slice(0,12).forEach(x=>addItem(due,x.title,x.class_name+" · "+x.subject+" · موعد: "+x.due_date));
+ const breakdown=$("classBreakdown");breakdown.replaceChildren();
+ if(!rows.length)addItem(breakdown,"کلاسی یافت نشد","پس از اتصال تخصیص‌های فعال دبیر، گزارش اینجا نمایش داده می‌شود.");
+ rows.forEach(x=>{const card=document.createElement("article");card.className="class-card";const heading=document.createElement("h3");heading.textContent=x.class_name+" · "+x.subject+(x.grade?" · "+x.grade:"");const stats=document.createElement("div");stats.className="class-stats";const values=[["دانش‌آموز",x.student_count],["غیبت",x.absences_30d],["تأخیر",x.late_30d],["ارزشیابی",x.grade_count],["میانگین",x.grade_average===null?"—":x.grade_average],["تکلیف باقی‌مانده",x.pending_submissions]];values.forEach(pair=>{const cell=document.createElement("div");const b=document.createElement("b");b.textContent=pair[1]==="—"?"—":fa(pair[1]);const small=document.createElement("small");small.textContent=pair[0];cell.append(b,small);stats.append(cell)});card.append(heading,stats);breakdown.append(card)});
+}
+async function load(){
+ if(!token){setStatus("نشست ورود پیدا نشد؛ از پنل فراهوش دوباره وارد شوید.",true);return}
+ if(role!=="teacher"){setStatus("این صفحه فقط برای نقش دبیر فعال است.",true);return}
+ $("refresh").disabled=true;setStatus("در حال دریافت آمار کلاس‌ها و درس‌های تخصیص‌یافته…");
+ try{
+  const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,"apikey":KEY},body:JSON.stringify({action:"teacher_assistant_summary",active_role:role})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.ok)throw new Error(data.message||"دریافت گزارش دستیار دبیر ناموفق بود.");
+  render(data.summary||{});$("dashboard").hidden=false;$("teacherName").textContent="گزارش اختصاصی حساب دبیر · اطلاعات مدرسهٔ فعال";
+  setStatus("اطلاعات از سرویس امن مدرسه دریافت شد.",false);$("status").classList.add("ok");
+ }catch(error){setStatus(error.message||"ارتباط با سرویس برقرار نشد.",true)}
+ finally{$("refresh").disabled=false}
+}
+$("refresh").addEventListener("click",load);
+$("back").addEventListener("click",()=>{if(typeof window.frahooshReturnToPanel==="function")window.frahooshReturnToPanel("teacher");else location.href="portal.html?step=panel&role=teacher"});
+load();
+</script>
+</body></html>
