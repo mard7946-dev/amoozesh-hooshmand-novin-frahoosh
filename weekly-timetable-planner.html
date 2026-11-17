@@ -37,7 +37,8 @@ table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:right
 <div id="slotGrid"><p class="small">ابتدا کلاس را انتخاب کنید.</p></div>
 <div class="actions no-print"><button id="generate" class="primary">چینش خودکار و متعادل</button><button id="validate">بررسی تداخل و تعداد زنگ‌ها</button><button id="saveDraft" class="primary">ذخیره پیش‌نویس</button><button id="publish" class="warn">انتشار برنامه تأییدشده</button><button id="print">چاپ جدول کلاس</button></div>
 <div id="validation" class="message" aria-live="polite">پس از تکمیل اطلاعات، برنامه را بررسی کنید.</div></section>
-<section class="panel"><h2>۴. گزارش کنترل برنامه</h2><div class="small">کنترل‌ها برای هفته زوج و فرد جداگانه انجام می‌شوند: هم‌زمانی دبیر در دو کلاس، روز غیرکاری، تعداد زنگ هر درس، و ظرفیت ۱۵ زنگ هر کلاس.</div></section>
+<section class="panel"><h2>۴. برنامه دبیر</h2><p class="hint">با انتخاب دبیر، برنامه او در همه کلاس‌ها و به تفکیک هفته زوج و فرد نمایش داده می‌شود.</p><label class="no-print">انتخاب دبیر<select id="teacherSelect"><option value="">انتخاب دبیر</option></select></label><div class="table-wrap" id="teacherScheduleTable">پس از ثبت نیازهای درسی، برنامه دبیر نمایش داده می‌شود.</div></section>
+<section class="panel"><h2>۵. گزارش کنترل برنامه</h2><div class="small">کنترل‌ها برای هفته زوج و فرد جداگانه انجام می‌شوند: هم‌زمانی دبیر در دو کلاس، روز غیرکاری، تعداد زنگ هر درس، و ظرفیت ۱۵ زنگ هر کلاس.</div></section>
 </main>
 <script>
 const endpoint="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/weekly-timetable-planner";
@@ -57,9 +58,19 @@ function renderRequirements(){
  const root=$("requirementsTable");if(!requirements.length){root.textContent="هنوز نیازی ثبت نشده است.";renderClassOptions();renderWorkdays();return;}
  root.innerHTML='<table><thead><tr><th>کلاس</th><th>درس</th><th>دبیر</th><th>زنگ در هر هفته</th><th>عملیات</th></tr></thead><tbody>'+requirements.map((r,i)=>'<tr><td>'+escapeHtml(r.class_name)+'</td><td>'+escapeHtml(r.subject)+'</td><td>'+escapeHtml(r.teacher_name)+'</td><td>'+r.weekly_periods+'</td><td><button data-remove-requirement="'+i+'">حذف</button></td></tr>').join("")+'</tbody></table>';
  root.querySelectorAll("[data-remove-requirement]").forEach(btn=>btn.addEventListener("click",()=>{const i=Number(btn.dataset.removeRequirement);requirements.splice(i,1);slotSelections={};renderRequirements();renderGrid();}));
- renderClassOptions();renderWorkdays();renderGrid();
+ renderClassOptions();renderWorkdays();renderTeacherOptions();renderGrid();
 }
 function renderClassOptions(){const names=[...new Set([...bootstrap.assignments.map(x=>clean(x.class_name)),...requirements.map(x=>x.class_name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fa"));const current=$("classSelect").value;$("classSelect").innerHTML='<option value="">انتخاب کلاس</option>'+names.map(n=>'<option>'+escapeHtml(n)+'</option>').join("");if(names.includes(current))$("classSelect").value=current;else if(names.length)$("classSelect").value=names[0];}
+function renderTeacherOptions(){
+ const current=$("teacherSelect").value;const map=new Map();for(const r of requirements)map.set(Number(r.teacher_id),r.teacher_name);
+ $("teacherSelect").innerHTML='<option value="">انتخاب دبیر</option>'+[...map.entries()].map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join("");
+ if(map.has(Number(current)))$("teacherSelect").value=current;renderTeacherSchedule();
+}
+function renderTeacherSchedule(){
+ const id=Number($("teacherSelect").value);const rows=buildSlots().filter(s=>(s.even&&Number(s.even.teacher_id)===id)||(s.odd&&Number(s.odd.teacher_id)===id)).sort((a,b)=>days.indexOf(a.weekday)-days.indexOf(b.weekday)||a.period-b.period);
+ if(!id){$("teacherScheduleTable").textContent="یک دبیر را انتخاب کنید.";return;}
+ $("teacherScheduleTable").innerHTML=rows.length?'<table><thead><tr><th>روز</th><th>زنگ</th><th>هفته زوج</th><th>هفته فرد</th></tr></thead><tbody>'+rows.map(s=>'<tr><td>'+escapeHtml(s.weekday)+'</td><td>'+s.period+'</td><td>'+escapeHtml(s.even&&Number(s.even.teacher_id)===id?s.class_name+" · "+s.even.subject:"—")+'</td><td>'+escapeHtml(s.odd&&Number(s.odd.teacher_id)===id?s.class_name+" · "+s.odd.subject:"—")+'</td></tr>').join("")+'</tbody></table>':"برای این دبیر هنوز زنگی در جدول ثبت نشده است.";
+}
 function renderWorkdays(){
  const teacherMap=new Map();for(const r of requirements)teacherMap.set(Number(r.teacher_id),{teacher_id:Number(r.teacher_id),teacher_name:r.teacher_name});
  if(!teacherMap.size){$("workdaysEditor").textContent="ابتدا نیازهای درسی را اضافه کنید.";return;}
@@ -70,7 +81,7 @@ function selectedAssignment(index){if(index===""||index===null||index===undefine
 function renderGrid(){
  const className=$("classSelect").value;const root=$("slotGrid");if(!className){root.textContent="ابتدا نیازهای درسی را ثبت و کلاس را انتخاب کنید.";return;}
  root.innerHTML=days.map(day=>'<div class="day-card"><h3>'+day+'</h3>'+[1,2,3].map(period=>{const key=className+"|"+day+"|"+period;const state=slotSelections[key]||{even:"",odd:""};return '<div class="slot"><strong>زنگ '+period+'</strong><label>هفته زوج<select data-slot="'+escapeHtml(key)+'" data-week="even">'+requirementOptions(className,state.even)+'</select></label><label>هفته فرد<select data-slot="'+escapeHtml(key)+'" data-week="odd">'+requirementOptions(className,state.odd)+'</select></label></div>';}).join("")+'</div>').join("");
- root.querySelectorAll("[data-slot]").forEach(select=>select.addEventListener("change",()=>{const key=select.dataset.slot,week=select.dataset.week;slotSelections[key]=slotSelections[key]||{even:"",odd:""};slotSelections[key][week]=select.value;}));
+ root.querySelectorAll("[data-slot]").forEach(select=>select.addEventListener("change",()=>{const key=select.dataset.slot,week=select.dataset.week;slotSelections[key]=slotSelections[key]||{even:"",odd:""};slotSelections[key][week]=select.value;renderTeacherSchedule();}));
 }
 function buildSlots(){
  const out=[];for(const [key,state] of Object.entries(slotSelections)){const [class_name,weekday,periodText]=key.split("|");const even=selectedAssignment(state.even),odd=selectedAssignment(state.odd);if(even||odd)out.push({class_name,weekday,period:Number(periodText),even,odd});}return out;
@@ -86,7 +97,7 @@ function renderPlans(){const current=$("planSelect").value;$("planSelect").inner
 async function loadBootstrap(){try{const data=await api("bootstrap");bootstrap=data;const seen=new Set();$("assignmentSelect").innerHTML='<option value="">انتخاب از تخصیص‌های فعال دبیران</option>'+data.assignments.map((a,i)=>({a,i})).filter(({a})=>a.teacher_id&&a.subject&&a.class_name).map(({a,i})=>{const k=assignmentKey(a);if(seen.has(k))return "";seen.add(k);return '<option value="'+i+'">'+escapeHtml(a.class_name+" · "+a.subject+" · "+a.teacher_name)+'</option>';}).join("");renderPlans();renderClassOptions();show("اتصال برقرار است. تخصیص‌های فعال مدرسه دریافت شد.","success");}catch(e){show(e.message,"error");}}
 async function saveDraft(){const data=await api("save_draft",payload());planId=data.plan.id;const existing=bootstrap.plans.find(p=>p.id===planId);if(existing)Object.assign(existing,data.plan);else bootstrap.plans.unshift(data.plan);renderPlans();$("planSelect").value=planId;show("پیش‌نویس برنامه ذخیره شد. هنوز در برنامه اجرایی کلاس‌ها منتشر نشده است.","success");showValidation(data.validation);}
 $("addRequirement").addEventListener("click",()=>{const raw=$("assignmentSelect").value;if(raw===""){show("یک تخصیص فعال دبیر را انتخاب کنید.","error");return;}const a=bootstrap.assignments[Number(raw)];const count=Number($("requiredPeriods").value);if(!a||!a.teacher_id||!a.subject||!a.class_name||!Number.isInteger(count)||count<1||count>15){show("کلاس، درس، دبیر یا تعداد زنگ معتبر نیست.","error");return;}if(requirements.some(r=>r.class_name===a.class_name&&r.subject===a.subject&&Number(r.teacher_id)===Number(a.teacher_id))){show("این نیاز درسی قبلاً ثبت شده است.","error");return;}teacherWorkdays=collectWorkdays();requirements.push({class_name:a.class_name,subject:a.subject,teacher_id:Number(a.teacher_id),teacher_name:a.teacher_name,weekly_periods:count});renderRequirements();});
-$("classSelect").addEventListener("change",renderGrid);
+$("classSelect").addEventListener("change",renderGrid);$("teacherSelect").addEventListener("change",renderTeacherSchedule);
 $("generate").addEventListener("click",async()=>{try{const data=await api("generate",{requirements,teacher_workdays:collectWorkdays()});if(data.errors?.length){showValidation({errors:data.errors,warnings:data.warnings||[]});show("چینش خودکار کامل نشد؛ موارد گزارش‌شده را اصلاح کنید.","error");return;}slotSelections={};for(const s of data.slots){slotSelections[[s.class_name,s.weekday,s.period].join("|")]={even:findRequirementIndex(s.even,s.class_name),odd:findRequirementIndex(s.odd,s.class_name)};}renderGrid();show("پیشنهاد خودکار ساخته شد. قبل از ذخیره یا انتشار، جدول همه کلاس‌ها را بازبینی کنید.","success");showValidation({errors:[],warnings:data.warnings||[]});}catch(e){show(e.message,"error");}});
 $("validate").addEventListener("click",async()=>{try{const data=await api("validate",payload());showValidation(data.validation);show(data.validation.valid?"بررسی تداخل انجام شد.":"برنامه دارای خطاست؛ گزارش کنترل را ببینید.",data.validation.valid?"success":"error");}catch(e){show(e.message,"error");}});
 $("saveDraft").addEventListener("click",async()=>{try{await saveDraft();}catch(e){show(e.message,"error");}});
