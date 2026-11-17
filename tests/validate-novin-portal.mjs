@@ -208,7 +208,7 @@ assert.ok(parentFunction.includes('action==="review_association"'), "Manager mus
 
 const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 assert.ok(publishWorkflow.includes("- 'directory.html'"), "Changes to directory.html must trigger GitHub Pages deployment");
-assert.ok(publishWorkflow.includes("bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html _site/"), "GitHub Pages artifact must include directory.html");
+assert.ok(publishWorkflow.includes("bulletin.html directory.html counseling.html exam-center.html exam-entry-cards.html exam-planner.html _site/"), "GitHub Pages artifact must include directory.html");
 assert.ok(readFileSync("directory.html", "utf8").includes("دبیران و کارکنان"), "Staff directory page must exist in the repository");
 const directory = readFileSync("directory.html", "utf8");
 assert.ok(directory.includes("/rest/v1/teacher_classes?"), "Directory must read teacher assignments from Supabase REST");
@@ -272,12 +272,12 @@ assert.ok(familyFunction.includes('.eq("is_active", true)') && familyFunction.in
 assert.ok(familyFunction.includes('studentName = "اولیای کلاس " + className'), "Class-wide invitations must preserve the selected class as the audience label");
 assert.ok(familyFunction.includes('approval_status: isManager ? "approved" : "pending"') && familyFunction.includes("manager_reviewed_by: isManager ? authData.user.id : null"), "Manager-created invitations must publish immediately while counselor invitations remain pending review");
 assert.ok(parentPage.includes("x.approval_status==='approved'?'دعوت‌نامه برای '"), "Manager UI must confirm immediate publication separately from counselor approval");
-assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html exam-center.html exam-entry-cards.html _site/"), "GitHub Pages must publish the counselor page");
+assert.ok(publishWorkflow.includes("- 'counseling.html'") && publishWorkflow.includes("directory.html counseling.html exam-center.html exam-entry-cards.html exam-planner.html _site/"), "GitHub Pages must publish the counselor page");
 console.log("Counselor invitations checks passed: same-origin session, weekday/date/subject, manager approval, parent visibility, and publication.");
 
 const examsPage = readFileSync("exam-center.html", "utf8");
 assert.ok(html.includes("آزمون‌های مستقل") && html.includes("location.href='exam-center.html?v=20261030-1'"), "Teacher and student portals must route to the independent exam center");
-assert.ok(publishWorkflow.includes("- 'exam-center.html'") && publishWorkflow.includes("counseling.html exam-center.html exam-entry-cards.html _site/"), "GitHub Pages must publish the independent exam center");
+assert.ok(publishWorkflow.includes("- 'exam-center.html'") && publishWorkflow.includes("counseling.html exam-center.html exam-entry-cards.html exam-planner.html _site/"), "GitHub Pages must publish the independent exam center");
 assert.ok(examsPage.includes("functions/v1/assessment-center"), "Independent exam page must use its dedicated backend function");
 for (const feature of ["جای خالی", "تستی / چهارگزینه‌ای", "صحیح و غلط", "پاسخ کوتاه", "پاسخ تشریحی", "ترتیب سؤال", "زمان اختصاصی سؤال", "نمایش گروهی"]) {
   assert.ok(examsPage.includes(feature), "Independent exam center missing feature: " + feature);
@@ -312,7 +312,7 @@ const aboutScripts = [...aboutPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/sc
 assert.ok(aboutScripts.length > 0, "About page must contain its dynamic version script");
 for (const source of aboutScripts) assert.doesNotThrow(() => new Function(source), "About page script must have valid JavaScript syntax");
 assert.ok(publishWorkflow.includes("- 'about.html'") && publishWorkflow.includes("- 'finance.html'"), "About and finance page changes must trigger GitHub Pages deployment");
-assert.ok(publishWorkflow.includes("cp finance.html about.html _site/"), "GitHub Pages artifact must include the finance and About pages");
+assert.ok(publishWorkflow.includes("cp finance.html cashbook.html about.html _site/"), "GitHub Pages artifact must include the finance and About pages");
 assert.ok(publishWorkflow.includes("build-info.json"), "GitHub Pages build must generate real release metadata");
 assert.ok(readFileSync("finance.html", "utf8").includes("دفتر مالی و حسابداری مدرسه"), "Finance page must remain present in the source repository");
 console.log("About and finance deployment checks passed: home route, creator/year, generated build metadata, artifact inclusion, and JavaScript syntax.");

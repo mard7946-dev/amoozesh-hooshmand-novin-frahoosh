@@ -1,0 +1,24 @@
+import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
+
+const page = readFileSync("exam-planner.html", "utf8");
+const portal = readFileSync("portal.html", "utf8");
+const api = readFileSync("supabase/functions/exam-planner/index.ts", "utf8");
+const migration = readFileSync("supabase/migrations/20261118100000_school_exam_planner.sql", "utf8");
+const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
+
+assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
+assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
+assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
+assert.ok(page.includes("function generateSchedule()") && page.includes("holidays.includes(iso)") && page.includes("rotation_no"), "Generator must order subjects and exclude holidays");
+assert.ok(page.includes('role==="student"') && page.includes('action:"student_list"'), "Student view must load only published grade schedules");
+assert.ok(api.includes('if (!manager && !deputy)') && api.includes("انتشار نهایی فقط با تأیید مدیر"), "Only manager/deputy may manage; only manager may publish");
+assert.ok(api.includes('.eq("school_id", schoolId)') && api.includes('.eq("tenant_school_id", schoolId)'), "All planner and student queries must be school-scoped");
+assert.ok(api.includes('.eq("status", "published")'), "Student endpoint must return published plans only");
+assert.ok(migration.includes("enable row level security") && migration.includes("revoke all on public.school_exam_plans from anon, authenticated"), "Planner table must be inaccessible to direct anonymous/authenticated table access");
+assert.ok(publish.includes("'exam-planner.html'") && publish.includes("exam-planner.html _site/"), "GitHub Pages workflow must deploy the planner page");
+
+const inlineScripts = page.split("<script>").slice(1).map(source => source.split("</script>")[0]).filter(source => source.trim());
+assert.ok(inlineScripts.length, "Planner page must include its application script");
+for (const script of inlineScripts) new Function(script);
+console.log("Exam planner static security, routing, date, and script-syntax checks passed.");
