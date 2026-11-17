@@ -76,10 +76,10 @@ Deno.serve(async (req: Request) => {
       const expiresAt = new Date(Math.min(new Date(meeting.expires_at).getTime(), Date.now() + 20 * 60_000)).toISOString();
       const { error: insertError } = await admin.from("classroom_guest_invites").insert({
         meeting_id: meeting.id, tenant_school_id: schoolId, token_hash: tokenHash,
-        max_uses: 1, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
+        max_uses: 10, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
       });
       if (insertError) throw insertError;
-      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, single_use: true });
+      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, max_uses: 10, single_use: false });
     }
 
     if (action === "list") {
