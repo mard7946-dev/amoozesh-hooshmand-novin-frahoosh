@@ -51,3 +51,9 @@ for (const block of management.split("<script").slice(1)) {
 }
 
 console.log("Weekly schedule matrix import and teacher-view checks passed.");
+
+const activationStart = management.indexOf("function scheduleConflictRows(entries)");
+assert.ok(activationStart >= 0, "manager timetable must calculate overlapping class/teacher sessions");
+assert.ok(management.includes('id="scheduleFilterDay"') && management.includes('id="scheduleFilterClass"') && management.includes('id="scheduleFilterTeacher"') && management.includes('id="scheduleFilterStatus"'), "manager timetable must expose day, class, teacher, and activation filters");
+assert.ok(management.includes("scheduleConflictRows(weeklyScheduleEntries)"), "conflict review must use the loaded school timetable");
+assert.ok(management.includes("set_weekly_schedule_enabled"), "filtered timetable must preserve persisted per-session and class activation actions");
