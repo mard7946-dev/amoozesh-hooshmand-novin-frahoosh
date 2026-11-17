@@ -11,11 +11,11 @@ const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body)
 const clean = (value: unknown, max = 240) => String(value ?? "").trim().slice(0, max);
 const normalize = (value: unknown) => clean(value).replace(/[\u200c\u200f\u202a-\u202e]/g, "")
   .replace(/[ي]/g, "ی").replace(/[ك]/g, "ک").toLowerCase();
-const managerRoles = new Set(["manager", "مدیر", "مدیریت", "principal", "administrator", "admin"]);
+const managerRoles = new Set(["manager", "مدیر", "مدیر مدرسه", "مدیریت", "principal", "administrator", "admin"]);
 const deputyRoles = new Set(["deputy", "معاون", "معاونت", "executive", "educational", "cultural",
   "executive_deputy", "educational_deputy", "pastoral_deputy", "معاون اجرایی", "معاون آموزشی",
   "معاون پرورشی", "معاونت اجرایی", "معاونت آموزشی", "معاونت پرورشی"]);
-const studentRoles = new Set(["student", "دانش آموز", "دانش‌آموز"]);
+const studentRoles = new Set(["student", "دانش آموز", "دانش‌آموز", "دانشآموز"]);
 function validDate(value: unknown) { const v = String(value ?? ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = new Date(v + "T00:00:00Z"); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; }
 function validatePlan(body: any) {
   const title = clean(body.title, 160), start = clean(body.start_date, 10), end = clean(body.end_date, 10);
