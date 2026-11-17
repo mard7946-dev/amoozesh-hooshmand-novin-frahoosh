@@ -5,7 +5,7 @@ const page = readFileSync("exam-planner.html", "utf8");
 const portal = readFileSync("portal.html", "utf8");
 const api = readFileSync("supabase/functions/exam-planner/index.ts", "utf8");
 const migration = readFileSync("supabase/migrations/20261118100000_school_exam_planner.sql", "utf8");
-const seatMigration = readFileSync("supabase/migrations/20261117170000_exam_seats_id_sequence.sql", "utf8");
+const seatMigration = readFileSync("supabase/migrations/20261118110000_exam_seats_id_sequence.sql", "utf8");
 const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 
 assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
