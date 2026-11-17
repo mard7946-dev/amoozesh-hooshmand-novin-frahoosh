@@ -42,7 +42,7 @@ assert.ok(api.includes('if (!manager && !deputy)') && api.includes("انتشار
 assert.ok(api.includes('.eq("school_id", schoolId)') && api.includes('.eq("tenant_school_id", schoolId)'), "All planner and student queries must be school-scoped");
 assert.ok(api.includes('.eq("status", "published")'), "Student endpoint must return published plans only");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all on public.school_exam_plans from anon, authenticated"), "Planner table must be inaccessible to direct anonymous/authenticated table access");
-assert.ok(seatMigration.includes("create sequence if not exists public.exam_seats_id_seq") && seatMigration.includes("alter table public.exam_seats alter column id set default nextval"), "Exam seat inserts must receive database-generated primary keys");
+assert.ok(seatMigration.includes("pg_get_serial_sequence") && seatMigration.includes("setval") && /create sequence if not exists public\.exam_seats_id_seq/.test(seatMigration) && /alter table public\.exam_seats\s+alter column id set default nextval/.test(seatMigration), "Exam seat inserts must retain identity generation or receive a database sequence default");
 assert.ok(publish.includes("'exam-planner.html'") && publish.includes("exam-planner.html _site/"), "GitHub Pages workflow must deploy the planner page");
 
 const inlineScripts = page.split("<script>").slice(1).map(source => source.split("</script>")[0]).filter(source => source.trim());
