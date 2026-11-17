@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'manager-assistant.html'
+      - 'tests/validate-novin-portal.mjs'
       - 'question-bank.html'
       - 'school-library.html'
       - 'supabase/functions/school-library/index.ts'
