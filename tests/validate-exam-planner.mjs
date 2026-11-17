@@ -10,7 +10,9 @@ const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "u
 assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
-assert.ok(page.includes("function generateSchedule()") && page.includes("holidays.includes(iso)") && page.includes("g.subjects.forEach"), "Generator must preserve entered subject order and exclude holidays");
+assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty and exclude holidays");
+assert.ok(page.includes("subject-difficulty") && page.includes('value="heavy"') && page.includes('value="medium"') && page.includes('value="light"'), "Each subject must expose heavy, medium, and light difficulty choices");
+assert.ok(page.includes("difficulty:subject.difficulty") && api.includes('["heavy", "medium", "light"]') && api.includes("daysBetween < gap"), "Selected difficulty must be persisted and server-side study gaps enforced");
 assert.ok(!page.includes("rotation_no") && !page.includes("subject-rotation") && !page.includes("شماره چرخشی"), "Subject rotation must be fully removed");
 assert.ok(page.includes("شماره صندلی") && page.includes("x.seat_no"), "Published student schedules must display the assigned seat number");
 assert.ok(api.includes("crypto.getRandomValues") && api.includes("previousSeatByGrade") && api.includes("exam_seats"), "Publishing must randomly allocate and persist different seat numbers per exam");
