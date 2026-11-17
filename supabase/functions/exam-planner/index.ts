@@ -16,7 +16,7 @@ const deputyRoles = new Set(["deputy", "معاون", "معاونت", "executive"
   "executive_deputy", "educational_deputy", "pastoral_deputy", "معاون اجرایی", "معاون آموزشی",
   "معاون پرورشی", "معاونت اجرایی", "معاونت آموزشی", "معاونت پرورشی"]);
 const studentRoles = new Set(["student", "دانش آموز", "دانش‌آموز"]);
-function validDate(value: unknown) { return /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? "")) && !Number.isNaN(Date.parse(String(value) + "T00:00:00Z")); }
+function validDate(value: unknown) { const v = String(value ?? ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = new Date(v + "T00:00:00Z"); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; }
 function validatePlan(body: any) {
   const title = clean(body.title, 160), start = clean(body.start_date, 10), end = clean(body.end_date, 10);
   if (title.length < 2 || !validDate(start) || !validDate(end) || end < start) throw new Error("عنوان و بازهٔ زمانی معتبر وارد کنید.");
