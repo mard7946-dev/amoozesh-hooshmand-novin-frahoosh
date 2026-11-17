@@ -12,6 +12,8 @@ assert.ok(finance.includes("function financeLetterhead()") && finance.includes("
 assert.ok(finance.includes("escapeHtml(schoolName)"), "School names in printed documents must be HTML escaped.");
 assert.ok(finance.includes("finance_create_voucher_draft") && finance.includes("finance_post_voucher"), "Atomic voucher creation and server-side posting must remain connected.");
 assert.ok(finance.includes("finance_close_year"), "Year-end reporting must remain connected to its server-side validation.");
+assert.ok(finance.includes("id=\"exportSchoolCsv\"") && finance.includes("function csvField(value)"), "School financial reports must export Excel-compatible UTF-8 CSV with formula-injection protection.");
+assert.ok(finance.includes("catch(_schoolLookupError)"), "A school-name lookup failure must not disable the finance dashboard.");
 assert.ok(finance.includes("['manager','accountant'].includes(ROLE)"), "Finance UI must remain restricted to manager and accountant roles.");
 assert.ok(!finance.includes("گزارش مالی دبیرستان سردار شهید حاجی زاده ۲") && !finance.includes("نام مدرسه:</strong> دبیرستان سردار شهید حاجی زاده ۲"), "Financial documents must not hardcode one school's name.");
 assert.ok(!finance.includes("فراهوش · حسابداری دوطرفه") && !finance.includes("فراهوش · سند حسابداری") && !finance.includes("پنل مالی فراهوش"), "Financial documents must not display the Frahoosh brand.");
