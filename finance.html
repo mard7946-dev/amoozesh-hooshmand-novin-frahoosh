@@ -9,7 +9,7 @@
 </style></head>
 <body><main>
 <header class="no-print"><div class="row" style="justify-content:space-between"><div><div style="color:var(--mint);font-weight:bold">مدیریت آموزش و پرورش شهرستان قدس</div><h1 id="schoolName">در حال دریافت نام مدرسه…</h1><p>دفتر مالی و حسابداری مدرسه</p><p>سال تحصیلی ۱۴۰۶ - ۱۴۰۵ · واحد پول: ریال · هر سند قطعی باید توازن کامل بدهکار و بستانکار داشته باشد.</p></div><button onclick="window.frahooshReturnToPanel('manager')">بازگشت به پنل</button></div>
-<div class="bar tabs" role="tablist"><button data-tab="overview" aria-selected="true">نمای کلی</button><button data-tab="voucher" aria-selected="false">سند حسابداری</button><button data-tab="purchases" aria-selected="false">فاکتورهای خرید مدرسه</button><button data-tab="parents" aria-selected="false">حساب اولیا و دانش‌آموز</button><button data-tab="reports" aria-selected="false">گزارش و بستن سال</button></div>
+<div class="bar tabs" role="tablist"><button data-tab="overview" aria-selected="true">نمای کلی</button><button data-tab="voucher" aria-selected="false">سند حسابداری</button><button data-tab="purchases" aria-selected="false">فاکتورهای خرید مدرسه</button><button type="button" onclick="location.href='cashbook.html'">صندوق و بانک مدرسه</button><button data-tab="parents" aria-selected="false">حساب اولیا و دانش‌آموز</button><button data-tab="reports" aria-selected="false">گزارش و بستن سال</button></div>
 <div id="notice" class="notice hidden" role="status"></div></header>
 <section id="overview" class="panel"><div class="section-title"><h2>نمای کلی دفتر</h2><button class="btn" id="refresh">بروزرسانی</button></div><div class="grid"><div class="metric">سندهای قطعی<strong id="postedCount">—</strong></div><div class="metric">جمع بدهکار دفتر<strong id="debitTotal">—</strong></div><div class="metric">جمع بستانکار دفتر<strong id="creditTotal">—</strong></div><div class="metric">اختلاف توازن<strong id="difference">—</strong></div></div><p class="muted">مقادیر از سندهای قطعی پایگاه داده محاسبه می‌شوند؛ پیش‌نویس‌ها در گزارش نهایی لحاظ نمی‌شوند.</p><div class="scroll"><table><thead><tr><th>شماره سند</th><th>تاریخ</th><th>نوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="voucherRows"><tr><td colspan="6">در حال دریافت…</td></tr></tbody></table></div><div class="actions no-print"><button id="voucherPrev">صفحه قبل</button><span id="voucherPageInfo" class="small">صفحه ۱</span><button id="voucherNext">صفحه بعد</button></div></section>
 <section id="voucher" class="panel hidden"><h2>ثبت سند حسابداری</h2><p>هر ردیف فقط بدهکار یا بستانکار است. سند فقط پس از برابر شدن جمع دو ستون ثبت قطعی می‌شود.</p>
@@ -56,7 +56,7 @@
 <div class="field"><label>تاریخ پرداخت شمسی</label><input id="purchasePaymentDate" data-jalali-date placeholder="انتخاب تاریخ"></div>
 <div class="field"><label>مبلغ پرداخت (ریال)</label><input id="purchasePaymentAmount" type="number" min="1" step="1" inputmode="numeric"></div>
 <div class="field"><label>روش پرداخت</label><select id="purchasePaymentMethod"><option>نقدی</option><option>کارت‌خوان</option><option>کارت‌به‌کارت</option><option>حواله بانکی</option><option>چک</option><option>سایر</option></select></div>
-<div class="field"><label>شماره پیگیری / چک</label><input id="purchasePaymentReference" placeholder="اختیاری"></div>
+<div class="field"><label>حساب پرداخت‌کننده</label><select id="purchasePaymentAccount"><option value="">در حال دریافت حساب‌ها…</option></select></div><div class="field"><label>شماره پیگیری / چک</label><input id="purchasePaymentReference" placeholder="اختیاری"></div>
 </div>
 <div class="field" style="margin-top:10px"><label>توضیحات پرداخت</label><input id="purchasePaymentDescription" placeholder="توضیح اختیاری"></div>
 <div class="actions" style="margin-top:10px"><button id="savePurchasePayment" class="btn primary" disabled>ثبت پرداخت فروشنده</button></div>
@@ -71,7 +71,7 @@ const URL_BASE='https://gtmmllcxhdejwjjnyzrh.supabase.co';
 const API_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
 const TOKEN=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const ROLE=sessionStorage.getItem('frahoosh_novin_role')||'';
-const $=id=>document.getElementById(id); let lines=[];let students=[];let vouchers=[];let purchaseInvoices=[];let purchasePayments=[];let purchaseAttachments=[];let selectedPurchaseId='';let schoolName='نام مدرسه ثبت نشده';let activeStudentReport=[];let activeStudentReportId='';let voucherPage=0,parentPage=0,schoolPage=0,schoolReportVouchers=[];
+const $=id=>document.getElementById(id); let lines=[];let students=[];let vouchers=[];let purchaseInvoices=[];let purchasePayments=[];let purchaseAttachments=[];let cashAccounts=[];let selectedPurchaseId='';let schoolName='نام مدرسه ثبت نشده';let activeStudentReport=[];let activeStudentReportId='';let voucherPage=0,parentPage=0,schoolPage=0,schoolReportVouchers=[];
 const rial=n=>Number(n||0).toLocaleString('fa-IR',{maximumFractionDigits:0})+' ریال';
 function message(t,ok=false,target='notice'){const e=$(target);e.textContent=t;e.classList.remove('hidden');e.classList.toggle('ok',ok);}
 async function api(path,options={}){if(!TOKEN)throw new Error('نشست معتبر نیست؛ از پنل مدیر دوباره وارد شوید.');const headers={apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':'application/json',...(options.headers||{})};const r=await fetch(URL_BASE+'/rest/v1/'+path,{...options,headers});const body=await r.text();if(!r.ok)throw new Error(body||('خطای '+r.status));return body?JSON.parse(body):null;}
@@ -109,6 +109,8 @@ try{
   purchaseInvoices=await apiAll('finance_purchase_invoices?select=*&order=invoice_date.desc,created_at.desc');
   purchasePayments=await apiAll('finance_purchase_payments?select=*&order=payment_date.desc,created_at.desc');
   purchaseAttachments=await apiAll('finance_purchase_attachments?select=*&order=created_at.desc');
+  cashAccounts=await apiAll('finance_cash_accounts?select=id,name,account_type,is_active&is_active=eq.true&order=name.asc');
+  $('purchasePaymentAccount').innerHTML='<option value="">انتخاب حساب صندوق یا بانک</option>'+cashAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+' · '+(a.account_type==='bank'?'بانک':'صندوق')+'</option>').join('');
   renderPurchases();
 }catch(purchaseLoadError){
   purchaseInvoices=[];purchasePayments=[];purchaseAttachments=[];
@@ -280,7 +282,8 @@ $('savePurchasePayment').onclick=async()=>{
     const amount=Number($('purchasePaymentAmount').value||0),remaining=purchaseTotals(invoice).remaining;
     if(!Number.isSafeInteger(amount)||amount<=0||amount>remaining)throw new Error('مبلغ پرداخت باید مثبت و حداکثر برابر مانده فاکتور باشد.');
     const date=$('purchasePaymentDate').value.trim();if(!date)throw new Error('تاریخ پرداخت را وارد کن.');
-    await api('finance_purchase_payments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({invoice_id:invoice.id,payment_date:date,amount,payment_method:$('purchasePaymentMethod').value,reference_number:$('purchasePaymentReference').value.trim(),description:$('purchasePaymentDescription').value.trim()})});
+    const cashAccountId=$('purchasePaymentAccount').value;if(!cashAccountId)throw new Error('حساب صندوق یا بانک پرداخت‌کننده را انتخاب کن.');
+    await api('finance_purchase_payments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({invoice_id:invoice.id,payment_date:date,amount,payment_method:$('purchasePaymentMethod').value,cash_account_id:cashAccountId,reference_number:$('purchasePaymentReference').value.trim(),description:$('purchasePaymentDescription').value.trim()})});
     $('purchasePaymentAmount').value='';$('purchasePaymentReference').value='';$('purchasePaymentDescription').value='';
     await loadPurchaseData();window.selectPurchaseInvoice(invoice.id);purchaseMessage('پرداخت فروشنده ثبت شد و مانده فاکتور به‌روزرسانی شد.',true);
   }catch(e){purchaseMessage('ثبت پرداخت انجام نشد: '+String(e?.message||e));}
