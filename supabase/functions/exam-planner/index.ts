@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
       const nationalCode = clean(profile.national_code, 20);
       if (!nationalCode) return reply({ message: "شناسهٔ دانش‌آموزی حساب پیدا نشد." }, 403);
       const { data: pupil, error: pupilError } = await admin.from("students")
-        .select("grade,class_name").eq("tenant_school_id", schoolId).eq("national_code", nationalCode).maybeSingle();
+        .select("id,grade,class_name").eq("tenant_school_id", schoolId).eq("national_code", nationalCode).maybeSingle();
       if (pupilError || !pupil) return reply({ message: "پروندهٔ دانش‌آموز در این مدرسه پیدا نشد." }, 404);
       const { data: plans, error } = await admin.from("school_exam_plans").select("id,title,start_date,end_date,schedule,published_at")
         .eq("school_id", schoolId).eq("status", "published").order("published_at", { ascending: false }).limit(50);
