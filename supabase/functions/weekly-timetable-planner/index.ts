@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { validateWeeklyTimetable, WEEKDAYS, type Slot, type Requirement, type TeacherWorkdays } from "./validation.ts";
+import { generateWeeklyTimetable, validateWeeklyTimetable, WEEKDAYS, type Slot, type Requirement, type TeacherWorkdays } from "./validation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +75,14 @@ Deno.serve(async (req: Request) => {
       if (error) throw error;
       if (!data) return reply({ message: "برنامه پیدا نشد." }, 404);
       return reply({ ok: true, plan: data });
+    }
+
+    if (action === "generate") {
+      const requirements = Array.isArray(body.requirements) ? body.requirements as Requirement[] : [];
+      const teacherWorkdays = Array.isArray(body.teacher_workdays) ? body.teacher_workdays as TeacherWorkdays[] : [];
+      if (!requirements.length) return reply({ message: "ابتدا نیاز هفتگی درس‌ها را ثبت کنید." }, 400);
+      const generated = generateWeeklyTimetable({ requirements, teacher_workdays: teacherWorkdays });
+      return reply({ ok: generated.errors.length === 0, slots: generated.slots, errors: generated.errors, warnings: generated.warnings });
     }
 
     if (action === "validate" || action === "save_draft" || action === "publish") {
