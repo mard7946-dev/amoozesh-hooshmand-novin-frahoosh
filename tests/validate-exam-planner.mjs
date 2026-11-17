@@ -18,7 +18,7 @@ assert.ok(api.includes('.eq("status", "published")'), "Student endpoint must ret
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all on public.school_exam_plans from anon, authenticated"), "Planner table must be inaccessible to direct anonymous/authenticated table access");
 assert.ok(publish.includes("'exam-planner.html'") && publish.includes("exam-planner.html _site/"), "GitHub Pages workflow must deploy the planner page");
 
-const inlineScripts = [...page.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)].map(match => match[1]);
+const inlineScripts = page.split("<script>").slice(1).map(source => source.split("</script>")[0]).filter(source => source.trim());
 assert.ok(inlineScripts.length, "Planner page must include its application script");
 for (const script of inlineScripts) new Function(script);
 console.log("Exam planner static security, routing, date, and script-syntax checks passed.");
