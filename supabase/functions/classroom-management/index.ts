@@ -855,7 +855,7 @@ Deno.serve(async (req: Request) => {
       const pairs = [...new Map((assignments ?? []).map((row: any) => {
         const key = norm(row.class_name) + "|" + norm(row.subject);
         return [key, { class_name: clean(row.class_name), subject: clean(row.subject), grade: clean(row.grade) }];
-      })).values()];
+      })).values()].slice(0, 80);
       if (!pairs.length) return reply({ ok: true, summary: { classes: [], totals: { students: 0, attendance_records_30d: 0, absences_30d: 0, late_30d: 0, grades: 0, assignments: 0, pending_submissions: 0, discipline_records_30d: 0 }, generated_at: new Date().toISOString() } });
       const classNames = [...new Set(pairs.map((x: any) => x.class_name))];
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -913,9 +913,10 @@ Deno.serve(async (req: Request) => {
       for (const student of studentsResult.data ?? []) studentCounts.set(clean(student.class_name), (studentCounts.get(clean(student.class_name)) ?? 0) + 1);
       const classes = pairResults.map((row: any) => ({ ...row, student_count: studentCounts.get(row.class_name) ?? 0 }));
       const totals = classes.reduce((sum: any, row: any) => {
-        for (const key of ["student_count", "attendance_records_30d", "absences_30d", "late_30d", "grade_count", "assignment_count", "pending_submissions", "discipline_records_30d"]) sum[key === "student_count" ? "students" : key] += Number(row[key] || 0);
+        for (const key of ["attendance_records_30d", "absences_30d", "late_30d", "grade_count", "assignment_count", "pending_submissions", "discipline_records_30d"]) sum[key] += Number(row[key] || 0);
         return sum;
       }, { students: 0, attendance_records_30d: 0, absences_30d: 0, late_30d: 0, grade_count: 0, assignment_count: 0, pending_submissions: 0, discipline_records_30d: 0 });
+      totals.students = [...studentCounts.values()].reduce((sum, count) => sum + count, 0);
       return reply({ ok: true, summary: { classes, totals, period_start: since, generated_at: new Date().toISOString() } });
     }
 
