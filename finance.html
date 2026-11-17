@@ -9,7 +9,7 @@
 </style></head>
 <body><main>
 <header class="no-print"><div class="row" style="justify-content:space-between"><div><div style="color:var(--mint);font-weight:bold">مدیریت آموزش و پرورش شهرستان قدس</div><h1 id="schoolName">در حال دریافت نام مدرسه…</h1><p>دفتر مالی و حسابداری مدرسه</p><p>سال تحصیلی ۱۴۰۶ - ۱۴۰۵ · واحد پول: ریال · هر سند قطعی باید توازن کامل بدهکار و بستانکار داشته باشد.</p></div><button onclick="window.frahooshReturnToPanel('manager')">بازگشت به پنل</button></div>
-<div class="bar tabs" role="tablist"><button data-tab="overview" aria-selected="true">نمای کلی</button><button data-tab="voucher" aria-selected="false">سند حسابداری</button><button data-tab="parents" aria-selected="false">حساب اولیا و دانش‌آموز</button><button data-tab="reports" aria-selected="false">گزارش و بستن سال</button></div>
+<div class="bar tabs" role="tablist"><button data-tab="overview" aria-selected="true">نمای کلی</button><button data-tab="voucher" aria-selected="false">سند حسابداری</button><button data-tab="purchases" aria-selected="false">فاکتورهای خرید مدرسه</button><button data-tab="parents" aria-selected="false">حساب اولیا و دانش‌آموز</button><button data-tab="reports" aria-selected="false">گزارش و بستن سال</button></div>
 <div id="notice" class="notice hidden" role="status"></div></header>
 <section id="overview" class="panel"><div class="section-title"><h2>نمای کلی دفتر</h2><button class="btn" id="refresh">بروزرسانی</button></div><div class="grid"><div class="metric">سندهای قطعی<strong id="postedCount">—</strong></div><div class="metric">جمع بدهکار دفتر<strong id="debitTotal">—</strong></div><div class="metric">جمع بستانکار دفتر<strong id="creditTotal">—</strong></div><div class="metric">اختلاف توازن<strong id="difference">—</strong></div></div><p class="muted">مقادیر از سندهای قطعی پایگاه داده محاسبه می‌شوند؛ پیش‌نویس‌ها در گزارش نهایی لحاظ نمی‌شوند.</p><div class="scroll"><table><thead><tr><th>شماره سند</th><th>تاریخ</th><th>نوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="voucherRows"><tr><td colspan="6">در حال دریافت…</td></tr></tbody></table></div><div class="actions no-print"><button id="voucherPrev">صفحه قبل</button><span id="voucherPageInfo" class="small">صفحه ۱</span><button id="voucherNext">صفحه بعد</button></div></section>
 <section id="voucher" class="panel hidden"><h2>ثبت سند حسابداری</h2><p>هر ردیف فقط بدهکار یا بستانکار است. سند فقط پس از برابر شدن جمع دو ستون ثبت قطعی می‌شود.</p>
@@ -19,6 +19,50 @@
 <div class="scroll"><table><thead><tr><th>ردیف</th><th>کد حساب</th><th>عنوان حساب</th><th>دانش‌آموز</th><th>بدهکار (ریال)</th><th>بستانکار (ریال)</th><th></th></tr></thead><tbody id="lineRows"></tbody><tfoot><tr><th colspan="4">جمع</th><th id="lineDebitTotal">۰</th><th id="lineCreditTotal">۰</th><th id="lineBalance" class="balance">بدون ردیف</th></tr></tfoot></table></div>
 <div class="field" style="margin-top:12px"><label>ضمیمه سند (تصویر یا PDF)</label><input id="attachment" type="file" accept="image/*,application/pdf" multiple><span class="small">فایل‌ها در فضای خصوصی finance-documents ذخیره می‌شوند؛ پس از ثبت سند به آن پیوند می‌خورند.</span></div>
 <div class="actions" style="margin-top:14px"><button id="saveDraft" class="btn primary">ذخیره پیش‌نویس</button><button id="postVoucher" class="btn primary">ثبت قطعی با کنترل توازن</button><button id="printDraft" class="btn">چاپ صورتحساب قطعی دانش‌آموز</button></div><div id="voucherMessage" class="notice hidden"></div></section>
+<section id="purchases" class="panel hidden">
+<div class="section-title"><h2>ثبت خریدها و فاکتورهای مدرسه</h2><button id="refreshPurchases" class="btn">بروزرسانی فاکتورها</button></div>
+<p>این دفتر برای خریدهای خود مدرسه و بدهی به فروشندگان است و از صورتحساب اولیا جدا نگه داشته می‌شود. مبلغ‌ها به ریال ثبت می‌شوند.</p>
+<div id="purchaseMessage" class="notice hidden" role="status"></div>
+<div class="grid">
+<div class="metric">جمع فاکتورهای خرید<strong id="purchaseGrandTotal">۰</strong></div>
+<div class="metric">مجموع پرداخت‌ها<strong id="purchasePaidTotal">۰</strong></div>
+<div class="metric">مانده بدهی فروشندگان<strong id="purchaseOutstandingTotal">۰</strong></div>
+<div class="metric">تعداد فاکتورهای باز<strong id="purchaseOpenCount">۰</strong></div>
+</div>
+<h3>ثبت فاکتور جدید</h3>
+<div class="grid">
+<div class="field"><label>شماره فاکتور</label><input id="purchaseInvoiceNumber" placeholder="شماره درج‌شده روی فاکتور"></div>
+<div class="field"><label>تاریخ فاکتور شمسی</label><input id="purchaseInvoiceDate" data-jalali-date placeholder="انتخاب تاریخ"></div>
+<div class="field"><label>نام فروشنده / شرکت</label><input id="purchaseSupplier" placeholder="نام فروشگاه یا شرکت"></div>
+<div class="field"><label>تلفن فروشنده</label><input id="purchaseSupplierPhone" inputmode="tel" placeholder="اختیاری"></div>
+<div class="field"><label>نوع هزینه</label><select id="purchaseCategory"><option value="ملزومات اداری">ملزومات اداری</option><option value="لوازم آموزشی">لوازم آموزشی</option><option value="تجهیزات و رایانه">تجهیزات و رایانه</option><option value="تعمیرات و نگهداری">تعمیرات و نگهداری</option><option value="آب، برق، گاز و اینترنت">آب، برق، گاز و اینترنت</option><option value="خدمات و پیمانکاری">خدمات و پیمانکاری</option><option value="بهداشتی و نظافت">بهداشتی و نظافت</option><option value="سایر هزینه‌ها">سایر هزینه‌ها</option></select></div>
+<div class="field"><label>سال مالی</label><input id="purchaseFiscalYear" value="۱۴۰۶-۱۴۰۵"></div>
+<div class="field"><label>جمع قبل از تخفیف (ریال)</label><input id="purchaseSubtotal" type="number" min="1" step="1" inputmode="numeric"></div>
+<div class="field"><label>تخفیف (ریال)</label><input id="purchaseDiscount" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
+<div class="field"><label>مالیات و عوارض (ریال)</label><input id="purchaseTax" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
+<div class="field"><label>مبلغ نهایی فاکتور (ریال)</label><input id="purchaseTotal" readonly></div>
+</div>
+<div class="field" style="margin-top:10px"><label>شرح خرید و اقلام / خدمات</label><textarea id="purchaseDescription" placeholder="شرح اقلام خریداری‌شده، تعداد یا توضیحات لازم"></textarea></div>
+<div class="field" style="margin-top:10px"><label>تصویر یا PDF فاکتور</label><input id="purchaseAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="small">فایل در مخزن خصوصی اسناد مالی مدرسه ذخیره می‌شود.</span></div>
+<div class="actions" style="margin-top:12px"><button id="savePurchaseInvoice" class="btn primary">ثبت فاکتور خرید</button><button id="clearPurchaseForm" class="btn">پاک‌کردن فرم</button></div>
+<div class="divider"></div>
+<h3>فاکتورها و مانده فروشندگان</h3>
+<div class="grid"><div class="field"><label>جست‌وجو</label><input id="purchaseSearch" type="search" placeholder="شماره فاکتور، فروشنده یا شرح"></div><div class="field"><label>وضعیت پرداخت</label><select id="purchaseStatusFilter"><option value="">همه وضعیت‌ها</option><option value="unpaid">پرداخت‌نشده</option><option value="partial">پرداخت جزئی</option><option value="paid">تسویه‌شده</option></select></div><div class="field"><label>نوع هزینه</label><select id="purchaseCategoryFilter"><option value="">همه هزینه‌ها</option><option>ملزومات اداری</option><option>لوازم آموزشی</option><option>تجهیزات و رایانه</option><option>تعمیرات و نگهداری</option><option>آب، برق، گاز و اینترنت</option><option>خدمات و پیمانکاری</option><option>بهداشتی و نظافت</option><option>سایر هزینه‌ها</option></select></div></div>
+<div class="scroll"><table><thead><tr><th>تاریخ / شماره</th><th>فروشنده</th><th>نوع هزینه</th><th>مبلغ فاکتور</th><th>پرداخت‌شده</th><th>مانده</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="purchaseRows"><tr><td colspan="8">در حال دریافت فاکتورها…</td></tr></tbody></table></div>
+<div class="actions"><button id="exportPurchaseCsv" class="btn">خروجی Excel فاکتورها</button></div>
+<h3>ثبت پرداخت به فروشنده</h3>
+<p id="selectedPurchaseLabel" class="small">برای ثبت پرداخت، یک فاکتور را از فهرست بالا انتخاب کن.</p>
+<div class="grid">
+<div class="field"><label>تاریخ پرداخت شمسی</label><input id="purchasePaymentDate" data-jalali-date placeholder="انتخاب تاریخ"></div>
+<div class="field"><label>مبلغ پرداخت (ریال)</label><input id="purchasePaymentAmount" type="number" min="1" step="1" inputmode="numeric"></div>
+<div class="field"><label>روش پرداخت</label><select id="purchasePaymentMethod"><option>نقدی</option><option>کارت‌خوان</option><option>کارت‌به‌کارت</option><option>حواله بانکی</option><option>چک</option><option>سایر</option></select></div>
+<div class="field"><label>شماره پیگیری / چک</label><input id="purchasePaymentReference" placeholder="اختیاری"></div>
+</div>
+<div class="field" style="margin-top:10px"><label>توضیحات پرداخت</label><input id="purchasePaymentDescription" placeholder="توضیح اختیاری"></div>
+<div class="actions" style="margin-top:10px"><button id="savePurchasePayment" class="btn primary" disabled>ثبت پرداخت فروشنده</button></div>
+<h3>سوابق پرداخت فاکتور انتخاب‌شده</h3>
+<div class="scroll"><table><thead><tr><th>تاریخ</th><th>روش</th><th>شماره پیگیری</th><th>مبلغ</th><th>توضیحات</th></tr></thead><tbody id="purchasePaymentRows"><tr><td colspan="5">فاکتوری انتخاب نشده است.</td></tr></tbody></table></div>
+</section>
 <section id="parents" class="panel hidden"><h2>صورتحساب هر دانش‌آموز / ولی</h2><p>گزارش بر اساس ردیف‌های سند قطعی که به دانش‌آموز وصل شده‌اند ساخته می‌شود. اگر ردیف‌ها به دانش‌آموز وصل نشده باشند، بدهی یا پرداختی برای او حدس زده نمی‌شود.</p><div class="grid"><div class="field"><label>انتخاب دانش‌آموز (فهرست کامل + جست‌وجو)</label><input id="reportStudentSearch" type="search" placeholder="برای جست‌وجو نام، نام خانوادگی، کلاس یا کد را بنویس"><select id="reportStudent" size="8" aria-label="فهرست دانش‌آموزان برای صورتحساب"><option value="">در حال دریافت فهرست…</option></select><span id="reportStudentCount" class="small">فهرست دانش‌آموزان در حال بارگذاری است.</span></div><div class="field"><label>تعداد ردیف در هر صفحه گزارش اولیا</label><select id="parentPageSize"><option>10</option><option>20</option><option>30</option><option>50</option><option>100</option></select></div></div><div class="actions" id="singleStudentActions" style="margin-top:12px;display:none"><button id="registerStudentVoucher" class="btn primary">ثبت سند حسابداری برای این دانش‌آموز</button><button id="loadParent" class="btn">نمایش صورتحساب</button><button id="printParent" class="btn">خروجی PDF تک‌نفره</button></div><div class="panel" style="margin-top:12px"><div class="actions"><button id="toggleGroupSelection" class="btn">انتخاب چند دانش‌آموز برای PDF گروهی</button><span id="groupSelectionCount" class="small">هنوز دانش‌آموزی برای خروجی گروهی انتخاب نشده است.</span></div><div id="groupSelectionPanel" class="hidden"><div class="field"><label>جست‌وجو در فهرست گروهی</label><input id="groupStudentSearch" type="search" placeholder="نام، نام خانوادگی، کلاس یا کد دانش‌آموز"></div><div class="actions"><button id="selectVisibleStudents" class="btn">انتخاب نتایج نمایش‌داده‌شده</button><button id="clearGroupStudents" class="btn">پاک‌کردن انتخاب گروهی</button><button id="printGroupStudents" class="btn primary" disabled>خروجی PDF گروهی (۴ نفر در هر A4)</button></div><div id="groupStudentChecks" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px"></div></div></div><div id="parentSummary" class="grid"></div><div class="scroll"><table><thead><tr><th>شماره سند</th><th>تاریخ</th><th>شرح</th><th>بدهکار (ریال)</th><th>بستانکار (ریال)</th><th>مانده (ریال)</th></tr></thead><tbody id="parentRows"></tbody></table></div><div class="actions no-print"><button id="parentPrev">صفحه قبل</button><span id="parentPageInfo" class="small">صفحه ۱</span><button id="parentNext">صفحه بعد</button></div></section>
 <section id="reports" class="panel hidden"><h2>گزارش مدرسه و پایان سال مالی</h2><div class="grid"><div class="field"><label>سال مالی / تحصیلی</label><input id="fiscalYear" value="۱۴۰۶-۱۴۰۵"></div><div class="field"><label>تعداد ردیف در هر صفحه گزارش مدرسه</label><select id="schoolPageSize"><option>20</option><option>50</option><option>100</option><option>200</option><option>500</option></select></div></div><div class="actions" style="margin-top:12px"><button id="schoolReport" class="btn primary">ساخت گزارش تراز</button><button id="printSchool" class="btn">خروجی PDF / چاپ گزارش مدرسه</button><button id="exportSchoolCsv" class="btn">خروجی Excel گزارش مدرسه</button><button id="closeYear" class="btn">ثبت گزارش اختتامیه سال</button></div><div id="schoolSummary" class="grid"></div><div class="scroll"><table><thead><tr><th>شماره سند</th><th>تاریخ</th><th>نوع</th><th>شرح</th><th>بدهکار (ریال)</th><th>بستانکار (ریال)</th></tr></thead><tbody id="schoolRows"></tbody></table></div><div class="actions no-print"><button id="schoolPrev">صفحه قبل</button><span id="schoolPageInfo" class="small">صفحه ۱</span><button id="schoolNext">صفحه بعد</button></div><p class="small">گزارش قابل چاپ و بررسی است؛ تأییدیه رسمی اداره آموزش‌وپرورش یا ثبت نهایی سال مالی محسوب نمی‌شود. ثبت اختتامیه واقعی پس از تأیید تراز و بررسی حساب‌ها انجام شود.</p></section>
 </main>
@@ -27,7 +71,7 @@ const URL_BASE='https://gtmmllcxhdejwjjnyzrh.supabase.co';
 const API_KEY='sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP';
 const TOKEN=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const ROLE=sessionStorage.getItem('frahoosh_novin_role')||'';
-const $=id=>document.getElementById(id); let lines=[];let students=[];let vouchers=[];let schoolName='نام مدرسه ثبت نشده';let activeStudentReport=[];let activeStudentReportId='';let voucherPage=0,parentPage=0,schoolPage=0,schoolReportVouchers=[];
+const $=id=>document.getElementById(id); let lines=[];let students=[];let vouchers=[];let purchaseInvoices=[];let purchasePayments=[];let purchaseAttachments=[];let selectedPurchaseId='';let schoolName='نام مدرسه ثبت نشده';let activeStudentReport=[];let activeStudentReportId='';let voucherPage=0,parentPage=0,schoolPage=0,schoolReportVouchers=[];
 const rial=n=>Number(n||0).toLocaleString('fa-IR',{maximumFractionDigits:0})+' ریال';
 function message(t,ok=false,target='notice'){const e=$(target);e.textContent=t;e.classList.remove('hidden');e.classList.toggle('ok',ok);}
 async function api(path,options={}){if(!TOKEN)throw new Error('نشست معتبر نیست؛ از پنل مدیر دوباره وارد شوید.');const headers={apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':'application/json',...(options.headers||{})};const r=await fetch(URL_BASE+'/rest/v1/'+path,{...options,headers});const body=await r.text();if(!r.ok)throw new Error(body||('خطای '+r.status));return body?JSON.parse(body):null;}
@@ -44,7 +88,7 @@ async function apiAll(path,pageSize=1000){
 function financeLetterhead(){const fy=($('fiscalYear')?.value||'۱۴۰۶-۱۴۰۵').replace(/\s*-\s*/g,' - ');return '<header class="finance-letterhead"><div>مدیریت آموزش و پرورش شهرستان قدس</div><h1>'+escapeHtml(schoolName)+'</h1><strong>سال تحصیلی '+escapeHtml(fy)+'</strong></header>';}
 function printDocument(title,content){const w=window.open('','_blank');if(!w){message('اجازه بازشدن پنجره چاپ را بدهید.');return;}w.document.write('<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><title>'+escapeHtml(title)+'</title><style>body{font-family:Tahoma,Arial;padding:24px;color:#111}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #777;padding:8px;text-align:right}th{background:#eee}.summary{padding:10px;border:1px solid #777;margin:12px 0}.finance-letterhead{text-align:center;border-bottom:2px solid #222;padding:0 0 12px;margin:0 0 18px}.finance-letterhead div{font-weight:bold;font-size:16px}.finance-letterhead h1{font-size:20px;margin:8px 0}.finance-letterhead strong{font-size:14px}@media print{body{padding:0}}</style><body>'+financeLetterhead()+content+'</body></html>');w.document.close();w.onload=()=>w.print();}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function goTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));['overview','voucher','parents','reports'].forEach(id=>$(id).classList.toggle('hidden',id!==tab));}
+function goTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));['overview','voucher','purchases','parents','reports'].forEach(id=>$(id).classList.toggle('hidden',id!==tab));}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>goTab(b.dataset.tab)));
 async function loadAll(){try{if(!TOKEN||!['manager','accountant'].includes(ROLE)){message('این بخش فقط برای مدیر یا حسابدار مجاز است. از پنل مدیر با حساب مجاز وارد شوید.');return;}
 // ابتدا فهرست دانش‌آموزان را مستقل بارگذاری کن تا خطای یک جدول مالی، انتخاب دانش‌آموز را از کار نیندازد.
@@ -61,6 +105,15 @@ function filterStudentSelect(inputId,selectId,blankLabel){const input=$(inputId)
 filterStudentSelect('lineStudentSearch','lineStudent','بدون ارتباط');filterStudentSelect('reportStudentSearch','reportStudent','انتخاب کنید');
 const [v,l,a]=await Promise.all([apiAll('finance_vouchers?select=*&order=created_at.desc,id.desc'),apiAll('finance_voucher_lines?select=*&order=created_at.asc,id.asc'),apiAll('finance_voucher_attachments?select=*&order=created_at.asc,id.asc')]);
 vouchers=v||[];window.allLines=l||[];window.allAttachments=a||[];
+try{
+  purchaseInvoices=await apiAll('finance_purchase_invoices?select=*&order=invoice_date.desc,created_at.desc');
+  purchasePayments=await apiAll('finance_purchase_payments?select=*&order=payment_date.desc,created_at.desc');
+  purchaseAttachments=await apiAll('finance_purchase_attachments?select=*&order=created_at.desc');
+  renderPurchases();
+}catch(purchaseLoadError){
+  purchaseInvoices=[];purchasePayments=[];purchaseAttachments=[];
+  if($('purchaseMessage'))message('بخش فاکتورهای خرید هنوز در پایگاه داده فعال نشده است. پس از اعمال مهاجرت پایگاه داده دوباره بارگذاری کنید. '+String(purchaseLoadError?.message||purchaseLoadError),false,'purchaseMessage');
+}
 const activeSchoolId=students.find(s=>s.tenant_school_id)?.tenant_school_id||vouchers.find(x=>x.tenant_school_id)?.tenant_school_id;
 if(activeSchoolId){try{const schoolRows=await api('schools?select=id,name&id=eq.'+encodeURIComponent(activeSchoolId)+'&limit=1');schoolName=Array.isArray(schoolRows)&&schoolRows[0]?.name?String(schoolRows[0].name):'نام مدرسه ثبت نشده';}catch(_schoolLookupError){schoolName='نام مدرسه ثبت نشده';}}
 if($('schoolName'))$('schoolName').textContent=schoolName;
@@ -141,5 +194,106 @@ $('exportSchoolCsv').onclick=()=>{if(!schoolReportVouchers.length){message('اب
 $('printSchool').onclick=()=>{if(!schoolReportVouchers.length){message('ابتدا گزارش سال مالی را بسازید.');return;}const rows=schoolReportVouchers.map(v=>{const ls=(window.allLines||[]).filter(l=>l.voucher_id===v.id);return '<tr><td>'+escapeHtml(v.document_number)+'</td><td>'+escapeHtml(v.voucher_date)+'</td><td>'+escapeHtml(v.voucher_type)+'</td><td>'+escapeHtml(v.description)+'</td><td>'+rial(ls.reduce((a,l)=>a+Number(l.debit||0),0))+'</td><td>'+rial(ls.reduce((a,l)=>a+Number(l.credit||0),0))+'</td></tr>';}).join('');const ls=(window.allLines||[]).filter(l=>schoolReportVouchers.some(v=>v.id===l.voucher_id));printDocument('گزارش-مالی-مدرسه-'+$('fiscalYear').value,'<h1>گزارش مالی مدرسه</h1><p>سال مالی: '+escapeHtml($('fiscalYear').value)+'</p><p>تعداد اسناد قطعی: '+schoolReportVouchers.length.toLocaleString('fa-IR')+' | جمع بدهکار: '+rial(ls.reduce((a,l)=>a+Number(l.debit||0),0))+' | جمع بستانکار: '+rial(ls.reduce((a,l)=>a+Number(l.credit||0),0))+'</p><table><thead><tr><th>شماره سند</th><th>تاریخ</th><th>نوع</th><th>شرح</th><th>بدهکار</th><th>بستانکار</th></tr></thead><tbody>'+rows+'</tbody></table><p>این گزارش داخلی است و تأییدیه رسمی اداره محسوب نمی‌شود.</p>');};
 window.printVoucher=async id=>{const v=vouchers.find(x=>x.id===id);if(!v)return;const ls=(window.allLines||[]).filter(l=>l.voucher_id===id);const at=(window.allAttachments||[]).filter(a=>a.voucher_id===id);const win=window.open('','_blank');if(!win){message('اجازه بازشدن پنجره چاپ را بدهید.');return;}let attachments='';for(const a of at){try{const sr=await fetch(URL_BASE+'/storage/v1/object/sign/finance-documents/'+a.storage_path,{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600})});if(!sr.ok)throw new Error('sign failed');const j=await sr.json();const url=URL_BASE+'/storage/v1'+j.signedURL;attachments+='<section style="page-break-before:always"><h3>پیوست سند: '+escapeHtml(a.file_name)+'</h3>'+(String(a.mime_type||'').startsWith('image/')?'<img style="max-width:100%;max-height:90vh;object-fit:contain" src="'+url+'">':'<p>فایل پیوست: <a href="'+url+'">'+escapeHtml(a.file_name)+'</a></p><iframe title="'+escapeHtml(a.file_name)+'" src="'+url+'" style="width:100%;height:90vh;border:0"></iframe>')+'</section>';}catch(e){attachments+='<p>پیوست: '+escapeHtml(a.file_name)+' (دریافت پیوند امن ناموفق بود)</p>';}}win.document.write('<html lang="fa" dir="rtl"><meta charset="utf-8"><title>سند-'+escapeHtml(v.document_number)+'</title><body style="font-family:Tahoma;padding:24px"><header style="text-align:center;border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:18px"><strong>مدیریت آموزش و پرورش شهرستان قدس</strong><h2>'+escapeHtml(schoolName)+'</h2><strong>سال تحصیلی '+escapeHtml((v.fiscal_year||'۱۴۰۶-۱۴۰۵').replace(/\s*-\s*/g,' - '))+'</strong></header><h2>سند حسابداری</h2><p>شماره سند: '+escapeHtml(v.document_number)+' | تاریخ: '+escapeHtml(v.voucher_date)+' | نوع: '+escapeHtml(v.voucher_type)+'</p><p>طرف حساب: '+escapeHtml(v.counterparty)+' | شرح: '+escapeHtml(v.description)+'</p><table border="1" cellpadding="8" cellspacing="0" width="100%"><tr><th>کد</th><th>عنوان حساب</th><th>دانش‌آموز</th><th>بدهکار (ریال)</th><th>بستانکار (ریال)</th></tr>'+ls.map(l=>'<tr><td>'+escapeHtml(l.account_code)+'</td><td>'+escapeHtml(l.account_title)+'</td><td>'+escapeHtml(l.student_name)+'</td><td>'+rial(l.debit)+'</td><td>'+rial(l.credit)+'</td></tr>').join('')+'</table><p>جمع بدهکار: '+rial(ls.reduce((a,l)=>a+Number(l.debit||0),0))+' | جمع بستانکار: '+rial(ls.reduce((a,l)=>a+Number(l.credit||0),0))+'</p><h3>پیوست‌ها</h3>'+attachments+'</body></html>');win.document.close();win.print();};
 $('printDraft').onclick=()=>{const sid=$('lineStudent').value||$('reportStudent').value||(new Set(lines.map(x=>String(x.student_id||'')).filter(Boolean)).size===1?String(lines.find(x=>x.student_id)?.student_id||''):'');if(!sid){message('برای چاپ رسید مالی، ابتدا دانش‌آموز موردنظر را در بخش «دانش‌آموز مرتبط» انتخاب کنید.',false,'voucherMessage');return;}const st=students.find(x=>String(x.id)===String(sid));if(!st){message('اطلاعات دانش‌آموز انتخاب‌شده پیدا نشد.',false,'voucherMessage');return;}const postedIds=new Set(vouchers.filter(v=>v.status==='posted').map(v=>String(v.id)));const report=(window.allLines||[]).filter(l=>String(l.student_id)===String(sid)&&postedIds.has(String(l.voucher_id))).map(l=>{const v=vouchers.find(x=>String(x.id)===String(l.voucher_id));return {...l,voucher:v};}).sort((a,b)=>String(a.voucher?.voucher_date||'').localeCompare(String(b.voucher?.voucher_date||''))||String(a.voucher?.document_number||'').localeCompare(String(b.voucher?.document_number||'')));let balance=0;const rows=report.map((x,i)=>{const debit=Number(x.debit||0),credit=Number(x.credit||0);balance+=debit-credit;return '<tr><td>'+(i+1).toLocaleString('fa-IR')+'</td><td>'+escapeHtml(x.voucher?.document_number||'—')+'</td><td>'+escapeHtml(x.voucher?.voucher_date||'—')+'</td><td>'+escapeHtml(x.description||x.voucher?.description||'—')+'</td><td>'+rial(debit)+'</td><td>'+rial(credit)+'</td><td>'+rial(balance)+'</td></tr>';}).join('');const d=report.reduce((a,x)=>a+Number(x.debit||0),0),cr=report.reduce((a,x)=>a+Number(x.credit||0),0),net=d-cr;const content='<div style="text-align:center"><h2>رسید حسابداری ویژه اولیا</h2></div><div class="summary"><strong>نام مدرسه:</strong> '+escapeHtml(schoolName)+'<br><strong>نام مدیر:</strong> ................................................<br><strong>سال تحصیلی:</strong> '+escapeHtml($('fiscalYear').value||'۱۴۰۶-۱۴۰۵')+'</div><div class="summary">نام دانش‌آموز: '+escapeHtml((st.first_name||'')+' '+(st.last_name||''))+'<br>کلاس: '+escapeHtml(st.class_name||st.grade||'—')+'<br>نام پدر/ولی: '+escapeHtml(st.father_name||'—')+'<br>تلفن ولی: '+escapeHtml(st.parent_phone||'—')+'<br>تعداد ردیف‌های قطعی: '+report.length.toLocaleString('fa-IR')+'</div><div class="summary"><strong>جمع مبلغ بدهکاری: '+rial(d)+' ریال</strong><br><strong>جمع مبلغ بستانکاری / پرداختی: '+rial(cr)+' ریال</strong><br><strong>مانده حساب: '+rial(Math.abs(net))+' ریال ('+(net>0?'بدهکار':net<0?'بستانکار':'تسویه')+')</strong></div><table><thead><tr><th>ردیف</th><th>شماره سند</th><th>تاریخ</th><th>شرح</th><th>بدهکار (ریال)</th><th>بستانکار (ریال)</th><th>مانده (ریال)</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">برای این دانش‌آموز هنوز سند قطعی مرتبطی ثبت نشده است.</td></tr>')+'</tbody><tfoot><tr><th colspan="4">جمع کل</th><th>'+rial(d)+'</th><th>'+rial(cr)+'</th><th>'+rial(net)+'</th></tr></tfoot></table><p>این گزارش فقط بر اساس اسناد قطعی ثبت‌شده مرتبط با دانش‌آموز تهیه شده است. پیش‌نویس‌های ثبت‌نشده در مانده حساب لحاظ نشده‌اند.</p><p style="margin-top:40px">مهر و امضای امور مالی مدرسه: ....................................</p>';printDocument('رسید-مالی-اولیا-'+(st.first_name||'')+'-'+(st.last_name||''),content);};
+
+function purchaseMessage(text,ok=false){message(text,ok,'purchaseMessage');}
+function purchaseTotals(invoice){
+  const paid=purchasePayments.filter(p=>p.invoice_id===invoice.id).reduce((sum,p)=>sum+Number(p.amount||0),0);
+  const total=Number(invoice.total_amount||0);
+  return {paid,remaining:Math.max(0,total-paid),status:paid<=0?'unpaid':paid>=total?'paid':'partial'};
+}
+function updatePurchaseTotal(){
+  const subtotal=Number($('purchaseSubtotal').value||0),discount=Number($('purchaseDiscount').value||0),tax=Number($('purchaseTax').value||0);
+  const total=subtotal-discount+tax;
+  $('purchaseTotal').value=Number.isFinite(total)&&total>0?String(total):'';
+}
+['purchaseSubtotal','purchaseDiscount','purchaseTax'].forEach(id=>$(id).addEventListener('input',updatePurchaseTotal));
+function renderPurchases(){
+  const total=purchaseInvoices.reduce((sum,i)=>sum+Number(i.total_amount||0),0);
+  const paid=purchaseInvoices.reduce((sum,i)=>sum+purchaseTotals(i).paid,0);
+  const open=purchaseInvoices.filter(i=>purchaseTotals(i).remaining>0);
+  $('purchaseGrandTotal').textContent=rial(total);$('purchasePaidTotal').textContent=rial(paid);
+  $('purchaseOutstandingTotal').textContent=rial(Math.max(0,total-paid));$('purchaseOpenCount').textContent=open.length.toLocaleString('fa-IR');
+  const q=($('purchaseSearch').value||'').trim().toLocaleLowerCase(),status=$('purchaseStatusFilter').value,category=$('purchaseCategoryFilter').value;
+  const rows=purchaseInvoices.filter(i=>{
+    const hay=[i.invoice_number,i.supplier_name,i.description,i.category].join(' ').toLocaleLowerCase();
+    const t=purchaseTotals(i);
+    return (!q||hay.includes(q))&&(!status||t.status===status)&&(!category||i.category===category);
+  });
+  $('purchaseRows').innerHTML=rows.map(i=>{
+    const t=purchaseTotals(i),statusLabel=t.status==='paid'?'تسویه‌شده':t.status==='partial'?'پرداخت جزئی':'پرداخت‌نشده';
+    const at=purchaseAttachments.filter(a=>a.invoice_id===i.id);
+    return '<tr><td>'+escapeHtml(i.invoice_date)+'<br>'+escapeHtml(i.invoice_number)+'</td><td>'+escapeHtml(i.supplier_name)+'<br><span class="small">'+escapeHtml(i.supplier_phone||'')+'</span></td><td>'+escapeHtml(i.category)+'</td><td>'+rial(i.total_amount)+'</td><td>'+rial(t.paid)+'</td><td>'+rial(t.remaining)+'</td><td>'+statusLabel+'</td><td><button type="button" onclick="selectPurchaseInvoice(&quot;'+i.id+'&quot;)">ثبت پرداخت / جزئیات</button> '+(at.length?'<button type="button" onclick="openPurchaseAttachment(&quot;'+i.id+'&quot;)">فاکتور پیوست</button>':'')+'</td></tr>';
+  }).join('')||'<tr><td colspan="8">فاکتوری مطابق جست‌وجو پیدا نشد.</td></tr>';
+  renderPurchasePayments();
+}
+window.selectPurchaseInvoice=id=>{
+  const invoice=purchaseInvoices.find(i=>i.id===id);if(!invoice)return;
+  selectedPurchaseId=id;const t=purchaseTotals(invoice);
+  $('selectedPurchaseLabel').textContent='فاکتور '+invoice.invoice_number+' · فروشنده: '+invoice.supplier_name+' · مانده: '+rial(t.remaining);
+  $('purchasePaymentAmount').max=String(t.remaining);$('purchasePaymentAmount').value=t.remaining>0?String(t.remaining):'';
+  $('savePurchasePayment').disabled=t.remaining<=0;renderPurchasePayments();
+};
+function renderPurchasePayments(){
+  const rows=purchasePayments.filter(p=>p.invoice_id===selectedPurchaseId);
+  $('purchasePaymentRows').innerHTML=rows.map(p=>'<tr><td>'+escapeHtml(p.payment_date)+'</td><td>'+escapeHtml(p.payment_method)+'</td><td>'+escapeHtml(p.reference_number||'—')+'</td><td>'+rial(p.amount)+'</td><td>'+escapeHtml(p.description||'')+'</td></tr>').join('')||'<tr><td colspan="5">برای این فاکتور هنوز پرداختی ثبت نشده است.</td></tr>';
+}
+window.openPurchaseAttachment=async id=>{
+  const at=purchaseAttachments.find(a=>a.invoice_id===id);if(!at)return;
+  try{
+    const r=await fetch(URL_BASE+'/storage/v1/object/sign/finance-documents/'+at.storage_path,{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600})});
+    if(!r.ok)throw new Error(await r.text());const data=await r.json();window.open(URL_BASE+'/storage/v1'+data.signedURL,'_blank','noopener');
+  }catch(e){purchaseMessage('بازکردن پیوست انجام نشد: '+String(e?.message||e));}
+};
+$('savePurchaseInvoice').onclick=async()=>{
+  let invoice=null;
+  try{
+    const subtotal=Number($('purchaseSubtotal').value||0),discount=Number($('purchaseDiscount').value||0),tax=Number($('purchaseTax').value||0),total=subtotal-discount+tax;
+    const invoiceNumber=$('purchaseInvoiceNumber').value.trim(),invoiceDate=$('purchaseInvoiceDate').value.trim(),supplier=$('purchaseSupplier').value.trim();
+    if(!invoiceNumber||!invoiceDate||!supplier)throw new Error('شماره و تاریخ فاکتور و نام فروشنده الزامی است.');
+    if(!Number.isSafeInteger(subtotal)||subtotal<=0||!Number.isSafeInteger(discount)||discount<0||!Number.isSafeInteger(tax)||tax<0||discount>subtotal||!Number.isSafeInteger(total)||total<=0)throw new Error('مبالغ فاکتور معتبر نیستند؛ جمع باید بیشتر از صفر و تخفیف کمتر از مبلغ پایه باشد.');
+    const payload={invoice_number:invoiceNumber,invoice_date:invoiceDate,fiscal_year:$('purchaseFiscalYear').value.trim()||$('fiscalYear').value.trim()||'۱۴۰۶-۱۴۰۵',supplier_name:supplier,supplier_phone:$('purchaseSupplierPhone').value.trim(),category:$('purchaseCategory').value,description:$('purchaseDescription').value.trim(),subtotal,discount_amount:discount,tax_amount:tax,total_amount:total};
+    invoice=await api('finance_purchase_invoices',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+    if(Array.isArray(invoice))invoice=invoice[0];if(!invoice?.id)throw new Error('فاکتور در پایگاه داده ثبت نشد.');
+    const file=$('purchaseAttachment').files[0];
+    if(file){
+      const path=invoice.id+'/'+crypto.randomUUID()+'-'+file.name.replace(/[^A-Za-z0-9._-]/g,'_');
+      const upload=await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN,'Content-Type':file.type,'x-upsert':'false'},body:file});
+      if(!upload.ok){purchaseMessage('فاکتور شماره '+invoice.invoice_number+' ثبت شد، اما بارگذاری پیوست ناموفق بود: '+await upload.text()+'؛ می‌توانی بعداً فاکتور را جداگانه پیوست کنی.');await loadPurchaseData();return;}
+      try{await api('finance_purchase_attachments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({invoice_id:invoice.id,file_name:file.name,mime_type:file.type,storage_path:path})});}
+      catch(e){await fetch(URL_BASE+'/storage/v1/object/finance-documents/'+path,{method:'DELETE',headers:{apikey:API_KEY,Authorization:'Bearer '+TOKEN}}).catch(()=>{});purchaseMessage('فاکتور شماره '+invoice.invoice_number+' ثبت شد، اما ثبت مشخصات پیوست ناموفق بود: '+String(e?.message||e)+'؛ خود فاکتور محفوظ است.');await loadPurchaseData();return;}
+    }
+    $('purchaseInvoiceNumber').value='';$('purchaseInvoiceDate').value='';$('purchaseSupplier').value='';$('purchaseSupplierPhone').value='';$('purchaseDescription').value='';$('purchaseSubtotal').value='';$('purchaseDiscount').value='0';$('purchaseTax').value='0';$('purchaseTotal').value='';$('purchaseAttachment').value='';
+    await loadPurchaseData();purchaseMessage('فاکتور خرید با موفقیت ثبت شد. اکنون می‌توانی پرداخت کامل یا مرحله‌ای آن را ثبت کنی.',true);
+  }catch(e){purchaseMessage('ثبت فاکتور انجام نشد: '+String(e?.message||e));}
+};
+async function loadPurchaseData(){
+  const [invoices,payments,attachments]=await Promise.all([
+    apiAll('finance_purchase_invoices?select=*&order=invoice_date.desc,created_at.desc'),
+    apiAll('finance_purchase_payments?select=*&order=payment_date.desc,created_at.desc'),
+    apiAll('finance_purchase_attachments?select=*&order=created_at.desc')
+  ]);
+  purchaseInvoices=invoices;purchasePayments=payments;purchaseAttachments=attachments;renderPurchases();
+}
+$('savePurchasePayment').onclick=async()=>{
+  try{
+    const invoice=purchaseInvoices.find(i=>i.id===selectedPurchaseId);if(!invoice)throw new Error('ابتدا فاکتور را انتخاب کن.');
+    const amount=Number($('purchasePaymentAmount').value||0),remaining=purchaseTotals(invoice).remaining;
+    if(!Number.isSafeInteger(amount)||amount<=0||amount>remaining)throw new Error('مبلغ پرداخت باید مثبت و حداکثر برابر مانده فاکتور باشد.');
+    const date=$('purchasePaymentDate').value.trim();if(!date)throw new Error('تاریخ پرداخت را وارد کن.');
+    await api('finance_purchase_payments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({invoice_id:invoice.id,payment_date:date,amount,payment_method:$('purchasePaymentMethod').value,reference_number:$('purchasePaymentReference').value.trim(),description:$('purchasePaymentDescription').value.trim()})});
+    $('purchasePaymentAmount').value='';$('purchasePaymentReference').value='';$('purchasePaymentDescription').value='';
+    await loadPurchaseData();window.selectPurchaseInvoice(invoice.id);purchaseMessage('پرداخت فروشنده ثبت شد و مانده فاکتور به‌روزرسانی شد.',true);
+  }catch(e){purchaseMessage('ثبت پرداخت انجام نشد: '+String(e?.message||e));}
+};
+$('purchaseSearch').addEventListener('input',renderPurchases);$('purchaseStatusFilter').addEventListener('change',renderPurchases);$('purchaseCategoryFilter').addEventListener('change',renderPurchases);
+$('refreshPurchases').onclick=async()=>{try{await loadPurchaseData();purchaseMessage('فهرست فاکتورها به‌روزرسانی شد.',true);}catch(e){purchaseMessage('بارگذاری فاکتورها انجام نشد: '+String(e?.message||e));}};
+$('clearPurchaseForm').onclick=()=>{['purchaseInvoiceNumber','purchaseInvoiceDate','purchaseSupplier','purchaseSupplierPhone','purchaseDescription','purchaseSubtotal','purchaseTotal'].forEach(id=>$(id).value='');$('purchaseDiscount').value='0';$('purchaseTax').value='0';$('purchaseAttachment').value='';};
+function csvPurchaseField(value){let s=String(value??'');if(/^[\s\u0000-\u001f]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+$('exportPurchaseCsv').onclick=()=>{
+  if(!purchaseInvoices.length){purchaseMessage('هنوز فاکتوری برای خروجی وجود ندارد.');return;}
+  const rows=[['مدیریت آموزش و پرورش شهرستان قدس'],[schoolName],['سال مالی',$('purchaseFiscalYear').value||$('fiscalYear').value],[],['شماره فاکتور','تاریخ','فروشنده','تلفن','نوع هزینه','شرح','مبلغ فاکتور','پرداخت‌شده','مانده','وضعیت'],...purchaseInvoices.map(i=>{const t=purchaseTotals(i);return [i.invoice_number,i.invoice_date,i.supplier_name,i.supplier_phone,i.category,i.description,i.total_amount,t.paid,t.remaining,t.status==='paid'?'تسویه‌شده':t.status==='partial'?'پرداخت جزئی':'پرداخت‌نشده'];})];
+  const csv='\uFEFF'+rows.map(row=>row.map(csvPurchaseField).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='فاکتورهای-خرید-مدرسه.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
 loadAll();
 </script></body></html>
