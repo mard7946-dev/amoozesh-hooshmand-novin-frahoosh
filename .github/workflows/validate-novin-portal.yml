@@ -48,6 +48,10 @@ on:
       - 'parent-management.html'
       - 'counseling.html'
       - 'exam-center.html'
+      - 'exam-planner.html'
+      - 'supabase/functions/exam-planner/index.ts'
+      - 'supabase/migrations/20261118100000_school_exam_planner.sql'
+      - 'tests/validate-exam-planner.mjs'
       - 'directory.html'
       - 'tests/validate-student-dossier.mjs'
       - 'supabase/functions/assessment-center/index.ts'
@@ -62,6 +66,10 @@ on:
       - 'supabase/functions/school-reports/index.ts'
       - 'supabase/migrations/20261030100000_school_settings_and_server_registry.sql'
       - 'index.html'
+      - 'exam-planner.html'
+      - 'supabase/functions/exam-planner/index.ts'
+      - 'supabase/migrations/20261118100000_school_exam_planner.sql'
+      - 'tests/validate-exam-planner.mjs'
       - 'finance.html'
       - 'supabase/migrations/20261107150000_atomic_finance_voucher_creation.sql'
       - 'tests/validate-novin-portal.mjs'
@@ -114,6 +122,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate smart exam planner routing, security, and page syntax
+        run: node tests/validate-exam-planner.mjs
       - name: Validate unified family communication center
         run: node tests/validate-family-communication.mjs
       - name: Validate comprehensive student dossier and school isolation
@@ -137,6 +147,8 @@ jobs:
         run: deno check supabase/functions/platform-management/index.ts supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check smart exam planner Edge Function
+        run: deno check supabase/functions/exam-planner/index.ts
       - name: Type-check manager password recovery Edge Function
         run: deno check supabase/functions/request-manager-password-recovery/index.ts
       - name: Type-check username login Edge Function
