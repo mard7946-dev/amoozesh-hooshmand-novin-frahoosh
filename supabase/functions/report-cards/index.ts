@@ -16,7 +16,7 @@ async function getCaller(admin:any,token:string){
  const {data:membership,error:membershipError}=await admin.from("school_memberships").select("id,role").eq("auth_user_id",user.id).eq("school_id",schoolId).eq("is_active",true).limit(1).maybeSingle();
  if(membershipError||!membership)throw Object.assign(new Error("عضویت فعال شما در این مدرسه تأیید نشد."),{status:403});
  const membershipRole=clean(membership.role).toLowerCase();
- if(!managerRoles.has(role)&&!executiveRoles.has(role)&&!executiveRoles.has(membershipRole))throw Object.assign(new Error("دسترسی معاونت اجرایی تأیید نشد."),{status:403});
+ if(!managerRoles.has(role)&&!executiveRoles.has(role)&&!executiveRoles.has(membershipRole))throw Object.assign(new Error("فقط مدیر و معاون اجرایی مجاز به مدیریت کارنامه هستند."),{status:403});
  return {user,schoolId,role};
 }
 Deno.serve(async(req:Request)=>{
