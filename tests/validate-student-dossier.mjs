@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const page = readFileSync("directory.html", "utf8");
 assert.ok(page.includes("/functions/v1/school-reports"), "Student dossier must load real academic records from the protected school reports API");
-assert.ok(page.includes("data.school?.id") && page.includes("SCHOOL_ID"), "Student dossier must reject report data from a different school");
+assert.ok(page.includes("d.school?.id") && page.includes("SCHOOL_ID"), "Student dossier must reject report data from a different school");
 assert.ok(page.includes("renderStudentAcademicRecord") && page.includes("academicData"), "Student profile must render the academic record view");
 for (const section of ["حضور و غیاب", "نمرات و ارزشیابی‌ها", "تعدیلات تأییدشده نمره", "سوابق انضباطی", "فعالیت‌ها و ثبت‌نام‌ها", "سوابق شورای دانش‌آموزی"]) assert.ok(page.includes(section), "Missing student dossier section: " + section);
 assert.ok(page.includes("String(x.student_id)===id"), "Every academic record must be filtered to the selected student's exact database ID");
