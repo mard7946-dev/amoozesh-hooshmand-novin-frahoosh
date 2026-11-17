@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
       if (!requirements.length) return reply({ message: "ابتدا نیاز هفتگی درس‌ها را ثبت کنید." }, 400);
       if (!await verifyRequirements(requirements)) return reply({ message: "یکی از تخصیص‌های درس/دبیر/کلاس در فهرست فعال همین مدرسه وجود ندارد." }, 400);
       const generated = generateWeeklyTimetable({ requirements, teacher_workdays: teacherWorkdays });
-      return reply({ ok: generated.errors.length === 0, slots: generated.slots, errors: generated.errors, warnings: generated.warnings });
+      return reply({ ok: true, slots: generated.slots, errors: generated.errors, warnings: generated.warnings });
     }
 
     if (action === "validate" || action === "save_draft" || action === "publish") {
