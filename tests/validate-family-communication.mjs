@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const page = readFileSync("family-communication.html", "utf8");
 const portal = readFileSync("portal.html", "utf8");
+const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 
 for (const endpoint of [
   "/functions/v1/parent-management",
@@ -22,6 +23,9 @@ const scriptStart = page.indexOf("<script>");
 const scriptEnd = page.indexOf("</script>", scriptStart);
 assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "Family center must contain its application script");
 assert.doesNotThrow(() => new Function(page.slice(scriptStart + 8, scriptEnd)), "Family center JavaScript must parse");
+
+assert.ok(publishWorkflow.includes("family-communication.html"), "Pages workflow must trigger and copy the family center page");
+assert.ok(publishWorkflow.includes("family-communication.html parent-management.html") && publishWorkflow.includes("_site/"), "Pages artifact must include the family center HTML file");
 
 assert.ok(portal.includes("مرکز ارتباط مدرسه و خانواده") && portal.includes("family-communication.html"), "Manager and parent panels must route to the new family communication center");
 assert.ok(portal.includes("portalAuthUserRole!==selectedRole.id"), "Panel routing must verify the authenticated role before opening the center");
