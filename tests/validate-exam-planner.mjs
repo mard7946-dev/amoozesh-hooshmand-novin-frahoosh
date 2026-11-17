@@ -5,14 +5,22 @@ const page = readFileSync("exam-planner.html", "utf8");
 const portal = readFileSync("portal.html", "utf8");
 const api = readFileSync("supabase/functions/exam-planner/index.ts", "utf8");
 const migration = readFileSync("supabase/migrations/20261118100000_school_exam_planner.sql", "utf8");
+const seatMigration = readFileSync("supabase/migrations/20261118110000_exam_seats_id_sequence.sql", "utf8");
 const publish = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
 
 assert.ok(portal.includes("برنامه امتحانات"), "Manager, deputy, and student portals must expose the exam planner entry");
 assert.ok(portal.includes("exam-planner.html"), "Portal must route the exam planner tile to its page");
 assert.ok(page.includes("FrahooshJalali.toISODate") && page.includes("data-jalali-date"), "Exam planner must use the shared Jalali date picker");
-assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty and exclude holidays");
+assert.ok(page.includes("function generateSchedule()") && page.includes("function arrangeSubjects(subjects)") && page.includes("function difficultyGap(level)") && page.includes("function restDaysBetween(previousDate,nextDate)") && page.includes("holidays.includes(iso)"), "Generator must arrange subjects by difficulty, count full rest days, and exclude holidays");
+const restDaysStart = page.indexOf("function restDaysBetween(");
+const restDaysEnd = page.indexOf("}", restDaysStart);
+assert.ok(restDaysStart >= 0 && restDaysEnd > restDaysStart, "Rest-day calculation must be present");
+const restDaysSource = page.slice(restDaysStart, restDaysEnd + 1);
+const restDaysBetween = new Function(restDaysSource + "; return restDaysBetween;")();
+assert.equal(restDaysBetween("2026-01-01", "2026-01-03"), 1, "Two calendar days apart must provide one full rest day");
+assert.equal(restDaysBetween("2026-01-01", "2026-01-05"), 3, "Four calendar days apart must provide three full rest days");
 assert.ok(page.includes("subject-difficulty") && page.includes('value="heavy"') && page.includes('value="medium"') && page.includes('value="light"'), "Each subject must expose heavy, medium, and light difficulty choices");
-assert.ok(page.includes("difficulty:subject.difficulty") && api.includes('["heavy", "medium", "light"]') && api.includes("daysBetween < gap"), "Selected difficulty must be persisted and server-side study gaps enforced");
+assert.ok(page.includes("difficulty:subject.difficulty") && api.includes('["heavy", "medium", "light"]') && api.includes("restDays < gap") && api.includes("daysBetween - 1"), "Selected difficulty must be persisted and server-side study gaps enforced");
 assert.ok(!page.includes("rotation_no") && !page.includes("subject-rotation") && !page.includes("شماره چرخشی"), "Subject rotation must be fully removed");
 assert.ok(page.includes("شماره صندلی") && page.includes("x.seat_no"), "Published student schedules must display the assigned seat number");
 assert.ok(api.includes("crypto.getRandomValues") && api.includes("previousSeatByGrade") && api.includes("exam_seats"), "Publishing must randomly allocate and persist different seat numbers per exam");
@@ -25,6 +33,7 @@ assert.ok(api.includes('if (!manager && !deputy)') && api.includes("انتشار
 assert.ok(api.includes('.eq("school_id", schoolId)') && api.includes('.eq("tenant_school_id", schoolId)'), "All planner and student queries must be school-scoped");
 assert.ok(api.includes('.eq("status", "published")'), "Student endpoint must return published plans only");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all on public.school_exam_plans from anon, authenticated"), "Planner table must be inaccessible to direct anonymous/authenticated table access");
+assert.ok(seatMigration.includes("create sequence if not exists public.exam_seats_id_seq") && seatMigration.includes("alter table public.exam_seats alter column id set default nextval"), "Exam seat inserts must receive database-generated primary keys");
 assert.ok(publish.includes("'exam-planner.html'") && publish.includes("exam-planner.html _site/"), "GitHub Pages workflow must deploy the planner page");
 
 const inlineScripts = page.split("<script>").slice(1).map(source => source.split("</script>")[0]).filter(source => source.trim());
