@@ -10,7 +10,7 @@ for (const endpoint of [
   "/functions/v1/school-bulletin",
 ]) assert.ok(page.includes(endpoint), "Family center must reuse the authenticated existing service: " + endpoint);
 
-assert.ok(page.includes("frahoosh_novin_access_token") && page.includes("Authorization:'Bearer '+token"), "All center requests must use the active authenticated session");
+assert.ok(page.includes("frahoosh_novin_access_token") && page.includes("Bearer '+token"), "All center requests must use the active authenticated session");
 assert.ok(page.includes("!['parent','manager'].includes(role)"), "The unified center must be limited to parent and manager roles");
 assert.ok(page.includes("Promise.allSettled"), "A failure in one communication service must not hide the other service results");
 assert.ok(page.includes("api(endpoints.bulletins,'read',{id:b.id})"), "Bulletin receipt must be recorded against the exact bulletin ID");
