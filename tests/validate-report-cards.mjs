@@ -49,3 +49,10 @@ assert.ok(logo.startsWith("/9j/")&&logo.endsWith("9k="),"Embedded school logo is
 assert.match(portal,/name==='کارنامه میان‌ترم'/);
 assert.match(portal,/selectedRole\.id==='manager'\|\|selectedRole\.id==='deputy'/);
 console.log("Professional report card feature checks passed.");
+
+assert.match(page,/class="report-watermark school-logo"/,"A real image element is used for the printed watermark");
+assert.match(page,/مدیریت آموزش و پرورش شهرستان قدس/);
+assert.match(page,/دبیرستان سردار شهید حاجی‌زاده ۲/);
+assert.match(page,/سامانه هوشمند، مدرسه یکپارچه، دانش‌آموز خلاق/);
+assert.match(page,/کارنامه میان نوبت اول/);
+assert.match(page,/await Promise\.all\(images\.map\(img=>img\.decode/,"Printing waits for watermark and header logo decoding");
