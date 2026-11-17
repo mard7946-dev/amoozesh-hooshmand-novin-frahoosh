@@ -8,7 +8,7 @@ const api = readFileSync("supabase/functions/weekly-timetable-planner/index.ts",
 const validation = readFileSync("supabase/functions/weekly-timetable-planner/validation.ts", "utf8");
 const management = readFileSync("classroom/management.html", "utf8");
 
-for (const id of ["academicYear", "assignmentSelect", "requiredPeriods", "workdaysEditor", "classSelect", "slotGrid", "generate", "validate", "saveDraft", "publish", "print"]) {
+for (const id of ["academicYear", "assignmentSelect", "requiredPeriods", "workdaysEditor", "classSelect", "slotGrid", "teacherSelect", "teacherScheduleTable", "generate", "validate", "saveDraft", "publish", "print"]) {
   assert.ok(page.includes('id="' + id + '"'), "planner page must include " + id);
 }
 assert.ok(page.includes('data-week="even"') && page.includes('data-week="odd"'), "each timetable cell must have independent even/odd assignments");
