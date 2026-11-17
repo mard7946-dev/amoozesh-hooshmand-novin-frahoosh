@@ -4,7 +4,7 @@ const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status
 const clean=(v:unknown,max=180)=>String(v??"").trim().slice(0,max);
 const managerRoles=new Set(["manager","مدیر","مدیریت"]);
 const executiveRoles=new Set(["executive","executive_deputy","معاون اجرایی","معاونت اجرایی","معاون اجرایی مدرسه"]);
-const subjects=["عربی","علوم","زبان","ریاضی","مطالعات","فارسی","انضباط"];
+const subjects=["ریاضی","عربی","فارسی","مطالعات","زبان","علوم","انضباط"];
 async function getCaller(admin:any,token:string){
  const {data:{user},error}=await admin.auth.getUser(token);
  if(error||!user)throw Object.assign(new Error("نشست ورود معتبر نیست؛ دوباره وارد شوید."),{status:401});
