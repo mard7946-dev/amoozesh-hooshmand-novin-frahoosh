@@ -205,3 +205,4 @@ drop trigger if exists finance_purchase_payment_guard on public.finance_purchase
 create trigger finance_purchase_payment_guard
 before insert on public.finance_purchase_payments
 for each row execute function private.finance_purchase_payment_guard();
+revoke all on function private.finance_purchase_payment_guard() from public, anon, authenticated;
