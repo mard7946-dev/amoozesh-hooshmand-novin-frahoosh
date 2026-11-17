@@ -115,7 +115,7 @@ with check (
   and created_by = auth.uid()
   and exists (
     select 1 from public.finance_purchase_invoices i
-    where i.id = invoice_id and i.tenant_school_id = tenant_school_id
+    where i.id = finance_purchase_attachments.invoice_id and i.tenant_school_id = finance_purchase_attachments.tenant_school_id
   )
 );
 
