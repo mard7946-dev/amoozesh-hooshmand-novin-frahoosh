@@ -55,7 +55,7 @@ assert.equal(impossible.rows.length,0,"no incomplete timetable may be returned a
 
 const page=readFileSync("classroom/weekly-timetable-builder.html","utf8");
 assert.ok(page.includes("list_weekly_schedule"),"builder must verify manager authorization through the classroom service");
-assert.ok(page.includes("builder").includes?false:true);
+
 assert.ok(page.includes("برنامه فعال مدرسه را تغییر نمی‌دهد"),"preview must not silently overwrite the active timetable");
 for(const block of page.split("<script").slice(1)){
  const start=block.indexOf(">"),end=block.indexOf("</script>");
