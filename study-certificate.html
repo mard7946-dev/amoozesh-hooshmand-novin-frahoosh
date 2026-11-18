@@ -73,7 +73,7 @@ let photoData="";
 function val(id){return $(id).value.trim()||"................";}
 function setText(id,value){$(id).textContent=value;}
 function normalizeSearchDigits(value){return String(value||"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));}
-function safeSearchTerm(value){return normalizeSearchDigits(value).replace(/[\\,().*%_]/g," ").replace(/\\s+/g," ").trim();}
+function safeSearchTerm(value){return normalizeSearchDigits(value).replace(/[\\,().*%_]/g," ").replace(/\s+/g," ").trim();}
 let studentSearchTimer=0;
 let studentSearchSequence=0;
 let selectedStudentId=null;
