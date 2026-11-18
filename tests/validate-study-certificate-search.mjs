@@ -31,4 +31,9 @@ const scriptEnd = page.indexOf("</script>", scriptStart);
 assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "Study certificate must contain its application script");
 assert.doesNotThrow(() => new Function(page.slice(scriptStart + 8, scriptEnd)), "Study certificate JavaScript must parse");
 
+assert.ok(page.includes('const available=()=>!!(window.QRCode&&typeof window.QRCode.toDataURL==="function")'), "QR loader must verify the actual QRCode API");
+assert.ok(page.includes('script.onload=()=>{finish();if(available())resolve(true);else{script.remove();next();}}'), "QR loader must try the second CDN when the first loads without exposing the API");
+assert.ok(page.includes('script.onerror=()=>{finish();script.remove();next();}'), "QR loader must fall back after a CDN network error");
+assert.ok(page.includes('setTimeout(()=>{finish();script.remove();next();},10000)'), "QR loader must recover from a stalled CDN request");
+
 console.log("Study certificate student-search checks passed: school scoping, limited fields, search filters, auto-fill, manual entry, and JavaScript syntax.");
