@@ -39,7 +39,7 @@ assert.match(page,/code\.length>=8&&code\.length<=12/,"Student codes accept 8 th
 assert.match(page,/normalizeStudentCode\(s\.student_code\)===code/,"Excel codes are compared after normalization");
 const codeNormalizer=page.match(/function normalizeStudentCode\(value\)\{[\s\S]*?\}/)?.[0];
 assert.ok(codeNormalizer,"Student code normalizer exists");
-const normalizeStudentCode=new Function(codeNormalizer+";return normalizeStudentCode")();
+const normalizeStudentCode=new Function("en",codeNormalizer+";return normalizeStudentCode")(value=>String(value??"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 for(const length of [8,9,10,11,12])assert.equal(normalizeStudentCode("1".repeat(length)),"1".repeat(length),"Accept "+length+" digit student codes");
 assert.equal(normalizeStudentCode("۱۲۳۴۵۶۷۸"),"12345678","Persian digits normalize to English digits");
 assert.equal(normalizeStudentCode("۰۰۱۲۳۴۵۶۷۸"),"0012345678","Leading zeroes are preserved");
