@@ -128,6 +128,70 @@ Deno.serve(async (req: Request) => {
   }
 
 
+  if (action === "save_teacher_profile" || action === "import_teacher_profiles") {
+    const digits = (value: unknown) => clean(value)
+      .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const rows = action === "save_teacher_profile" ? [body] : Array.isArray(body.rows) ? body.rows : [];
+    if (!rows.length || rows.length > 1000) return reply({ message: "اطلاعات دبیر باید بین ۱ تا ۱۰۰۰ ردیف داشته باشد." }, 400);
+    const results: Array<{ row: number; success: boolean; message?: string }> = [];
+    for (let i = 0; i < rows.length; i++) {
+      const raw = rows[i] && typeof rows[i] === "object" ? rows[i] as Record<string, unknown> : {};
+      const get = (...keys: string[]) => {
+        for (const key of keys) if (raw[key] !== undefined && clean(raw[key])) return clean(raw[key]);
+        return "";
+      };
+      const roleValue = get("category", "role", "گروه", "نقش").toLowerCase();
+      if (action === "import_teacher_profiles" && roleValue && !["teacher", "دبیر", "دبیران", "معلم"].includes(roleValue)) {
+        results.push({ row: i + 2, success: false, message: "این بخش فقط برای ورود اطلاعات دبیران است." });
+        continue;
+      }
+      const firstName = get("first_name", "نام");
+      const lastName = get("last_name", "نام خانوادگی");
+      const nationalCode = digits(get("national_code", "کد ملی")).replace(/\D/g, "");
+      let phone = digits(get("phone", "mobile", "شماره تماس", "موبایل")).replace(/\D/g, "");
+      if (phone.startsWith("0098") && phone.length === 14) phone = "0" + phone.slice(4);
+      else if (phone.startsWith("98") && phone.length === 12) phone = "0" + phone.slice(2);
+      else if (phone.startsWith("9") && phone.length === 10) phone = "0" + phone;
+      if (!firstName || !lastName || !/^\d{10}$/.test(nationalCode)) {
+        results.push({ row: action === "save_teacher_profile" ? 1 : i + 2, success: false, message: "نام، نام خانوادگی و کد ملی ۱۰ رقمی دبیر الزامی است." });
+        continue;
+      }
+      if (phone && !/^09\d{9}$/.test(phone)) {
+        results.push({ row: action === "save_teacher_profile" ? 1 : i + 2, success: false, message: "شماره همراه باید با قالب 09123456789 وارد شود." });
+        continue;
+      }
+      try {
+        const { data: matches, error: lookupError } = await admin.from("teachers")
+          .select("id").eq("tenant_school_id", schoolId).eq("national_code", nationalCode).limit(2);
+        if (lookupError) throw lookupError;
+        if ((matches ?? []).length > 1) throw new Error("برای این کد ملی بیش از یک پرونده دبیر وجود دارد؛ ابتدا تکراری‌ها را بررسی کنید.");
+        const teacherRow = {
+          first_name: firstName, last_name: lastName, national_code: nationalCode,
+          phone: phone || null, mobile: phone || null,
+          email: get("email", "ایمیل") || null, subject: get("subject", "درس", "تخصص") || null,
+          grades: get("grades", "پایه‌های تدریس", "پایه") || null,
+          employee_code: digits(get("employee_code", "کد پرسنلی")) || null,
+          father_name: get("father_name", "نام پدر") || null,
+          religion: get("religion", "دین") || null, sect: get("sect", "مذهب") || null,
+          description: get("description", "توضیحات") || null,
+          tenant_school_id: schoolId,
+        };
+        const write = matches?.[0]
+          ? await admin.from("teachers").update(teacherRow).eq("id", matches[0].id).eq("tenant_school_id", schoolId)
+          : await admin.from("teachers").insert(teacherRow);
+        if (write.error) throw write.error;
+        results.push({ row: action === "save_teacher_profile" ? 1 : i + 2, success: true });
+      } catch (error) {
+        console.error("admin-manage-users teacher profile write failed", JSON.stringify({ row: i + 1, code: (error as any)?.code ?? null }));
+        results.push({ row: action === "save_teacher_profile" ? 1 : i + 2, success: false, message: String((error as any)?.message ?? "ذخیره پرونده دبیر انجام نشد.") });
+      }
+    }
+    const succeeded = results.filter(x => x.success).length;
+    return reply({ success: true, total: results.length, succeeded, failed: results.length - succeeded, results,
+      message: action === "save_teacher_profile" ? (succeeded ? "پرونده دبیر ذخیره شد." : "پرونده دبیر ذخیره نشد.") : "ورود اطلاعات دبیران پایان یافت." });
+  }
+
   if (action === "list_profiles") {
     const [studentsResult, teachersResult, staffResult, schedulesResult] = await Promise.all([
       admin.from("students").select("id,first_name,last_name,national_code,student_code,grade,class_name,phone,parent_phone,father_name,religion,sect,email,address,birth_date").eq("tenant_school_id", schoolId).order("last_name").limit(2000),
