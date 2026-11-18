@@ -49,6 +49,10 @@ assert.equal(alternating.rows.filter(x=>x.session_type==="متناوب با مط
 assert.equal(alternating.rows.find(x=>x.session_type==="متناوب با مطالعات").teachers.length,2);
 const invalid=generate({...base,days:[]});
 assert.equal(invalid.ok,false,"the engine must not invent operating days");
+const missingPeriodNumber=generate({...base,periods:[{number:"",start:"08:00",end:"08:45"}]});
+assert.equal(missingPeriodNumber.ok,false,"the engine must not invent period numbers");
+const overlap=generate({...base,periods:[{number:1,start:"08:00",end:"09:00"},{number:2,start:"08:45",end:"09:30"}]});
+assert.equal(overlap.ok,false,"overlapping bells must be rejected");
 const impossible=generate({...base,days:["شنبه"],periods:[{number:1,start:"08:00",end:"08:45"}],requirements:[{className:"۷/۱",subject:"ریاضی",teacher:"دبیر الف",pattern:"two"}]});
 assert.equal(impossible.ok,false,"the engine must not silently drop unplaceable sessions");
 assert.equal(impossible.rows.length,0,"no incomplete timetable may be returned as a successful plan");
