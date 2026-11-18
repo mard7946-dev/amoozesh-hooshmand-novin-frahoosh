@@ -45,6 +45,8 @@ on:
       - 'classroom/assets/**'
       - 'classroom/schedule.html'
       - 'classroom/management.html'
+      - 'classroom/weekly-timetable-builder.html'
+      - 'classroom/weekly-timetable-engine.js'
       - 'classroom/meetings.html'
       - 'classroom/livekit-check.html'
       - 'classroom/weekly-schedule-import.js'
@@ -100,10 +102,15 @@ jobs:
           cp classroom/assets/frahoosh-golden-brain.svg _site/classroom/assets/
           cp classroom/schedule.html _site/classroom/schedule.html
           cp classroom/management.html classroom/weekly-schedule-import.js _site/classroom/
+          cp classroom/weekly-timetable-builder.html classroom/weekly-timetable-engine.js _site/classroom/
           cp classroom/meetings.html _site/classroom/meetings.html
           cp classroom/livekit-check.html _site/classroom/livekit-check.html
           cp classroom.html _site/classroom.html
           touch _site/.nojekyll
+      - name: Verify weekly timetable builder assets
+        run: |
+          test -s _site/classroom/weekly-timetable-builder.html
+          test -s _site/classroom/weekly-timetable-engine.js
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
