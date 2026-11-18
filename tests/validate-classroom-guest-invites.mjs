@@ -26,7 +26,7 @@ assert.match(meetings, /max_uses: 10, use_count: 0/);
 assert.match(meetings, /const expiresAt = new Date\(meeting\.expires_at\)\.toISOString\(\)/);
 assert.doesNotMatch(meetings, /Date\.now\(\) \+ 20 \* 60_000/);
 assert.match(sharedInviteMigration, /alter column max_uses set default 10/i);
-assert.match(sharedInviteMigration, /set max_uses = 10[\s\S]*set expires_at = meeting\.expires_at/i);
+assert.match(sharedInviteMigration, /set max_uses = 10,[\s\S]*expires_at = meeting\.expires_at/i);
 assert.match(sharedInviteMigration, /meeting\.status = 'active'[\s\S]*meeting\.expires_at > now\(\)/i);
 assert.match(meetings, /from\("school_memberships"\)/);
 assert.match(meetings, /from\("classroom_meeting_host_slots"\)\.insert/);
