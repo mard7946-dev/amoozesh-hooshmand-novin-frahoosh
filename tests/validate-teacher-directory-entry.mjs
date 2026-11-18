@@ -10,7 +10,7 @@ const usernameLogin = readFileSync(new URL("../supabase/functions/login-by-usern
 assert.ok(directory.includes('id="teacherEntryTools"') && directory.includes('id="saveTeacherProfile"'), "Staff directory must expose individual teacher profile creation");
 assert.ok(directory.includes('id="teacherExcelFile"') && directory.includes('id="importTeacherExcel"') && directory.includes('id="downloadTeacherTemplate"'), "Staff directory must expose teacher-only Excel import and a template");
 assert.ok(directory.includes("action:'save_teacher_profile'") && directory.includes("action:'import_teacher_profiles'"), "Teacher entry UI must use dedicated protected API actions");
-assert.ok(directory.includes("if(view==='staff')$('teacherEntryTools').hidden=false"), "Teacher entry tools must only appear in the staff directory");
+assert.ok(directory.includes("teacherEntryTools').hidden=!(view==='staff'"), "Teacher entry tools must only appear for a manager in the staff directory");
 assert.ok(directory.includes("rows.length>1000") && directory.includes("XLSX.utils.sheet_to_json"), "Excel import must parse a bounded workbook");
 assert.ok(adminApi.includes('action === "save_teacher_profile" || action === "import_teacher_profiles"'), "Admin API must implement individual and bulk teacher profile actions");
 assert.ok(adminApi.includes('.eq("tenant_school_id", schoolId).eq("national_code", nationalCode)'), "Teacher profile matching must be scoped to the current school and national code");
