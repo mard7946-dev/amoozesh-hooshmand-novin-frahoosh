@@ -9,6 +9,9 @@ on:
       - 'family-communication.html'
       - 'tests/validate-family-communication.mjs'
       - 'manager-assistant.html'
+      - 'classroom/weekly-timetable-builder.html'
+      - 'classroom/weekly-timetable-engine.js'
+      - 'tests/validate-weekly-timetable-engine.mjs'
       - 'tests/validate-novin-portal.mjs'
       - 'question-bank.html'
       - 'school-library.html'
@@ -125,6 +128,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate weekly timetable generation engine and manager UI
+        run: node tests/validate-weekly-timetable-engine.mjs
       - name: Validate smart exam planner routing, security, and page syntax
         if: always()
         run: node tests/validate-exam-planner.mjs
