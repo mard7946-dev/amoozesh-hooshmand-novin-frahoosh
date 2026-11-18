@@ -16,7 +16,7 @@ assert.ok(adminApi.includes('action === "save_teacher_profile" || action === "im
 assert.ok(adminApi.includes('.eq("tenant_school_id", schoolId).eq("national_code", nationalCode)'), "Teacher profile matching must be scoped to the current school and national code");
 assert.ok(adminApi.includes("matches?.[0]") && adminApi.includes('from("teachers").update(teacherRow)'), "Existing teacher profiles must be updated instead of duplicated");
 assert.ok(adminApi.includes('from("teachers").insert(teacherRow)'), "New teacher profiles must be inserted into the real teachers table");
-assert.ok(adminApi.includes("managerMembership") && adminApi.includes("is_active", "manager membership must remain required");
+assert.ok(adminApi.includes("managerMembership") && adminApi.includes('eq("is_active", true)'), "Manager membership must remain required");
 assert.ok(portal.includes("change_teacher_initial_password") && portal.includes("requestedRole==='teacher'"), "Teacher first-login password flow must be exposed in the portal");
 assert.ok(schoolLogin.includes('"change_teacher_initial_password"'), "Portal login wrapper must return teacher password-change results");
 assert.ok(usernameLogin.includes('accountRole === "teacher" && requestedRole === "teacher"') && usernameLogin.includes('action !== "change_teacher_initial_password"'), "Authentication boundary must enforce teacher first-login password change");
