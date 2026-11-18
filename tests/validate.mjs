@@ -93,6 +93,7 @@ assert.ok(classroomSchedule.includes("schedule_entry_id"), "Room entry must be t
 assert.ok(publishWorkflow.includes("cp classroom/schedule.html _site/classroom/schedule.html"), "Pages workflow must publish the weekly schedule page");
 
 
+assert.ok(classroomManagement.includes("try{await loadTeacherSchedule()}catch(e){") && classroomManagement.includes("await bindTeacherRosterSelectors()}"), "A disabled or unavailable online-class schedule must not block teacher attendance, grades, homework, and discipline tools");
 assert.ok(classroomManagement.includes('value="import_weekly_schedule"'), "Management must offer a separate full weekly schedule import");
 assert.ok(classroomManagement.includes("normalizeExcelClock"), "Weekly schedule import must normalize Excel time cells");
 assert.ok(classroomManagement.includes("import_timetable"), "Existing teacher-to-class Excel import must remain available");
