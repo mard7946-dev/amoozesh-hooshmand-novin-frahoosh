@@ -80,6 +80,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'classroom/weekly-timetable-builder.html'
+      - 'classroom/weekly-timetable-engine.js'
+      - 'tests/validate-weekly-timetable-engine.mjs'
       - 'portal.html'
       - 'family-communication.html'
       - 'tests/validate-family-communication.mjs'
