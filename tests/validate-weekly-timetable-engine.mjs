@@ -16,9 +16,9 @@ const base={
   {number:3,start:"10:00",end:"10:45"}
  ],
  requirements:[
-  {className:"۷/۱",subject:"ریاضی",teacher:"دبیر الف",pattern:"two",weight:"سنگین"},
-  {className:"۷/۱",subject:"علوم",teacher:"دبیر ب",pattern:"one",weight:"سبک"},
-  {className:"۷/۲",subject:"فارسی",teacher:"دبیر الف",pattern:"one",weight:"متوسط"}
+  {className:"۷/۱",subject:"ریاضی",teacher:"دبیر الف",pattern:"two",weight:"سنگین",allowedDays:["شنبه","یکشنبه","دوشنبه"]},
+  {className:"۷/۱",subject:"علوم",teacher:"دبیر ب",pattern:"one",weight:"سبک",allowedDays:["شنبه","یکشنبه","دوشنبه"]},
+  {className:"۷/۲",subject:"فارسی",teacher:"دبیر الف",pattern:"one",weight:"متوسط",allowedDays:["شنبه","یکشنبه","دوشنبه"]}
  ]
 };
 const result=generate(base);
@@ -38,15 +38,24 @@ for(const row of result.rows){
  assert.ok(base.days.includes(row.weekday),"only manager-selected days may be used");
  assert.ok(base.periods.some(p=>p.number===row.period&&p.start===row.start_time&&p.end===row.end_time),"only manager-entered bell times may be used");
 }
-const exact=generate({...base,requirements:[{className:"۷/۱",subject:"هنر",teacher:"دبیر پ",pattern:"one",fixedDay:"دوشنبه",fixedPeriod:3}]});
+const exact=generate({...base,requirements:[{className:"۷/۱",subject:"هنر",teacher:"دبیر پ",pattern:"one",fixedDay:"دوشنبه",fixedPeriod:3,allowedDays:["دوشنبه"]}]});
 assert.equal(exact.ok,true);
 assert.equal(exact.rows[0].weekday,"دوشنبه");
 assert.equal(exact.rows[0].period,3);
-const alternating=generate({...base,requirements:[{className:"۷/۱",subject:"علوم",teacher:"دبیر الف",studiesTeacher:"دبیر ب",pattern:"one_plus_studies"}]});
+const alternating=generate({...base,requirements:[{className:"۷/۱",subject:"علوم",teacher:"دبیر الف",studiesTeacher:"دبیر ب",pattern:"one_plus_studies",allowedDays:["شنبه","یکشنبه"]}]});
 assert.equal(alternating.ok,true);
 assert.equal(alternating.rows.length,2);
 assert.equal(alternating.rows.filter(x=>x.session_type==="متناوب با مطالعات").length,1);
 assert.equal(alternating.rows.find(x=>x.session_type==="متناوب با مطالعات").teachers.length,2);
+const partial=generate({...base,requirements:[...base.requirements,{className:"۷/۳",subject:"فیزیک",teacher:"دبیر ج",pattern:"three",allowedDays:[]}]});
+assert.equal(partial.ok,true,"teachers with unknown workdays must not block a partial timetable");
+assert.equal(partial.rows.length,4,"only lessons for teachers with confirmed workdays should be placed");
+assert.equal(partial.pendingSessions.length,3,"all sessions for teachers without declared workdays must remain pending");
+assert.ok(partial.pendingSessions.every(x=>x.teacher==="دبیر ج"));
+const onlyPending=generate({...base,requirements:[{className:"۷/۳",subject:"فیزیک",teacher:"دبیر ج",pattern:"one",allowedDays:[]}]});
+assert.equal(onlyPending.ok,true,"a plan with only pending teachers is a valid empty draft");
+assert.equal(onlyPending.rows.length,0);
+assert.equal(onlyPending.pendingSessions.length,1);
 const invalid=generate({...base,days:[]});
 assert.equal(invalid.ok,false,"the engine must not invent operating days");
 const emptyLessons=generate({...base,requirements:[]});
@@ -63,6 +72,8 @@ assert.ok(impossible.errors.some(x=>x.includes("کلاس")||x.includes("دبیر
 const page=readFileSync("classroom/weekly-timetable-builder.html","utf8");
 assert.ok(page.includes("list_weekly_schedule"),"builder must verify manager authorization through the classroom service");
 
+assert.ok(page.includes("روزهای کاری اعلام‌شده برای هر دبیر را وارد کنید"),"the UI must explain phased teacher availability");
+assert.ok(page.includes("خالی"),"the UI must show unassigned timetable slots as empty");
 assert.ok(page.includes("برنامه فعال مدرسه را تغییر نمی‌دهد"),"preview must not silently overwrite the active timetable");
 for(const block of page.split("<script").slice(1)){
  const start=block.indexOf(">"),end=block.indexOf("</script>");
