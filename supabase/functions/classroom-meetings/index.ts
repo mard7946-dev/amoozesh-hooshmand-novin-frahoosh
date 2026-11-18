@@ -80,7 +80,8 @@ Deno.serve(async (req: Request) => {
       const rawToken = btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
       const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)));
       const tokenHash = [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
-      const expiresAt = new Date(Math.min(new Date(meeting.expires_at).getTime(), Date.now() + 20 * 60_000)).toISOString();
+      // Keep one shared guest link valid for the entire active meeting, not just the first 20 minutes.
+      const expiresAt = new Date(meeting.expires_at).toISOString();
       const { error: insertError } = await admin.from("classroom_guest_invites").insert({
         meeting_id: meeting.id, tenant_school_id: schoolId, token_hash: tokenHash,
         max_uses: 10, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
