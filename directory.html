@@ -9,6 +9,35 @@
 </style></head>
 <body><main>
 <header><div><h1 id="pageTitle">پرونده‌های فراهوش</h1><p class="muted" id="subtitle">اطلاعات از پرونده‌های ثبت‌شده در پایگاه داده خوانده می‌شود.</p></div><div class="actions"><button class="btn" id="back">بازگشت به پنل مدیریت</button><button class="btn primary" id="refresh">بارگذاری دوباره</button></div></header>
+<section class="card" id="teacherEntryTools" hidden>
+<h2>ثبت و ورود اطلاعات دبیران</h2>
+<p class="muted">این ابزار فقط برای پرونده دبیران همین مدرسه است. اگر کد ملی دبیر قبلاً ثبت شده باشد، همان پرونده به‌روزرسانی می‌شود و پرونده تکراری ساخته نمی‌شود.</p>
+<div class="grid">
+ <div class="card">
+  <h3>ساخت انفرادی دبیر</h3>
+  <div class="fields">
+   <label class="field">نام<input id="teacherFirstName" autocomplete="given-name"></label>
+   <label class="field">نام خانوادگی<input id="teacherLastName" autocomplete="family-name"></label>
+   <label class="field">کد ملی ۱۰ رقمی<input id="teacherNationalCode" inputmode="numeric" maxlength="10"></label>
+   <label class="field">شماره همراه<input id="teacherPhone" inputmode="tel" placeholder="09123456789"></label>
+   <label class="field">درس / تخصص<input id="teacherSubject"></label>
+   <label class="field">پایه‌های تدریس<input id="teacherGrades"></label>
+   <label class="field">کد پرسنلی<input id="teacherEmployeeCode"></label>
+   <label class="field">ایمیل<input id="teacherEmail" type="email"></label>
+  </div>
+  <div class="actions" style="margin-top:10px"><button class="btn primary" id="saveTeacherProfile" type="button">ذخیره پرونده دبیر</button></div>
+  <p id="teacherCreateStatus" class="status" role="status" aria-live="polite"></p>
+ </div>
+ <div class="card">
+  <h3>ورود گروهی از اکسل</h3>
+  <p class="muted">ستون‌های ضروری: نام، نام خانوادگی و کد ملی. ستون‌های شماره تماس، درس، پایه‌های تدریس، کد پرسنلی و ایمیل اختیاری هستند. فایل فقط شامل دبیران باشد.</p>
+  <input id="teacherExcelFile" type="file" accept=".xlsx,.xls,.csv">
+  <div class="actions" style="margin-top:10px"><button class="btn primary" id="importTeacherExcel" type="button">ورود اکسل دبیران</button><button class="btn" id="downloadTeacherTemplate" type="button">دریافت قالب اکسل دبیران</button></div>
+  <p id="teacherImportStatus" class="status" role="status" aria-live="polite"></p>
+  <div id="teacherImportResults" class="table-wrap"></div>
+ </div>
+</div>
+</section>
 <section class="card"><div class="actions"><button class="btn" id="backLevel" hidden>بازگشت به فهرست کلاس‌ها</button><input id="search" type="search" placeholder="جست‌وجوی نام، کلاس یا کد ملی" aria-label="جست‌وجو"><span class="pill" id="count">در حال بارگذاری…</span></div><p id="status" class="status" role="status">در حال دریافت اطلاعات…</p><div id="list" class="grid"></div><div id="detail" class="detail" hidden></div></section>
 </main>
 <script>
@@ -123,7 +152,43 @@ function showProfile(p){
  for(const s of matches){const row=document.createElement('tr');for(const v of(isStudent?[s.weekday,s.bell,s.subject,s.teacher]:[s.weekday,s.bell,s.class_name,s.subject]))row.append(el('td','',v||'—'));body.append(row)}
  table.append(thead,body);wrap.append(table);box.append(wrap);
 }
-async function load(){if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}if(!SCHOOL_ID){setStatus('شناسه مدرسه انتخاب‌شده در نشست موجود نیست؛ خارج شوید و با کد مدرسه دوباره وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const [d,assignmentMap,reportData]=await Promise.all([api({action:'list_profiles'}),loadTeacherAssignments(),loadAcademicData()]);academicData=reportData;profiles=(Array.isArray(d.profiles)?d.profiles:[]).map(p=>p.category==='teacher'?{...p,assigned_classes:assignmentMap.get(Number(p.id))||p.assigned_classes||[]}:p);schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus(academicData?'پرونده‌ها و سوابق آموزشی از سرویس امن مدرسه دریافت شد.':'فهرست پرونده‌ها دریافت شد؛ سوابق آموزشی در دسترس نیست: '+academicDataError,!academicData)}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
+function showTeacherImportResults(data){
+ const box=$('teacherImportResults');box.replaceChildren();
+ const summary=el('p','status',`تعداد: ${data.total||0} · موفق: ${data.succeeded||0} · ناموفق: ${data.failed||0}`);box.append(summary);
+ const failures=(data.results||[]).filter(x=>!x.success);
+ if(failures.length){const table=document.createElement('table'),body=document.createElement('tbody');for(const item of failures){const tr=document.createElement('tr');tr.append(el('td','',String(item.row)),el('td','error',item.message||'ذخیره نشد'));body.append(tr)}table.append(body);box.append(table)}
+}
+$('saveTeacherProfile').addEventListener('click',async()=>{
+ const button=$('saveTeacherProfile'),status=$('teacherCreateStatus');
+ const payload={action:'save_teacher_profile',first_name:$('teacherFirstName').value.trim(),last_name:$('teacherLastName').value.trim(),national_code:$('teacherNationalCode').value.trim(),phone:$('teacherPhone').value.trim(),subject:$('teacherSubject').value.trim(),grades:$('teacherGrades').value.trim(),employee_code:$('teacherEmployeeCode').value.trim(),email:$('teacherEmail').value.trim()};
+ if(!payload.first_name||!payload.last_name||!payload.national_code){status.className='status error';status.textContent='نام، نام خانوادگی و کد ملی ۱۰ رقمی را وارد کنید.';return}
+ if(!/^([0-9۰-۹]{10})$/.test(payload.national_code)){status.className='status error';status.textContent='کد ملی باید ۱۰ رقم باشد.';return}
+ button.disabled=true;status.className='status';status.textContent='در حال ذخیره پرونده دبیر…';
+ try{const result=await api(payload);status.className='status '+(result.failed?'error':'');status.textContent=result.message||'عملیات پایان یافت.';if(!result.failed){for(const id of ['teacherFirstName','teacherLastName','teacherNationalCode','teacherPhone','teacherSubject','teacherGrades','teacherEmployeeCode','teacherEmail'])$(id).value='';await load()}}
+ catch(error){status.className='status error';status.textContent=error.message||'ذخیره پرونده دبیر انجام نشد.'}
+ finally{button.disabled=false}
+});
+$('downloadTeacherTemplate').addEventListener('click',()=>{
+ const rows=[{'گروه':'دبیر','نام':'نمونه','نام خانوادگی':'دبیر','کد ملی':'0012345678','شماره تماس':'09120000000','درس':'ریاضی','پایه‌های تدریس':'هفتم، هشتم','کد پرسنلی':'1001','ایمیل':'teacher@example.com'}];
+ const sheet=XLSX.utils.json_to_sheet(rows),book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'دبیران');XLSX.writeFile(book,'frahoosh-teachers-template.xlsx');
+});
+$('importTeacherExcel').addEventListener('click',async()=>{
+ const button=$('importTeacherExcel'),status=$('teacherImportStatus'),file=$('teacherExcelFile').files?.[0];
+ if(!file){status.className='status error';status.textContent='ابتدا فایل اکسل دبیران را انتخاب کنید.';return}
+ button.disabled=true;status.className='status';status.textContent='در حال خواندن فایل اکسل…';
+ try{
+  const data=await file.arrayBuffer(),workbook=XLSX.read(data,{type:'array',cellText:true,raw:false});
+  const first=workbook.SheetNames[0];const rows=XLSX.utils.sheet_to_json(workbook.Sheets[first],{defval:'',raw:false});
+  if(!rows.length)throw new Error('فایل اکسل ردیف اطلاعات ندارد.');
+  if(rows.length>1000)throw new Error('حداکثر ۱۰۰۰ ردیف در هر بار ورود مجاز است.');
+  if(!confirm('تعداد '+rows.length+' ردیف خوانده شد. اطلاعات فقط به پرونده دبیران همین مدرسه وارد می‌شود. اگر کد ملی موجود باشد، پرونده قبلی به‌روزرسانی خواهد شد. ادامه می‌دهید؟'))return;
+  const result=await api({action:'import_teacher_profiles',rows});
+  showTeacherImportResults(result);status.className='status '+(result.failed?'error':'');status.textContent=result.message+' · موفق: '+result.succeeded+' · ناموفق: '+result.failed;
+  await load();
+ }catch(error){status.className='status error';status.textContent=error.message||'ورود اکسل دبیران انجام نشد.'}
+ finally{button.disabled=false}
+});
+async function load(){if(view==='staff')$('teacherEntryTools').hidden=false;if(!token||role!=='manager'){setStatus('برای مشاهده این فهرست باید از پنل مدیریت و با حساب مدیر وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}if(!['staff','student'].includes(view)){setStatus('نوع فهرست معتبر نیست.',true);return}if(!SCHOOL_ID){setStatus('شناسه مدرسه انتخاب‌شده در نشست موجود نیست؛ خارج شوید و با کد مدرسه دوباره وارد شوید.',true);list.replaceChildren();$('count').textContent='بدون دسترسی';return}$('refresh').disabled=true;setStatus('در حال دریافت پرونده‌ها از پایگاه داده…');try{const [d,assignmentMap,reportData]=await Promise.all([api({action:'list_profiles'}),loadTeacherAssignments(),loadAcademicData()]);academicData=reportData;profiles=(Array.isArray(d.profiles)?d.profiles:[]).map(p=>p.category==='teacher'?{...p,assigned_classes:assignmentMap.get(Number(p.id))||p.assigned_classes||[]}:p);schedules=Array.isArray(d.schedules)?d.schedules:[];render();setStatus(academicData?'پرونده‌ها و سوابق آموزشی از سرویس امن مدرسه دریافت شد.':'فهرست پرونده‌ها دریافت شد؛ سوابق آموزشی در دسترس نیست: '+academicDataError,!academicData)}catch(e){setStatus(e.message,true);list.replaceChildren()}finally{$('refresh').disabled=false}}
 $('search').addEventListener('input',render);$('refresh').addEventListener('click',load);$('backLevel').addEventListener('click',()=>{selectedClass='';$('search').value='';render()});$('back').addEventListener('click',()=>window.frahooshReturnToPanel('manager'));
 load();
 </script><script src="panel-return.js?v=20261106-return"></script></body></html>
