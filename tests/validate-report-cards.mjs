@@ -55,6 +55,9 @@ assert.match(page,/x\.attendance!=="غایب"/,"Absent subjects are excluded fro
 assert.match(api,/const absent=attendance==="غایب"/,"Report-card API accepts absence status without converting it to zero");
 assert.match(page,/غایب/,"Report card form and printout can display absence");
 assert.match(page,/i\+=4/);
+assert.match(page,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/,"Print sheet reserves exactly two bounded rows for four report cards");
+assert.match(page,/height:139mm;min-height:0;max-height:139mm/,"Each printed report is constrained to one quarter of the A4 printable area");
+assert.match(page,/page-break-inside:avoid/,"Individual report cards are kept together when printing");
 assert.match(page,/print-sheet/);
 assert.match(page,/id="gradeFilter"/);
 assert.match(page,/id="classFilter"/);
