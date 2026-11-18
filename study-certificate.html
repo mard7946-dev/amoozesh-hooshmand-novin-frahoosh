@@ -20,11 +20,12 @@
 <div id="status" class="status">اطلاعات را در کادرهای زیر وارد کنید؛ پیش‌نمایش فرم هم‌زمان به‌روزرسانی می‌شود.</div>
 <div class="fields">
 <label class="field">شماره گواهی<input id="serial" value="۱" maxlength="30"></label>
-<label class="field student-search-field">جست‌وجوی دانش‌آموز
-<input id="studentSearch" type="search" autocomplete="off" placeholder="نام، نام خانوادگی، کد ملی یا شماره دانش‌آموزی" aria-autocomplete="list" aria-controls="studentSearchResults" aria-expanded="false">
+<div class="field student-search-field">
+<label for="studentSearch">جست‌وجوی دانش‌آموز</label>
+<input id="studentSearch" type="search" maxlength="100" autocomplete="off" placeholder="نام، نام خانوادگی، کد ملی یا شماره دانش‌آموزی" aria-autocomplete="list" aria-controls="studentSearchResults" aria-expanded="false">
 <div id="studentSearchResults" class="student-results" role="listbox" hidden></div>
 <span id="studentSearchStatus" class="help" aria-live="polite">برای جست‌وجو حداقل دو نویسه وارد کنید؛ فقط دانش‌آموزان همین مدرسه نمایش داده می‌شوند.</span>
-</label>
+</div>
 <label class="field">نام و نام خانوادگی دانش‌آموز<input id="student" maxlength="120" placeholder="پس از انتخاب خودکار تکمیل می‌شود؛ ورود دستی هم ممکن است"></label>
 <label class="field">نام پدر<input id="father" maxlength="100"></label>
 <label class="field">کد ملی<input id="national" inputmode="numeric" maxlength="20"></label>
@@ -76,11 +77,10 @@ function normalizeSearchDigits(value){return String(value||"").replace(/[۰-۹]/
 function safeSearchTerm(value){return normalizeSearchDigits(value).replace(/[\\,().*%_]/g," ").replace(/\s+/g," ").trim();}
 let studentSearchTimer=0;
 let studentSearchSequence=0;
-let selectedStudentId=null;
+
 function showStudentSearchMessage(message,isError=false){const node=$("studentSearchStatus");node.textContent=message;node.style.color=isError?"#991b1b":"";}
 function hideStudentSearchResults(){const box=$("studentSearchResults");box.hidden=true;box.replaceChildren();$("studentSearch").setAttribute("aria-expanded","false");}
 function chooseStudent(student){
- selectedStudentId=student.id;
  const fullName=[student.first_name,student.last_name].filter(Boolean).join(" ").trim();
  $("student").value=fullName;
  $("father").value=student.father_name||"";
@@ -194,7 +194,7 @@ $("print").addEventListener("click",()=>{
  $("status").className="status";$("status").textContent="پیش‌نمایش آماده چاپ است. در پنجره چاپ، اندازه کاغذ A4 و مقیاس ۱۰۰٪ را انتخاب کنید.";
  updatePreview().then(()=>window.print());
 });
-$("clear").addEventListener("click",()=>{fields.forEach(id=>$(id).value="");$("period").value="دوره متوسطه اول";$("school").value="دبیرستان سردار شهید حاجی‌زاده ۲";$("year").value="۱۴۰۵-۱۴۰۶";$("grade").value="هشتم";$("manager").value="حسن مردانه جهان تیغ";$("photoInput").value="";photoData="";selectedStudentId=null;$("studentSearch").value="";hideStudentSearchResults();showStudentSearchMessage("فرم پاک شد. برای انتخاب دانش‌آموز جست‌وجو کنید.");$("status").className="status";$("status").textContent="فرم پاک شد.";updatePreview();});
+$("clear").addEventListener("click",()=>{fields.forEach(id=>$(id).value="");$("period").value="دوره متوسطه اول";$("school").value="دبیرستان سردار شهید حاجی‌زاده ۲";$("year").value="۱۴۰۵-۱۴۰۶";$("grade").value="هشتم";$("manager").value="حسن مردانه جهان تیغ";$("photoInput").value="";photoData="";$("studentSearch").value="";hideStudentSearchResults();showStudentSearchMessage("فرم پاک شد. برای انتخاب دانش‌آموز جست‌وجو کنید.");$("status").className="status";$("status").textContent="فرم پاک شد.";updatePreview();});
 $("back").addEventListener("click",()=>{location.href="portal.html?step=panel&role=deputy";});
 const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const role=sessionStorage.getItem("frahoosh_novin_role")||"";
