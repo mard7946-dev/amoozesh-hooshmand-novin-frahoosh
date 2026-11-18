@@ -47,10 +47,10 @@
 <div id="photoFallback" class="photo empty-photo">عکس دانش‌آموز</div>
 <div class="serial">شماره: <b id="vSerial">۱</b></div>
 <div class="line r1"><span>بدین وسیله گواهی می‌شود: <b id="vStudent">................</b></span><span>کد ملی: <b id="vNational">................</b></span></div>
-<div class="line r2"><span>شماره شناسنامه: <b id="vIdentity">................</b></span><span>فرزند: <b id="vFather">................</b></span><span>تاریخ تولد: <b id="vBirth">................</b></span></div>
-<div class="line r3"><span>در مدرسه: <b id="vSchool">دبیرستان سردار شهید حاجی‌زاده ۲</b></span><span>کد مدرسه: <b id="vSchoolCode">................</b></span><span>سال تحصیلی: <b id="vYear">۱۴۰۵-۱۴۰۶</b></span><span>در پایه: <b id="vGrade">هشتم</b></span></div>
+<div class="line r2"><span>شماره شناسنامه: <b id="vIdentity">................</b></span><span>فرزند: <b id="vFather">................</b></span><span>تاریخ تولد: <b id="vBirth">................</b></span><span>سال تحصیلی: <b id="vYear">۱۴۰۵-۱۴۰۶</b></span></div>
+<div class="line r3"><span>در مدرسه: <b id="vSchool">دبیرستان سردار شهید حاجی‌زاده ۲</b> (کد مدرسه: <b id="vSchoolCode">................</b>)</span><span>در پایه: <b id="vGrade">هشتم</b></span></div>
 <div class="line bodyline">مشغول به تحصیل می‌باشد.</div>
-<div class="date-label">تاریخ</div>
+<div class="date-label">تاریخ: <b id="vIssueDate">................</b></div>
 <div class="line purpose">این گواهی طبق تقاضای مورخ <b id="vRequestDate">................</b></div>
 <div class="line issued">فقط به منظور ارائه به: <b id="vDestination">................</b> صادر گردیده است.</div>
 <div class="disclaimer">و فاقد هرگونه ارزش دیگری می‌باشد.</div>
@@ -69,7 +69,7 @@ function val(id){return $(id).value.trim()||"................";}
 function setText(id,value){$(id).textContent=value;}
 function qrPayload(){return ["گواهی اشتغال به تحصیل","شماره: "+val("serial"),"دانش‌آموز: "+val("student"),"کد ملی: "+val("national"),"مدرسه: "+val("school"),"سال تحصیلی: "+val("year"),"تاریخ صدور: "+val("issueDate")].join("\n");}
 async function updatePreview(){
- const map={serial:"vSerial",student:"vStudent",national:"vNational",identity:"vIdentity",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",destination:"vDestination",manager:"vManager"};
+ const map={serial:"vSerial",student:"vStudent",national:"vNational",identity:"vIdentity",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",issueDate:"vIssueDate",destination:"vDestination",manager:"vManager"};
  for(const [source,target] of Object.entries(map))setText(target,val(source));
  setText("vPeriod","دوره تحصیلی: "+val("period"));
  const photo=$("vPhoto"),fallback=$("photoFallback");
