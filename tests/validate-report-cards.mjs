@@ -100,3 +100,8 @@ assert.match(page,/حذف کارنامه‌های این کلاس/,"The deletion
 assert.match(api,/if\(action==="delete_class"\)/,"Class deletion is handled by the protected API");
 assert.match(api,/\.eq\("school_id",schoolId\)\.eq\("grade",grade\)\.eq\("class_name",className\)/,"Class deletion is restricted to the authenticated school and exact grade/class");
 assert.doesNotMatch(api,/action==="delete_all"/,"The school-wide delete action is removed");
+
+assert.match(page,/id="printAllGradeBtn"/,"A grade-wide bulk PDF action is available");
+assert.match(page,/data\.cards\.filter\(c=>String\(c\.grade\|\|\"\"\)\.trim\(\)===grade\)/,"Grade-wide export includes every class in the selected grade");
+assert.match(page,/printCards\(cards\)/,"Grade-wide export uses the existing report-card print/PDF layout");
+assert.match(page,/ابتدا پایهٔ موردنظر را انتخاب کنید/,"Grade-wide export requires an explicitly selected grade");
