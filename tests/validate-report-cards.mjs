@@ -92,3 +92,9 @@ assert.match(page,/z-index:0!important/,"Watermark stays above the report backgr
 
 
 assert.doesNotMatch(page,/fetch\("assets\/school-logo-watermark\.txt"\)/,"No network fetch is required for the report-card logo");
+
+assert.match(page,/id="deleteAllBtn"/,"Bulk delete control is available in the report-card list");
+assert.match(page,/call\("delete_all"\)/,"Bulk delete calls the server-side school-scoped action");
+assert.match(page,/حذف همه کارنامه‌ها/,"Bulk deletion requires typing the exact confirmation phrase");
+assert.match(api,/if\(action==="delete_all"\)/,"Bulk delete is handled by the protected API");
+assert.match(api,/from\("school_report_cards"\)\.delete\(\)\.eq\("school_id",schoolId\)\.select\("id"\)/,"Bulk deletion is restricted to the authenticated caller school and reports its count");
