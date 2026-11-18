@@ -79,6 +79,11 @@ Deno.serve(async(req:Request)=>{
    if(error)throw new Error("ذخیره کارنامه انجام نشد؛ ساختار پایگاه داده یا اطلاعات را بررسی کنید.");
    return reply({card:data,message:"کارنامه با موفقیت ذخیره شد."});
   }
+  if(action==="delete_all"){
+   const {data:deleted,error}=await admin.from("school_report_cards").delete().eq("school_id",schoolId).select("id");
+   if(error)throw new Error("حذف گروهی کارنامه‌ها انجام نشد.");
+   return reply({message:"همه کارنامه‌های مدرسه حذف شدند.",deleted_count:deleted?.length??0});
+  }
   if(action==="delete"){
    const id=clean(body.id,60);if(!id)throw new Error("شناسه کارنامه نامعتبر است.");
    const {error}=await admin.from("school_report_cards").delete().eq("id",id).eq("school_id",schoolId);
