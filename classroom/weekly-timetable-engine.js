@@ -70,7 +70,7 @@
     return false;
   }
   const staticEmpty=schedulableTasks.filter(t=>!slots.some(s=>(!t.fixedDay||key(t.fixedDay)===key(s.day))&&(!t.fixedPeriod||t.fixedPeriod===s.period)&&(!t.allowedDays.length||t.allowedDays.some(d=>key(d)===key(s.day)))&&!t.blocked.some(x=>key(x)===key(s.day+":"+s.period)||key(x)===key(s.day+" زنگ "+s.period))));
-  const ok=schedulableTasks.length===0?true:search(schedulableTasks.slice());
+  const ok=schedulableTasks.length===0?(best=placed.slice(),true):search(schedulableTasks.slice());
   if(!ok){
    const first=staticEmpty[0]||schedulableTasks[0];const reason=nodes>nodeLimit?"تعداد حالت‌های بررسی از حد مجاز بیشتر شد؛ اطلاعات را به چند مرحله تقسیم کنید.":staticEmpty.length?"برای یکی از جلسات با محدودیت‌های ثبت‌شده هیچ روز و زنگ مجازی وجود ندارد.":"با توجه به تداخل دبیران و کلاس‌ها، برای همه جلسات جای خالی سازگار پیدا نشد.";
    return {ok:false,errors:[reason+(first?" مورد بررسی: "+first.className+" · "+first.subject+" · "+first.teacher:""),...lastConflict,"هیچ برنامه ناقصی منتشر نشد."],rows:[],stats:{required:tasks.length,scheduledRequired:schedulableTasks.length,placed:0,pending:pendingTasks.length,searchNodes:nodes}};
