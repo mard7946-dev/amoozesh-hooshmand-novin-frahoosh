@@ -1,6 +1,6 @@
 (function(root){
  "use strict";
- const clean=v=>String(v??"").replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim();
+ const clean=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim();
  const key=v=>clean(v).replace(/\s+/g,"").toLowerCase();
  const clock=v=>{const m=clean(v).match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=+m[1],n=+m[2];return h<24&&n<60?h*60+n:null};
  function generate(input){
