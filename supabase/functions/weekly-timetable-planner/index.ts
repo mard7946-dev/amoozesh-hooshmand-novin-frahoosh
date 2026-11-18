@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, slots: generated.slots, errors: generated.errors, warnings: generated.warnings });
     }
 
-    if (action === "validate" || action === "save_draft" || action === "publish") {
+    if (action === "validate" || action === "save_draft") {
       const academicYear = digits(clean(body.academic_year));
       const title = clean(body.title) || "برنامه اصلی";
       const requirements = Array.isArray(body.requirements) ? body.requirements as Requirement[] : [];
@@ -125,9 +125,6 @@ Deno.serve(async (req: Request) => {
       if (!await verifyRequirements(requirements)) return reply({ message: "یکی از تخصیص‌های درس/دبیر/کلاس در فهرست فعال همین مدرسه وجود ندارد." }, 400);
       const validation = validateWeeklyTimetable({ slots, requirements, teacher_workdays: teacherWorkdays });
       if (action === "validate") return reply({ ok: true, validation });
-      if (action === "publish" && (!requirements.length || !slots.length || !validation.valid || validation.warnings.length)) {
-        return reply({ ok: false, validation, message: validation.errors[0] || validation.warnings[0] || "برنامه آماده انتشار نیست." }, 409);
-      }
       const planId = clean(body.plan_id);
       const patch = {
         academic_year: academicYear, title, requirements, teacher_workdays: teacherWorkdays, slots,
@@ -139,16 +136,12 @@ Deno.serve(async (req: Request) => {
         if (existingError) throw existingError;
         if (!existing) return reply({ message: "برنامه برای این مدرسه پیدا نشد." }, 404);
         if (existing.status !== "draft") return reply({ message: "برنامه منتشرشده قابل ویرایش نیست؛ ابتدا نسخه جدید بسازید." }, 409);
-        const update = action === "publish"
-          ? { ...patch, status: "published", published_by: callerId, published_at: new Date().toISOString() }
-          : patch;
-        const { data, error } = await admin.from("school_weekly_timetable_plans").update(update)
+        const { data, error } = await admin.from("school_weekly_timetable_plans").update(patch)
           .eq("school_id", schoolId).eq("id", planId).eq("status", "draft")
           .select("id,academic_year,title,status,validation,published_at").single();
         if (error) throw error;
         return reply({ ok: true, plan: data, validation });
       }
-      if (action === "publish") return reply({ message: "ابتدا پیش‌نویس را ذخیره کنید و سپس آن را منتشر کنید." }, 400);
       const { data, error } = await admin.from("school_weekly_timetable_plans").insert({
         school_id: schoolId, ...patch, created_by: callerId,
       }).select("id,academic_year,title,status,validation,updated_at").single();
