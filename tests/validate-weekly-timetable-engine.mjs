@@ -58,7 +58,7 @@ assert.equal(overlap.ok,false,"overlapping bells must be rejected");
 const impossible=generate({...base,days:["شنبه"],periods:[{number:1,start:"08:00",end:"08:45"}],requirements:[{className:"۷/۱",subject:"ریاضی",teacher:"دبیر الف",pattern:"two"}]});
 assert.equal(impossible.ok,false,"the engine must not silently drop unplaceable sessions");
 assert.equal(impossible.rows.length,0,"no incomplete timetable may be returned as a successful plan");
-assert.ok(impossible.errors.some(x=>x.includes("جلسه")), "failed schedules must explain the constraint conflict");
+assert.ok(impossible.errors.some(x=>x.includes("کلاس")||x.includes("دبیر")), "failed schedules must explain the specific class or teacher conflict");
 
 const page=readFileSync("classroom/weekly-timetable-builder.html","utf8");
 assert.ok(page.includes("list_weekly_schedule"),"builder must verify manager authorization through the classroom service");
