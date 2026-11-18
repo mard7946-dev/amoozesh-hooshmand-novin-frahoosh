@@ -17,6 +17,8 @@
   const slots=days.flatMap(day=>periods.map(p=>({day,period:p.number,start:p.start,end:p.end,key:key(day)+"|"+p.number})));
   const tasks=[];
   requirements.forEach((r,i)=>{const count=r.pattern==="one"?1:r.pattern==="two"?2:r.pattern==="three"?3:2;for(let n=0;n<count;n++){const shared=r.pattern==="one_plus_studies"&&n===1;tasks.push({id:tasks.length,source:i,className:r.className,subject:shared?r.subject+" / مطالعات":r.subject,teacher:r.teacher,teachers:shared?[r.teacher,r.studiesTeacher]:[r.teacher],weight:r.weight,shared,allowedDays:r.allowedDays,blocked:r.blocked,fixedDay:clean(r.fixedDay),fixedPeriod:Number(r.fixedPeriod)||0,sequence:n});}});
+  const pendingTasks=tasks.filter(t=>!t.allowedDays.length);
+  const schedulableTasks=tasks.filter(t=>t.allowedDays.length>0);
   const classBusy=new Set(),teacherBusy=new Set(),classDayCount=new Map(),teacherDayCount=new Map(),heavySlots=new Map(),placed=[],nodeLimit=250000;let nodes=0,best=null,lastConflict=[];
   const dayKey=(c,d)=>key(c)+"|"+key(d),resourceKey=(t,s)=>key(t)+"|"+s.key;
   function staticEligible(task,s){
@@ -67,15 +69,16 @@
     for(const s of opts){place(chosen,s,1);placed.push({task:chosen,slot:s});if(search(next))return true;placed.pop();place(chosen,s,-1);if(nodes>nodeLimit)break;}
     return false;
   }
-  const staticEmpty=tasks.filter(t=>!slots.some(s=>(!t.fixedDay||key(t.fixedDay)===key(s.day))&&(!t.fixedPeriod||t.fixedPeriod===s.period)&&(!t.allowedDays.length||t.allowedDays.some(d=>key(d)===key(s.day)))&&!t.blocked.some(x=>key(x)===key(s.day+":"+s.period)||key(x)===key(s.day+" زنگ "+s.period))));
-  const ok=search(tasks.slice());
+  const staticEmpty=schedulableTasks.filter(t=>!slots.some(s=>(!t.fixedDay||key(t.fixedDay)===key(s.day))&&(!t.fixedPeriod||t.fixedPeriod===s.period)&&(!t.allowedDays.length||t.allowedDays.some(d=>key(d)===key(s.day)))&&!t.blocked.some(x=>key(x)===key(s.day+":"+s.period)||key(x)===key(s.day+" زنگ "+s.period))));
+  const ok=schedulableTasks.length===0?true:search(schedulableTasks.slice());
   if(!ok){
-   const first=staticEmpty[0]||tasks[0];const reason=nodes>nodeLimit?"تعداد حالت‌های بررسی از حد مجاز بیشتر شد؛ اطلاعات را به چند مرحله تقسیم کنید.":staticEmpty.length?"برای یکی از جلسات با محدودیت‌های ثبت‌شده هیچ روز و زنگ مجازی وجود ندارد.":"با توجه به تداخل دبیران و کلاس‌ها، برای همه جلسات جای خالی سازگار پیدا نشد.";
-   return {ok:false,errors:[reason+(first?" مورد بررسی: "+first.className+" · "+first.subject+" · "+first.teacher:""),...lastConflict,"هیچ برنامه ناقصی منتشر نشد."],rows:[],stats:{required:tasks.length,placed:0,searchNodes:nodes}};
+   const first=staticEmpty[0]||schedulableTasks[0];const reason=nodes>nodeLimit?"تعداد حالت‌های بررسی از حد مجاز بیشتر شد؛ اطلاعات را به چند مرحله تقسیم کنید.":staticEmpty.length?"برای یکی از جلسات با محدودیت‌های ثبت‌شده هیچ روز و زنگ مجازی وجود ندارد.":"با توجه به تداخل دبیران و کلاس‌ها، برای همه جلسات جای خالی سازگار پیدا نشد.";
+   return {ok:false,errors:[reason+(first?" مورد بررسی: "+first.className+" · "+first.subject+" · "+first.teacher:""),...lastConflict,"هیچ برنامه ناقصی منتشر نشد."],rows:[],stats:{required:tasks.length,scheduledRequired:schedulableTasks.length,placed:0,pending:pendingTasks.length,searchNodes:nodes}};
   }
   const rows=best.map(({task,slot})=>({class_name:task.className,weekday:slot.day,period:slot.period,subject:task.subject,teacher:task.teacher,alternating_teacher:task.shared?requirements[task.source].studiesTeacher:"",session_type:task.shared?"متناوب با مطالعات":"کامل",weight:task.weight,start_time:slot.start,end_time:slot.end,teachers:task.teachers}));
   rows.sort((a,b)=>days.indexOf(a.weekday)-days.indexOf(b.weekday)||a.period-b.period||a.class_name.localeCompare(b.class_name,"fa"));
-  return {ok:true,errors:[],rows,stats:{required:tasks.length,placed:rows.length,searchNodes:nodes,classes:new Set(rows.map(x=>x.class_name)).size,teachers:new Set(rows.flatMap(x=>x.teachers)).size}};
+  const pendingSessions=pendingTasks.map(t=>({class_name:t.className,subject:t.subject,teacher:t.teacher,alternating_teacher:t.shared?requirements[t.source].studiesTeacher:"",session_type:t.shared?"متناوب با مطالعات":"کامل",weight:t.weight,reason:"روزهای کاری دبیر هنوز اعلام نشده است."}));
+  return {ok:true,errors:[],rows,pendingSessions,stats:{required:tasks.length,scheduledRequired:schedulableTasks.length,placed:rows.length,pending:pendingTasks.length,searchNodes:nodes,classes:new Set([...rows.map(x=>x.class_name),...pendingSessions.map(x=>x.class_name)]).size,teachers:new Set([...rows.flatMap(x=>x.teachers),...pendingSessions.flatMap(x=>x.alternating_teacher?[x.teacher,x.alternating_teacher]:[x.teacher])]).size}};
  }
  root.FrahooshWeeklyTimetableEngine={generate};
 })(typeof window!=="undefined"?window:globalThis);
