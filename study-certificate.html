@@ -142,13 +142,21 @@ async function searchStudents(rawQuery,sequence){
 function qrPayload(){return ["گواهی اشتغال به تحصیل","شماره: "+val("serial"),"دانش‌آموز: "+val("student"),"کد ملی: "+val("national"),"مدرسه: "+val("school"),"سال تحصیلی: "+val("year"),"تاریخ صدور: "+val("issueDate")].join("\n");}
 function loadQrLibrary(){
  return new Promise(resolve=>{
-  if(window.QRCode&&QRCode.toDataURL){resolve(true);return;}
+  const available=()=>!!(window.QRCode&&typeof window.QRCode.toDataURL==="function");
+  if(available()){resolve(true);return;}
   const sources=["https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js","https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.4/qrcode.min.js"];
   let index=0;
   const next=()=>{
-   if(window.QRCode&&QRCode.toDataURL){resolve(true);return;}
+   if(available()){resolve(true);return;}
    if(index>=sources.length){resolve(false);return;}
-   const script=document.createElement("script");script.src=sources[index++];script.onload=()=>resolve(!!(window.QRCode&&QRCode.toDataURL));script.onerror=next;document.head.appendChild(script);
+   const script=document.createElement("script");
+   let settled=false;
+   const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);script.onload=null;script.onerror=null;};
+   const timer=setTimeout(()=>{finish();script.remove();next();},10000);
+   script.src=sources[index++];
+   script.onload=()=>{finish();if(available())resolve(true);else{script.remove();next();}};
+   script.onerror=()=>{finish();script.remove();next();};
+   document.head.appendChild(script);
   };
   next();
  });
