@@ -30,7 +30,7 @@ assert.match(page,/id="excelFile"/);
 assert.match(page,/id="importExcelBtn"/);
 assert.match(page,/id="downloadExcelTemplate"/);
 assert.match(page,/XLSX.read/);
-assert.match(page,/کددانش‌آموزی/);
+assert.match(page,/EXCEL_CODE_HEADERS=\["کد دانش‌آموزی","کد دانش آموزی"/,"Excel import accepts the official student-code header before normalization");
 assert.match(page,/EXCEL_CODE_HEADERS=.*map\(normalizeHeader\)/,"Excel student-code aliases use the same header normalization as uploaded columns");
 assert.match(page,/EXCEL_NAME_HEADERS=.*map\(normalizeHeader\)/,"Excel student-name aliases use the same header normalization as uploaded columns");
 assert.match(page,/function findExcelHeader\(headers,aliases\)/,"Excel identifier detection uses normalized aliases");
