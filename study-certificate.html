@@ -98,7 +98,7 @@ const schoolId=sessionStorage.getItem("frahoosh_novin_school_id")||"";
 const API="https://gtmmllcxhdejwjjnyzrh.supabase.co";
 const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 async function authorize(){
- if(!token||role!=="deputy"||!schoolId){$("status").className="status error";$("status").textContent="برای استفاده از صدور گواهی، با حساب معاونت همان مدرسه وارد شوید.";document.querySelectorAll("input,button").forEach(x=>x.disabled=true);return;}
+ if(!token||!["deputy","executive_deputy"].includes(role)||!schoolId){$("status").className="status error";$("status").textContent="برای استفاده از صدور گواهی، با حساب معاون اجرایی همان مدرسه وارد شوید.";document.querySelectorAll("input,button").forEach(x=>x.disabled=true);return;}
  try{const response=await fetch(API+"/auth/v1/user",{headers:{apikey:KEY,Authorization:"Bearer "+token}});const user=await response.json().catch(()=>({}));if(!response.ok||!user.id)throw new Error("نشست ورود معتبر نیست؛ دوباره وارد پنل شوید.");}
  catch(error){$("status").className="status error";$("status").textContent=error.message;document.querySelectorAll("input,button").forEach(x=>x.disabled=true);}
 }
