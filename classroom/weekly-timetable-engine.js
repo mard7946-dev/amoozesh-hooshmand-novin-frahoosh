@@ -4,7 +4,7 @@
  const key=v=>clean(v).replace(/\s+/g,"").toLowerCase();
  const clock=v=>{const m=clean(v).match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=+m[1],n=+m[2];return h<24&&n<60?h*60+n:null};
  function generate(input){
-  const errors=[],days=(input.days||[]).map(clean).filter(Boolean),periods=(input.periods||[]).map((p,i)=>({number:Number(p.number)||i+1,start:clean(p.start),end:clean(p.end)}));
+  const errors=[],days=(input.days||[]).map(clean).filter(Boolean),periods=(input.periods||[]).map((p,i)=>({number:Number(clean(p.number)),start:clean(p.start),end:clean(p.end)}));
   if(!days.length)errors.push("حداقل یک روز فعال انتخاب کنید.");
   if(!periods.length)errors.push("حداقل یک زنگ تعریف کنید.");
   const periodNumbers=new Set();
