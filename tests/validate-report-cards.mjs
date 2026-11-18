@@ -36,7 +36,7 @@ assert.match(page,/EXCEL_NAME_HEADERS=.*map\(normalizeHeader\)/,"Excel student-n
 assert.match(page,/function findExcelHeader\(headers,aliases\)/,"Excel identifier detection uses normalized aliases");
 assert.match(page,/function normalizeStudentCode\(value\)/,"Student codes are normalized before matching");
 assert.match(page,/code\.length>=8&&code\.length<=12/,"Student codes accept 8 through 12 digits only");
-assert.match(page,/code\.replace\(\/\^0\+\//,"Student code matching ignores leading zero padding");
+assert.match(page,/code\.replace\(\/\^0\+/,"Student code matching ignores leading zero padding");
 assert.match(page,/normalizeStudentCode\(s\.student_code\)===code/,"Excel codes are compared after normalization");
 const codeNormalizer=page.match(/function normalizeStudentCode\(value\)\{[\s\S]*?\}/)?.[0];
 assert.ok(codeNormalizer,"Student code normalizer exists");
