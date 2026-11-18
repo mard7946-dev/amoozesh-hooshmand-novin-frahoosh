@@ -23,7 +23,7 @@ for (const marker of [
 assert.ok(!page.includes("select=id,*"), "Student search must request only the required student fields");
 assert.ok(page.includes('tenant_school_id:"eq."+schoolId'), "Student search must be scoped to the current school");
 assert.ok(page.includes('function safeSearchTerm'), "Search input must be sanitized before building PostgREST filters");
-assert.ok(page.includes('selectedStudentId=student.id'), "Selecting a result must retain the selected student identity");
+assert.ok(page.includes('function chooseStudent(student)') && page.includes('$("student").value=fullName'), "Selecting a result must fill the student identity fields");
 assert.ok(page.includes('hideStudentSearchResults()'), "Search results must close after selection");
 
 const scriptStart = page.indexOf("<script>");
