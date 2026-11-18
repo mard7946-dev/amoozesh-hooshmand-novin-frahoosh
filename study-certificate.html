@@ -59,7 +59,7 @@
 <img id="vQr" class="qr" alt="کد QR اطلاعات گواهی">
 </div></section></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -68,6 +68,20 @@ let photoData="";
 function val(id){return $(id).value.trim()||"................";}
 function setText(id,value){$(id).textContent=value;}
 function qrPayload(){return ["گواهی اشتغال به تحصیل","شماره: "+val("serial"),"دانش‌آموز: "+val("student"),"کد ملی: "+val("national"),"مدرسه: "+val("school"),"سال تحصیلی: "+val("year"),"تاریخ صدور: "+val("issueDate")].join("\n");}
+function loadQrLibrary(){
+ return new Promise(resolve=>{
+  if(window.QRCode&&QRCode.toDataURL){resolve(true);return;}
+  const sources=["https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js","https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.4/qrcode.min.js"];
+  let index=0;
+  const next=()=>{
+   if(window.QRCode&&QRCode.toDataURL){resolve(true);return;}
+   if(index>=sources.length){resolve(false);return;}
+   const script=document.createElement("script");script.src=sources[index++];script.onload=()=>resolve(!!(window.QRCode&&QRCode.toDataURL));script.onerror=next;document.head.appendChild(script);
+  };
+  next();
+ });
+}
+let qrLoadPromise;
 async function updatePreview(){
  const map={serial:"vSerial",student:"vStudent",national:"vNational",identity:"vIdentity",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",issueDate:"vIssueDate",destination:"vDestination",manager:"vManager"};
  for(const [source,target] of Object.entries(map))setText(target,val(source));
@@ -75,7 +89,17 @@ async function updatePreview(){
  setText("vSignSchool",val("school"));
  const photo=$("vPhoto");
  if(photoData){photo.src=photoData;photo.hidden=false;}else{photo.hidden=true;}
- if(window.QRCode&&QRCode.toDataURL){try{$("vQr").src=await QRCode.toDataURL(qrPayload(),{width:220,margin:0,errorCorrectionLevel:"M"});}catch(e){$("status").textContent="ساخت کد QR انجام نشد؛ اتصال اینترنت را بررسی کنید.";}}
+ try{
+  qrLoadPromise=qrLoadPromise||loadQrLibrary();
+  const loaded=await qrLoadPromise;
+  if(!loaded)throw new Error("QR library unavailable");
+  $("vQr").src=await QRCode.toDataURL(qrPayload(),{width:220,margin:0,errorCorrectionLevel:"M"});
+  $("vQr").hidden=false;
+ }catch(error){
+  $("vQr").removeAttribute("src");$("vQr").hidden=true;
+  $("status").className="status error";
+  $("status").textContent="ساخت کد QR ممکن نشد؛ اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.";
+ }
 }
 fields.forEach(id=>$(id).addEventListener("input",updatePreview));
 $("photoInput").addEventListener("change",event=>{
