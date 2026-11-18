@@ -68,7 +68,7 @@ Deno.serve(async(req:Request)=>{
    const cleanSubjects=body.subjects.map((x:any)=>{
     const subject=clean(x.subject,40),teacher=clean(x.teacher,120),attendance=clean(x.attendance,20);
     const absent=attendance==="غایب",score=absent?null:Number(x.score);
-    if(!subjects.includes(subject)||!teacher||(!absent&&(!Number.isFinite(score)||score<0||score>20))||(attendance&&!absent))throw new Error("برای هر درس، نام دبیر و نمره معتبر از صفر تا ۲۰ یا وضعیت غایب الزامی است.");
+    if(!subjects.includes(subject)||!teacher||(!absent&&(x.score===null||x.score===""||!Number.isFinite(score)||score<0||score>20))||(attendance&&!absent))throw new Error("برای هر درس، نام دبیر و نمره معتبر از صفر تا ۲۰ یا وضعیت غایب الزامی است.");
     return {subject,teacher,score:absent?null:Number(score.toFixed(2)),attendance:absent?"غایب":""};
    });
    if(new Set(cleanSubjects.map((x:any)=>x.subject)).size!==subjects.length)throw new Error("هر درس باید دقیقاً یک بار ثبت شود.");
