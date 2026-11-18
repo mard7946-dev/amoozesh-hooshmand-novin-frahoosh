@@ -115,6 +115,17 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: authData, error: authError } = await admin.auth.getUser(bearer);
     if (authError || !authData.user) return reply({ message: "نشست معتبر نیست؛ دوباره وارد سامانه شوید." }, 401);
+    const { data: classroomAccess, error: classroomAccessError } = await admin.from("classroom_user_access")
+      .select("enabled,is_owner").eq("auth_user_id", authData.user.id).maybeSingle();
+    if (classroomAccessError) {
+      console.error("classroom personal access lookup failed", classroomAccessError.message);
+      return reply({ message: "مجوز اختصاصی کلاس آنلاین بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
+    }
+    if (classroomAccess?.is_owner !== true && classroomAccess?.enabled !== true) {
+      return reply({ ok: false, service_disabled: true,
+        message: "این بخش فقط با مجوز پشتیبان سامانه فعال می‌شود. جهت دریافت مجوز با پشتیبان هماهنگ کنید." }, 403);
+    }
+
 
     const { data: classroomFlag, error: classroomFlagError } = await admin.from("platform_feature_flags")
       .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
