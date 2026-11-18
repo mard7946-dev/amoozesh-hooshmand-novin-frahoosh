@@ -23,8 +23,8 @@ assert.ok(usernameLogin.includes('accountRole === "teacher" && requestedRole ===
 assert.ok(usernameLogin.includes('.eq("role", "teacher").eq("is_active", true)'), "Teacher password change must require an active school membership");
 
 for (const [name, html] of [["directory.html", directory], ["portal.html", portal]]) {
-  const scripts = [...html.matchAll(/<script(\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
-    .filter(match => !/\\btype\\s*=\\s*["']module["']/i.test(match[1] || ""))
+  const scripts = [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
+    .filter(match => !/\btype\s*=\s*["']module["']/i.test(match[1] || ""))
     .map(match => match[2]).filter(source => source.trim());
   for (const source of scripts) assert.doesNotThrow(() => new Function(source), name + " inline JavaScript must parse");
 }
