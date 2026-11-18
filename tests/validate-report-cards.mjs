@@ -34,6 +34,18 @@ assert.match(page,/EXCEL_CODE_HEADERS=\["کد دانش‌آموزی","کد دا�
 assert.match(page,/EXCEL_CODE_HEADERS=.*map\(normalizeHeader\)/,"Excel student-code aliases use the same header normalization as uploaded columns");
 assert.match(page,/EXCEL_NAME_HEADERS=.*map\(normalizeHeader\)/,"Excel student-name aliases use the same header normalization as uploaded columns");
 assert.match(page,/function findExcelHeader\(headers,aliases\)/,"Excel identifier detection uses normalized aliases");
+assert.match(page,/function normalizeStudentCode\(value\)/,"Student codes are normalized before matching");
+assert.match(page,/code\.length>=8&&code\.length<=12/,"Student codes accept 8 through 12 digits only");
+assert.match(page,/normalizeStudentCode\(s\.student_code\)===code/,"Excel codes are compared after normalization");
+const codeNormalizer=page.match(/function normalizeStudentCode\(value\)\{[\s\S]*?\}/)?.[0];
+assert.ok(codeNormalizer,"Student code normalizer exists");
+const normalizeStudentCode=new Function("en",codeNormalizer+";return normalizeStudentCode")(value=>String(value??"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+for(const length of [8,9,10,11,12])assert.equal(normalizeStudentCode("1".repeat(length)),"1".repeat(length),"Accept "+length+" digit student codes");
+assert.equal(normalizeStudentCode("۱۲۳۴۵۶۷۸"),"12345678","Persian digits normalize to English digits");
+assert.equal(normalizeStudentCode("۰۰۱۲۳۴۵۶۷۸"),"0012345678","Leading zeroes are preserved");
+assert.equal(normalizeStudentCode("1234-5678"),"12345678","Common separators are ignored");
+assert.equal(normalizeStudentCode("1234567"),"","Reject codes shorter than 8 digits");
+assert.equal(normalizeStudentCode("1234567890123"),"","Reject codes longer than 12 digits");
 assert.match(page,/i\+=4/);
 assert.match(page,/print-sheet/);
 assert.match(page,/id="gradeFilter"/);
