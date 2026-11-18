@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 const html = readFileSync("portal.html", "utf8");
+assert.ok(html.includes("تدوین هوشمند برنامه هفتگی") && html.includes("classroom/weekly-timetable-builder.html?v=20261118-manager-menu-1"), "Manager portal must expose and route the weekly timetable builder");
+assert.ok(html.includes("selectedRole.id==='manager'&&name==='تدوین هوشمند برنامه هفتگی'") && html.includes("portalAuthUserRole!=='manager'"), "Weekly timetable builder navigation must require an authenticated manager session");
 assert.ok(html.includes("async function restorePanelOrShowEntry()") && html.includes("openAuthenticatedPanel(panelRole,savedRole"), "Returning to step=panel must restore the authenticated user's role-specific panel");
 assert.ok(html.includes("supabaseUrl+'/auth/v1/user'") && html.includes("sessionStorage.getItem('frahoosh_novin_access_token')"), "Panel restoration must validate the saved Supabase session before rendering the panel");
 assert.ok(html.includes("educational_deputy:'deputy'") && html.includes("executive_deputy:'deputy'") && html.includes("pastoral_deputy:'deputy'"), "All deputy account roles must return to the shared deputy portal");
