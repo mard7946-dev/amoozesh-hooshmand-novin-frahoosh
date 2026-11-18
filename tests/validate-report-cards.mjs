@@ -17,7 +17,7 @@ assert.match(api,/school_memberships/);
 assert.match(api,/is_active",true/);
 assert.match(api,/eq\("school_id",schoolId\)/);
 assert.match(api,/eq\("tenant_school_id",schoolId\)/);
-assert.match(api,/score<0\|\|score>20/);
+assert.match(api,/numericScore<0\|\|numericScore>20/);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/revoke all on public\.school_report_cards from anon, authenticated/i);
 assert.match(migration,/grant all on public\.school_report_cards to service_role/i);
