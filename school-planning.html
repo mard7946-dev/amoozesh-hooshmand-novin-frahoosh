@@ -3,70 +3,43 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081326">
-<title>مرکز برنامه‌ریزی مدرسه | فراهوش نوین</title>
+<title>نقشه راه و تقویم اجرایی مدرسه | فراهوش نوین</title>
 <style>
 :root{color-scheme:dark;--bg:#081326;--panel:#10213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#f5ce7a;--red:#ffaaaa}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font:14px Tahoma,"Segoe UI",sans-serif}main{max-width:1200px;margin:auto;padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 2px 18px}.top h1{margin:0 0 7px;font-size:clamp(22px,4vw,30px);color:var(--mint)}p,.muted{color:var(--muted);line-height:1.9}.muted{font-size:12px}.actions,.tabs{display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;cursor:pointer}button.primary{background:#135c50;border-color:var(--mint)}button:disabled{opacity:.55;cursor:wait}.status{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#10213a;margin:8px 0 14px;line-height:1.8}.status.error{border-color:#824d4d;background:#3a2228;color:#ffd0d0}.status.ok{border-color:#276b57;color:#b8f5da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}.metric,.panel,.record{border:1px solid var(--line);border-radius:15px;background:#0e1b32;padding:14px}.metric small{display:block;color:var(--muted);line-height:1.8}.metric strong{display:block;font-size:25px;color:var(--mint);margin-top:7px;font-variant-numeric:tabular-nums}.panel{margin:14px 0}.panel h2{font-size:17px;margin:0 0 12px}.tabs button[aria-pressed=true]{border-color:var(--mint);background:#15364a;box-shadow:0 0 0 1px var(--mint) inset}.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:14px}.list{display:grid;gap:9px}.record{background:#0a172b;padding:12px}.record h3{margin:0 0 7px;font-size:15px}.record p{margin:5px 0}.record-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.record-actions button{padding:7px 10px;font-size:12px}.pill{display:inline-block;border:1px solid #725b2d;color:#ffe4a5;border-radius:30px;padding:3px 8px;font-size:11px;margin-inline-start:6px}.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:12px}.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{color:#dbe7fa;font-size:13px}.field input,.field textarea,.field select{width:100%;font:inherit;color:var(--text);background:#081326;border:1px solid var(--line);border-radius:9px;padding:10px}.field textarea{min-height:86px;resize:vertical;line-height:1.9}.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.guide{border:1px solid #725b2d;background:#2b261b;border-radius:12px;padding:12px;color:#ffebbd;line-height:1.9}.sources a{color:#9fc6ff}.recommendation{padding:11px;border:1px solid #2e5260;border-radius:10px;margin:8px 0;background:#0b1b2c;line-height:1.9}.recommendation strong{color:var(--mint)}.foot{font-size:11px;color:var(--muted);line-height:1.9;margin:18px 0}@media(max-width:760px){main{padding:11px}.layout{grid-template-columns:1fr}.metric strong{font-size:22px}}
-</style></head>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font:14px Tahoma,"Segoe UI",sans-serif}main{max-width:1180px;margin:auto;padding:14px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 2px}.top h1{margin:0 0 7px;font-size:clamp(21px,4vw,29px);color:var(--mint)}p,.muted{color:var(--muted);line-height:1.9}.muted{font-size:12px}.actions,.tabs,.chips{display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#203451;cursor:pointer}button.primary{background:#135c50;border-color:var(--mint)}button:disabled{opacity:.55;cursor:wait}.status{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#10213a;margin:8px 0 14px;line-height:1.8}.status.error{border-color:#824d4d;background:#3a2228;color:#ffd0d0}.status.ok{border-color:#276b57;color:#b8f5da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}.metric,.panel,.card,.phase{border:1px solid var(--line);border-radius:15px;background:#0e1b32;padding:14px}.metric small{display:block;color:var(--muted);line-height:1.8}.metric strong{display:block;font-size:23px;color:var(--mint);margin-top:6px}.panel{margin:13px 0}.panel h2{font-size:17px;margin:0 0 10px}.tabs button[aria-pressed=true],.chips button[aria-pressed=true]{border-color:var(--mint);background:#15364a}.hero{border:1px solid #725b2d;background:#2b261b;border-radius:14px;padding:14px;color:#ffebbd;line-height:2}.hero strong{color:#fff0c5}.section-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.list{display:grid;gap:10px}.card{background:#0a172b}.card h3{font-size:15px;margin:0 0 7px;color:#eaf6ff}.card p{margin:5px 0}.meta{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.pill{display:inline-block;border:1px solid #46617d;color:#d5e5f7;border-radius:30px;padding:3px 8px;font-size:11px}.pill.gold{border-color:#725b2d;color:#ffe4a5}.pill.green{border-color:#276b57;color:#b8f5da}.actions-small{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.actions-small button{padding:7px 9px;font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:13px}.phase{margin:10px 0;background:#0a172b}.phase h3{margin:0 0 8px;color:var(--mint)}.phase ul,.card ul{padding-right:20px;margin:8px 0;line-height:2}.phase li,.card li{margin:4px 0}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top;line-height:1.8}th{color:#c9e5ff;background:#122743}td{color:#dce7f7}.cost{color:#ffe4a5}.source a{color:#9fc6ff}.note{border-right:3px solid var(--gold);padding:8px 12px;background:#151f31;color:#dce7f7;line-height:1.9;margin:10px 0}.empty{padding:16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.bar{height:9px;border-radius:20px;background:#253952;overflow:hidden}.bar span{display:block;height:100%;background:var(--mint);width:0}.hidden{display:none!important}@media(max-width:760px){main{padding:10px}.layout{grid-template-columns:1fr}.metric strong{font-size:20px}th,td{padding:8px}}
+</style>
+</head>
 <body><main>
 <header class="top">
- <div><h1>🧭 مرکز برنامه‌ریزی و بهبود مدرسه</h1><div class="muted" id="schoolName">در حال شناسایی مدرسه…</div><p>برنامه‌ریزی واقع‌بینانه، اقدام قابل پیگیری و ارزیابی مستمر</p></div>
- <div class="actions"><button id="refresh" class="primary">به‌روزرسانی</button><button id="back">بازگشت به پنل مدیریت</button></div>
+ <div><h1>🧭 نقشه راه و تقویم اجرایی مدرسه</h1><div class="muted" id="schoolName">دبیرستان سردار شهید حاجی‌زاده ۲ · متوسطه اول</div><p>از وضعیت واقعی امروز تا مدرسه‌ای یادگیرنده، منظم، مشارکت‌جو و رو به رشد</p></div>
+ <div class="actions"><button id="refresh" class="primary">به‌روزرسانی وضعیت اجرا</button><button id="back">بازگشت به پنل مدیریت</button></div>
 </header>
-<div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست مدیر و اتصال امن…</div>
-<section id="app" hidden>
+<div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست مدیر…</div>
+<section id="app" class="hidden">
+ <div class="hero"><strong>مبنای طراحی:</strong> ۲۴۰ دانش‌آموز، متوسطه اول، مدرسه تازه‌تأسیس و منطقه کم‌برخوردار. برنامه بر پایه استفاده از نیروی موجود، مداخلات آموزشی کم‌هزینه و مشارکت داوطلبانه خانواده‌ها تنظیم شده است. آمار ثبت‌شده دانش‌آموزان: <b id="registered">—</b> نفر. تا تکمیل خط پایه، هیچ هدف عددی ساختگی به مدرسه تحمیل نمی‌شود.</div>
  <div class="grid">
-  <div class="metric"><small>جمعیت مبنای برنامه‌ریزی</small><strong>۲۴۰</strong></div>
-  <div class="metric"><small>پرونده دانش‌آموزی ثبت‌شده</small><strong id="registeredStudents">—</strong></div>
-  <div class="metric"><small>سال تحصیلی</small><strong style="font-size:19px">۱۴۰۵–۱۴۰۶</strong></div>
-  <div class="metric"><small>برنامه‌ها و اقدامات ثبت‌شده</small><strong id="totalCount">۰</strong></div>
-  <div class="metric"><small>چالش‌های ثبت‌شده</small><strong id="challengeCount">۰</strong></div>
-  <div class="metric"><small>اقدامات در حال پیگیری</small><strong id="activeCount">۰</strong></div>
+  <div class="metric"><small>سال تحصیلی جاری</small><strong style="font-size:18px">۱۴۰۵–۱۴۰۶</strong></div>
+  <div class="metric"><small>افق نقشه راه</small><strong>۳ سال</strong></div>
+  <div class="metric"><small>اقدامات برنامه‌ریزی‌شده</small><strong id="totalSteps">—</strong></div>
+  <div class="metric"><small>اقدامات تکمیل‌شده</small><strong id="doneSteps">۰</strong></div>
+  <div class="metric"><small>پیشرفت ثبت‌شده</small><strong id="progressPercent">۰٪</strong></div>
  </div>
- <div id="populationNote" class="guide" hidden></div>
- <div class="guide"><strong>اصل برنامه‌ریزی این مدرسه:</strong> منطقه حاشیه شهر، محدودیت اقتصادی و فرهنگی، استفاده از ظرفیت‌های موجود، هزینه کم یا صفر و فعالیت‌هایی که با نیروی انسانی و زمان واقعی مدرسه قابل اجرا باشند. هدف‌های عددی تا زمان سنجش خط پایه، قطعی نمی‌شوند.</div>
+ <div class="bar"><span id="progressBar"></span></div>
  <section class="panel">
-  <div class="tabs" id="tabs" aria-label="بخش‌های مرکز برنامه‌ریزی">
-   <button data-type="all" aria-pressed="true">نمای کلی</button>
-   <button data-type="annual_plan" aria-pressed="false">برنامه سالانه</button>
-   <button data-type="calendar_event" aria-pressed="false">تقویم اجرایی</button>
-   <button data-type="balanced_assessment" aria-pressed="false">مدرسه تراز</button>
-   <button data-type="operational_plan" aria-pressed="false">برنامه عملیاتی</button>
-   <button data-type="daily_challenge" aria-pressed="false">چالش روزانه</button>
+  <div class="tabs" id="tabs">
+   <button data-tab="today" aria-pressed="true">برنامه روزانه</button>
+   <button data-tab="monthly" aria-pressed="false">تقویم ماهانه</button>
+   <button data-tab="annual" aria-pressed="false">تقویم سالانه</button>
+   <button data-tab="roadmap" aria-pressed="false">چشم‌انداز سه‌ساله</button>
+   <button data-tab="people" aria-pressed="false">نیروی انسانی</button>
+   <button data-tab="budget" aria-pressed="false">هزینه و امکانات</button>
+   <button data-tab="indicators" aria-pressed="false">سنجش نتیجه</button>
+   <button data-tab="sources" aria-pressed="false">منابع و مبانی</button>
   </div>
  </section>
- <div class="layout">
-  <section class="panel">
-   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 id="listTitle">همه برنامه‌ها و چالش‌ها</h2><button id="newRecord" class="primary">＋ ثبت مورد جدید</button></div>
-   <div id="records" class="list"><div class="empty">در حال دریافت موارد ثبت‌شده…</div></div>
-  </section>
-  <aside>
-   <section class="panel" id="formPanel" hidden>
-    <h2 id="formTitle">ثبت مورد جدید</h2>
-    <form id="recordForm">
-     <div class="formgrid">
-      <div class="field full"><label for="recordTitle">عنوان</label><input id="recordTitle" maxlength="180" required placeholder="عنوان روشن و قابل پیگیری"></div>
-      <div class="field full"><label for="recordSummary">خلاصه / مسئله / هدف</label><textarea id="recordSummary" maxlength="2000" placeholder="شرح کوتاه و روشن"></textarea></div>
-      <div id="detailFields" class="formgrid full"></div>
-      <div class="field"><label for="recordStatus">وضعیت</label><select id="recordStatus"><option value="draft">پیش‌نویس</option><option value="needs_review">نیازمند بررسی</option><option value="active">فعال</option><option value="in_progress">در حال اجرا</option><option value="completed">انجام‌شده</option><option value="cancelled">لغوشده</option></select></div>
-     </div>
-     <div class="form-actions"><button type="submit" class="primary" id="saveRecord">ذخیره</button><button type="button" id="cancelEdit">انصراف</button></div>
-    </form>
-   </section>
-   <section class="panel" id="challengeAdvice" hidden><h2>پیشنهادهای اجرایی برای چالش</h2><div id="recommendations"></div><p class="muted">این پیشنهادها از راهنمای ساختاریافته و قواعد داخلی سامانه تولید می‌شوند، نه از یک مدل هوش مصنوعی متصل به اینترنت. مدیر باید تناسب و ایمنی هر اقدام را پیش از اجرا تأیید کند.</p></section>
-   <section class="panel">
-    <h2>روش کار مرکز</h2>
-    <ol class="muted" style="padding-right:20px;line-height:2"><li>وضع موجود و شواهد ثبت شود.</li><li>مسئله و اولویت واقعی مشخص شود.</li><li>اقدام کوچک، مسئول و زمان تعیین شود.</li><li>هزینه و منابع قبل از تصویب بررسی شود.</li><li>نتیجه با شاخص قابل مشاهده سنجیده شود.</li></ol>
-   </section>
-   <section class="panel sources"><h2>منابع مبنای طراحی</h2>
-    <p><a href="https://samanketab.roshdmag.ir/Roshdmag_content/media/article/6.7%20from%20%2899-400%29%20MATN%20MADRESE%20FADA%205-3_-1.pdf" target="_blank" rel="noopener">راهنمای «تدبیر برای مدرسه» در مجلات رشد</a></p>
-    <p><a href="https://www.roshdmag.ir/Roshdmag_content/media/Magazine2/fa/2020/1/1782.pdf" target="_blank" rel="noopener">راهنمای برنامه ویژه مدرسه و پاسخ به نیازهای محلی</a></p>
-    <p><a href="https://newsmedia.tasnimmedia.com/Tasnim/Uploaded/Document/1405/03/10/140503101539371593694051.pdf" target="_blank" rel="noopener">دستورالعمل ثبت‌نام سال تحصیلی ۱۴۰۵–۱۴۰۶</a></p><p class="muted">تاریخ تعطیلات و مناسبت‌های رسمی باید پیش از ثبت نهایی با ابلاغیه‌های همان سال و اطلاعیه منطقه تطبیق داده شوند؛ این صفحه تاریخ رسمی را حدس نمی‌زند.</p>
-   </section>
-  </aside>
- </div>
+ <section id="view"></section>
 </section>
-<div class="foot">از درج نام، کد ملی، نشانی، اطلاعات خانوادگی یا جزئیات محرمانه دانش‌آموزان در شرح چالش‌ها خودداری کنید. مسئله را به‌صورت کلی و بدون شناسه فردی ثبت کنید. اطلاعات این مرکز فقط برای مدیر همان مدرسه قابل دریافت است.</div>
+<div class="foot muted">این نقشه، برنامه پیشنهادی اجرایی مدیر مدرسه است و باید در شورای مدرسه با مشارکت همکاران و نمایندگان خانواده و دانش‌آموزان تصویب و متناسب با ابلاغیه‌های رسمی منطقه اصلاح شود. در تقویم، تعطیلات و مناسبت‌های رسمی حدس زده نشده‌اند. در گزارش‌ها اطلاعات هویتی یا محرمانه دانش‌آموزان وارد نشود.</div>
 </main>
 <script src="panel-return.js"></script>
 <script>
@@ -79,105 +52,123 @@ const schoolId=sessionStorage.getItem("frahoosh_novin_school_id")||"";
 const academicYear="۱۴۰۵–۱۴۰۶";
 const $=id=>document.getElementById(id);
 const fa=v=>String(v??0).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[+d]);
-const typeLabels={annual_plan:"برنامه سالانه",calendar_event:"تقویم اجرایی",balanced_assessment:"ارزیابی مدرسه تراز",operational_plan:"برنامه عملیاتی",daily_challenge:"چالش روزانه"};
-const statusLabels={draft:"پیش‌نویس",needs_review:"نیازمند بررسی",active:"فعال",in_progress:"در حال اجرا",completed:"انجام‌شده",cancelled:"لغوشده",archived:"بایگانی"};
-const fields={
- annual_plan:[
-  ["goal","هدف و اولویت","textarea"],["baseline","وضع موجود و شواهد خط پایه","textarea"],["target","نتیجه مورد انتظار / هدف قابل سنجش","textarea"],["indicator","شاخص سنجش و روش اندازه‌گیری","textarea"],["actions","اقدام‌های اصلی و گام‌های اجرا","textarea"],["owner","مسئول پیگیری","text"],["timeline","زمان‌بندی پیشنهادی","text"],["resources","منابع و هزینه (ترجیحاً موجود/کم‌هزینه)","textarea"]
- ],
- calendar_event:[
-  ["date","تاریخ شمسی (مثلاً ۱۴۰۵/۰۹/۱۰)","text"],["activity","شرح فعالیت","textarea"],["audience","مخاطب / پایه","text"],["owner","مسئول اجرا","text"],["duration","زمان لازم","text"],["cost","هزینه برآوردی و منبع آن","text"],["place","مکان / امکانات لازم","text"],["fallback","جایگزین در صورت لغو یا کمبود منابع","textarea"]
- ],
- balanced_assessment:[
-  ["axis","محور ارزیابی","select",["آموزشی","پرورشی و فرهنگی","مدیریت و رهبری","مشارکت خانواده و جامعه","عدالت و حمایت از دانش‌آموزان","فضا، تجهیزات و منابع"]],["score","امتیاز خودارزیابی (۱ تا ۵)","select",["۱","۲","۳","۴","۵"]],["current","شواهد وضعیت موجود","textarea"],["gap","فاصله تا وضعیت مطلوب","textarea"],["priority","اولویت بهبود","select",["فوری","بالا","متوسط","پایین"]],["nextStep","اقدام کوچک بعدی","textarea"],["evidence","مدرک یا شاهد قابل بررسی","textarea"]
- ],
- operational_plan:[
-  ["objective","هدف مرتبط با برنامه سالانه","textarea"],["action","اقدام مشخص و قابل انجام","textarea"],["owner","مسئول مستقیم","text"],["start","تاریخ شروع شمسی","text"],["end","مهلت پایان شمسی","text"],["cost","هزینه واقعی و منبع تأمین","text"],["resources","نیروی انسانی و امکانات موجود","textarea"],["output","خروجی قابل تحویل","textarea"],["indicator","شاخص موفقیت و روش سنجش","textarea"],["risk","مانع احتمالی و راه جایگزین","textarea"]
- ],
- daily_challenge:[
-  ["category","دسته چالش","select",["افت یادگیری","غیبت و بی‌نظمی حضور","انگیزه و مشارکت دانش‌آموزان","ارتباط با خانواده","رفتار و روابط مدرسه","کمبود منابع و امکانات","اجرای برنامه و هماهنگی کارکنان","سایر"]],["facts","واقعیت‌های مشاهده‌شده (چه اتفاقی، از چه زمانی، چند بار؟)","textarea"],["affected","دامنه اثر (تعداد یا پایه، بدون نام افراد)","text"],["impact","اثر مسئله بر یادگیری یا فضای مدرسه","textarea"],["causes","علت‌های احتمالی و شواهد هرکدام","textarea"],["resources","ظرفیت‌های موجود (افراد، فضا، زمان، امکانات)","textarea"],["limits","محدودیت‌ها (هزینه، زمان، خانواده، رفت‌وآمد و...)","textarea"],["urgency","فوریت","select",["امروز باید رسیدگی شود","این هفته","این ماه","نیازمند بررسی بیشتر"]],["desired","نتیجه‌ای که می‌خواهیم به آن برسیم","textarea"]
- ]
-};
-let items=[],filter="all",editingId=null;
-function setStatus(message,error=false){$("status").textContent=message;$("status").className="status"+(error?" error":"");}
-async function api(body){
- const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});
- const data=await response.json().catch(()=>({}));
- if(!response.ok)throw new Error(data.message||"ارتباط با سرویس برنامه‌ریزی ناموفق بود.");
- return data;
-}
-function fieldElement(def,value=""){
- const [key,label,kind,options]=def,wrap=document.createElement("div");wrap.className="field";
- const lab=document.createElement("label");lab.textContent=label;lab.htmlFor="detail_"+key;wrap.append(lab);
- let input;
- if(kind==="textarea"){input=document.createElement("textarea");input.rows=3;}
- else if(kind==="select"){input=document.createElement("select");for(const option of options){const o=document.createElement("option");o.value=option;o.textContent=option;input.append(o);}}
- else{input=document.createElement("input");input.type="text";input.maxLength=1500;}
- input.id="detail_"+key;input.name=key;input.value=String(value??"");wrap.append(input);return wrap;
-}
-function renderFields(type,details={}){
- const box=$("detailFields");box.replaceChildren();
- for(const def of fields[type]||[])box.append(fieldElement(def,details[def[0]]));
- if(type==="daily_challenge"){const hint=document.createElement("p");hint.className="muted";hint.textContent="اطلاعات واقعی و قابل مشاهده را بنویسید؛ حدس‌ها را از واقعیت‌ها جدا کنید. هیچ نام یا مشخصات فردی وارد نکنید.";box.append(hint);}
-}
-function readDetails(type){
- const out={};for(const def of fields[type]||[]){const node=$("detail_"+def[0]);out[def[0]]=node?node.value.trim():"";}
- if(type==="daily_challenge")out.recommendations=buildRecommendations(out);
- return out;
-}
-function buildRecommendations(d){
- const category=d.category||"سایر",limits=d.limits||"",resources=d.resources||"";
- const lowCost="با استفاده از زمان و امکانات موجود مدرسه اجرا شود؛ خرید یا دریافت وجه از خانواده‌ها پیش‌فرض این راهکار نیست.";
- const map={
- "افت یادگیری":[["امروز","فهرست مبحث‌های دشوار را از آخرین ارزشیابی و نمونه تکالیف استخراج کنید؛ ابتدا فقط یک مبحث پرتکرار را انتخاب کنید.","معاون آموزشی و دبیر درس","یک فهرست کوتاه از مبحث‌ها و تعداد دانش‌آموزان نیازمند پشتیبانی."],["این هفته","گروه‌های کوچک یادگیری با کمک دبیر یا دانش‌آموزان داوطلبِ آموزش‌دیده، در زمان مجاز مدرسه تشکیل شود؛ بدون برچسب‌زدن به دانش‌آموزان.","دبیر مربوط و معاون آموزشی","حضور در جلسات و یک سنجش کوتاه قبل و بعد."],["دو هفته بعد","نتیجه را با همان نوع سؤال یا تکلیف کوتاه بسنجید و گروه‌ها را بر اساس پیشرفت بازتنظیم کنید.","دبیر مربوط","تغییر عملکرد نسبت به خط پایه؛ نه صرفاً تعداد جلسات."]],
- "غیبت و بی‌نظمی حضور":[["امروز","غیبت‌ها را در سطح پایه و روزهای پرتکرار بررسی کنید؛ قبل از نتیجه‌گیری، خطای ثبت و علت‌های قابل‌پیگیری را جدا کنید.","معاون اجرایی","فهرست الگوی غیبت بدون انتشار نام در گزارش عمومی."],["این هفته","برای موارد تکرارشونده، تماس محترمانه و غیرتنبیهی با خانواده از مسیر رسمی مدرسه انجام دهید و مانع اصلی حضور را ثبت کنید.","معاون مربوط","تعداد تماس‌های موفق و علت‌های دسته‌بندی‌شده."],["هفته آینده","برای هر مانع قابل حل، یک اقدام کم‌هزینه مانند هماهنگی زمان، پیگیری آموزشی یا گفت‌وگوی حمایتی تعیین کنید.","مدیر و معاون مربوط","مقایسه روند حضور در دو هفته متوالی."]],
- "انگیزه و مشارکت دانش‌آموزان":[["امروز","از دانش‌آموزان با گفت‌وگوی کوتاه یا برگه بی‌نام بپرسید کدام فعالیت مدرسه برایشان مفیدتر و قابل‌دسترس‌تر است.","معاون پرورشی و نمایندگان کلاس","دسته‌بندی پیشنهادها، بدون درج نام."],["این هفته","یک فعالیت کوتاه ۲۰ تا ۳۰ دقیقه‌ای بر پایه پیشنهادهای پرتکرار و امکانات موجود آزمایش کنید.","معاون پرورشی و دبیر داوطلب","تعداد مشارکت‌کنندگان و بازخورد کوتاه."],["پایان هفته","فعالیت را با نظر دانش‌آموزان اصلاح کنید؛ برنامه پرهزینه یا اجباری را جایگزین نکنید.","مسئول فعالیت","تکرار مشارکت و رضایت شرکت‌کنندگان."]],
- "ارتباط با خانواده":[["امروز","پیام مدرسه را کوتاه، روشن و محترمانه تنظیم کنید و از کانال رسمی موجود بفرستید؛ فرض نکنید همه خانواده‌ها اینترنت یا زمان آزاد دارند.","مدیر و معاون مربوط","ثبت کانال‌های در دسترس و میزان دریافت پاسخ."],["این هفته","برای خانواده‌هایی که پاسخ نمی‌دهند، روش جایگزین کم‌هزینه و محترمانه مانند تماس زمان‌بندی‌شده یا اطلاع‌رسانی کاغذی در مدرسه در نظر بگیرید.","معاون مربوط","تعداد خانواده‌های دسترس‌پذیر به تفکیک روش."],["این ماه","یک جلسه کوتاه و هدفمند در زمان مناسب خانواده‌ها برگزار کنید؛ دستور جلسه از قبل اعلام شود.","مدیر","تعداد مشارکت و موارد توافق‌شده و قابل پیگیری."]],
- "رفتار و روابط مدرسه":[["امروز","موقعیت‌ها و زمان‌های پرتکرار تنش را بدون نام‌بردن از دانش‌آموزان ثبت کنید؛ از قضاوت و تنبیه جمعی پرهیز شود.","معاون پرورشی","نقشه موقعیت‌های پرتکرار و شواهد."],["این هفته","با افراد درگیر جداگانه و محترمانه گفت‌وگو کنید و قواعد روشن و قابل فهم را در کلاس یادآوری کنید.","معاون و دبیر مربوط","تعداد موارد تکرار و پیگیری انجام‌شده."],["دو هفته بعد","یک تمرین کوتاه مهارت گفت‌وگو و حل تعارض اجرا و نتیجه آن بررسی شود؛ در موضوعات جدی از مسیر حمایتی و تخصصی مدرسه کمک بگیرید.","مشاور و معاون پرورشی","کاهش تکرار موارد ثبت‌شده و بازخورد دانش‌آموزان."]],
- "کمبود منابع و امکانات":[["امروز","نیاز را به ضروری، قابل جایگزینی و قابل تعویق تقسیم کنید؛ موجودی واقعی و منابع بلااستفاده مدرسه را بررسی کنید.","معاون اجرایی","فهرست نیازهای اولویت‌بندی‌شده."],["این هفته","برای نیازهای ضروری، ابتدا امانت داخلی، استفاده مشترک، تعمیر ایمن یا همکاری داوطلبانه بدون اجبار مالی خانواده‌ها را بررسی کنید.","مدیر و مسئول اموال","تعداد نیازهای تأمین‌شده بدون خرید."],["این ماه","اگر خرید ضروری ماند، هزینه، مجوز، منبع تأمین و گزینه جایگزین را شفاف ثبت کنید و بدون تأمین مالی قطعی تعهد ایجاد نکنید.","مدیر و مسئول مالی","مقایسه هزینه واقعی با برآورد و ثبت مستندات."]],
- "اجرای برنامه و هماهنگی کارکنان":[["امروز","برنامه‌های هم‌زمان و کارهای عقب‌افتاده را فهرست کنید؛ فعالیت‌های کم‌اثر را حذف یا جابه‌جا کنید.","مدیر","فهرست اولویت‌های هفته."],["این هفته","برای هر اقدام فقط یک مسئول پاسخ‌گو، یک مهلت واقع‌بینانه و یک خروجی قابل مشاهده تعیین کنید.","مدیر و مسئولان واحدها","درصد اقدامات دارای مسئول و مهلت روشن."],["پایان هفته","جلسه پیگیری کوتاه برگزار کنید و موانع را ثبت کنید؛ فعالیت انجام‌نشده را صرفاً برای گزارش، انجام‌شده اعلام نکنید.","مدیر","اقدامات تکمیل‌شده، عقب‌افتاده و علت هرکدام."]]
- };
- const selected=map[category]||[["امروز","مسئله را به یک مشاهده قابل بررسی و یک سؤال مشخص تبدیل کنید؛ در صورت کمبود شواهد، ابتدا داده جمع‌آوری کنید.","مدیر و مسئول مرتبط","شواهد اولیه و محدوده مسئله."],["این هفته","یک اقدام کوچک، کم‌هزینه و قابل بازگشت انتخاب کنید و مسئول و زمان مشخص بدهید.","مسئول تعیین‌شده توسط مدیر","خروجی قابل مشاهده و ثبت‌شده."],["هفته آینده","نتیجه را با وضعیت اولیه مقایسه کنید و در صورت بی‌اثر بودن، راهکار را اصلاح یا متوقف کنید.","مدیر و مسئول اقدام","شواهد تغییر و تصمیم بعدی."]];
- const contextNote=[d.facts?"شاهد ثبت‌شده: "+d.facts:"",d.affected?"دامنه اثر: "+d.affected:"",d.impact?"اثر گزارش‌شده: "+d.impact:"",resources?"ظرفیت موجود: "+resources:"",limits?"محدودیت: "+limits:"",d.desired?"نتیجه مطلوب: "+d.desired:""].filter(Boolean).join(" | ");
- return selected.map(([phase,action,owner,measure])=>({phase,action:action+" "+lowCost+(contextNote?" مبنای تطبیق: "+contextNote:""),owner,measure,context:{observed:d.facts||"",impact:d.impact||"",constraints:limits,available_resources:resources,desired:d.desired||""}}));
-}
-function showRecommendations(list){
- $("challengeAdvice").hidden=!list?.length;$("recommendations").replaceChildren();if(!list?.length)return;
- for(const r of list){const box=document.createElement("div");box.className="recommendation";const strong=document.createElement("strong");strong.textContent=r.phase+" · "+r.owner;const p=document.createElement("p");p.textContent=r.action;const small=document.createElement("div");small.className="muted";small.textContent="شاخص پیگیری: "+r.measure;box.append(strong,p,small);$("recommendations").append(box);}
-}
-function labelFor(type){return typeLabels[type]||"مورد برنامه‌ریزی";}
-function renderList(){
- const visible=items.filter(x=>filter==="all"||x.record_type===filter);$("records").replaceChildren();
- $("totalCount").textContent=fa(items.length);$("challengeCount").textContent=fa(items.filter(x=>x.record_type==="daily_challenge").length);
- $("activeCount").textContent=fa(items.filter(x=>["active","in_progress","needs_review"].includes(x.status)).length);
- $("listTitle").textContent=filter==="all"?"همه برنامه‌ها و چالش‌ها":labelFor(filter);
- if(!visible.length){const d=document.createElement("div");d.className="empty";d.textContent="هنوز موردی در این بخش ثبت نشده است. برای شروع، «ثبت مورد جدید» را انتخاب کنید."; $("records").append(d);return;}
- for(const item of visible){const card=document.createElement("article");card.className="record";const h=document.createElement("h3");h.textContent=item.title;const badge=document.createElement("span");badge.className="pill";badge.textContent=statusLabels[item.status]||item.status;h.append(badge);const type=document.createElement("div");type.className="muted";type.textContent=labelFor(item.record_type)+" · سال "+item.academic_year;const p=document.createElement("p");p.textContent=item.summary||"خلاصه ثبت نشده است.";const time=document.createElement("div");time.className="muted";time.textContent="آخرین تغییر: "+new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"short",timeStyle:"short"}).format(new Date(item.updated_at));const actions=document.createElement("div");actions.className="record-actions";const edit=document.createElement("button");edit.textContent="ویرایش";edit.addEventListener("click",()=>openForm(item.record_type,item));const archive=document.createElement("button");archive.textContent="بایگانی";archive.addEventListener("click",()=>archiveItem(item.id));actions.append(edit,archive);card.append(h,type,p,time,actions);$("records").append(card);}
-}
-async function load(){
- if(!token||role!=="manager"||!schoolId){setStatus("برای استفاده از این مرکز، با حساب مدیر همان مدرسه دوباره وارد شوید.",true);return;}
- $("refresh").disabled=true;setStatus("در حال دریافت برنامه‌های ثبت‌شده برای مدرسه شما…");
- try{const data=await api({action:"list",academic_year:academicYear});if(String(data.school_id)!==String(schoolId))throw new Error("شناسه مدرسه با نشست مدیر مطابقت ندارد.");items=data.items||[];$("registeredStudents").textContent=fa(data.registered_students_count??0);$("populationNote").hidden=Number(data.registered_students_count??0)===240;$("populationNote").textContent="اختلاف آمار: جمعیت مبنای برنامه‌ریزی ۲۴۰ نفر است، اما در حال حاضر "+fa(data.registered_students_count??0)+" پرونده دانش‌آموزی ثبت شده است. این اختلاف فقط برای بررسی مدیر نمایش داده می‌شود و سامانه هیچ پرونده‌ای را خودکار ایجاد یا تغییر نمی‌دهد.";$("app").hidden=false;renderList();setStatus("اطلاعات برنامه‌ریزی با موفقیت از پایگاه داده دریافت شد.");$("status").classList.add("ok");}
- catch(error){setStatus(error.message||"دریافت اطلاعات ناموفق بود.",true);}
- finally{$("refresh").disabled=false;}
-}
-function openForm(type,item=null){
- editingId=item?.id||null;$("formPanel").hidden=false;$("formTitle").textContent=(item?"ویرایش ":"ثبت ")+labelFor(type);$("recordTitle").value=item?.title||"";$("recordSummary").value=item?.summary||"";$("recordStatus").value=item?.status||"draft";renderFields(type,item?.details||{});$("recordForm").dataset.type=type;$("saveRecord").textContent=item?"ذخیره تغییرات":"ذخیره";
- if(type==="daily_challenge")showRecommendations(item?.details?.recommendations||[]);else showRecommendations([]);
- $("formPanel").scrollIntoView({behavior:"smooth",block:"start"});
-}
-function closeForm(){$("formPanel").hidden=true;editingId=null;$("recordForm").reset();$("detailFields").replaceChildren();}
-async function save(event){
- event.preventDefault();const type=$("recordForm").dataset.type;if(!type)return;
- const button=$("saveRecord");button.disabled=true;setStatus("در حال ذخیره اطلاعات…");
- try{const body={action:editingId?"update":"create",id:editingId,academic_year:academicYear,record_type:type,title:$("recordTitle").value.trim(),summary:$("recordSummary").value.trim(),details:readDetails(type),status:$("recordStatus").value};const result=await api(body);if(type==="daily_challenge")showRecommendations(result.item?.details?.recommendations||body.details.recommendations);closeForm();await load();setStatus(result.message||"اطلاعات ذخیره شد.");$("status").classList.add("ok");}
- catch(error){setStatus(error.message||"ذخیره اطلاعات ناموفق بود.",true);}
- finally{button.disabled=false;}
-}
-async function archiveItem(id){if(!confirm("این مورد به بایگانی منتقل شود؟"))return;try{const result=await api({action:"archive",id});await load();setStatus(result.message||"بایگانی شد.");$("status").classList.add("ok");}catch(error){setStatus(error.message||"بایگانی ناموفق بود.",true);}}
-$("tabs").addEventListener("click",event=>{const button=event.target.closest("button[data-type]");if(!button)return;filter=button.dataset.type;for(const b of $("tabs").querySelectorAll("button"))b.setAttribute("aria-pressed",String(b===button));renderList();closeForm();});
-$("newRecord").addEventListener("click",()=>openForm(filter==="all"?"annual_plan":filter));
-$("cancelEdit").addEventListener("click",closeForm);$("recordForm").addEventListener("submit",save);$("refresh").addEventListener("click",load);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let saved=[],activeTab="today";
+const daily=[
+ {time:"پیش از ورود دانش‌آموزان",owner:"مدیر + معاون اجرایی",action:"بازبینی حضور کارکنان، آماده‌بودن کلاس‌ها و فضاهای ضروری، تغییرات برنامه و موارد ایمنی گزارش‌شده.",proof:"چک شفاهی/فهرست کوتاه آماده‌بودن مدرسه؛ فقط موارد نیازمند اقدام ثبت شود.",cost:"بدون هزینه؛ ۱۰ دقیقه هماهنگی"},
+ {time:"شروع روز و زنگ اول",owner:"معاون اجرایی + دبیران",action:"ثبت دقیق حضور دانش‌آموزان در همان زنگ و پیگیری غیبت‌های غیرعادی طبق رویه مدرسه؛ حفظ زمان واقعی تدریس.",proof:"گزارش روزانه حضور و غیبت؛ پیگیری موارد تکراری از مسیر رسمی.",cost:"بدون هزینه"},
+ {time:"در جریان تدریس",owner:"دبیران + معاون آموزشی",action:"در هر درس یک نشانه از یادگیری بررسی شود: پرسش کوتاه، تمرین یا مشاهده کار دانش‌آموز. معاون آموزشی در طول هفته از کلاس‌ها بازدید حمایتی کوتاه داشته باشد؛ نه با رویکرد مچ‌گیری.",proof:"نمونه کار یا نتیجه پرسش؛ بازخورد کوتاه و محرمانه به دبیر.",cost:"بدون هزینه؛ استفاده از زمان موجود"},
+ {time:"زنگ تفریح و جابه‌جایی",owner:"معاون پرورشی + کارکنان نوبت‌دار",action:"نظارت فعال بر نقاط پرتردد، رسیدگی محترمانه به تعارض‌ها و شناسایی دانش‌آموزانی که از جمع کنار مانده‌اند.",proof:"ثبت موضوع کلی و محل/زمان؛ بدون نام در گزارش عمومی.",cost:"بدون هزینه"},
+ {time:"پایان روز",owner:"معاون اجرایی + معاون آموزشی",action:"جمع‌بندی غیبت‌ها، کلاس‌های تشکیل‌نشده، موارد نیازمند حمایت آموزشی و اتفاق‌های مهم؛ هر مورد فقط یک مسئول پیگیری داشته باشد.",proof:"فهرست سه‌ستونی: انجام شد، نیازمند پیگیری، مسئول و مهلت.",cost:"بدون هزینه"},
+ {time:"پس از پایان هفته",owner:"مدیر + شورای راهبری کوچک مدرسه",action:"جلسه ۲۰ تا ۳۰ دقیقه‌ای: فقط یک مسئله اولویت‌دار، شواهد، تصمیم هفته بعد و مسئول مشخص شود. کارهای کم‌اثر حذف یا ادغام شوند.",proof:"یک تصمیم اجرایی و تاریخ بازبینی؛ نه صورت‌جلسه طولانی.",cost:"بدون هزینه"}
+];
+const months=[
+ {m:"آذر ۱۴۰۵",state:"شروع از اکنون",goal:"شناخت خط پایه و بستن شکاف‌های فوری",tasks:[
+  ["هفته اول","آزمونک تشخیصی کوتاه در فارسی، ریاضی و علوم برای هر پایه؛ نمونه سؤال مشترک و کم‌فشار، نه آزمون نمره‌ساز.","معاون آموزشی + دبیران","برگه تحلیل پایه/درس و فهرست مباحث نیازمند تدریس مجدد","کم؛ تکثیر محدود یا استفاده از دفتر"],
+  ["هفته اول و دوم","تحلیل حضور و غیاب مهر تا آبان به تفکیک پایه و روز؛ کنترل خطای ثبت و علت‌های قابل پیگیری.","معاون اجرایی","خط پایه حضور و دسته‌بندی علت‌ها","بدون هزینه"],
+  ["هفته دوم","بررسی ایمنی و کارکرد کلاس‌ها، سرویس‌ها، روشنایی، آب، گرمایش و تجهیزات ضروری؛ اولویت‌بندی خطر فوری.","مدیر + معاون اجرایی","فهرست فوری/قابل برنامه‌ریزی/قابل تعویق","بدون هزینه برای بازدید؛ تعمیر با برآورد جدا"],
+  ["هفته سوم و چهارم","گفت‌وگوی کوتاه با نمایندگان کلاس‌ها و تماس هدفمند با خانواده‌های غیرقابل‌دسترس؛ شناسایی مانع مشارکت بدون سرزنش.","معاون پرورشی + مدیر","نقشه راه‌های ارتباطی خانواده و سه مانع پرتکرار","کم؛ تماس/اطلاع‌رسانی موجود"]
+ ]},
+ {m:"دی ۱۴۰۵",goal:"تبدیل خط پایه به مداخله آموزشی",tasks:[
+  ["هفته اول","برای هر پایه حداکثر دو اولویت یادگیری تعیین شود؛ فهرست دانش‌آموزان نیازمند حمایت فقط در دسترس مسئولان مجاز باشد.","معاون آموزشی + دبیران","نقشه مبحث‌های اولویت‌دار و گروه‌بندی حمایتی","بدون هزینه"],
+  ["هفته دوم تا چهارم","جلسه‌های جبرانی کوتاه و هدفمند در زمان مجاز؛ تمرین روی مبحث مشخص و سنجش قبل/بعد.","دبیران مربوط","مقایسه سنجش کوتاه قبل و بعد؛ تعداد جلسات به‌تنهایی ملاک نیست","کم؛ برگه تمرین و زمان سازمان‌دهی‌شده"],
+  ["در طول ماه","هر دبیر یک تجربه موفق تدریس یا یک مسئله کلاس را در نشست کوتاه گروه آموزشی به اشتراک بگذارد.","نماینده گروه‌های درسی + معاون آموزشی","یک تغییر قابل مشاهده در تدریس هر گروه","بدون هزینه"]
+ ]},
+ {m:"بهمن ۱۴۰۵",goal:"بازبینی نیم‌سال و تقویت تعلق به مدرسه",tasks:[
+  ["هفته اول","نتایج ارزشیابی نیم‌سال با خط پایه آذر مقایسه شود؛ دانش‌آموزان را با هم رتبه‌بندی نکنید، پیشرفت هر فرد نسبت به نقطه شروع بررسی شود.","معاون آموزشی + دبیران","گزارش رشد به تفکیک پایه و درس","بدون هزینه"],
+  ["هفته دوم","یک فعالیت علمی/فرهنگی/ورزشی کم‌هزینه با انتخاب دانش‌آموزان اجرا شود؛ فعالیت به امکانات و علاقه واقعی متکی باشد.","معاون پرورشی + شورای دانش‌آموزی","مشارکت واقعی و بازخورد دانش‌آموزان","کم؛ استفاده از امکانات مدرسه"],
+  ["هفته سوم و چهارم","بازدید حمایتی از کلاس و گفت‌وگوی حرفه‌ای با دبیر؛ یک نقطه قوت و یک اقدام بهبود توافق شود.","مدیر + معاون آموزشی","توافق اقدام و بازبینی بعدی","بدون هزینه"]
+ ]},
+ {m:"اسفند ۱۴۰۵",goal:"پیشگیری از افت پیوستگی یادگیری",tasks:[
+  ["هفته اول","بررسی دوباره غیبت و تأخیر و پیگیری موارد پرتکرار با خانواده از کانال قابل دسترس و محترمانه.","معاون اجرایی","مقایسه روند حضور با آذر و دی","بدون هزینه"],
+  ["هفته دوم","برای هر درس اصلی، وضعیت پوشش برنامه درسی و مباحث عقب‌مانده بررسی شود؛ برنامه جبرانی واقع‌بینانه تنظیم شود.","معاون آموزشی + دبیران","نقشه پوشش برنامه درسی و مهلت جبران","بدون هزینه"],
+  ["پیش از پایان ماه","برنامه ارتباطی پس از تعطیلات و فعالیت‌های فروردین آماده شود؛ تعطیلات فقط مطابق ابلاغ رسمی ثبت شود.","مدیر + معاونان","تقویم تأییدشده با بخشنامه رسمی","بدون هزینه"]
+ ]},
+ {m:"فروردین ۱۴۰۶",goal:"بازگشت منظم و جلوگیری از افت پس از وقفه",tasks:[
+  ["هفته نخست فعالیت مدرسه","بازگشت تدریجی به روال: مرور قواعد، بررسی حضور، گفت‌وگوی کوتاه درباره نیازهای دانش‌آموزان و سنجش سبک مبحث‌های کلیدی.","معاونان + دبیران","گزارش حضور و سنجش بازگشت","بدون هزینه"],
+  ["هفته دوم","گروه‌های حمایتی بر اساس داده‌های تازه اصلاح شوند؛ گروه‌بندی ثابت و برچسب‌زننده نباشد.","معاون آموزشی + دبیران","فهرست به‌روز نیازهای یادگیری","کم"],
+  ["در طول ماه","یک نشست کوتاه با خانواده‌ها درباره حمایت از مطالعه در خانه با امکانات موجود و بدون تکلیف پرهزینه برگزار شود.","مدیر + مشاور/معاون","توصیه‌های ساده و قابل اجرا و بازخورد خانواده","بدون هزینه"]
+ ]},
+ {m:"اردیبهشت ۱۴۰۶",goal:"تثبیت یادگیری و آمادگی پایان سال",tasks:[
+  ["هفته اول","سنجش مجدد مباحثی که در آذر و دی ضعف داشته‌اند؛ مشخص شود کدام مداخله اثر داشته و کدام باید عوض شود.","معاون آموزشی + دبیران","مقایسه سه نقطه زمانی: خط پایه، میانه، اکنون","کم"],
+  ["هفته دوم","برنامه آمادگی ارزشیابی پایانی با فاصله‌گذاری و مرور تدریجی؛ از انباشت تکلیف و آزمون‌های فرساینده پرهیز شود.","دبیران + معاون آموزشی","تقویم مرور درس‌ها و پایش فشار کاری","بدون هزینه"],
+  ["هفته سوم و چهارم","بازبینی اهداف تربیتی، مشارکت دانش‌آموزان و خانواده‌ها؛ برای سال بعد دو اولویت قابل دفاع انتخاب شود.","مدیر + شوراها","پیشنهادهای مستند برای برنامه سال آینده","بدون هزینه"]
+ ]},
+ {m:"خرداد ۱۴۰۶",goal:"ارزیابی نتیجه و آماده‌سازی سال دوم",tasks:[
+  ["در زمان ارزشیابی‌ها","اجرای منظم برنامه ارزشیابی مطابق ضوابط ابلاغی؛ رسیدگی منصفانه به شرایط دانش‌آموزان و ثبت دقیق نتایج.","مدیر + معاون آموزشی + دبیران","نتایج رسمی و تحلیل به تفکیک درس/پایه","هزینه جاری مدرسه"],
+  ["پس از پایان ارزشیابی","مقایسه نتیجه‌ها با خط پایه؛ تحلیل کنید چه اقدام‌هایی اثر داشتند و کدام‌ها فقط فعالیت ظاهری بودند.","شورای مدرسه","گزارش یک‌صفحه‌ای نتیجه و درس‌آموخته‌ها","بدون هزینه"],
+  ["پایان سال","فهرست دارایی‌ها و نیازهای تعمیر/تجهیز، وضعیت نیروی انسانی و اولویت‌های سال ۱۴۰۶–۱۴۰۷ آماده شود.","مدیر + معاون اجرایی","برنامه پیشنهادی سال دوم با برآورد هزینه","بدون هزینه برای فهرست‌برداری"]
+ ]}
+];
+const annual=[
+ {period:"شهریور ۱۴۰۵ · مرحله آماده‌سازی",focus:"آماده‌سازی پیش از شروع سال",items:["بازبینی ایمنی و بهداشت فضاها و اعلام نواقص ضروری","تطبیق کلاس‌بندی، برنامه هفتگی و مسئولیت کارکنان","آماده‌سازی پرونده‌های آموزشی و مسیر ارتباطی خانواده‌ها"],status:"مرحله آغازین سال؛ اکنون فقط موارد انجام‌شده و مستند را تأیید کنید."},
+ {period:"مهر ۱۴۰۵ · استقرار",focus:"آغاز سال و شناخت دانش‌آموزان",items:["خوشامدگویی و آشنایی با قواعد و خدمات حمایتی مدرسه","تشکیل شوراها و تعیین مسئولیت‌های روشن","ثبت داده‌های اولیه حضور، وضعیت آموزشی و نیازهای دسترس‌پذیری"],status:"اگر داده خط پایه کامل نیست، در آذر تکمیل شود؛ داده را حدس نزنید."},
+ {period:"آبان ۱۴۰۵ · مشاهده و تشخیص",focus:"شناخت مسائل واقعی",items:["مرور حضور و غیاب و گزارش‌های کلاسی","شنیدن صدای دانش‌آموز و خانواده","شناسایی کمبودهای فوری و فرصت‌های موجود"],status:"پایه طراحی برنامه از اواخر آبان و آذر همین داده‌هاست."},
+ {period:"آذر تا اسفند ۱۴۰۵ · مداخله اول",focus:"بهبود هدفمند یادگیری و نظم",items:["سنجش تشخیصی و انتخاب اولویت‌های محدود","مداخله آموزشی کوتاه و سنجش مجدد","حفظ زمان تدریس، بهبود حضور و ارتباط هدفمند با خانواده"],status:"تقویم ماهانه را اجرا و هر ماه فقط بر اساس شواهد اصلاح کنید."},
+ {period:"فروردین تا خرداد ۱۴۰۶ · تثبیت و ارزیابی",focus:"سنجش نتیجه و برنامه سال دوم",items:["بازگشت منظم پس از وقفه و رفع شکاف‌های یادگیری","ارزشیابی پایانی طبق ضوابط رسمی","تحلیل نتیجه، فهرست نیازها و تصویب اولویت‌های سال بعد"],status:"تعطیلات، امتحانات و مناسبت‌ها باید با ابلاغ رسمی منطقه تطبیق یابند."},
+ {period:"تابستان و سال تحصیلی ۱۴۰۶–۱۴۰۷",focus:"گسترش آنچه جواب داده است",items:["تثبیت نظام سنجش مستمر و حمایت هدفمند","برنامه رشد حرفه‌ای دبیران و بازدید حمایتی","تکمیل تدریجی کتابخانه، آزمایش و فعالیت‌های دانش‌آموزمحور"],status:"گسترش فقط پس از اثبات نتیجه و تأمین نیروی/هزینه انجام شود."}
+];
+const roadmap=[
+ {year:"سال اول · ۱۴۰۵–۱۴۰۶",title:"تثبیت و شناخت دقیق مدرسه",why:"مدرسه تازه‌تأسیس ابتدا باید کارکردهای پایه را پایدار کند؛ قبل از پروژه‌های نمایشی، حضور، یادگیری، ایمنی و مسئولیت‌پذیری روشن شوند.",targets:["خط پایه معتبر برای یادگیری، حضور، رفتار، مشارکت و امکانات ایجاد شود.","برای هر دانش‌آموز نیازمند حمایت، مسیر پیگیری محرمانه و مسئول مشخص باشد.","برنامه روزانه و ماهانه با حداقل بار اداری اجرا شود.","شورای مدرسه اولویت‌های سال بعد را بر اساس داده تصویب کند."],milestones:["آذر: خط پایه و اولویت‌های محدود","دی تا اسفند: اجرای مداخله و بازبینی ماهانه","فروردین تا خرداد: سنجش مجدد و گزارش نتیجه"],people:"مدیر، معاون آموزشی، معاون اجرایی، معاون پرورشی، دبیران هر پایه و نمایندگان شورا؛ مشاور در صورت دسترسی.",budget:"عمدتاً بدون هزینه/کم‌هزینه؛ چاپ محدود، منابع تمرین و تعمیرات ضروری جداگانه برآورد شود."},
+ {year:"سال دوم · ۱۴۰۶–۱۴۰۷",title:"ارتقای کیفیت آموزش و مشارکت",why:"پس از تثبیت داده و نظم، ظرفیت حرفه‌ای دبیران و یادگیری فعال دانش‌آموزان توسعه یابد.",targets:["چرخه مشاهده حمایتی کلاس و بازخورد حرفه‌ای منظم شود.","برنامه جبرانی بر اساس سنجش، در چند درس اولویت‌دار پایدار شود.","شورای دانش‌آموزی و انجمن اولیا در تصمیم‌های واقعی نقش داشته باشند.","کتابخانه، آزمایش‌های ساده و فعالیت‌های ورزشی/فرهنگی متناسب با ظرفیت تقویت شوند."],milestones:["تابستان: تصویب برنامه و تأمین منابع ضروری","مهر تا دی: اجرای چرخه رشد حرفه‌ای و برنامه حمایتی","بهمن تا خرداد: ارزیابی اثر و اصلاح"],people:"هسته راهبری موجود + سرگروه‌های درسی/دبیران راهبر؛ در صورت نیاز مربی یا مشاور پاره‌وقت با هماهنگی منطقه.",budget:"کم تا متوسط؛ منابع یادگیری و مواد مصرفی بر اساس تعداد کلاس/گروه و استعلام قیمت."},
+ {year:"سال سوم · ۱۴۰۷–۱۴۰۸",title:"تثبیت مدرسه یادگیرنده و الگوی محلی",why:"مدرسه زمانی می‌تواند الگوی قابل اتکا باشد که بهبودها در نتایج دانش‌آموز و کیفیت تدریس دیده شوند، نه فقط در تعداد برنامه‌ها.",targets:["تصمیم‌های آموزشی بر داده‌های چندساله تکیه کنند.","دانش‌آموزان در پروژه‌های علمی، فرهنگی، ورزشی و مسئولیت اجتماعی مشارکت واقعی داشته باشند.","همکاری با خانواده و ظرفیت محله به برنامه‌های پایدار و داوطلبانه تبدیل شود.","ارزیابی درونی مدرسه و برنامه بهبود سالانه به رویه ثابت تبدیل شود."],milestones:["ابتدای سال: بازبینی مستقل شاخص‌ها و برنامه","میانه سال: ارزیابی پیشرفت و اصلاح منابع","پایان سال: گزارش پیامدها و برنامه چرخه بعد"],people:"تیم راهبری مدرسه، دبیران راهبر، شورای دانش‌آموزی، انجمن اولیا و شرکای محلی مورد تأیید منطقه.",budget:"ترکیبی از منابع جاری و حمایت‌های قانونی/داوطلبانه؛ سرمایه‌گذاری بزرگ فقط با توجیه و مجوز."}
+];
+const roles=[
+ ["مدیر مدرسه","مالک نقشه راه، تصویب اولویت‌ها، رفع مانع، کنترل منابع و بازبینی ماهانه.","هفته‌ای ۳۰ دقیقه جلسه راهبری + تصمیم‌های روزانه کوتاه"],
+ ["معاون آموزشی","خط پایه یادگیری، پوشش برنامه درسی، حمایت تحصیلی، بازدید حمایتی و تحلیل نتایج.","حداقل یک مرور داده در هفته؛ بازدید حمایتی برنامه‌ریزی‌شده"],
+ ["معاون اجرایی","حضور و غیاب، نظم اطلاعات، تقویم و پیگیری امور اجرایی و موجودی.","ثبت روزانه و گزارش هفتگی"],
+ ["معاون پرورشی / مربی","تعلق به مدرسه، مشارکت دانش‌آموزان، فعالیت‌های تربیتی و پیشگیری از تعارض.","فعالیت ماهانه بر اساس صدای دانش‌آموز"],
+ ["مشاور","پشتیبانی تحصیلی/هدایتی و ارجاع تخصصی در حدود صلاحیت؛ حفظ محرمانگی.","اگر تمام‌وقت نیست، زمان مراجعه منظم و مسیر ارجاع با منطقه مشخص شود"],
+ ["دبیران و نماینده گروه‌های درسی","سنجش کوتاه یادگیری، بازآموزی مبحث دشوار، تبادل تجربه و بازخورد.","هر دبیر: یک داده یادگیری و یک اقدام اصلاحی در ماه"],
+ ["شورای دانش‌آموزی و انجمن اولیا","بازخورد، پیشنهاد و مشارکت داوطلبانه؛ بدون تحمیل هزینه یا جایگزینی وظیفه کارکنان.","گفت‌وگوی هدفمند ماهانه/فصلی"]
+];
+const budget=[
+ ["اقدامات مدیریتی و سنجش","زمان کاری موجود، برگه تحلیل، جلسه کوتاه","صفر تا کم","ساعت کارکنان در برنامه موظف؛ چاپ فقط در صورت نیاز"],
+ ["حمایت یادگیری","تمرین هدفمند، منابع کتابخانه، تکثیر محدود","کم","تعداد گروه × جلسه × برگه/مواد مصرفی؛ از منابع موجود شروع شود"],
+ ["رشد حرفه‌ای دبیران","جلسه هم‌اندیشی، مشاهده همکارانه، محتوای آموزشی","صفر تا کم","ساعت جلسه و در صورت نیاز هزینه مدرس/دوره با استعلام"],
+ ["فعالیت فرهنگی و ورزشی","وسایل قابل استفاده مجدد، فضای مدرسه","کم تا متوسط","تعداد فعالیت × مواد مصرفی؛ اولویت با امانت/اشتراک تجهیزات"],
+ ["تجهیزات آموزشی","کتاب، ابزار ساده علوم، وسایل کمک‌آموزشی","متوسط","تعداد کلاس/گروه × اقلام ضروری؛ سه استعلام قیمت"],
+ ["ایمنی و تعمیرات","تعمیر تأسیسات، سرویس‌ها، برق، گرمایش و موارد خطر","متوسط تا سرمایه‌ای","بازدید فنی + شرح کار + استعلام؛ خطر فوری بر سایر خریدها مقدم است"]
+];
+const indicators=[
+ ["یادگیری","سنجش تشخیصی و سنجش مجدد در همان مهارت/مبحث","آذر، بهمن، اردیبهشت","رشد نسبت به خط پایه؛ تفکیک پایه و درس، بدون رتبه‌بندی تحقیرآمیز"],
+ ["حضور و ماندگاری","نرخ غیبت و تأخیر به تفکیک پایه/روز و علت‌های قابل پیگیری","هفتگی و ماهانه","روند نسبت به خط پایه آذر؛ خطای ثبت از غیبت واقعی جدا شود"],
+ ["کیفیت تدریس","نمونه کار دانش‌آموز، مشاهده حمایتی و بازخورد توافق‌شده","ماهانه","تغییر در مشارکت و فهم درس؛ نه تعداد بازدیدها"],
+ ["فضای تربیتی","تکرار موقعیت‌های تعارض، زمان/مکان و پیگیری حمایتی","ماهانه","کاهش تکرار و بهبود احساس امنیت؛ اطلاعات فردی محرمانه بماند"],
+ ["مشارکت خانواده","دسترسی‌پذیری کانال‌ها، پاسخ‌ها و مشارکت در تصمیم","هر ماه/فصل","کیفیت مشارکت و موانع دسترسی؛ حضور در جلسه به‌تنهایی کافی نیست"],
+ ["مدیریت منابع","هزینه واقعی، زمان صرف‌شده، استفاده از امکانات موجود","ماهانه و فصلی","هزینه به ازای اقدام و نتیجه حاصل؛ حذف هزینه‌های کم‌اثر"]
+];
+const sources=[
+ ["وزارت/الگوی مدرسه تراز؛ گزارش ۱۸ آبان ۱۴۰۵","تأکید بر تحلیل وضعیت واقعی، برنامه راهبردی و عملیاتی، مسئول، زمان‌بندی، منابع و شاخص ورودی/فرایند/خروجی.","https://www.tasnimnews.ir/fa/news/1405/08/18/3744050/تحقق-مدرسه-تراز-نیازمند-عبور-از-برنامه-ریزی-های-مقطعی-است"],
+ ["آیین‌نامه اجرایی مدارس","مسئولیت مدیر در تشکیل منظم شوراها و مشارکت معلمان، مربیان و خانواده در برنامه سالانه.","https://media.unesco.org/sites/default/files/webform/r2e002/4627448ee65e06a1f01c2b2c4003dd6aae99ca5b.pdf"],
+ ["UNICEF · Foundational Learning Action Tracker 2025","سنجش مستمر، آموزش متناسب با سطح یادگیری و اطلاع‌رسانی عملی به خانواده‌ها از مداخلات اثربخش و کم‌هزینه.","https://www.unicef.org/media/175231/file/Foundational-learning-action-tracker-2025-Global-report.pdf"],
+ ["World Bank · Education Impact Evaluations","داده به‌تنهایی کافی نیست؛ مدرسه به توان اقدام، پشتیبانی حرفه‌ای و تمرکز منابع بر مداخلات مؤثر نیاز دارد.","https://www.worldbank.org/en/topic/education/publication/impact-evaluations"],
+ ["UNICEF · Learning from Schools","پژوهش تطبیقی مدارس در ۱۳ کشور و بیش از ۱۱۰۰ مدرسه درباره رویه‌های محلی بهبود یادگیری.","https://www.unicef.org/innocenti/reports/learning-schools"],
+ ["World Bank · Teacher coaching in Brazil","ارزیابی مشاهده کلاس همراه با بازخورد و مربی‌گری را به‌عنوان راهبرد بهبود کیفیت تدریس بررسی می‌کند.","https://documents.worldbank.org/en/publication/documents-reports/documentdetail/551861501523958003"]
+];
+async function api(body){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||"ارتباط با سرویس برنامه‌ریزی ناموفق بود.");return d;}
+function setStatus(msg,error=false){$("status").textContent=msg;$("status").className="status"+(error?" error":"");}
+function planId(kind,index){return kind+"-"+index;}
+function allSteps(){return [...daily.map((x,i)=>({...x,id:planId("daily",i),kind:"daily",period:x.time})),...months.flatMap((m,mi)=>m.tasks.map((x,ti)=>({id:planId("month"+mi,ti),kind:"monthly",period:m.m+" · "+x[0],title:x[1],owner:x[2],proof:x[3],cost:x[4]})))];}
+function progressFor(id){return saved.find(x=>x.details?.plan_id===id)||null;}
+function stats(){const steps=allSteps(),done=steps.filter(s=>progressFor(s.id)?.status==="completed").length,started=steps.filter(s=>progressFor(s.id)?.status==="in_progress").length;const pct=steps.length?Math.round(done/steps.length*100):0;$("totalSteps").textContent=fa(steps.length);$("doneSteps").textContent=fa(done);$("progressPercent").textContent=fa(pct)+"٪";$("progressBar").style.width=pct+"%";}
+async function saveProgress(step,status){const old=progressFor(step.id);const body={action:old?"update":"create",id:old?.id,academic_year:academicYear,record_type:"operational_plan",title:"پیگیری برنامه: "+step.id,summary:status==="completed"?"تکمیل‌شده":status==="in_progress"?"در حال اجرا":"شروع‌نشده",status,details:{plan_id:step.id,kind:step.kind,period:step.period,action:step.title||step.action,owner:step.owner,proof:step.proof||step.proof,cost:step.cost||"",updated_from:"school-operating-roadmap-v2"}};await api(body);await loadProgress();}
+async function loadProgress(){const d=await api({action:"list",academic_year:academicYear});if(String(d.school_id)!==String(schoolId))throw new Error("شناسه مدرسه با نشست مدیر مطابقت ندارد.");saved=(d.items||[]).filter(x=>x.record_type==="operational_plan"&&x.details?.plan_id);$("registered").textContent=fa(d.registered_students_count??0);stats();}
+function card(title,body,meta=[],id=null){return '<article class="card"><h3>'+esc(title)+'</h3>'+body+(meta.length?'<div class="meta">'+meta.map(x=>'<span class="pill">'+esc(x)+'</span>').join("")+'</div>':"")+(id?progressButtons(id):"")+'</article>';}
+function progressButtons(id){const step=allSteps().find(x=>x.id===id);const status=progressFor(id)?.status||"draft";return '<div class="actions-small"><button data-progress="'+id+'" data-state="in_progress" '+(status==="in_progress"?"disabled":"")+'>شروع / در حال اجرا</button><button class="primary" data-progress="'+id+'" data-state="completed" '+(status==="completed"?"disabled":"")+'>ثبت تکمیل</button><span class="pill '+(status==="completed"?"green":status==="in_progress"?"gold":"")+'">'+(status==="completed"?"تکمیل‌شده":status==="in_progress"?"در حال اجرا":"شروع نشده")+'</span></div>';}
+function renderToday(){const today=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"full"}).format(new Date());return '<section class="panel"><h2>کارهای ثابت هر روز مدرسه</h2><p>تاریخ امروز دستگاه: '+esc(today)+' · این روال در روزهای فعالیت مدرسه اجرا می‌شود؛ روزهای تعطیل و تغییرات رسمی تابع ابلاغ منطقه است.</p><div class="list">'+daily.map((x,i)=>card(x.time,'<p>'+esc(x.action)+'</p><p><b>شاهد اجرا:</b> '+esc(x.proof)+'</p><p class="cost"><b>منبع/هزینه:</b> '+esc(x.cost)+'</p>',["مسئول: "+x.owner],planId("daily",i))).join("")+'</div></section><div class="note">اصل مهم: قرار نیست مدیر تمام کارها را شخصاً انجام دهد. مدیر مانع را برطرف می‌کند و هر اقدام یک مسئول پاسخ‌گو دارد. کار انجام‌نشده را برای تکمیل گزارش، انجام‌شده علامت نزنید.</div>';}
+function renderMonthly(){return '<section class="panel"><h2>تقویم اجرایی از آذر تا خرداد</h2><p>از اواخر آبان ۱۴۰۵ آغاز می‌کنیم. برای هر اقدام مسئول، شاهد نتیجه و سطح هزینه مشخص شده است. ترتیب هفته‌ها قابل جابه‌جایی است؛ تاریخ امتحانات و تعطیلات فقط با بخشنامه رسمی نهایی شود.</p>'+months.map(m=>'<section class="phase"><h3>'+esc(m.m)+' · '+esc(m.goal)+'</h3>'+m.tasks.map((t,i)=>card(t[0]+' — '+t[1],'<p><b>خروجی مورد انتظار:</b> '+esc(t[3])+'</p><p class="cost"><b>هزینه:</b> '+esc(t[4])+'</p>',["مسئول: "+t[2]],planId("month"+months.indexOf(m),i))).join("")+'</section>').join("")+'</section>';}
+function renderAnnual(){return '<section class="panel"><h2>تقویم سالانه ۱۴۰۵–۱۴۰۶</h2><p>نمای کلان چرخه مدرسه؛ بخش‌های گذشته برای کنترل شواهد است و برنامه از آذر به بعد اقدام فعال دارد.</p>'+annual.map(x=>'<section class="phase"><h3>'+esc(x.period)+' · '+esc(x.focus)+'</h3><ul>'+x.items.map(i=>'<li>'+esc(i)+'</li>').join("")+'</ul><div class="note">'+esc(x.status)+'</div></section>').join("")+'</section>';}
+function renderRoadmap(){return '<section class="panel"><h2>چشم‌انداز سه‌ساله</h2><p><b>چشم‌انداز پیشنهادی:</b> تا پایان سال تحصیلی ۱۴۰۷–۱۴۰۸، مدرسه به محیطی امن و منظم، یادگیرنده و مشارکت‌جو تبدیل شود که پیشرفت تحصیلی و تربیتی دانش‌آموزان را با شواهد می‌سنجد، از دانش‌آموزان نیازمند حمایت به‌موقع پشتیبانی می‌کند و منابع محدود را به اولویت‌های اثربخش اختصاص می‌دهد.</p>'+roadmap.map(r=>'<section class="phase"><h3>'+esc(r.year)+' · '+esc(r.title)+'</h3><p>'+esc(r.why)+'</p><b>نتایج مورد انتظار</b><ul>'+r.targets.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul><b>نقاط عطف</b><ul>'+r.milestones.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul><p><b>نیروی انسانی:</b> '+esc(r.people)+'</p><p class="cost"><b>هزینه و منابع:</b> '+esc(r.budget)+'</p></section>').join("")+'</section>';}
+function renderPeople(){return '<section class="panel"><h2>تقسیم مسئولیت با نیروهای واقعی مدرسه</h2><div class="note">تعداد کارکنان مدرسه هنوز از داده معتبر دریافت نشده است؛ بنابراین نیروی جدید یا تعداد پست‌ها را جعل نمی‌کنیم. در گام اول، نام مسئول هر نقش را از کارکنان موجود مشخص کنید. اگر نقشی در مدرسه وجود ندارد، آن را به‌عنوان شکاف نیروی انسانی به اداره منطقه اعلام کنید.</div>'+roles.map(r=>card(r[0],'<p>'+esc(r[1])+'</p><p><b>حداقل ریتم اجرا:</b> '+esc(r[2])+'</p>',[])).join("")+'<section class="phase"><h3>اولویت تأمین نیروی تکمیلی</h3><ol><li>اگر پشتیبانی مشاوره‌ای در مدرسه در دسترس نیست: درخواست مشاور مشترک/منطقه‌ای با زمان حضور منظم و مسیر ارجاع مشخص.</li><li>اگر معاون آموزشی یا اجرایی پوشش کافی ندارد: ابتدا بازتوزیع کارهای غیرضروری و تعیین جانشین؛ سپس درخواست رسمی نیروی موردنیاز.</li><li>برای فعالیت‌های خاص علمی، فرهنگی یا ورزشی: همکاری داوطلبانه و کنترل‌شده با متخصصان محلی فقط با تأیید مدرسه و منطقه؛ بدون واگذاری وظایف رسمی و نظارتی.</li></ol></section></section>';}
+function renderBudget(){return '<section class="panel"><h2>برنامه هزینه و امکانات</h2><p>به‌جای درج قیمت ساختگی، هزینه هر اقدام را با تعداد واقعی، نرخ روز و استعلام قابل دفاع محاسبه می‌کنیم. این روش جلوی تعهد مالی بدون پشتوانه را می‌گیرد.</p><div class="table-wrap"><table><thead><tr><th>محور هزینه</th><th>اقلام/منابع</th><th>سطح هزینه</th><th>روش محاسبه و تصمیم</th></tr></thead><tbody>'+budget.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td class="cost">'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join("")+'</tbody></table></div><section class="phase"><h3>فرمول بودجه مدرسه</h3><ul><li>هزینه نیروی انسانی = ساعت موردنیاز × نرخ مصوب همان سال (در صورت خارج بودن از وظایف موظف).</li><li>مواد مصرفی = تعداد دانش‌آموز/گروه × مقدار مصرف × قیمت استعلام‌شده.</li><li>تجهیزات = تعداد کلاس یا گروه نیازمند × قیمت هر قلم؛ خرید مرحله‌ای و قابل استفاده مشترک.</li><li>تعمیرات = بازدید فنی + شرح کار + استعلام؛ موارد ایمنی در اولویت نخست.</li></ul><p>برای هر خرید، سه استعلام قیمت معتبر یا رویه خرید مصوب مدرسه/منطقه ثبت شود. کمک خانواده‌ها اجباری نیست و هیچ برنامه آموزشی نباید به پرداخت خانواده وابسته شود.</p></section><div class="note">برای تبدیل این برآورد به رقم ریالی، فهرست موجودی انبار، تعداد کلاس‌ها، امکانات سالم/معیوب و نرخ‌های قابل استعلام باید وارد شود. تا آن زمان رقم قطعی اعلام نمی‌شود.</div></section>';}
+function renderIndicators(){return '<section class="panel"><h2>چگونه بفهمیم مدرسه واقعاً بهتر شده؟</h2><p>هدف‌ها پس از خط پایه آذر نهایی می‌شوند. این شاخص‌ها هم ورودی و فرایند را می‌سنجند و هم نتیجه را؛ تعداد جلسه و جشن به‌تنهایی نشانه موفقیت نیست.</p><div class="table-wrap"><table><thead><tr><th>حوزه</th><th>روش سنجش</th><th>تناوب</th><th>معیار قضاوت</th></tr></thead><tbody>'+indicators.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join("")+'</tbody></table></div><div class="note">پس از سنجش آذر، برای هر شاخص یک مقدار پایه، هدف پایان خرداد، مسئول و منبع داده تصویب می‌شود. هدف باید بلندپروازانه اما متناسب با ظرفیت مدرسه باشد.</div></section>';}
+function renderSources(){return '<section class="panel source"><h2>منابعی که برنامه بر پایه آن‌ها تنظیم شده است</h2><p>این منابع برای اصول طراحی و مداخلات انتخاب شده‌اند؛ تقویم رسمی تعطیلات و امتحانات باید جداگانه از اداره آموزش‌وپرورش شهرستان قدس دریافت شود.</p>'+sources.map(s=>card('<a href="'+esc(s[2])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>','<p>'+esc(s[1])+'</p>')).join("")+'<div class="note">مبنای انتخاب مداخلات: سنجش تشخیصی و تکوینی، آموزش متناسب با سطح یادگیری، بازخورد حرفه‌ای به دبیران، ارتباط عملی با خانواده و تخصیص منابع به اقدام‌هایی که نتیجه آن‌ها قابل سنجش است.</div></section>';}
+function render(){const f={today:renderToday,monthly:renderMonthly,annual:renderAnnual,roadmap:renderRoadmap,people:renderPeople,budget:renderBudget,indicators:renderIndicators,sources:renderSources};$("view").innerHTML=f[activeTab]();stats();}
+async function load(){if(!token||role!=="manager"||!schoolId){setStatus("برای مشاهده نقشه راه، با حساب مدیر همان مدرسه وارد شوید.",true);return;}$("refresh").disabled=true;setStatus("در حال دریافت وضعیت اجرای برنامه…");try{await loadProgress();$("app").classList.remove("hidden");render();setStatus("نقشه راه آماده است؛ برنامه از وضعیت واقعی مدرسه آغاز می‌شود. وضعیت پیشرفت از پایگاه داده دریافت شد.");$("status").classList.add("ok");}catch(e){setStatus(e.message||"دریافت وضعیت اجرا ناموفق بود.",true);}finally{$("refresh").disabled=false;}}
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(!b)return;activeTab=b.dataset.tab;document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));render();});
+$("view").addEventListener("click",async e=>{const b=e.target.closest("button[data-progress]");if(!b)return;const step=allSteps().find(x=>x.id===b.dataset.progress);if(!step)return;b.disabled=true;try{await saveProgress(step,b.dataset.state);render();setStatus("وضعیت این اقدام در پایگاه داده مدرسه ذخیره شد.");$("status").classList.add("ok");}catch(err){setStatus(err.message||"ثبت وضعیت اجرا انجام نشد.",true);b.disabled=false;}});
+$("refresh").addEventListener("click",load);
 $("back").addEventListener("click",()=>window.frahooshReturnToPanel?window.frahooshReturnToPanel("manager"):location.assign("portal.html?step=panel&role=manager"));
 load();
 </script></body></html>
