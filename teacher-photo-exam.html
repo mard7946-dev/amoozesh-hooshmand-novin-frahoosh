@@ -92,46 +92,49 @@ async function cropOcrQuestionImage(file,bbox){
 if(!bbox||![bbox.x0,bbox.x1,bbox.y0].every(Number.isFinite)||bbox.x1<=bbox.x0)return "";
 const bitmap=await createImageBitmap(file);
 try{
-const source=document.createElement("canvas");source.width=bitmap.width;source.height=bitmap.height;
-const sourceContext=source.getContext("2d",{willReadFrequently:true});if(!sourceContext)return "";
-sourceContext.drawImage(bitmap,0,0);
-const pixels=sourceContext.getImageData(0,0,bitmap.width,bitmap.height).data;
-const dark=(x,y)=>{const i=(y*bitmap.width+x)*4;return pixels[i]<105&&pixels[i+1]<105&&pixels[i+2]<105};
+const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+const analysis=document.createElement("canvas");analysis.width=Math.max(1,Math.round(bitmap.width*scale));analysis.height=Math.max(1,Math.round(bitmap.height*scale));
+const analysisContext=analysis.getContext("2d",{willReadFrequently:true});if(!analysisContext)return "";
+analysisContext.drawImage(bitmap,0,0,analysis.width,analysis.height);
+const pixels=analysisContext.getImageData(0,0,analysis.width,analysis.height).data;
+const dark=(x,y)=>{const i=(y*analysis.width+x)*4;return pixels[i]<105&&pixels[i+1]<105&&pixels[i+2]<105};
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-const rawTop=clamp(Math.floor(bbox.y0-18),0,bitmap.height-1);
-const rawBottom=clamp(Math.ceil(bbox.y1+18),rawTop+1,bitmap.height);
+const x0=bbox.x0*scale,x1=bbox.x1*scale,y0=bbox.y0*scale,y1=bbox.y1*scale;
+const rawTop=clamp(Math.floor(y0-18*scale),0,analysis.height-1);
+const rawBottom=clamp(Math.ceil(y1+18*scale),rawTop+1,analysis.height);
 const horizontal=[];
 for(let y=rawTop;y<rawBottom;y++){
-let count=0;for(let x=0;x<bitmap.width;x+=2)if(dark(x,y))count++;
-if(count/(Math.ceil(bitmap.width/2))>.48)horizontal.push(y);
+let count=0;for(let x=0;x<analysis.width;x+=2)if(dark(x,y))count++;
+if(count/(Math.ceil(analysis.width/2))>.48)horizontal.push(y);
 }
-const topRule=horizontal.filter(y=>y<=bbox.y0+2).at(-1);
-const bottomRule=horizontal.find(y=>y>=bbox.y1-2);
-const top=topRule===undefined?clamp(Math.floor(bbox.y0-22),0,bitmap.height-1):topRule+2;
-const bottom=bottomRule===undefined?clamp(Math.ceil(bbox.y1+22),top+24,bitmap.height):Math.max(top+24,bottomRule-2);
+const topRule=horizontal.filter(y=>y<=y0+2).at(-1);
+const bottomRule=horizontal.find(y=>y>=y1-2);
+const top=topRule===undefined?clamp(Math.floor(y0-22*scale),0,analysis.height-1):topRule+2;
+const bottom=bottomRule===undefined?clamp(Math.ceil(y1+22*scale),top+24*scale,analysis.height):Math.max(top+24*scale,bottomRule-2);
 const rowHeight=bottom-top;
-let left=clamp(Math.floor(bbox.x0-24),0,bitmap.width-1);
-let right=clamp(Math.ceil(bbox.x1+24),left+1,bitmap.width);
-const vertical=[];
-const scanStep=Math.max(1,Math.floor(rowHeight/180));
-for(let x=0;x<bitmap.width;x++){
+let left=clamp(Math.floor(x0-24*scale),0,analysis.width-1);
+let right=clamp(Math.ceil(x1+24*scale),left+1,analysis.width);
+const vertical=[],scanStep=Math.max(1,Math.floor(rowHeight/180));
+for(let x=0;x<analysis.width;x++){
 let count=0;for(let y=top;y<bottom;y+=scanStep)if(dark(x,y))count++;
 if(count/Math.ceil(rowHeight/scanStep)>.62)vertical.push(x);
 }
-const leftRule=vertical.filter(x=>x<=bbox.x0+2).at(-1);
-const rightRule=vertical.find(x=>x>=bbox.x1-2);
-if(leftRule!==undefined&&rightRule!==undefined&&rightRule-leftRule>Math.max(80,(bbox.x1-bbox.x0)*1.15)){
+const leftRule=vertical.filter(x=>x<=x0+2).at(-1);
+const rightRule=vertical.find(x=>x>=x1-2);
+if(leftRule!==undefined&&rightRule!==undefined&&rightRule-leftRule>Math.max(80*scale,(x1-x0)*1.15)){
 left=leftRule+2;right=rightRule-2;
 }else{
-const padding=Math.max(36,Math.round(bitmap.width*.12));
-left=clamp(Math.floor(bbox.x0-padding),0,bitmap.width-1);
-right=clamp(Math.ceil(bbox.x1+padding),left+1,bitmap.width);
+const padding=Math.max(36*scale,Math.round(analysis.width*.12));
+left=clamp(Math.floor(x0-padding),0,analysis.width-1);
+right=clamp(Math.ceil(x1+padding),left+1,analysis.width);
 }
-if(right-left<80||bottom-top<24)return "";
-const canvas=document.createElement("canvas");canvas.width=right-left;canvas.height=bottom-top;
+const sourceLeft=Math.round(left/scale),sourceTop=Math.round(top/scale);
+const sourceRight=Math.min(bitmap.width,Math.round(right/scale)),sourceBottom=Math.min(bitmap.height,Math.round(bottom/scale));
+if(sourceRight-sourceLeft<80||sourceBottom-sourceTop<24)return "";
+const canvas=document.createElement("canvas");canvas.width=sourceRight-sourceLeft;canvas.height=sourceBottom-sourceTop;
 const context=canvas.getContext("2d");if(!context)return "";
 context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);
-context.drawImage(bitmap,left,top,right-left,bottom-top,0,0,canvas.width,canvas.height);
+context.drawImage(bitmap,sourceLeft,sourceTop,canvas.width,canvas.height,0,0,canvas.width,canvas.height);
 return canvas.toDataURL("image/jpeg",.95);
 }finally{bitmap.close?.()}
 }
