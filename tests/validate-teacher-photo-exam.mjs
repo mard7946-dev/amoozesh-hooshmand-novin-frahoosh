@@ -31,7 +31,7 @@ assert.doesNotThrow(()=>new Function(js),"Page JavaScript must parse");
 const helperStart=p.indexOf("function normalizeOcrText(");
 const helperEnd=p.indexOf("async function ocrPhoto",helperStart);
 assert.ok(helperStart>=0&&helperEnd>helperStart,"OCR parsing helpers must be present");
-const helpers=new Function(p.slice(helperStart,helperEnd)+"; return {splitOcrQuestions,inferOcrQuestionType,extractOcrQuestionRecords,detectOcrSection};")();
+const helpers=new Function(p.slice(helperStart,helperEnd)+"; return {splitOcrQuestions,inferOcrQuestionType,extractOcrQuestionRecords,detectOcrSection,groupOcrQuestionsForPrint};")();
 
 const parsed=helpers.splitOcrQuestions("۱- حاصل ۲+۲ چیست؟\n۲- جای خالی را کامل کنید: تهران پایتخت ______ است.\n۳- درست یا نادرست: زمین گرد است.\n۴- گزینه صحیح را انتخاب کنید:\nالف) گزینه اول\nب) گزینه دوم");
 assert.equal(parsed.length,4,"Numbered OCR questions must become separate question records");
@@ -41,6 +41,27 @@ assert.equal(helpers.detectOcrSection("سؤال‌های تستی"),"A","Persian
 assert.equal(helpers.detectOcrSection("سؤال‌های جای خالی"),"B","Persian fill-in section title must be recognized");
 assert.equal(helpers.detectOcrSection("سؤال‌های صحیح و غلط"),"C","Persian true-false section title must be recognized");
 assert.equal(helpers.detectOcrSection("سوالات تشریحی"),"D","Persian essay section title must be recognized");
+
+
+const grouped=helpers.groupOcrQuestionsForPrint([
+ {type:"test",subparts:["الف","ب","ج","د"],composite:true},
+ {type:"test"},
+ {type:"blank"},
+ {type:"blank"},
+ {type:"tf"},
+ {type:"short"},
+ {type:"essay"},
+ {type:"essay",subparts:["الف","ب"],composite:true}
+]);
+assert.deepEqual(grouped.map(g=>({type:g.type,single:g.single,count:g.items.length})),[
+ {type:"test",single:false,count:2},
+ {type:"blank",single:false,count:2},
+ {type:"tf",single:false,count:1},
+ {type:"short",single:false,count:1},
+ {type:"essay",single:true,count:1},
+ {type:"essay",single:true,count:1}
+],"Test options must not be mistaken for composite subparts; independent types share one group and essays/composites remain separate");
+assert.ok(p.includes(".question-group{margin:0 0 4mm;border:1px solid")&&p.includes(".question-item+.question-item{border-top:"),"Each type group must have one shared outer border, not a separate box around every question");
 
 const layoutLines=[
  {text:"سؤال‌های تستی",bbox:{x0:10,y0:10,x1:300,y1:30}},
