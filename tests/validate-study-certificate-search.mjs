@@ -41,4 +41,8 @@ assert.ok(!page.includes("cdn.jsdelivr.net/npm/qrcode") && !page.includes("cdnjs
 assert.ok(qrLibrary.includes("Licensed under the MIT license"), "Vendored QR library must retain its MIT license notice");
 assert.ok(!page.includes("qrLoadPromise") && !page.includes("loadQrLibrary"), "Certificate must not retain the CDN loader path");
 
+const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.yml", "utf8");
+assert.ok(publishWorkflow.includes("assets/qrcode.js _site/assets/"), "GitHub Pages packaging must copy the local QR library into the deployed assets directory");
+assert.ok(publishWorkflow.includes("test -s _site/assets/qrcode.js"), "GitHub Pages deployment must fail if the local QR library is missing from the site artifact");
+
 console.log("Study certificate student-search checks passed: school scoping, limited fields, search filters, auto-fill, manual entry, and JavaScript syntax.");
