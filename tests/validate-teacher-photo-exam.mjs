@@ -21,7 +21,7 @@ assert.ok(p.includes("Vazirmatn")&&p.includes("question-type")&&p.includes("ques
 assert.ok(p.includes("grid-template-columns:23mm 1fr")&&p.includes("background:#f8fafc")&&p.includes("border-top:3px solid #0f766e"),"Print header must use the new professional visual style");
 assert.ok(p.includes("S.questions.map((q,index)")&&p.includes("lastSection")&&p.includes("S.questions.map"),"Questions must render in their original order rather than being regrouped by type");
 assert.ok(p.includes('const text=isScanned?"":')&&p.includes('const visual=isScanned?')&&p.includes("q.cropDataUrl"),"Scanned question image must replace, not duplicate, the OCR text in print output");
-assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bitmap.width,bottom-top")&&p.includes("bbox.toBottom"),"OCR image crops must preserve the complete question row instead of a single OCR text line");
+assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bbox.toBottom")&&p.includes("const leftRule=")&&p.includes("const rightRule=")&&p.includes("const topRule=")&&p.includes("const bottomRule="),"OCR crops must use detected table-cell boundaries on both axes");
 assert.ok(p.includes("data-f=\"type\"")&&p.includes('value="test"')&&p.includes('value="blank"')&&p.includes('value="tf"')&&p.includes('value="short"')&&p.includes('value="essay"'),"Every question must have a selectable question type");
 assert.ok(p.includes("page-number")&&p.includes("@page{size:A4"),"A4 print layout must retain page numbering support");
 
@@ -66,10 +66,10 @@ assert.ok(layoutQuestions[0].text.includes("الف) گزینه اول")&&layoutQ
 assert.deepEqual(layoutQuestions[3].subparts,["الف","ب"],"Persian subparts must remain nested under the numbered essay question");
 assert.ok(layoutQuestions[3].text.includes("الف) زیرمجموعه اول")&&layoutQuestions[3].text.includes("ب) زیرمجموعه دوم"),"Essay subpart text must not be split into independent questions");
 assert.deepEqual(layoutQuestions.map(q=>q.bbox),[
- {y0:40,y1:115,toBottom:false},
- {y0:150,y1:185,toBottom:false},
- {y0:220,y1:255,toBottom:false},
- {y0:290,y1:351,toBottom:true}
+ {x0:10,x1:300,y0:40,y1:115,toBottom:false},
+ {x0:10,x1:300,y0:150,y1:185,toBottom:false},
+ {x0:10,x1:300,y0:220,y1:255,toBottom:false},
+ {x0:10,x1:300,y0:290,y1:351,toBottom:true}
 ],"Each question must retain its full vertical image region through the next question or section boundary");
 assert.ok(layoutQuestions[3].bbox.toBottom,"The final question crop must extend to the bottom of its source image so its diagram is not lost");
 
