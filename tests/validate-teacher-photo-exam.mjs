@@ -13,7 +13,7 @@ for(const token of [
 ]) assert.ok(p.includes(token),"Missing "+token);
 
 assert.ok(p.includes("frahoosh_novin_access_token")&&p.includes('portalRole!=="teacher"'),"Page must reject direct access without the teacher session");
-assert.ok(p.includes("اداره كل آموزش و پرورش شهرستان هاي استان تهران")&&p.includes("۱۴۰۶-۱۴۰۵")&&p.includes("class=\"school-head\""),"School identity and header must remain in the page");
+assert.ok(p.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران")&&p.includes("۱۴۰۵–۱۴۰۶")&&p.includes("class=\"school-head\""),"School identity and header must remain in the page");
 assert.ok(portal.includes("طراح برگه آزمون تصویری")&&portal.includes("teacher-photo-exam.html"));
 assert.ok(wf.includes("'teacher-photo-exam.html'")&&wf.includes("teacher-photo-exam.html _site/"));
 assert.ok(p.includes("function makeDoc()")&&p.includes("question-card-head")&&p.includes("question-card-content"),"Print output must use the redesigned question cards");
