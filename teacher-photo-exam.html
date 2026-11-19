@@ -25,24 +25,7 @@ if(section==="D")return "essay";
 const s=normalizeOcrText(text);
 if(/صحیح\s*(?:و|یا|\/)\s*غلط|درست\s*(?:و|یا|\/)\s*نادرست|صحیح\s*یا\s*نادرست|درست\s*یا\s*غلط/i.test(s))return "tf";
 if(/جای\s*خالی|جاهای\s*خالی|کامل\s*کنید|_{2,}|…{2,}|\.{3,}/i.test(s))return "blank";
-if(/گزینه\s*صحیح|گزینه‌های|(?:^|\n)\s*(?:الف|ب|ج|د)[)ـ.：:]/i.test(s))return "test";
-return "essay";
-}
-function splitOcrQuestions(raw){
-const text=String(raw||"").replace(/\r/g,"").trim();
-if(!text)return [];
-const marker=/^\s*(?:س(?:ؤال|وال)?\s*)?([0-9۰-۹٠-٩]{1,2})\s*[)）\].．:：ـ-]\s*/gm;
-const matches=[...text.matchAll(marker)];
-if(!matches.length)return [{text,type:inferOcrQuestionType(text)}];
-return matches.map((m,i)=>{
-const start=m.index+m[0].length,end=i+1<matches.length?matches[i+1].index:text.length;
-const question=text.slice(start,end).trim();
-return question?{text:question,type:inferOcrQuestionType(question),number:normalizeOcrText(m[1])}:null;
-}).filter(Boolean);
-}
-function detectOcrSection(text){
-const s=normalizeOcrText(text).toLowerCase();
-if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه/.test(s))return "A";
+if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه|س(?:ؤال|وال)(?:[‌\s]*های)?[‌\s]*تستی/.test(s))return "A";
 if(/جای\s*خالی|کلمه\s*مناسب|جاهای\s*خالی/.test(s))return "B";
 if(/درست(?:ی)?\s*و\s*نادرست|نادرست(?:ی)?\s*و\s*درست|صحیح\s*و\s*غلط|درستی.*نادرستی/.test(s))return "C";
 if(/سوالات?\s*تشریحی|سؤال(?:ات)?\s*تشریحی|پاسخ\s*تشریحی/.test(s))return "D";
