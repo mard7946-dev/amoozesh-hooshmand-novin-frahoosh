@@ -6,6 +6,8 @@ body{margin:0;padding:14px;background:#f4f6f9;color:#172033;font-family:"B Zar",
 <section class="panel"><h2>سؤال‌ها و فضای پاسخ</h2><div class="sum" id="sum">جمع بارم: ۰</div><div id="questions"></div><p id="warning" class="muted"></p></section>
 <section class="panel"><h2>پیش‌نمایش و چاپ</h2><button id="previewBtn">پیش‌نمایش</button><button id="printBtn">چاپ / ذخیره PDF</button><p id="status" role="status"></p><div id="preview" class="hidden"></div></section></main>
 <script src="panel-return.js"></script><script>
+const portalToken=sessionStorage.getItem("frahoosh_novin_access_token")||"",portalRole=sessionStorage.getItem("frahoosh_novin_role")||"";if(!portalToken||portalRole!=="teacher"){location.replace("portal.html?step=login&role=teacher");}
+
 const $=id=>document.getElementById(id),S={photos:[],questions:[]},esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),fa=n=>Number(n||0).toLocaleString("fa-IR",{maximumFractionDigits:2});
 function msg(s){$("status").textContent=s}
 function addPhoto(f){if(!f.type.startsWith("image/")||f.size>10*1024*1024)throw Error("فقط تصویر با حجم حداکثر ۱۰ مگابایت مجاز است.");S.photos.push({id:crypto.randomUUID(),name:f.name,url:URL.createObjectURL(f)});drawPhotos()}
