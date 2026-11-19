@@ -64,7 +64,7 @@ for (const marker of [
   '.r3 .school-field{position:absolute;right:.5%;width:17.5%;text-align:right}',
   '.r3 .grade-field{position:absolute;left:59.7%;width:6.9%;text-align:right}',
   '@page{size:A4 portrait;margin:3mm}',
-  '.certificate{width:204mm;height:135.2mm;aspect-ratio:auto;'
+  '.certificate{width:204mm;height:135.2mm;aspect-ratio:auto;',
   'فرزند: <b id="vFather">',
   'تاریخ تولد: <b id="vBirth">',
   'سال تحصیلی: <b id="vYear">',
