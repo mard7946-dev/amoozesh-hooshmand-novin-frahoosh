@@ -29,7 +29,6 @@
 <label class="field">نام و نام خانوادگی دانش‌آموز<input id="student" maxlength="120" placeholder="پس از انتخاب خودکار تکمیل می‌شود؛ ورود دستی هم ممکن است"></label>
 <label class="field">نام پدر<input id="father" maxlength="100"></label>
 <label class="field">کد ملی<input id="national" inputmode="numeric" maxlength="20"></label>
-<label class="field">شماره شناسنامه<input id="identity" maxlength="30"></label>
 <label class="field">تاریخ تولد<input id="birth" placeholder="مثلاً ۱۳۹۲/۰۷/۱۵"></label>
 <label class="field">پایه تحصیلی<input id="grade" maxlength="40"></label>
 <label class="field">دوره تحصیلی<input id="period" value="دوره متوسطه اول" maxlength="80"></label>
@@ -52,7 +51,7 @@
 
 <div class="serial">شماره: <b id="vSerial">۱</b></div>
 <div class="line r1"><span>بدین وسیله گواهی میشود: <b id="vStudent">................</b></span><span>کد ملی: <b id="vNational">................</b></span><span>فرزند: <b id="vFather">................</b></span></div>
-<div class="line r2"><span>شماره شناسنامه: <b id="vIdentity">................</b></span><span>تاریخ تولد: <b id="vBirth">................</b></span><span>سال تحصیلی: <b id="vYear">۱۴۰۵-۱۴۰۶</b></span></div>
+<div class="line r2"><span>تاریخ تولد: <b id="vBirth">................</b></span><span>سال تحصیلی: <b id="vYear">۱۴۰۵-۱۴۰۶</b></span></div>
 <div class="line r3"><span>در مدرسه: <b id="vSchool">دبیرستان سردار شهید حاجی‌زاده ۲</b> (<b id="vSchoolCode">................</b>)</span><span>در پایه: <b id="vGrade">هشتم</b></span></div>
 <div class="line bodyline">مشغول به تحصیل میباشد</div>
 <div class="date-label">تاریخ <b id="vRequestDate">................</b></div>
@@ -69,7 +68,7 @@
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
-const fields=["serial","student","father","national","identity","birth","grade","period","school","schoolCode","year","requestDate","destination","manager"];
+const fields=["serial","student","father","national","birth","grade","period","school","schoolCode","year","requestDate","destination","manager"];
 let photoData="";
 function val(id){return $(id).value.trim()||"................";}
 function setText(id,value){$(id).textContent=value;}
@@ -85,7 +84,6 @@ function chooseStudent(student){
  $("student").value=fullName;
  $("father").value=student.father_name||"";
  $("national").value=student.national_code||"";
- $("identity").value=student.birth_certificate_no||"";
  $("birth").value=student.birth_date||"";
  $("grade").value=student.grade||"";
  $("studentSearch").value=fullName;
@@ -112,7 +110,7 @@ async function searchStudents(rawQuery,sequence){
   filters.push(`and=(first_name.ilike.*${rest}*,last_name.ilike.*${first}*)`);
  }
  const params=new URLSearchParams({
-  select:"id,first_name,last_name,national_code,student_code,grade,class_name,father_name,birth_date,birth_certificate_no",
+  select:"id,first_name,last_name,national_code,student_code,grade,class_name,father_name,birth_date",
   tenant_school_id:"eq."+schoolId,
   or:"("+filters.join(",")+")",
   order:"last_name.asc,first_name.asc",
@@ -159,7 +157,7 @@ function createQrDataUrl(payload){
 let qrRenderSequence=0;
 async function updatePreview(){
  const sequence=++qrRenderSequence;
- const map={serial:"vSerial",student:"vStudent",national:"vNational",identity:"vIdentity",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",destination:"vDestination",manager:"vManager"};
+ const map={serial:"vSerial",student:"vStudent",national:"vNational",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",destination:"vDestination",manager:"vManager"};
  for(const [source,target] of Object.entries(map))setText(target,val(source));
  setText("vPeriod","دوره تحصیلی: "+val("period"));
  setText("vSignSchool",val("school"));
