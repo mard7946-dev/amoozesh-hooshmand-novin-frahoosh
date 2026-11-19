@@ -18,14 +18,6 @@ on:
       - 'tests/validate-novin-portal.mjs'
       - 'question-bank.html'
       - 'school-library.html'
-      - 'school-planning.html'
-      - 'supabase/functions/school-planning/index.ts'
-      - 'supabase/migrations/20261119110000_school_planning_center.sql'
-      - 'tests/validate-school-planning.mjs'
-      - 'school-planning.html'
-      - 'supabase/functions/school-planning/index.ts'
-      - 'supabase/migrations/20261119110000_school_planning_center.sql'
-      - 'tests/validate-school-planning.mjs'
       - 'supabase/functions/school-library/index.ts'
       - 'supabase/migrations/20261113200000_school_learning_library.sql'
       - 'tests/validate-school-library.mjs'
@@ -145,8 +137,6 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
-      - name: Validate manager school planning center and challenge recommendations
-        run: node tests/validate-school-planning.mjs
       - name: Validate study certificate search and local QR generation
         run: node tests/validate-study-certificate-search.mjs
       - name: Validate weekly timetable generation engine and manager UI
@@ -193,10 +183,8 @@ jobs:
           deno check supabase/functions/family-education/index.ts
       - name: Type-check central question bank Edge Function
         run: deno check supabase/functions/question-bank/index.ts
-      - name: Type-check school library and planning Edge Functions
-        run: |
-          deno check supabase/functions/school-library/index.ts
-          deno check supabase/functions/school-planning/index.ts
+      - name: Type-check school library Edge Function
+        run: deno check supabase/functions/school-library/index.ts
       - name: Type-check assessment and legacy classroom login Edge Functions
         run: |
           deno check supabase/functions/assessment-center/index.ts
