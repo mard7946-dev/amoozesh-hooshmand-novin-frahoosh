@@ -73,21 +73,50 @@ Deno.serve(async (req: Request) => {
       const { data: meeting, error: meetingError } = await admin.from("classroom_ad_hoc_meetings")
         .select("id,status,expires_at,tenant_school_id").eq("id", meetingId).eq("tenant_school_id", schoolId).maybeSingle();
       if (meetingError) throw meetingError;
-      if (!meeting || meeting.status !== "active" || new Date(meeting.expires_at).getTime() <= Date.now()) {
+      if (!meeting || meeting.status !== "active") {
         return reply({ message: "برای این جلسه فعال امکان ساخت لینک مهمان وجود ندارد." }, 409);
       }
       const bytes = crypto.getRandomValues(new Uint8Array(32));
       const rawToken = btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
       const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)));
       const tokenHash = [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
-      // Keep one shared guest link valid for the entire active meeting, not just the first 20 minutes.
-      const expiresAt = new Date(meeting.expires_at).toISOString();
-      const { error: insertError } = await admin.from("classroom_guest_invites").insert({
+      // Guest links are reusable and remain valid for 30 days unless the manager revokes them.
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString();
+      const { data: invite, error: insertError } = await admin.from("classroom_guest_invites").insert({
         meeting_id: meeting.id, tenant_school_id: schoolId, token_hash: tokenHash,
         max_uses: 10, use_count: 0, expires_at: expiresAt, created_by: authData.user.id,
-      });
+      }).select("id").single();
       if (insertError) throw insertError;
-      return reply({ ok: true, guest_token: rawToken, expires_at: expiresAt, max_uses: 10, single_use: false });
+      return reply({ ok: true, invite_id: invite.id, guest_token: rawToken, expires_at: expiresAt, max_uses: 10, single_use: false });
+    }
+
+    if (action === "list_guest_invites") {
+      const meetingId = clean(body.meeting_id);
+      if (!meetingId) return reply({ message: "شناسه جلسه معتبر نیست." }, 400);
+      const { data: meeting, error: meetingError } = await admin.from("classroom_ad_hoc_meetings")
+        .select("id").eq("id", meetingId).eq("tenant_school_id", schoolId).maybeSingle();
+      if (meetingError) throw meetingError;
+      if (!meeting) return reply({ message: "جلسه پیدا نشد." }, 404);
+      const { data, error } = await admin.from("classroom_guest_invites")
+        .select("id,expires_at,max_uses,use_count,revoked_at,created_at")
+        .eq("meeting_id", meetingId).eq("tenant_school_id", schoolId)
+        .order("created_at", { ascending: false }).limit(30);
+      if (error) throw error;
+      return reply({ ok: true, invites: data ?? [] });
+    }
+
+    if (action === "revoke_guest_invite") {
+      const meetingId = clean(body.meeting_id);
+      const inviteId = clean(body.invite_id);
+      if (!meetingId || !inviteId) return reply({ message: "شناسه لینک مهمان معتبر نیست." }, 400);
+      const { data: revoked, error } = await admin.from("classroom_guest_invites")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("id", inviteId).eq("meeting_id", meetingId)
+        .eq("tenant_school_id", schoolId).is("revoked_at", null)
+        .select("id").maybeSingle();
+      if (error) throw error;
+      if (!revoked) return reply({ message: "لینک مهمان پیدا نشد یا قبلاً منقضی شده است." }, 404);
+      return reply({ ok: true, revoked: true });
     }
 
     if (action === "list") {
