@@ -59,11 +59,11 @@ if(!current)return;
 const text=current.text.trim();
 if(text){
 const endY=Number.isFinite(boundaryY)&&boundaryY>current.y0?Math.max(current.y0+24,boundaryY-5):null;
-records.push({...current,text,section:current.section||section,type:inferOcrQuestionType(text,current.section||section),bbox:{y0:current.y0,y1:endY??current.y1,toBottom:endY===null},subparts:[...text.matchAll(/(?:^|\n)\s*(الف|ب|ج|د)\s*[)ـ.：:]/g)].map(m=>m[1])});
+records.push({...current,text,section:current.section||section,type:inferOcrQuestionType(text,current.section||section),bbox:{x0:current.x0,x1:current.x1,y0:current.y0,y1:endY??current.y1,toBottom:endY===null},subparts:[...text.matchAll(/(?:^|\n)\s*(الف|ب|ج|د)\s*[)ـ.：:]/g)].map(m=>m[1])});
 }
 current=null;
 };
-const begin=(line,text,number="")=>{current={text:String(text||"").trim(),number,section,y0:line.y,y1:line.y1};};
+const begin=(line,text,number="")=>{current={text:String(text||"").trim(),number,section,y0:line.y,y1:line.y1,x0:line.x0,x1:line.x1};};
 for(const line of lines){
 const value=normalizeOcrText(line.text),found=detectOcrSection(value);
 if(found){flush(line.y);section=found;continue;}
@@ -79,7 +79,7 @@ flush(line.y);
 begin(line,body,normalizeOcrText(number));
 }else if(current){
 current.text+=(current.text?"\n":"")+value;
-current.y1=Math.max(current.y1||0,line.y1||line.y);
+current.y1=Math.max(current.y1||0,line.y1||line.y);current.x0=Math.min(current.x0??line.x0,line.x0);current.x1=Math.max(current.x1??line.x1,line.x1);
 }else if(value){
 begin(line,value,"");
 }
@@ -89,17 +89,50 @@ if(!records.length)return splitOcrQuestions(raw);
 return records.map((record,index)=>({...record,number:record.number||String(index+1)}));
 }
 async function cropOcrQuestionImage(file,bbox){
-if(!bbox||!Number.isFinite(bbox.y0))return "";
+if(!bbox||![bbox.x0,bbox.x1,bbox.y0].every(Number.isFinite)||bbox.x1<=bbox.x0)return "";
 const bitmap=await createImageBitmap(file);
 try{
-const top=Math.max(0,Math.floor(bbox.y0-10));
-const bottom=bbox.toBottom?bitmap.height-8:Math.min(bitmap.height,Math.ceil(bbox.y1+8));
-if(bottom-top<24)return "";
-const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bottom-top;
+const source=document.createElement("canvas");source.width=bitmap.width;source.height=bitmap.height;
+const sourceContext=source.getContext("2d",{willReadFrequently:true});if(!sourceContext)return "";
+sourceContext.drawImage(bitmap,0,0);
+const pixels=sourceContext.getImageData(0,0,bitmap.width,bitmap.height).data;
+const dark=(x,y)=>{const i=(y*bitmap.width+x)*4;return pixels[i]<105&&pixels[i+1]<105&&pixels[i+2]<105};
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const rawTop=clamp(Math.floor(bbox.y0-18),0,bitmap.height-1);
+const rawBottom=clamp(Math.ceil(bbox.y1+18),rawTop+1,bitmap.height);
+const horizontal=[];
+for(let y=rawTop;y<rawBottom;y++){
+let count=0;for(let x=0;x<bitmap.width;x+=2)if(dark(x,y))count++;
+if(count/(Math.ceil(bitmap.width/2))>.48)horizontal.push(y);
+}
+const topRule=horizontal.filter(y=>y<=bbox.y0+2).at(-1);
+const bottomRule=horizontal.find(y=>y>=bbox.y1-2);
+const top=topRule===undefined?clamp(Math.floor(bbox.y0-22),0,bitmap.height-1):topRule+2;
+const bottom=bottomRule===undefined?clamp(Math.ceil(bbox.y1+22),top+24,bitmap.height):Math.max(top+24,bottomRule-2);
+const rowHeight=bottom-top;
+let left=clamp(Math.floor(bbox.x0-24),0,bitmap.width-1);
+let right=clamp(Math.ceil(bbox.x1+24),left+1,bitmap.width);
+const vertical=[];
+const scanStep=Math.max(1,Math.floor(rowHeight/180));
+for(let x=0;x<bitmap.width;x++){
+let count=0;for(let y=top;y<bottom;y+=scanStep)if(dark(x,y))count++;
+if(count/Math.ceil(rowHeight/scanStep)>.62)vertical.push(x);
+}
+const leftRule=vertical.filter(x=>x<=bbox.x0+2).at(-1);
+const rightRule=vertical.find(x=>x>=bbox.x1-2);
+if(leftRule!==undefined&&rightRule!==undefined&&rightRule-leftRule>Math.max(80,(bbox.x1-bbox.x0)*1.15)){
+left=leftRule+2;right=rightRule-2;
+}else{
+const padding=Math.max(36,Math.round(bitmap.width*.12));
+left=clamp(Math.floor(bbox.x0-padding),0,bitmap.width-1);
+right=clamp(Math.ceil(bbox.x1+padding),left+1,bitmap.width);
+}
+if(right-left<80||bottom-top<24)return "";
+const canvas=document.createElement("canvas");canvas.width=right-left;canvas.height=bottom-top;
 const context=canvas.getContext("2d");if(!context)return "";
 context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);
-context.drawImage(bitmap,0,top,bitmap.width,bottom-top,0,0,bitmap.width,bottom-top);
-return canvas.toDataURL("image/jpeg",.94);
+context.drawImage(bitmap,left,top,right-left,bottom-top,0,0,canvas.width,canvas.height);
+return canvas.toDataURL("image/jpeg",.95);
 }finally{bitmap.close?.()}
 }
 async function ocrPhoto(id){const p=S.photos.find(x=>x.id===id);if(!p)return;const btn=$("photoList").querySelector('[data-ocr="'+id+'"]');if(btn)btn.disabled=true;try{msg("در حال آماده‌سازی تشخیص متن فارسی…");const T=await loadOcr();const worker=await T.createWorker("fas+eng",1,{logger:m=>{if(m.status==="recognizing text")msg("در حال استخراج متن سؤال: "+Math.round((m.progress||0)*100)+"٪")}});let result;try{result=await worker.recognize(p.file)}finally{await worker.terminate()}const extracted=String(result.data.text||"").trim();if(!extracted)throw Error("متنی از تصویر تشخیص داده نشد؛ تصویر واضح‌تری بارگذاری کنید یا سؤال را دستی بنویسید.");const parsed=extractOcrQuestionRecords(result.data);const existing=S.questions.find(x=>x.photo===id);const firstIndex=existing?S.questions.indexOf(existing):S.questions.length;const created=await Promise.all(parsed.map(async(item,index)=>({id:crypto.randomUUID(),text:item.text,points:"",lines:3,photo:item.bbox?id:(index===0?id:""),cropDataUrl:await cropOcrQuestionImage(p.file,item.bbox),type:item.type,section:item.section||"",number:item.number||String(index+1),sourceImage:true})));if(existing){created[0].id=existing.id;created[0].points=existing.points;created[0].lines=existing.lines;S.questions.splice(firstIndex,1,...created)}else S.questions.splice(firstIndex,0,...created);drawQ();const field=$("questions").querySelector('[data-q="'+created[0].id+'"] [data-f="text"]');if(field){field.focus();field.setSelectionRange(field.value.length,field.value.length)}msg(parsed.length>1?"متن تصویر به "+fa(parsed.length)+" سؤال جداگانه تقسیم شد؛ نوع هر سؤال را بازبینی کنید و بارم‌ها را وارد کنید.":"متن سؤال استخراج شد؛ نوع سؤال را بازبینی کنید و بارم را وارد کنید.")}catch(e){msg(e.message||"تبدیل تصویر به متن انجام نشد.")}finally{if(btn)btn.disabled=false}}
