@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'study-certificate.html'
+      - 'assets/qrcode.js'
+      - 'tests/validate-study-certificate-search.mjs'
       - 'family-communication.html'
       - 'tests/validate-family-communication.mjs'
       - 'manager-assistant.html'
@@ -81,6 +84,9 @@ on:
     branches: [main]
     paths:
       - 'classroom/weekly-timetable-builder.html'
+      - 'study-certificate.html'
+      - 'assets/qrcode.js'
+      - 'tests/validate-study-certificate-search.mjs'
       - 'classroom/weekly-timetable-engine.js'
       - 'tests/validate-weekly-timetable-engine.mjs'
       - 'portal.html'
@@ -131,6 +137,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate study certificate search and local QR generation
+        run: node tests/validate-study-certificate-search.mjs
       - name: Validate weekly timetable generation engine and manager UI
         run: node tests/validate-weekly-timetable-engine.mjs
       - name: Validate smart exam planner routing, security, and page syntax
