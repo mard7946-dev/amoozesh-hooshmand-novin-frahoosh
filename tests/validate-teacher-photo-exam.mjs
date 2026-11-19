@@ -11,7 +11,7 @@ assert.ok(p.includes(".figure{display:block;width:auto;height:auto;max-width:100
 const js=[...p.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(x=>x.trim()).at(-1);assert.doesNotThrow(()=>new Function(js));
 
 // Exercise the same OCR segmentation and classification functions used by the page.
-const helperSource=p.match(/function normalizeOcrText\\(value\\)\\{[\\s\\S]*?function extractOcrQuestionRecords\\(data\\)\\{[\\s\\S]*?\\n\\}/)?.[0];
+const helperSource=p.match(/function normalizeOcrText\(value\)\{[\s\S]*?function extractOcrQuestionRecords\(data\)\{[\s\S]*?\n\}/)?.[0];
 assert.ok(helperSource,"Layout-aware OCR parsing helpers must be present");
 const ocrHelpers=new Function(helperSource+"; return {splitOcrQuestions,inferOcrQuestionType,extractOcrQuestionRecords};")();
 const parsed=ocrHelpers.splitOcrQuestions("۱- حاصل ۲+۲ چیست؟\n۲- جای خالی را کامل کنید: تهران پایتخت ______ است.\n۳- درست یا نادرست: زمین گرد است.\n۴- گزینه صحیح را انتخاب کنید:\nالف) گزینه اول\nب) گزینه دوم");
