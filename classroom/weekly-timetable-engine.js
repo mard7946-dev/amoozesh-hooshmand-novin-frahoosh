@@ -1,84 +1,78 @@
 (function(root){
- "use strict";
- const clean=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim();
- const key=v=>clean(v).replace(/\s+/g,"").toLowerCase();
- const clock=v=>{const m=clean(v).match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=+m[1],n=+m[2];return h<24&&n<60?h*60+n:null};
- function generate(input){
-  const errors=[],days=(input.days||[]).map(clean).filter(Boolean),periods=(input.periods||[]).map((p,i)=>({number:Number(clean(p.number)),start:clean(p.start),end:clean(p.end)}));
-  if(!days.length)errors.push("حداقل یک روز فعال انتخاب کنید.");
-  if(!periods.length)errors.push("حداقل یک زنگ تعریف کنید.");
-  const periodNumbers=new Set();
-  periods.forEach(p=>{const a=clock(p.start),b=clock(p.end);if(!Number.isInteger(p.number)||p.number<1)errors.push("شماره زنگ معتبر نیست.");if(periodNumbers.has(p.number))errors.push("شماره زنگ تکراری است: "+p.number);periodNumbers.add(p.number);if(a===null||b===null||b<=a)errors.push("ساعت شروع و پایان زنگ "+p.number+" معتبر نیست.");});
-  for(let i=0;i<periods.length;i++)for(let j=i+1;j<periods.length;j++){const a=clock(periods[i].start),b=clock(periods[i].end),c=clock(periods[j].start),d=clock(periods[j].end);if(a!==null&&b!==null&&c!==null&&d!==null&&a<d&&c<b)errors.push("ساعت زنگ "+periods[i].number+" با زنگ "+periods[j].number+" هم‌پوشانی دارد.");}
-  const requirements=(input.requirements||[]).map((r,i)=>({...r,_i:i,className:clean(r.className),subject:clean(r.subject),teacher:clean(r.teacher),studiesTeacher:clean(r.studiesTeacher),pattern:clean(r.pattern),weight:clean(r.weight),allowedDays:(r.allowedDays||[]).map(clean).filter(Boolean),blocked:(r.blocked||[]).map(clean)}));
-  if(!requirements.length)errors.push("حداقل یک درس و کلاس وارد کنید.");
-  requirements.forEach((r,i)=>{if(!r.className||!r.subject||!r.teacher)errors.push("ردیف "+(i+1)+": کلاس، درس و دبیر الزامی است.");if(!["one","two","three","one_plus_studies"].includes(r.pattern))errors.push("ردیف "+(i+1)+": نوع تعداد جلسات مشخص نیست.");if(r.pattern==="one_plus_studies"&&!r.studiesTeacher)errors.push("ردیف "+(i+1)+": برای زنگ متناوب با مطالعات، دبیر مطالعات را مشخص کنید.");if(r.allowedDays.some(d=>!days.some(x=>key(x)===key(d))))errors.push("ردیف "+(i+1)+": یکی از روزهای مجاز در روزهای فعال مدرسه نیست.");});
-  if(errors.length)return {ok:false,errors,rows:[],stats:{required:0,placed:0}};
-  const slots=days.flatMap(day=>periods.map(p=>({day,period:p.number,start:p.start,end:p.end,key:key(day)+"|"+p.number})));
-  const tasks=[];
-  requirements.forEach((r,i)=>{const count=r.pattern==="one"?1:r.pattern==="two"?2:r.pattern==="three"?3:2;for(let n=0;n<count;n++){const shared=r.pattern==="one_plus_studies"&&n===1;tasks.push({id:tasks.length,source:i,className:r.className,subject:shared?r.subject+" / مطالعات":r.subject,teacher:r.teacher,teachers:shared?[r.teacher,r.studiesTeacher]:[r.teacher],weight:r.weight,shared,allowedDays:r.allowedDays,blocked:r.blocked,fixedDay:clean(r.fixedDay),fixedPeriod:Number(r.fixedPeriod)||0,sequence:n});}});
-  const pendingTasks=tasks.filter(t=>!t.allowedDays.length);
-  const schedulableTasks=tasks.filter(t=>t.allowedDays.length>0);
-  const classBusy=new Set(),teacherBusy=new Set(),classDayCount=new Map(),teacherDayCount=new Map(),heavySlots=new Map(),placed=[],nodeLimit=250000;let nodes=0,best=null,lastConflict=[];
-  const dayKey=(c,d)=>key(c)+"|"+key(d),resourceKey=(t,s)=>key(t)+"|"+s.key;
-  function staticEligible(task,s){
-    if(task.fixedDay&&key(task.fixedDay)!==key(s.day))return false;
-    if(task.fixedPeriod&&task.fixedPeriod!==s.period)return false;
-    if(task.allowedDays.length&&!task.allowedDays.some(d=>key(d)===key(s.day)))return false;
-    if(task.blocked.some(x=>key(x)===key(s.day+":"+s.period)||key(x)===key(s.day+" زنگ "+s.period)))return false;
-    return true;
+"use strict";
+const clean=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim();
+const key=v=>clean(v).replace(/\s+/g,"").toLowerCase();
+const clock=v=>{const m=clean(v).match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=+m[1],n=+m[2];return h<24&&n<60?h*60+n:null};
+function generate(input){
+ const errors=[],days=(input.days||[]).map(clean).filter(Boolean),periods=(input.periods||[]).map(p=>({number:Number(clean(p.number)),start:clean(p.start),end:clean(p.end)}));
+ const teachers=(input.teachers||[]).map((t,i)=>({id:i,name:clean(t.name),subjects:(t.subjects||[]).map(clean).filter(Boolean),days:(t.days||[]).map(clean).filter(Boolean)}));
+ const requirements=(input.requirements||[]).map((r,i)=>({id:i,className:clean(r.className),subject:clean(r.subject),count:Number(r.count),weight:clean(r.weight)}));
+ const groups=(input.alternatingGroups||[]).map((g,i)=>({id:i,classA:clean(g.classA),classB:clean(g.classB),subjectA:clean(g.subjectA),subjectB:clean(g.subjectB),weight:clean(g.weight)}));
+ if(!days.length)errors.push("روزهای فعال مدرسه را انتخاب کنید.");
+ if(!periods.length)errors.push("زنگ‌های مدرسه را تعریف کنید.");
+ const periodSet=new Set();
+ periods.forEach(p=>{const a=clock(p.start),b=clock(p.end);if(!Number.isInteger(p.number)||p.number<1)errors.push("شماره زنگ معتبر نیست.");if(periodSet.has(p.number))errors.push("شماره زنگ تکراری است: "+p.number);periodSet.add(p.number);if(a===null||b===null||b<=a)errors.push("ساعت زنگ "+p.number+" معتبر نیست.");});
+ for(let i=0;i<periods.length;i++)for(let j=i+1;j<periods.length;j++){const a=clock(periods[i].start),b=clock(periods[i].end),c=clock(periods[j].start),d=clock(periods[j].end);if(a!==null&&b!==null&&c!==null&&d!==null&&a<d&&c<b)errors.push("ساعت دو زنگ با یکدیگر هم‌پوشانی دارد.");}
+ if(!teachers.length)errors.push("اطلاعات دبیران را وارد کنید.");
+ teachers.forEach(t=>{if(!t.name)errors.push("نام هر دبیر الزامی است.");if(!t.subjects.length)errors.push("برای دبیر "+(t.name||"بدون نام")+" دست‌کم یک درس تعیین کنید.");if(!t.days.length)errors.push("روزهای حضور دبیر "+(t.name||"بدون نام")+" را مشخص کنید.");if(t.days.some(d=>!days.some(x=>key(x)===key(d))))errors.push("روز حضور دبیر "+t.name+" خارج از روزهای فعال مدرسه است.");});
+ if(!requirements.length&&!groups.length)errors.push("نیاز درسی کلاس‌ها را وارد کنید.");
+ requirements.forEach(r=>{if(!r.className||!r.subject)errors.push("نام کلاس و درس در نیاز درسی الزامی است.");if(!Number.isInteger(r.count)||r.count<1||r.count>periods.length*days.length)errors.push("تعداد جلسات "+r.className+" · "+r.subject+" معتبر نیست.");});
+ groups.forEach(g=>{if(!g.classA||!g.classB||key(g.classA)===key(g.classB)||!g.subjectA||!g.subjectB)errors.push("اطلاعات کلاس‌های زوجی و درس‌های متناوب کامل نیست.");});
+ const findTeachers=subject=>teachers.filter(t=>t.subjects.some(s=>key(s)===key(subject)));
+ requirements.forEach(r=>{if(r.subject&&!findTeachers(r.subject).length)errors.push("برای درس "+r.subject+" هیچ دبیری با این تخصص ثبت نشده است.");});
+ groups.forEach(g=>{if(g.subjectA&&!findTeachers(g.subjectA).length)errors.push("برای درس "+g.subjectA+" دبیر واجد تخصص ثبت نشده است.");if(g.subjectB&&!findTeachers(g.subjectB).length)errors.push("برای درس "+g.subjectB+" دبیر واجد تخصص ثبت نشده است.");if(g.subjectA&&g.subjectB&&!findTeachers(g.subjectA).some(a=>findTeachers(g.subjectB).some(b=>a.id!==b.id)))errors.push("برای زنگ متناوب "+g.subjectA+" و "+g.subjectB+" باید دو دبیر متفاوت و واجد تخصص وجود داشته باشد.");});
+ if(errors.length)return {ok:false,errors,rows:[],stats:{required:0,placed:0}};
+ const slots=days.flatMap(day=>periods.map(p=>({day,period:p.number,start:p.start,end:p.end,key:key(day)+"|"+p.number})));
+ const tasks=[];
+ requirements.forEach(r=>{for(let n=0;n<r.count;n++)tasks.push({kind:"lesson",id:tasks.length,classNames:[r.className],subject:r.subject,weight:r.weight,teacherOptions:findTeachers(r.subject)});});
+ groups.forEach(g=>tasks.push({kind:"alternating",id:tasks.length,classNames:[g.classA,g.classB],subjectA:g.subjectA,subjectB:g.subjectB,weight:g.weight,teacherPairs:findTeachers(g.subjectA).flatMap(a=>findTeachers(g.subjectB).filter(b=>a.id!==b.id).map(b=>[a,b]))}));
+ const classBusy=new Set(),teacherBusy=new Set(),teacherLoad=new Map(),classDayLoad=new Map(),heavySlots=new Map(),placed=[];let nodes=0;const nodeLimit=600000,busy=(name,s)=>key(name)+"|"+s.key;
+ function options(task){
+  const out=[];
+  for(const s of slots){
+   if(task.classNames.some(c=>classBusy.has(busy(c,s))))continue;
+   if(task.kind==="lesson"){
+    for(const t of task.teacherOptions)if(t.days.some(d=>key(d)===key(s.day))&&!teacherBusy.has(busy(t.name,s)))out.push({slot:s,teachers:[t]});
+   }else{
+    for(const pair of task.teacherPairs){const [a,b]=pair;if(a.days.some(d=>key(d)===key(s.day))&&b.days.some(d=>key(d)===key(s.day))&&!teacherBusy.has(busy(a.name,s))&&!teacherBusy.has(busy(b.name,s)))out.push({slot:s,teachers:pair});}
+   }
   }
-  function candidates(task){return slots.filter(s=>staticEligible(task,s)&&!classBusy.has(resourceKey(task.className,s))&&!task.teachers.some(t=>teacherBusy.has(resourceKey(t,s))));}
-  function diagnose(task){
-    const eligible=slots.filter(s=>staticEligible(task,s));
-    if(!eligible.length)return ["برای "+task.className+" · "+task.subject+" هیچ زنگی با روزها و زنگ‌های مجاز ثبت‌شده باقی نمانده است."];
-    const reasons=[];
-    for(const s of eligible){
-      const sameClass=placed.find(p=>p.slot.key===s.key&&key(p.task.className)===key(task.className));
-      if(sameClass)reasons.push("کلاس "+task.className+" · "+s.day+" زنگ "+s.period+" هم‌زمان برای "+sameClass.task.subject+" و "+task.subject+" لازم شده است.");
-      for(const teacher of task.teachers){
-        const other=placed.find(p=>p.slot.key===s.key&&p.task.teachers.some(t=>key(t)===key(teacher)));
-        if(other)reasons.push("دبیر "+teacher+" · "+s.day+" زنگ "+s.period+" هم‌زمان برای "+other.task.className+" / "+other.task.subject+" و "+task.className+" / "+task.subject+" تعیین شده است.");
-      }
-    }
-    return [...new Set(reasons)].slice(0,6);
-  }
-  function score(task,s){
-    let v=(classDayCount.get(dayKey(task.className,s.day))||0)*3;
-    for(const t of task.teachers)v+=(teacherDayCount.get(dayKey(t,s.day))||0)*2;
-    if(task.weight==="سنگین"){
-      const prior=heavySlots.get(dayKey(task.className,s.day))||[];
-      if(prior.length)v+=40;
-      if(prior.some(p=>Math.abs(p-s.period)===1))v+=25;
-    }
-    return v;
-  }
-  function place(task,s,sign){
-    const ck=resourceKey(task.className,s);
-    if(sign>0){classBusy.add(ck);task.teachers.forEach(t=>teacherBusy.add(resourceKey(t,s)));classDayCount.set(dayKey(task.className,s.day),(classDayCount.get(dayKey(task.className,s.day))||0)+1);task.teachers.forEach(t=>teacherDayCount.set(dayKey(t,s.day),(teacherDayCount.get(dayKey(t,s.day))||0)+1));if(task.weight==="سنگین"){const k=dayKey(task.className,s.day);heavySlots.set(k,[...(heavySlots.get(k)||[]),s.period]);}}
-    else{classBusy.delete(ck);task.teachers.forEach(t=>teacherBusy.delete(resourceKey(t,s)));const k=dayKey(task.className,s.day),cv=(classDayCount.get(k)||1)-1;if(cv)classDayCount.set(k,cv);else classDayCount.delete(k);task.teachers.forEach(t=>{const q=dayKey(t,s.day),v=(teacherDayCount.get(q)||1)-1;if(v)teacherDayCount.set(q,v);else teacherDayCount.delete(q)});if(task.weight==="سنگین"){const k2=dayKey(task.className,s.day);heavySlots.set(k2,(heavySlots.get(k2)||[]).filter(p=>p!==s.period));}}
-  }
-  function search(remaining){
-    if(++nodes>nodeLimit)return false;
-    if(!remaining.length){best=placed.slice();return true;}
-    let chosen=null,opts=null;
-    for(const task of remaining){const c=candidates(task);if(!opts||c.length<opts.length){chosen=task;opts=c;if(c.length<=1)break;}}
-    if(!opts||!opts.length){lastConflict=diagnose(chosen);return false;}
-    opts.sort((a,b)=>score(chosen,a)-score(chosen,b)||days.indexOf(a.day)-days.indexOf(b.day)||a.period-b.period);
-    const next=remaining.filter(t=>t.id!==chosen.id);
-    for(const s of opts){place(chosen,s,1);placed.push({task:chosen,slot:s});if(search(next))return true;placed.pop();place(chosen,s,-1);if(nodes>nodeLimit)break;}
-    return false;
-  }
-  const staticEmpty=schedulableTasks.filter(t=>!slots.some(s=>(!t.fixedDay||key(t.fixedDay)===key(s.day))&&(!t.fixedPeriod||t.fixedPeriod===s.period)&&(!t.allowedDays.length||t.allowedDays.some(d=>key(d)===key(s.day)))&&!t.blocked.some(x=>key(x)===key(s.day+":"+s.period)||key(x)===key(s.day+" زنگ "+s.period))));
-  const ok=schedulableTasks.length===0?(best=placed.slice(),true):search(schedulableTasks.slice());
-  if(!ok){
-   const first=staticEmpty[0]||schedulableTasks[0];const reason=nodes>nodeLimit?"تعداد حالت‌های بررسی از حد مجاز بیشتر شد؛ اطلاعات را به چند مرحله تقسیم کنید.":staticEmpty.length?"برای یکی از جلسات با محدودیت‌های ثبت‌شده هیچ روز و زنگ مجازی وجود ندارد.":"با توجه به تداخل دبیران و کلاس‌ها، برای همه جلسات جای خالی سازگار پیدا نشد.";
-   return {ok:false,errors:[reason+(first?" مورد بررسی: "+first.className+" · "+first.subject+" · "+first.teacher:""),...lastConflict,"هیچ برنامه ناقصی منتشر نشد."],rows:[],stats:{required:tasks.length,scheduledRequired:schedulableTasks.length,placed:0,pending:pendingTasks.length,searchNodes:nodes}};
-  }
-  const rows=best.map(({task,slot})=>({class_name:task.className,weekday:slot.day,period:slot.period,subject:task.subject,teacher:task.teacher,alternating_teacher:task.shared?requirements[task.source].studiesTeacher:"",session_type:task.shared?"متناوب با مطالعات":"کامل",weight:task.weight,start_time:slot.start,end_time:slot.end,teachers:task.teachers}));
-  rows.sort((a,b)=>days.indexOf(a.weekday)-days.indexOf(b.weekday)||a.period-b.period||a.class_name.localeCompare(b.class_name,"fa"));
-  const pendingSessions=pendingTasks.map(t=>({class_name:t.className,subject:t.subject,teacher:t.teacher,alternating_teacher:t.shared?requirements[t.source].studiesTeacher:"",session_type:t.shared?"متناوب با مطالعات":"کامل",weight:t.weight,reason:"روزهای کاری دبیر هنوز اعلام نشده است."}));
-  return {ok:true,errors:[],rows,pendingSessions,stats:{required:tasks.length,scheduledRequired:schedulableTasks.length,placed:rows.length,pending:pendingTasks.length,searchNodes:nodes,classes:new Set([...rows.map(x=>x.class_name),...pendingSessions.map(x=>x.class_name)]).size,teachers:new Set([...rows.flatMap(x=>x.teachers),...pendingSessions.flatMap(x=>x.alternating_teacher?[x.teacher,x.alternating_teacher]:[x.teacher])]).size}};
+  return out;
  }
- root.FrahooshWeeklyTimetableEngine={generate};
+ function score(task,opt){
+  let n=0;for(const t of opt.teachers)n+=(teacherLoad.get(key(t.name))||0)*4;
+  for(const c of task.classNames)n+=(classDayLoad.get(key(c)+"|"+key(opt.slot.day))||0)*3;
+  if(task.weight==="سنگین"){for(const c of task.classNames){const prior=heavySlots.get(key(c)+"|"+key(opt.slot.day))||[];if(prior.length)n+=35;if(prior.some(p=>Math.abs(p-opt.slot.period)===1))n+=25;}}
+  return n;
+ }
+ function place(task,opt,add){
+  const s=opt.slot,delta=add?1:-1;
+  for(const c of task.classNames){const k=busy(c,s);if(add)classBusy.add(k);else classBusy.delete(k);const dk=key(c)+"|"+key(s.day),v=(classDayLoad.get(dk)||0)+delta;if(v)classDayLoad.set(dk,v);else classDayLoad.delete(dk);}
+  for(const t of opt.teachers){const k=busy(t.name,s);if(add)teacherBusy.add(k);else teacherBusy.delete(k);const v=(teacherLoad.get(key(t.name))||0)+delta;if(v)teacherLoad.set(key(t.name),v);else teacherLoad.delete(key(t.name));}
+  if(task.weight==="سنگین")for(const c of task.classNames){const k=key(c)+"|"+key(s.day),v=heavySlots.get(k)||[];if(add)heavySlots.set(k,[...v,s.period]);else{const next=v.filter(p=>p!==s.period);if(next.length)heavySlots.set(k,next);else heavySlots.delete(k);}}
+ }
+ function search(remaining){
+  if(++nodes>nodeLimit)return false;if(!remaining.length)return true;
+  let chosen=null,opts=null;
+  for(const task of remaining){const o=options(task);if(!opts||o.length<opts.length){chosen=task;opts=o;if(o.length<=1)break;}}
+  if(!opts||!opts.length)return false;
+  opts.sort((a,b)=>score(chosen,a)-score(chosen,b)||days.indexOf(a.slot.day)-days.indexOf(b.slot.day)||a.slot.period-b.slot.period);
+  const next=remaining.filter(t=>t.id!==chosen.id);
+  for(const opt of opts){place(chosen,opt,true);placed.push({task:chosen,opt});if(search(next))return true;placed.pop();place(chosen,opt,false);if(nodes>nodeLimit)break;}
+  return false;
+ }
+ if(!search(tasks.slice())){
+  const conflict=tasks.find(t=>!options(t));
+  const message=nodes>nodeLimit?"تعداد حالت‌های بررسی از حد مجاز گذشت؛ محدودیت‌ها را بازبینی کنید.":"با ترکیب روزهای حضور دبیران و نیاز کلاس‌ها، برنامه کامل و بدون تداخل پیدا نشد.";
+  return {ok:false,errors:[message,...(conflict?["بررسی ویژه: "+conflict.classNames.join(" و ")+" · "+(conflict.subject||conflict.subjectA+" / "+conflict.subjectB)]:[]),"برنامه ناقص به‌عنوان خروجی موفق ارائه نشد."],rows:[],stats:{required:tasks.length,placed:0,searchNodes:nodes}};
+ }
+ const rows=[];
+ for(const {task,opt} of placed){const s=opt.slot;
+  if(task.kind==="lesson")rows.push({class_name:task.classNames[0],weekday:s.day,period:s.period,start_time:s.start,end_time:s.end,subject:task.subject,teacher:opt.teachers[0].name,session_type:"کامل",weight:task.weight,teachers:[opt.teachers[0].name]});
+  else{const [a,b]=opt.teachers;rows.push({class_name:task.classNames[0],weekday:s.day,period:s.period,start_time:s.start,end_time:s.end,subject:task.subjectA+" / "+task.subjectB,teacher:"هفته اول: "+a.name+" · "+task.subjectA+" | "+b.name+" · "+task.subjectB,alternating_teacher:"هفته دوم: "+b.name+" · "+task.subjectB+" | "+a.name+" · "+task.subjectA,session_type:"متناوب با کلاس "+task.classNames[1],weight:task.weight,teachers:[a.name,b.name],alternating:true});rows.push({class_name:task.classNames[1],weekday:s.day,period:s.period,start_time:s.start,end_time:s.end,subject:task.subjectB+" / "+task.subjectA,teacher:"هفته اول: "+b.name+" · "+task.subjectB+" | "+a.name+" · "+task.subjectA,alternating_teacher:"هفته دوم: "+a.name+" · "+task.subjectA+" | "+b.name+" · "+task.subjectB,session_type:"متناوب با کلاس "+task.classNames[0],weight:task.weight,teachers:[a.name,b.name],alternating:true});}
+ }
+ rows.sort((a,b)=>days.indexOf(a.weekday)-days.indexOf(b.weekday)||a.period-b.period||a.class_name.localeCompare(b.class_name,"fa"));
+ return {ok:true,errors:[],rows,stats:{required:tasks.length,placed:tasks.length,classes:new Set(rows.map(r=>r.class_name)).size,teachers:new Set(rows.flatMap(r=>r.teachers)).size,searchNodes:nodes}};
+}
+root.FrahooshWeeklyTimetableEngine={generate};
 })(typeof window!=="undefined"?window:globalThis);
