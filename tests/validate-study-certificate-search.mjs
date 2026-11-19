@@ -45,4 +45,29 @@ const publishWorkflow = readFileSync(".github/workflows/publish-six-icon-portal.
 assert.ok(publishWorkflow.includes("assets/qrcode.js _site/assets/"), "GitHub Pages packaging must copy the local QR library into the deployed assets directory");
 assert.ok(publishWorkflow.includes("test -s _site/assets/qrcode.js"), "GitHub Pages deployment must fail if the local QR library is missing from the site artifact");
 
+
+for (const marker of [
+  '.photo{position:absolute;top:6%;',
+  '.serial{position:absolute;top:22%;',
+  '.r1{top:25.5%;',
+  '.r2{top:31.5%;',
+  '.r3{top:37.5%;',
+  '.bodyline{top:43.5%;',
+  '.purpose{top:51.5%;',
+  '.issued{top:62.5%;',
+  '.disclaimer{position:absolute;top:73.5%;',
+  'بدین وسیله گواهی میشود:',
+  'فرزند: <b id="vFather">',
+  'تاریخ تولد: <b id="vBirth">',
+  'سال تحصیلی: <b id="vYear">',
+  'این گواهی طبق تقاضای مورخ :',
+  'فقط به منظور ارائه به: <b id="vDestination">',
+  'صادر گردیده و فاقد هرگونه ارزش دیگری می باشد.',
+  '<div class="date-label">تاریخ <b id="vRequestDate">',
+  'id="vQr"'
+]) assert.ok(page.includes(marker), "Printed certificate layout/content is missing: " + marker);
+assert.ok(!page.includes('id="issueDate"') && !page.includes('vIssueDate'), "The printed sample has only one date field");
+assert.ok(!page.includes('id="serial" value="۱"'), "Certificate number must be entered by the executive deputy, not prefilled");
+assert.ok(!page.includes('id="grade" value="هشتم"'), "Student grade must be entered or selected, not prefilled with sample data");
+
 console.log("Study certificate student-search checks passed: school scoping, limited fields, search filters, auto-fill, manual entry, and JavaScript syntax.");
