@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";import{readFileSync}from"node:fs";
 const p=readFileSync("teacher-photo-exam.html","utf8"),portal=readFileSync("portal.html","utf8"),wf=readFileSync(".github/workflows/publish-six-icon-portal.yml","utf8");
-for(const x of ['id="photos"','multiple','data-f="text"','data-f="points"','data-f="lines"','اختلاف بارم','confirm(','size:A4','break-inside:avoid','تصویر اصلی سؤال','OCR هوش مصنوعی هنوز به سرویس تأییدشده متصل نشده'])assert.ok(p.includes(x),"Missing "+x);
+for(const x of ['id="photos"','multiple','data-f="text"','data-f="points"','data-f="lines"','اختلاف بارم','confirm(','size:A4','break-inside:avoid','تصویر اصلی سؤال','تبدیل عکس به متن سؤال','افزودن سؤال دستی','افزودن سؤال از تصویر بارگذاری‌شده','fas+eng','در حال استخراج متن سؤال','متن استخراج شد'])assert.ok(p.includes(x),"Missing "+x);
 assert.ok(p.includes("frahoosh_novin_access_token")&&p.includes('portalRole!=="teacher"'),"Page must reject direct access without the teacher session");
 assert.ok(p.includes("اداره كل آموزش و پرورش شهرستان هاي استان تهران")&&p.includes("۱۴۰۶-۱۴۰۵")&&p.includes("نمره تجدید نظر با عدد")&&p.includes("تعداد صفحه")&&p.includes("ردیف")&&p.includes("question-row")&&p.includes("groups.length")&&p.includes("school-head"));
 assert.ok(portal.includes("طراح برگه آزمون تصویری")&&portal.includes("teacher-photo-exam.html"));
