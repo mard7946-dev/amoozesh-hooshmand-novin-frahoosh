@@ -62,10 +62,11 @@
 <div class="disclaimer">و فاقد هرگونه ارزش دیگری می‌باشد.</div>
 <div class="sign"><strong>مهر و امضا مدیر مدرسه</strong><span><b id="vManager">حسن مردانه جهان تیغ</b> - <b id="vSignSchool">دبیرستان سردار شهید حاجی‌زاده ۲</b></span></div>
 <div class="warning">این گواهی بدون تأیید مدرسه و امضای مدیر فاقد اعتبار می‌باشد.</div>
-<img id="vQr" class="qr" alt="کد QR اطلاعات گواهی">
+<img id="vQr" class="qr" alt="کد QR اطلاعات گواهی" hidden>
 </div></section></div>
 </main>
 
+<script src="assets/qrcode.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -140,29 +141,25 @@ async function searchStudents(rawQuery,sequence){
  }catch(error){if(sequence!==studentSearchSequence)return;hideStudentSearchResults();showStudentSearchMessage(error.message,true);}
 }
 function qrPayload(){return ["گواهی اشتغال به تحصیل","شماره: "+val("serial"),"دانش‌آموز: "+val("student"),"کد ملی: "+val("national"),"مدرسه: "+val("school"),"سال تحصیلی: "+val("year"),"تاریخ صدور: "+val("issueDate")].join("\n");}
-function loadQrLibrary(){
- return new Promise(resolve=>{
-  const available=()=>!!(window.QRCode&&typeof window.QRCode.toDataURL==="function");
-  if(available()){resolve(true);return;}
-  const sources=["https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js","https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.4/qrcode.min.js"];
-  let index=0;
-  const next=()=>{
-   if(available()){resolve(true);return;}
-   if(index>=sources.length){resolve(false);return;}
-   const script=document.createElement("script");
-   let settled=false;
-   const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);script.onload=null;script.onerror=null;};
-   const timer=setTimeout(()=>{finish();script.remove();next();},10000);
-   script.src=sources[index++];
-   script.onload=()=>{finish();if(available())resolve(true);else{script.remove();next();}};
-   script.onerror=()=>{finish();script.remove();next();};
-   document.head.appendChild(script);
-  };
-  next();
- });
+function createQrDataUrl(payload){
+ const QRCodeLib=window.QRCode;
+ if(typeof QRCodeLib!=="function"||!QRCodeLib.CorrectLevel)throw new Error("کتابخانه محلی QR در دسترس نیست.");
+ const host=document.createElement("div");
+ host.setAttribute("aria-hidden","true");
+ host.style.cssText="position:fixed;left:-10000px;top:0;width:220px;height:220px;overflow:hidden;";
+ document.body.appendChild(host);
+ try{
+  new QRCodeLib(host,{text:payload,width:220,height:220,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCodeLib.CorrectLevel.M});
+  const image=host.querySelector("img");
+  if(image&&image.src&&image.src.startsWith("data:image/"))return image.src;
+  const canvas=host.querySelector("canvas");
+  if(canvas)return canvas.toDataURL("image/png");
+  throw new Error("مرورگر نتوانست تصویر QR را تولید کند.");
+ }finally{host.remove();}
 }
-let qrLoadPromise;
+let qrRenderSequence=0;
 async function updatePreview(){
+ const sequence=++qrRenderSequence;
  const map={serial:"vSerial",student:"vStudent",national:"vNational",identity:"vIdentity",father:"vFather",birth:"vBirth",school:"vSchool",schoolCode:"vSchoolCode",year:"vYear",grade:"vGrade",requestDate:"vRequestDate",issueDate:"vIssueDate",destination:"vDestination",manager:"vManager"};
  for(const [source,target] of Object.entries(map))setText(target,val(source));
  setText("vPeriod","دوره تحصیلی: "+val("period"));
@@ -170,15 +167,16 @@ async function updatePreview(){
  const photo=$("vPhoto");
  if(photoData){photo.src=photoData;photo.hidden=false;}else{photo.hidden=true;}
  try{
-  qrLoadPromise=qrLoadPromise||loadQrLibrary();
-  const loaded=await qrLoadPromise;
-  if(!loaded)throw new Error("QR library unavailable");
-  $("vQr").src=await QRCode.toDataURL(qrPayload(),{width:220,margin:0,errorCorrectionLevel:"M"});
+  const dataUrl=createQrDataUrl(qrPayload());
+  if(sequence!==qrRenderSequence)return;
+  $("vQr").src=dataUrl;
   $("vQr").hidden=false;
+  if($("status").textContent.includes("ساخت کد QR")){$("status").className="status";$("status").textContent="کد QR با موفقیت ساخته شد.";}
  }catch(error){
+  if(sequence!==qrRenderSequence)return;
   $("vQr").removeAttribute("src");$("vQr").hidden=true;
   $("status").className="status error";
-  $("status").textContent="ساخت کد QR ممکن نشد؛ اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.";
+  $("status").textContent="ساخت کد QR ناموفق بود: "+(error&&error.message?error.message:"خطای ناشناخته");
  }
 }
 fields.forEach(id=>$(id).addEventListener("input",updatePreview));$("studentSearch").addEventListener("input",()=>{
