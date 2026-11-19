@@ -53,7 +53,7 @@ assert.match(hostLoginFunction, /\["manager","deputy","educational","executive",
 assert.match(managerPage, /ساخت لینک مهمان \(اعتبار ۳۰ روز\)/);
 assert.match(managerPage, /مدیریت لینک‌های مهمان/);
 assert.match(managerPage, /انقضای زودتر لینک/);
-assert.match(managerPage, /data\.invite_id/);
+assert.match(managerPage, /d\.invite_id/);
 assert.match(managerPage, /api\("revoke_guest_invite"/);
 assert.match(realtimePage, /guest_token/);
 assert.match(realtimePage, /guestFirstName/);
