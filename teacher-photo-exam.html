@@ -22,23 +22,31 @@ if(section==="A")return "test";
 if(section==="B")return "blank";
 if(section==="C")return "tf";
 if(section==="D")return "essay";
-const s=normalizeOcrText(text);
-if(/صحیح\s*(?:و|یا|\/)\s*غلط|درست\s*(?:و|یا|\/)\s*نادرست|صحیح\s*یا\s*نادرست|درست\s*یا\s*غلط/i.test(s))return "tf";
-if(/جای\s*خالی|جاهای\s*خالی|کامل\s*کنید|_{2,}|…{2,}|\.{3,}/i.test(s))return "blank";
-if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه|(?:^|\n)\s*(?:الف|ب|ج|د)[)ـ.：:]/.test(s))return "test";
-if(/جای\s*خالی|کلمه\s*مناسب|جاهای\s*خالی/.test(s))return "B";
-if(/درست(?:ی)?\s*و\s*نادرست|نادرست(?:ی)?\s*و\s*درست|صحیح\s*و\s*غلط|درستی.*نادرستی/.test(s))return "C";
-if(/سوالات?\s*تشریحی|سؤال(?:ات)?\s*تشریحی|پاسخ\s*تشریحی/.test(s))return "D";
-const token=s.replace(/[.،,:：؛;\s]/g,"");
-return /^[abcd]$/.test(token)?token.toUpperCase():"";
+const value=normalizeOcrText(text);
+if(/صحیح\s*(?:و|یا|\/)\s*غلط|درست\s*(?:و|یا|\/)\s*نادرست|صحیح\s*یا\s*نادرست|درست\s*یا\s*غلط/.test(value))return "tf";
+if(/جای\s*خالی|جاهای\s*خالی|کامل\s*کنید|_{2,}|…{2,}|\.{3,}/.test(value))return "blank";
+if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه|(?:^|\n)\s*(?:الف|ب|ج|د)[)ـ.：:]/.test(value))return "test";
+return "essay";
+}
+function splitOcrQuestions(raw){
+const value=String(raw||"").replace(/\r/g,"").trim();
+if(!value)return [];
+const marker=/^\s*(?:س(?:ؤال|وال)?\s*)?([0-9۰-۹٠-٩]{1,2})\s*[)）\].．:：ـ-]\s*/gm;
+const matches=[...value.matchAll(marker)];
+if(!matches.length)return [{text:value,type:inferOcrQuestionType(value)}];
+return matches.map((match,index)=>{
+const from=match.index+match[0].length,to=index+1<matches.length?matches[index+1].index:value.length;
+const question=value.slice(from,to).trim();
+return question?{text:question,type:inferOcrQuestionType(question),number:normalizeOcrText(match[1])}:null;
+}).filter(Boolean);
 }
 function detectOcrSection(text){
-const s=normalizeOcrText(text).toLowerCase();
-if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه|س(?:ؤال|وال)(?:[‌\s]*های)?[‌\s]*تستی/.test(s))return "A";
-if(/جای\s*خالی|کلمه\s*مناسب|جاهای\s*خالی/.test(s))return "B";
-if(/درست(?:ی)?\s*و\s*نادرست|نادرست(?:ی)?\s*و\s*درست|صحیح\s*و\s*غلط|درستی.*نادرستی/.test(s))return "C";
-if(/سوالات?\s*تشریحی|سؤال(?:ات)?\s*تشریحی|پاسخ\s*تشریحی/.test(s))return "D";
-const token=s.replace(/[.،,:：؛;\s]/g,"");
+const value=normalizeOcrText(text).toLowerCase();
+if(/گزینه\s*صحیح\s*را\s*انتخاب|گزینه\s*درست\s*را\s*انتخاب|چهار\s*گزینه|س(?:ؤال|وال)(?:[‌\s]*های)?[‌\s]*تستی/.test(value))return "A";
+if(/جای\s*خالی|کلمه\s*مناسب|جاهای\s*خالی/.test(value))return "B";
+if(/درست(?:ی)?\s*و\s*نادرست|نادرست(?:ی)?\s*و\s*درست|صحیح\s*و\s*غلط|درستی.*نادرستی/.test(value))return "C";
+if(/سوالات?\s*تشریحی|سؤال(?:ات)?\s*تشریحی|پاسخ\s*تشریحی/.test(value))return "D";
+const token=value.replace(/[.،,:：؛;\s]/g,"");
 return /^[abcd]$/.test(token)?token.toUpperCase():"";
 }
 function extractOcrQuestionRecords(data){
