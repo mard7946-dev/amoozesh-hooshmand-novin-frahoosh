@@ -67,8 +67,8 @@ flush();
 const number=normalizeOcrText(marker[1]||marker[2]);
 const firstText=start?start[2]:(end?end[1]:"");
 current={text:firstText,number,section,y0:line.y,y1:line.y1};
-}else if(current){current.text+=(current.text?"\n":"")+value}
-else if(value){current={text:value,number:"",section}}
+}else if(current){current.text+=(current.text?"\n":"")+value;current.y1=Math.max(current.y1||0,line.y1||line.y)}
+else if(value){current={text:value,number:"",section,y0:line.y,y1:line.y1}}
 }
 flush();
 if(!records.length)return splitOcrQuestions(raw);
