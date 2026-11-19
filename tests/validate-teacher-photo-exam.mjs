@@ -5,5 +5,7 @@ assert.ok(p.includes("frahoosh_novin_access_token")&&p.includes('portalRole!=="t
 assert.ok(p.includes("اداره كل آموزش و پرورش شهرستان هاي استان تهران")&&p.includes("1406-1405")&&p.includes("نمره تجدید نظر با عدد")&&p.includes("تعداد صفحه")&&p.includes("ردیف")&&p.includes("question-row")&&p.includes("groups.length")&&p.includes("school-head"));
 assert.ok(portal.includes("طراح برگه آزمون تصویری")&&portal.includes("teacher-photo-exam.html"));
 assert.ok(wf.includes("'teacher-photo-exam.html'")&&wf.includes("teacher-photo-exam.html _site/"));
+assert.ok(p.includes("<th>ردیف</th><th></th><th>نمره</th>")&&p.includes("<td class=\\"number-cell\\">")&&p.includes("<td class=\\"mark-cell\\">") ,"Question table must place row number on the right and score on the left");
+assert.ok(p.includes("width:9mm;min-width:9mm;max-width:9mm")&&p.includes("position:relative;display:flex;align-items:center;justify-content:center")&&p.includes("سال تحصیلی ۱۴۰۶-۱۴۰۵"),"Exam paper columns, centered header, and Persian year must be formatted");
 const js=[...p.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(x=>x.trim()).at(-1);assert.doesNotThrow(()=>new Function(js));
 console.log("Teacher photo exam builder checks passed.");
