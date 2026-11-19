@@ -31,9 +31,14 @@ const scriptEnd = page.indexOf("</script>", scriptStart);
 assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "Study certificate must contain its application script");
 assert.doesNotThrow(() => new Function(page.slice(scriptStart + 8, scriptEnd)), "Study certificate JavaScript must parse");
 
-assert.ok(page.includes('const available=()=>!!(window.QRCode&&typeof window.QRCode.toDataURL==="function")'), "QR loader must verify the actual QRCode API");
-assert.ok(page.includes('script.onload=()=>{finish();if(available())resolve(true);else{script.remove();next();}}'), "QR loader must try the second CDN when the first loads without exposing the API");
-assert.ok(page.includes('script.onerror=()=>{finish();script.remove();next();}'), "QR loader must fall back after a CDN network error");
-assert.ok(page.includes('setTimeout(()=>{finish();script.remove();next();},10000)'), "QR loader must recover from a stalled CDN request");
+const qrLibrary = readFileSync("assets/qrcode.js", "utf8");
+assert.ok(page.includes('<script src="assets/qrcode.js"></script>'), "Certificate must load the QR library from the same-origin repository asset");
+assert.ok(page.includes('function createQrDataUrl(payload)'), "Certificate must generate QR data locally");
+assert.ok(page.includes('new QRCodeLib(host,{text:payload'), "Certificate must pass the current certificate payload to the local QR encoder");
+assert.ok(page.includes('image.src.startsWith("data:image/")'), "Certificate must use the generated local data URL");
+assert.ok(page.includes('correctLevel:QRCodeLib.CorrectLevel.M'), "Certificate QR must use a defined error-correction level");
+assert.ok(!page.includes("cdn.jsdelivr.net/npm/qrcode") && !page.includes("cdnjs.cloudflare.com/ajax/libs/qrcode"), "Certificate QR generation must not depend on external CDNs");
+assert.ok(qrLibrary.includes("Licensed under the MIT license"), "Vendored QR library must retain its MIT license notice");
+assert.ok(!page.includes("qrLoadPromise") && !page.includes("loadQrLibrary"), "Certificate must not retain the CDN loader path");
 
 console.log("Study certificate student-search checks passed: school scoping, limited fields, search filters, auto-fill, manual entry, and JavaScript syntax.");
