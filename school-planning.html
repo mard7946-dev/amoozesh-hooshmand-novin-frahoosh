@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081326">
+<title>مرکز برنامه‌ریزی مدرسه | فراهوش نوین</title>
+<style>
+:root{color-scheme:dark;--bg:#081326;--panel:#10213a;--line:#304461;--text:#f3f6ff;--muted:#a8b8d2;--mint:#63e0c0;--gold:#f5ce7a;--red:#ffaaaa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0,#17365a 0,transparent 42%),var(--bg);color:var(--text);font:14px Tahoma,"Segoe UI",sans-serif}main{max-width:1200px;margin:auto;padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 2px 18px}.top h1{margin:0 0 7px;font-size:clamp(22px,4vw,30px);color:var(--mint)}p,.muted{color:var(--muted);line-height:1.9}.muted{font-size:12px}.actions,.tabs{display:flex;gap:8px;flex-wrap:wrap}button{font:inherit;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#203451;cursor:pointer}button.primary{background:#135c50;border-color:var(--mint)}button:disabled{opacity:.55;cursor:wait}.status{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#10213a;margin:8px 0 14px;line-height:1.8}.status.error{border-color:#824d4d;background:#3a2228;color:#ffd0d0}.status.ok{border-color:#276b57;color:#b8f5da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}.metric,.panel,.record{border:1px solid var(--line);border-radius:15px;background:#0e1b32;padding:14px}.metric small{display:block;color:var(--muted);line-height:1.8}.metric strong{display:block;font-size:25px;color:var(--mint);margin-top:7px;font-variant-numeric:tabular-nums}.panel{margin:14px 0}.panel h2{font-size:17px;margin:0 0 12px}.tabs button[aria-pressed=true]{border-color:var(--mint);background:#15364a;box-shadow:0 0 0 1px var(--mint) inset}.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:14px}.list{display:grid;gap:9px}.record{background:#0a172b;padding:12px}.record h3{margin:0 0 7px;font-size:15px}.record p{margin:5px 0}.record-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.record-actions button{padding:7px 10px;font-size:12px}.pill{display:inline-block;border:1px solid #725b2d;color:#ffe4a5;border-radius:30px;padding:3px 8px;font-size:11px;margin-inline-start:6px}.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:12px}.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{color:#dbe7fa;font-size:13px}.field input,.field textarea,.field select{width:100%;font:inherit;color:var(--text);background:#081326;border:1px solid var(--line);border-radius:9px;padding:10px}.field textarea{min-height:86px;resize:vertical;line-height:1.9}.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.guide{border:1px solid #725b2d;background:#2b261b;border-radius:12px;padding:12px;color:#ffebbd;line-height:1.9}.sources a{color:#9fc6ff}.recommendation{padding:11px;border:1px solid #2e5260;border-radius:10px;margin:8px 0;background:#0b1b2c;line-height:1.9}.recommendation strong{color:var(--mint)}.foot{font-size:11px;color:var(--muted);line-height:1.9;margin:18px 0}@media(max-width:760px){main{padding:11px}.layout{grid-template-columns:1fr}.metric strong{font-size:22px}}
+</style></head>
+<body><main>
+<header class="top">
+ <div><h1>🧭 مرکز برنامه‌ریزی و بهبود مدرسه</h1><div class="muted" id="schoolName">در حال شناسایی مدرسه…</div><p>برنامه‌ریزی واقع‌بینانه، اقدام قابل پیگیری و ارزیابی مستمر</p></div>
+ <div class="actions"><button id="refresh" class="primary">به‌روزرسانی</button><button id="back">بازگشت به پنل مدیریت</button></div>
+</header>
+<div id="status" class="status" role="status" aria-live="polite">در حال بررسی نشست مدیر و اتصال امن…</div>
+<section id="app" hidden>
+ <div class="grid">
+  <div class="metric"><small>جمعیت مبنای برنامه‌ریزی</small><strong>۲۴۰</strong></div>
+  <div class="metric"><small>پرونده دانش‌آموزی ثبت‌شده</small><strong id="registeredStudents">—</strong></div>
+  <div class="metric"><small>سال تحصیلی</small><strong style="font-size:19px">۱۴۰۵–۱۴۰۶</strong></div>
+  <div class="metric"><small>برنامه‌ها و اقدامات ثبت‌شده</small><strong id="totalCount">۰</strong></div>
+  <div class="metric"><small>چالش‌های ثبت‌شده</small><strong id="challengeCount">۰</strong></div>
+  <div class="metric"><small>اقدامات در حال پیگیری</small><strong id="activeCount">۰</strong></div>
+ </div>
+ <div id="populationNote" class="guide" hidden></div>
+ <div class="guide"><strong>اصل برنامه‌ریزی این مدرسه:</strong> منطقه حاشیه شهر، محدودیت اقتصادی و فرهنگی، استفاده از ظرفیت‌های موجود، هزینه کم یا صفر و فعالیت‌هایی که با نیروی انسانی و زمان واقعی مدرسه قابل اجرا باشند. هدف‌های عددی تا زمان سنجش خط پایه، قطعی نمی‌شوند.</div>
+ <section class="panel">
+  <div class="tabs" id="tabs" aria-label="بخش‌های مرکز برنامه‌ریزی">
+   <button data-type="all" aria-pressed="true">نمای کلی</button>
+   <button data-type="annual_plan" aria-pressed="false">برنامه سالانه</button>
+   <button data-type="calendar_event" aria-pressed="false">تقویم اجرایی</button>
+   <button data-type="balanced_assessment" aria-pressed="false">مدرسه تراز</button>
+   <button data-type="operational_plan" aria-pressed="false">برنامه عملیاتی</button>
+   <button data-type="daily_challenge" aria-pressed="false">چالش روزانه</button>
+  </div>
+ </section>
+ <div class="layout">
+  <section class="panel">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 id="listTitle">همه برنامه‌ها و چالش‌ها</h2><button id="newRecord" class="primary">＋ ثبت مورد جدید</button></div>
+   <div id="records" class="list"><div class="empty">در حال دریافت موارد ثبت‌شده…</div></div>
+  </section>
+  <aside>
+   <section class="panel" id="formPanel" hidden>
+    <h2 id="formTitle">ثبت مورد جدید</h2>
+    <form id="recordForm">
+     <div class="formgrid">
+      <div class="field full"><label for="recordTitle">عنوان</label><input id="recordTitle" maxlength="180" required placeholder="عنوان روشن و قابل پیگیری"></div>
+      <div class="field full"><label for="recordSummary">خلاصه / مسئله / هدف</label><textarea id="recordSummary" maxlength="2000" placeholder="شرح کوتاه و روشن"></textarea></div>
+      <div id="detailFields" class="formgrid full"></div>
+      <div class="field"><label for="recordStatus">وضعیت</label><select id="recordStatus"><option value="draft">پیش‌نویس</option><option value="needs_review">نیازمند بررسی</option><option value="active">فعال</option><option value="in_progress">در حال اجرا</option><option value="completed">انجام‌شده</option><option value="cancelled">لغوشده</option></select></div>
+     </div>
+     <div class="form-actions"><button type="submit" class="primary" id="saveRecord">ذخیره</button><button type="button" id="cancelEdit">انصراف</button></div>
+    </form>
+   </section>
+   <section class="panel" id="challengeAdvice" hidden><h2>پیشنهادهای اجرایی برای چالش</h2><div id="recommendations"></div><p class="muted">این پیشنهادها از راهنمای ساختاریافته و قواعد داخلی سامانه تولید می‌شوند، نه از یک مدل هوش مصنوعی متصل به اینترنت. مدیر باید تناسب و ایمنی هر اقدام را پیش از اجرا تأیید کند.</p></section>
+   <section class="panel">
+    <h2>روش کار مرکز</h2>
+    <ol class="muted" style="padding-right:20px;line-height:2"><li>وضع موجود و شواهد ثبت شود.</li><li>مسئله و اولویت واقعی مشخص شود.</li><li>اقدام کوچک، مسئول و زمان تعیین شود.</li><li>هزینه و منابع قبل از تصویب بررسی شود.</li><li>نتیجه با شاخص قابل مشاهده سنجیده شود.</li></ol>
+   </section>
+   <section class="panel sources"><h2>منابع مبنای طراحی</h2>
+    <p><a href="https://samanketab.roshdmag.ir/Roshdmag_content/media/article/6.7%20from%20%2899-400%29%20MATN%20MADRESE%20FADA%205-3_-1.pdf" target="_blank" rel="noopener">راهنمای «تدبیر برای مدرسه» در مجلات رشد</a></p>
+    <p><a href="https://www.roshdmag.ir/Roshdmag_content/media/Magazine2/fa/2020/1/1782.pdf" target="_blank" rel="noopener">راهنمای برنامه ویژه مدرسه و پاسخ به نیازهای محلی</a></p>
+    <p><a href="https://newsmedia.tasnimmedia.com/Tasnim/Uploaded/Document/1405/03/10/140503101539371593694051.pdf" target="_blank" rel="noopener">دستورالعمل ثبت‌نام سال تحصیلی ۱۴۰۵–۱۴۰۶</a></p><p class="muted">تاریخ تعطیلات و مناسبت‌های رسمی باید پیش از ثبت نهایی با ابلاغیه‌های همان سال و اطلاعیه منطقه تطبیق داده شوند؛ این صفحه تاریخ رسمی را حدس نمی‌زند.</p>
+   </section>
+  </aside>
+ </div>
+</section>
+<div class="foot">از درج نام، کد ملی، نشانی، اطلاعات خانوادگی یا جزئیات محرمانه دانش‌آموزان در شرح چالش‌ها خودداری کنید. مسئله را به‌صورت کلی و بدون شناسه فردی ثبت کنید. اطلاعات این مرکز فقط برای مدیر همان مدرسه قابل دریافت است.</div>
+</main>
+<script src="panel-return.js"></script>
+<script>
+"use strict";
+const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/school-planning";
+const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const schoolId=sessionStorage.getItem("frahoosh_novin_school_id")||"";
+const academicYear="۱۴۰۵–۱۴۰۶";
+const $=id=>document.getElementById(id);
+const fa=v=>String(v??0).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[+d]);
+const typeLabels={annual_plan:"برنامه سالانه",calendar_event:"تقویم اجرایی",balanced_assessment:"ارزیابی مدرسه تراز",operational_plan:"برنامه عملیاتی",daily_challenge:"چالش روزانه"};
+const statusLabels={draft:"پیش‌نویس",needs_review:"نیازمند بررسی",active:"فعال",in_progress:"در حال اجرا",completed:"انجام‌شده",cancelled:"لغوشده",archived:"بایگانی"};
+const fields={
+ annual_plan:[
+  ["goal","هدف و اولویت","textarea"],["baseline","وضع موجود و شواهد خط پایه","textarea"],["target","نتیجه مورد انتظار / هدف قابل سنجش","textarea"],["indicator","شاخص سنجش و روش اندازه‌گیری","textarea"],["actions","اقدام‌های اصلی و گام‌های اجرا","textarea"],["owner","مسئول پیگیری","text"],["timeline","زمان‌بندی پیشنهادی","text"],["resources","منابع و هزینه (ترجیحاً موجود/کم‌هزینه)","textarea"]
+ ],
+ calendar_event:[
+  ["date","تاریخ شمسی (مثلاً ۱۴۰۵/۰۹/۱۰)","text"],["activity","شرح فعالیت","textarea"],["audience","مخاطب / پایه","text"],["owner","مسئول اجرا","text"],["duration","زمان لازم","text"],["cost","هزینه برآوردی و منبع آن","text"],["place","مکان / امکانات لازم","text"],["fallback","جایگزین در صورت لغو یا کمبود منابع","textarea"]
+ ],
+ balanced_assessment:[
+  ["axis","محور ارزیابی","select",["آموزشی","پرورشی و فرهنگی","مدیریت و رهبری","مشارکت خانواده و جامعه","عدالت و حمایت از دانش‌آموزان","فضا، تجهیزات و منابع"]],["score","امتیاز خودارزیابی (۱ تا ۵)","select",["۱","۲","۳","۴","۵"]],["current","شواهد وضعیت موجود","textarea"],["gap","فاصله تا وضعیت مطلوب","textarea"],["priority","اولویت بهبود","select",["فوری","بالا","متوسط","پایین"]],["nextStep","اقدام کوچک بعدی","textarea"],["evidence","مدرک یا شاهد قابل بررسی","textarea"]
+ ],
+ operational_plan:[
+  ["objective","هدف مرتبط با برنامه سالانه","textarea"],["action","اقدام مشخص و قابل انجام","textarea"],["owner","مسئول مستقیم","text"],["start","تاریخ شروع شمسی","text"],["end","مهلت پایان شمسی","text"],["cost","هزینه واقعی و منبع تأمین","text"],["resources","نیروی انسانی و امکانات موجود","textarea"],["output","خروجی قابل تحویل","textarea"],["indicator","شاخص موفقیت و روش سنجش","textarea"],["risk","مانع احتمالی و راه جایگزین","textarea"]
+ ],
+ daily_challenge:[
+  ["category","دسته چالش","select",["افت یادگیری","غیبت و بی‌نظمی حضور","انگیزه و مشارکت دانش‌آموزان","ارتباط با خانواده","رفتار و روابط مدرسه","کمبود منابع و امکانات","اجرای برنامه و هماهنگی کارکنان","سایر"]],["facts","واقعیت‌های مشاهده‌شده (چه اتفاقی، از چه زمانی، چند بار؟)","textarea"],["affected","دامنه اثر (تعداد یا پایه، بدون نام افراد)","text"],["impact","اثر مسئله بر یادگیری یا فضای مدرسه","textarea"],["causes","علت‌های احتمالی و شواهد هرکدام","textarea"],["resources","ظرفیت‌های موجود (افراد، فضا، زمان، امکانات)","textarea"],["limits","محدودیت‌ها (هزینه، زمان، خانواده، رفت‌وآمد و...)","textarea"],["urgency","فوریت","select",["امروز باید رسیدگی شود","این هفته","این ماه","نیازمند بررسی بیشتر"]],["desired","نتیجه‌ای که می‌خواهیم به آن برسیم","textarea"]
+ ]
+};
+let items=[],filter="all",editingId=null;
+function setStatus(message,error=false){$("status").textContent=message;$("status").className="status"+(error?" error":"");}
+async function api(body){
+ const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify(body)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.message||"ارتباط با سرویس برنامه‌ریزی ناموفق بود.");
+ return data;
+}
+function fieldElement(def,value=""){
+ const [key,label,kind,options]=def,wrap=document.createElement("div");wrap.className="field";
+ const lab=document.createElement("label");lab.textContent=label;lab.htmlFor="detail_"+key;wrap.append(lab);
+ let input;
+ if(kind==="textarea"){input=document.createElement("textarea");input.rows=3;}
+ else if(kind==="select"){input=document.createElement("select");for(const option of options){const o=document.createElement("option");o.value=option;o.textContent=option;input.append(o);}}
+ else{input=document.createElement("input");input.type="text";input.maxLength=1500;}
+ input.id="detail_"+key;input.name=key;input.value=String(value??"");wrap.append(input);return wrap;
+}
+function renderFields(type,details={}){
+ const box=$("detailFields");box.replaceChildren();
+ for(const def of fields[type]||[])box.append(fieldElement(def,details[def[0]]));
+ if(type==="daily_challenge"){const hint=document.createElement("p");hint.className="muted";hint.textContent="اطلاعات واقعی و قابل مشاهده را بنویسید؛ حدس‌ها را از واقعیت‌ها جدا کنید. هیچ نام یا مشخصات فردی وارد نکنید.";box.append(hint);}
+}
+function readDetails(type){
+ const out={};for(const def of fields[type]||[]){const node=$("detail_"+def[0]);out[def[0]]=node?node.value.trim():"";}
+ if(type==="daily_challenge")out.recommendations=buildRecommendations(out);
+ return out;
+}
+function buildRecommendations(d){
+ const category=d.category||"سایر",limits=d.limits||"",resources=d.resources||"";
+ const lowCost="با استفاده از زمان و امکانات موجود مدرسه اجرا شود؛ خرید یا دریافت وجه از خانواده‌ها پیش‌فرض این راهکار نیست.";
+ const map={
+ "افت یادگیری":[["امروز","فهرست مبحث‌های دشوار را از آخرین ارزشیابی و نمونه تکالیف استخراج کنید؛ ابتدا فقط یک مبحث پرتکرار را انتخاب کنید.","معاون آموزشی و دبیر درس","یک فهرست کوتاه از مبحث‌ها و تعداد دانش‌آموزان نیازمند پشتیبانی."],["این هفته","گروه‌های کوچک یادگیری با کمک دبیر یا دانش‌آموزان داوطلبِ آموزش‌دیده، در زمان مجاز مدرسه تشکیل شود؛ بدون برچسب‌زدن به دانش‌آموزان.","دبیر مربوط و معاون آموزشی","حضور در جلسات و یک سنجش کوتاه قبل و بعد."],["دو هفته بعد","نتیجه را با همان نوع سؤال یا تکلیف کوتاه بسنجید و گروه‌ها را بر اساس پیشرفت بازتنظیم کنید.","دبیر مربوط","تغییر عملکرد نسبت به خط پایه؛ نه صرفاً تعداد جلسات."]],
+ "غیبت و بی‌نظمی حضور":[["امروز","غیبت‌ها را در سطح پایه و روزهای پرتکرار بررسی کنید؛ قبل از نتیجه‌گیری، خطای ثبت و علت‌های قابل‌پیگیری را جدا کنید.","معاون اجرایی","فهرست الگوی غیبت بدون انتشار نام در گزارش عمومی."],["این هفته","برای موارد تکرارشونده، تماس محترمانه و غیرتنبیهی با خانواده از مسیر رسمی مدرسه انجام دهید و مانع اصلی حضور را ثبت کنید.","معاون مربوط","تعداد تماس‌های موفق و علت‌های دسته‌بندی‌شده."],["هفته آینده","برای هر مانع قابل حل، یک اقدام کم‌هزینه مانند هماهنگی زمان، پیگیری آموزشی یا گفت‌وگوی حمایتی تعیین کنید.","مدیر و معاون مربوط","مقایسه روند حضور در دو هفته متوالی."]],
+ "انگیزه و مشارکت دانش‌آموزان":[["امروز","از دانش‌آموزان با گفت‌وگوی کوتاه یا برگه بی‌نام بپرسید کدام فعالیت مدرسه برایشان مفیدتر و قابل‌دسترس‌تر است.","معاون پرورشی و نمایندگان کلاس","دسته‌بندی پیشنهادها، بدون درج نام."],["این هفته","یک فعالیت کوتاه ۲۰ تا ۳۰ دقیقه‌ای بر پایه پیشنهادهای پرتکرار و امکانات موجود آزمایش کنید.","معاون پرورشی و دبیر داوطلب","تعداد مشارکت‌کنندگان و بازخورد کوتاه."],["پایان هفته","فعالیت را با نظر دانش‌آموزان اصلاح کنید؛ برنامه پرهزینه یا اجباری را جایگزین نکنید.","مسئول فعالیت","تکرار مشارکت و رضایت شرکت‌کنندگان."]],
+ "ارتباط با خانواده":[["امروز","پیام مدرسه را کوتاه، روشن و محترمانه تنظیم کنید و از کانال رسمی موجود بفرستید؛ فرض نکنید همه خانواده‌ها اینترنت یا زمان آزاد دارند.","مدیر و معاون مربوط","ثبت کانال‌های در دسترس و میزان دریافت پاسخ."],["این هفته","برای خانواده‌هایی که پاسخ نمی‌دهند، روش جایگزین کم‌هزینه و محترمانه مانند تماس زمان‌بندی‌شده یا اطلاع‌رسانی کاغذی در مدرسه در نظر بگیرید.","معاون مربوط","تعداد خانواده‌های دسترس‌پذیر به تفکیک روش."],["این ماه","یک جلسه کوتاه و هدفمند در زمان مناسب خانواده‌ها برگزار کنید؛ دستور جلسه از قبل اعلام شود.","مدیر","تعداد مشارکت و موارد توافق‌شده و قابل پیگیری."]],
+ "رفتار و روابط مدرسه":[["امروز","موقعیت‌ها و زمان‌های پرتکرار تنش را بدون نام‌بردن از دانش‌آموزان ثبت کنید؛ از قضاوت و تنبیه جمعی پرهیز شود.","معاون پرورشی","نقشه موقعیت‌های پرتکرار و شواهد."],["این هفته","با افراد درگیر جداگانه و محترمانه گفت‌وگو کنید و قواعد روشن و قابل فهم را در کلاس یادآوری کنید.","معاون و دبیر مربوط","تعداد موارد تکرار و پیگیری انجام‌شده."],["دو هفته بعد","یک تمرین کوتاه مهارت گفت‌وگو و حل تعارض اجرا و نتیجه آن بررسی شود؛ در موضوعات جدی از مسیر حمایتی و تخصصی مدرسه کمک بگیرید.","مشاور و معاون پرورشی","کاهش تکرار موارد ثبت‌شده و بازخورد دانش‌آموزان."]],
+ "کمبود منابع و امکانات":[["امروز","نیاز را به ضروری، قابل جایگزینی و قابل تعویق تقسیم کنید؛ موجودی واقعی و منابع بلااستفاده مدرسه را بررسی کنید.","معاون اجرایی","فهرست نیازهای اولویت‌بندی‌شده."],["این هفته","برای نیازهای ضروری، ابتدا امانت داخلی، استفاده مشترک، تعمیر ایمن یا همکاری داوطلبانه بدون اجبار مالی خانواده‌ها را بررسی کنید.","مدیر و مسئول اموال","تعداد نیازهای تأمین‌شده بدون خرید."],["این ماه","اگر خرید ضروری ماند، هزینه، مجوز، منبع تأمین و گزینه جایگزین را شفاف ثبت کنید و بدون تأمین مالی قطعی تعهد ایجاد نکنید.","مدیر و مسئول مالی","مقایسه هزینه واقعی با برآورد و ثبت مستندات."]],
+ "اجرای برنامه و هماهنگی کارکنان":[["امروز","برنامه‌های هم‌زمان و کارهای عقب‌افتاده را فهرست کنید؛ فعالیت‌های کم‌اثر را حذف یا جابه‌جا کنید.","مدیر","فهرست اولویت‌های هفته."],["این هفته","برای هر اقدام فقط یک مسئول پاسخ‌گو، یک مهلت واقع‌بینانه و یک خروجی قابل مشاهده تعیین کنید.","مدیر و مسئولان واحدها","درصد اقدامات دارای مسئول و مهلت روشن."],["پایان هفته","جلسه پیگیری کوتاه برگزار کنید و موانع را ثبت کنید؛ فعالیت انجام‌نشده را صرفاً برای گزارش، انجام‌شده اعلام نکنید.","مدیر","اقدامات تکمیل‌شده، عقب‌افتاده و علت هرکدام."]]
+ };
+ const selected=map[category]||[["امروز","مسئله را به یک مشاهده قابل بررسی و یک سؤال مشخص تبدیل کنید؛ در صورت کمبود شواهد، ابتدا داده جمع‌آوری کنید.","مدیر و مسئول مرتبط","شواهد اولیه و محدوده مسئله."],["این هفته","یک اقدام کوچک، کم‌هزینه و قابل بازگشت انتخاب کنید و مسئول و زمان مشخص بدهید.","مسئول تعیین‌شده توسط مدیر","خروجی قابل مشاهده و ثبت‌شده."],["هفته آینده","نتیجه را با وضعیت اولیه مقایسه کنید و در صورت بی‌اثر بودن، راهکار را اصلاح یا متوقف کنید.","مدیر و مسئول اقدام","شواهد تغییر و تصمیم بعدی."]];
+ const contextNote=[d.facts?"شاهد ثبت‌شده: "+d.facts:"",d.affected?"دامنه اثر: "+d.affected:"",d.impact?"اثر گزارش‌شده: "+d.impact:"",resources?"ظرفیت موجود: "+resources:"",limits?"محدودیت: "+limits:"",d.desired?"نتیجه مطلوب: "+d.desired:""].filter(Boolean).join(" | ");
+ return selected.map(([phase,action,owner,measure])=>({phase,action:action+" "+lowCost+(contextNote?" مبنای تطبیق: "+contextNote:""),owner,measure,context:{observed:d.facts||"",impact:d.impact||"",constraints:limits,available_resources:resources,desired:d.desired||""}}));
+}
+function showRecommendations(list){
+ $("challengeAdvice").hidden=!list?.length;$("recommendations").replaceChildren();if(!list?.length)return;
+ for(const r of list){const box=document.createElement("div");box.className="recommendation";const strong=document.createElement("strong");strong.textContent=r.phase+" · "+r.owner;const p=document.createElement("p");p.textContent=r.action;const small=document.createElement("div");small.className="muted";small.textContent="شاخص پیگیری: "+r.measure;box.append(strong,p,small);$("recommendations").append(box);}
+}
+function labelFor(type){return typeLabels[type]||"مورد برنامه‌ریزی";}
+function renderList(){
+ const visible=items.filter(x=>filter==="all"||x.record_type===filter);$("records").replaceChildren();
+ $("totalCount").textContent=fa(items.length);$("challengeCount").textContent=fa(items.filter(x=>x.record_type==="daily_challenge").length);
+ $("activeCount").textContent=fa(items.filter(x=>["active","in_progress","needs_review"].includes(x.status)).length);
+ $("listTitle").textContent=filter==="all"?"همه برنامه‌ها و چالش‌ها":labelFor(filter);
+ if(!visible.length){const d=document.createElement("div");d.className="empty";d.textContent="هنوز موردی در این بخش ثبت نشده است. برای شروع، «ثبت مورد جدید» را انتخاب کنید."; $("records").append(d);return;}
+ for(const item of visible){const card=document.createElement("article");card.className="record";const h=document.createElement("h3");h.textContent=item.title;const badge=document.createElement("span");badge.className="pill";badge.textContent=statusLabels[item.status]||item.status;h.append(badge);const type=document.createElement("div");type.className="muted";type.textContent=labelFor(item.record_type)+" · سال "+item.academic_year;const p=document.createElement("p");p.textContent=item.summary||"خلاصه ثبت نشده است.";const time=document.createElement("div");time.className="muted";time.textContent="آخرین تغییر: "+new Intl.DateTimeFormat("fa-IR-u-ca-persian",{dateStyle:"short",timeStyle:"short"}).format(new Date(item.updated_at));const actions=document.createElement("div");actions.className="record-actions";const edit=document.createElement("button");edit.textContent="ویرایش";edit.addEventListener("click",()=>openForm(item.record_type,item));const archive=document.createElement("button");archive.textContent="بایگانی";archive.addEventListener("click",()=>archiveItem(item.id));actions.append(edit,archive);card.append(h,type,p,time,actions);$("records").append(card);}
+}
+async function load(){
+ if(!token||role!=="manager"||!schoolId){setStatus("برای استفاده از این مرکز، با حساب مدیر همان مدرسه دوباره وارد شوید.",true);return;}
+ $("refresh").disabled=true;setStatus("در حال دریافت برنامه‌های ثبت‌شده برای مدرسه شما…");
+ try{const data=await api({action:"list",academic_year:academicYear});if(String(data.school_id)!==String(schoolId))throw new Error("شناسه مدرسه با نشست مدیر مطابقت ندارد.");items=data.items||[];$("registeredStudents").textContent=fa(data.registered_students_count??0);$("populationNote").hidden=Number(data.registered_students_count??0)===240;$("populationNote").textContent="اختلاف آمار: جمعیت مبنای برنامه‌ریزی ۲۴۰ نفر است، اما در حال حاضر "+fa(data.registered_students_count??0)+" پرونده دانش‌آموزی ثبت شده است. این اختلاف فقط برای بررسی مدیر نمایش داده می‌شود و سامانه هیچ پرونده‌ای را خودکار ایجاد یا تغییر نمی‌دهد.";$("app").hidden=false;renderList();setStatus("اطلاعات برنامه‌ریزی با موفقیت از پایگاه داده دریافت شد.");$("status").classList.add("ok");}
+ catch(error){setStatus(error.message||"دریافت اطلاعات ناموفق بود.",true);}
+ finally{$("refresh").disabled=false;}
+}
+function openForm(type,item=null){
+ editingId=item?.id||null;$("formPanel").hidden=false;$("formTitle").textContent=(item?"ویرایش ":"ثبت ")+labelFor(type);$("recordTitle").value=item?.title||"";$("recordSummary").value=item?.summary||"";$("recordStatus").value=item?.status||"draft";renderFields(type,item?.details||{});$("recordForm").dataset.type=type;$("saveRecord").textContent=item?"ذخیره تغییرات":"ذخیره";
+ if(type==="daily_challenge")showRecommendations(item?.details?.recommendations||[]);else showRecommendations([]);
+ $("formPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closeForm(){$("formPanel").hidden=true;editingId=null;$("recordForm").reset();$("detailFields").replaceChildren();}
+async function save(event){
+ event.preventDefault();const type=$("recordForm").dataset.type;if(!type)return;
+ const button=$("saveRecord");button.disabled=true;setStatus("در حال ذخیره اطلاعات…");
+ try{const body={action:editingId?"update":"create",id:editingId,academic_year:academicYear,record_type:type,title:$("recordTitle").value.trim(),summary:$("recordSummary").value.trim(),details:readDetails(type),status:$("recordStatus").value};const result=await api(body);if(type==="daily_challenge")showRecommendations(result.item?.details?.recommendations||body.details.recommendations);closeForm();await load();setStatus(result.message||"اطلاعات ذخیره شد.");$("status").classList.add("ok");}
+ catch(error){setStatus(error.message||"ذخیره اطلاعات ناموفق بود.",true);}
+ finally{button.disabled=false;}
+}
+async function archiveItem(id){if(!confirm("این مورد به بایگانی منتقل شود؟"))return;try{const result=await api({action:"archive",id});await load();setStatus(result.message||"بایگانی شد.");$("status").classList.add("ok");}catch(error){setStatus(error.message||"بایگانی ناموفق بود.",true);}}
+$("tabs").addEventListener("click",event=>{const button=event.target.closest("button[data-type]");if(!button)return;filter=button.dataset.type;for(const b of $("tabs").querySelectorAll("button"))b.setAttribute("aria-pressed",String(b===button));renderList();closeForm();});
+$("newRecord").addEventListener("click",()=>openForm(filter==="all"?"annual_plan":filter));
+$("cancelEdit").addEventListener("click",closeForm);$("recordForm").addEventListener("submit",save);$("refresh").addEventListener("click",load);
+$("back").addEventListener("click",()=>window.frahooshReturnToPanel?window.frahooshReturnToPanel("manager"):location.assign("portal.html?step=panel&role=manager"));
+load();
+</script></body></html>
