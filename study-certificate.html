@@ -19,7 +19,7 @@
 <h2>اطلاعات گواهی</h2>
 <div id="status" class="status">اطلاعات را در کادرهای زیر وارد کنید؛ پیش‌نمایش فرم هم‌زمان به‌روزرسانی می‌شود.</div>
 <div class="fields">
-<label class="field">شماره گواهی<input id="serial" value="۱" maxlength="30"></label>
+<label class="field">شماره گواهی<input id="serial" maxlength="30"></label>
 <div class="field student-search-field">
 <label for="studentSearch">جست‌وجوی دانش‌آموز</label>
 <input id="studentSearch" type="search" maxlength="100" autocomplete="off" placeholder="نام، نام خانوادگی، کد ملی یا شماره دانش‌آموزی" aria-autocomplete="list" aria-controls="studentSearchResults" aria-expanded="false">
@@ -31,7 +31,7 @@
 <label class="field">کد ملی<input id="national" inputmode="numeric" maxlength="20"></label>
 <label class="field">شماره شناسنامه<input id="identity" maxlength="30"></label>
 <label class="field">تاریخ تولد<input id="birth" placeholder="مثلاً ۱۳۹۲/۰۷/۱۵"></label>
-<label class="field">پایه تحصیلی<input id="grade" value="هشتم" maxlength="40"></label>
+<label class="field">پایه تحصیلی<input id="grade" maxlength="40"></label>
 <label class="field">دوره تحصیلی<input id="period" value="دوره متوسطه اول" maxlength="80"></label>
 <label class="field">نام مدرسه<input id="school" value="دبیرستان سردار شهید حاجی‌زاده ۲" maxlength="160"></label>
 <label class="field">کد مدرسه<input id="schoolCode" maxlength="40"></label>
@@ -51,11 +51,11 @@
 <img id="vPhoto" class="photo" alt="عکس دانش‌آموز" hidden>
 
 <div class="serial">شماره: <b id="vSerial">۱</b></div>
-<div class="line r1"><span>بدین وسیله گواهی می‌شود: <b id="vStudent">................</b></span><span>کد ملی: <b id="vNational">................</b></span><span>فرزند: <b id="vFather">................</b></span></div>
+<div class="line r1"><span>بدین وسیله گواهی میشود: <b id="vStudent">................</b></span><span>کد ملی: <b id="vNational">................</b></span><span>فرزند: <b id="vFather">................</b></span></div>
 <div class="line r2"><span>شماره شناسنامه: <b id="vIdentity">................</b></span><span>تاریخ تولد: <b id="vBirth">................</b></span><span>سال تحصیلی: <b id="vYear">۱۴۰۵-۱۴۰۶</b></span></div>
 <div class="line r3"><span>در مدرسه: <b id="vSchool">دبیرستان سردار شهید حاجی‌زاده ۲</b> (<b id="vSchoolCode">................</b>)</span><span>در پایه: <b id="vGrade">هشتم</b></span></div>
-<div class="line bodyline">مشغول به تحصیل می‌باشد</div>
-<div class="date-label">تاریخ: <b id="vRequestDate">................</b></div>
+<div class="line bodyline">مشغول به تحصیل میباشد</div>
+<div class="date-label">تاریخ <b id="vRequestDate">................</b></div>
 <div class="line purpose">این گواهی طبق تقاضای مورخ :</div>
 <div class="line issued">فقط به منظور ارائه به: <b id="vDestination">................</b></div>
 <div class="disclaimer">صادر گردیده و فاقد هرگونه ارزش دیگری می باشد.</div>
