@@ -150,10 +150,10 @@ function createQrDataUrl(payload){
  document.body.appendChild(host);
  try{
   new QRCodeLib(host,{text:payload,width:220,height:220,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCodeLib.CorrectLevel.M});
-  const image=host.querySelector("img");
-  if(image&&image.src&&image.src.startsWith("data:image/"))return image.src;
   const canvas=host.querySelector("canvas");
   if(canvas)return canvas.toDataURL("image/png");
+  const image=host.querySelector("img");
+  if(image&&image.src&&image.src.startsWith("data:image/"))return image.src;
   throw new Error("مرورگر نتوانست تصویر QR را تولید کند.");
  }finally{host.remove();}
 }
