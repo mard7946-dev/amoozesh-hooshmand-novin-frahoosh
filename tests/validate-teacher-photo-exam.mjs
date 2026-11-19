@@ -21,7 +21,7 @@ assert.ok(p.includes("Vazirmatn")&&p.includes("question-type")&&p.includes("ques
 assert.ok(p.includes("grid-template-columns:23mm 1fr")&&p.includes("background:#f8fafc")&&p.includes("border-top:3px solid #0f766e"),"Print header must use the new professional visual style");
 assert.ok(p.includes("S.questions.map((q,index)")&&p.includes("lastSection")&&p.includes("S.questions.map"),"Questions must render in their original order rather than being regrouped by type");
 assert.ok(p.includes('const text=isScanned?"":')&&p.includes('const visual=isScanned?')&&p.includes("q.cropDataUrl"),"Scanned question image must replace, not duplicate, the OCR text in print output");
-assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bbox.toBottom")&&p.includes("const leftRule=")&&p.includes("const rightRule=")&&p.includes("const topRule=")&&p.includes("const bottomRule="),"OCR crops must use detected table-cell boundaries on both axes");
+assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bbox.x0")&&p.includes("bbox.x1")&&p.includes("const leftRule=")&&p.includes("const rightRule=")&&p.includes("const topRule=")&&p.includes("const bottomRule="),"OCR crops must use detected table-cell boundaries on both axes");
 assert.ok(p.includes("data-f=\"type\"")&&p.includes('value="test"')&&p.includes('value="blank"')&&p.includes('value="tf"')&&p.includes('value="short"')&&p.includes('value="essay"'),"Every question must have a selectable question type");
 assert.ok(p.includes("page-number")&&p.includes("@page{size:A4"),"A4 print layout must retain page numbering support");
 
