@@ -1,13 +1,14 @@
 (function(root){
 "use strict";
 const clean=v=>String(v??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim();
+const display=v=>String(v??"").replace(/[\\u200c\\u200f\\u202a-\\u202e]/g,"").trim();
 const key=v=>clean(v).replace(/\s+/g,"").toLowerCase();
 const clock=v=>{const m=clean(v).match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=+m[1],n=+m[2];return h<24&&n<60?h*60+n:null};
 function generate(input){
  const errors=[],days=(input.days||[]).map(clean).filter(Boolean),periods=(input.periods||[]).map(p=>({number:Number(clean(p.number)),start:clean(p.start),end:clean(p.end)}));
  const teachers=(input.teachers||[]).map((t,i)=>({id:i,name:clean(t.name),subjects:(t.subjects||[]).map(clean).filter(Boolean),days:(t.days||[]).map(clean).filter(Boolean)}));
- const requirements=(input.requirements||[]).map((r,i)=>({id:i,className:clean(r.className),subject:clean(r.subject),count:Number(r.count),weight:clean(r.weight)}));
- const groups=(input.alternatingGroups||[]).map((g,i)=>({id:i,classA:clean(g.classA),classB:clean(g.classB),subjectA:clean(g.subjectA),subjectB:clean(g.subjectB),weight:clean(g.weight)}));
+ const requirements=(input.requirements||[]).map((r,i)=>({id:i,className:display(r.className),subject:clean(r.subject),count:Number(r.count),weight:clean(r.weight)}));
+ const groups=(input.alternatingGroups||[]).map((g,i)=>({id:i,classA:display(g.classA),classB:display(g.classB),subjectA:clean(g.subjectA),subjectB:clean(g.subjectB),weight:clean(g.weight)}));
  if(!days.length)errors.push("روزهای فعال مدرسه را انتخاب کنید.");
  if(!periods.length)errors.push("زنگ‌های مدرسه را تعریف کنید.");
  const periodSet=new Set();
