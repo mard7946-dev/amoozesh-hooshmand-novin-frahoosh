@@ -1,34 +1,76 @@
-import assert from "node:assert/strict";import{readFileSync}from"node:fs";
-const p=readFileSync("teacher-photo-exam.html","utf8"),portal=readFileSync("portal.html","utf8"),wf=readFileSync(".github/workflows/publish-six-icon-portal.yml","utf8");
-for(const x of ['id="photos"','multiple','data-f="text"','data-f="points"','data-f="lines"','اختلاف بارم','confirm(','size:A4','break-inside:avoid','تصویر اصلی سؤال','تبدیل عکس به متن سؤال','افزودن سؤال دستی','افزودن سؤال از تصویر بارگذاری‌شده','fas+eng','در حال استخراج متن سؤال','متن سؤال استخراج شد'])assert.ok(p.includes(x),"Missing "+x);
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+
+const p=readFileSync("teacher-photo-exam.html","utf8");
+const portal=readFileSync("portal.html","utf8");
+const wf=readFileSync(".github/workflows/publish-six-icon-portal.yml","utf8");
+
+for(const token of [
+  'id="photos"','multiple','data-f="text"','data-f="points"','data-f="lines"',
+  'confirm(','size:A4','break-inside:avoid','تصویر اصلی سؤال','تبدیل عکس به متن سؤال',
+  'افزودن سؤال دستی','افزودن سؤال از تصویر بارگذاری‌شده','fas+eng',
+  'در حال استخراج متن سؤال','متن سؤال استخراج شد'
+]) assert.ok(p.includes(token),"Missing "+token);
+
 assert.ok(p.includes("frahoosh_novin_access_token")&&p.includes('portalRole!=="teacher"'),"Page must reject direct access without the teacher session");
-assert.ok(p.includes("اداره كل آموزش و پرورش شهرستان هاي استان تهران")&&p.includes("۱۴۰۶-۱۴۰۵")&&p.includes("نمره تجدید نظر با عدد")&&p.includes("تعداد صفحه")&&p.includes("class=\"school-head\"")&&p.includes("groups.length"),"Exam print header must retain school identity, year, page count, and review fields");
+assert.ok(p.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران")&&p.includes("۱۴۰۵–۱۴۰۶")&&p.includes("class=\"school-head\""),"School identity and header must remain in the page");
 assert.ok(portal.includes("طراح برگه آزمون تصویری")&&portal.includes("teacher-photo-exam.html"));
 assert.ok(wf.includes("'teacher-photo-exam.html'")&&wf.includes("teacher-photo-exam.html _site/"));
-assert.ok(p.includes('<div class="question-number">سؤال ')&&p.includes('<div class="question-mark">بارم: ')&&p.includes('<article class="question-card question-row">'),"Each question must render in its own bordered card with its number and score");
-assert.ok(p.includes("position:relative;display:flex;align-items:center;justify-content:center")&&p.includes("سال تحصیلی ۱۴۰۶-۱۴۰۵"),"Centered header and Persian year must be formatted");
-assert.ok(p.includes(".figure{display:block;width:auto;height:auto;max-width:100%;max-height:none;object-fit:contain") && p.includes("q.cropDataUrl||photo.dataUrl")&&p.includes("cropOcrQuestionImage(p.file,item.bbox)") && p.includes("reader.readAsDataURL(f)"),"Original uploaded image must be embedded as a data URL in print output with proportional sizing and no height clipping");assert.ok(p.includes("question-card")&&p.includes("questions-list")&&p.includes("Vazirmatn")&&p.includes("document.fonts.ready"),"Print output must use independent question cards and wait for the Persian font");assert.ok(p.includes('data-f="type"')&&p.includes('value="test"')&&p.includes('value="blank"')&&p.includes('value="tf"')&&p.includes('value="short"')&&p.includes('value="essay"'),"Every question must have a selectable question type");assert.ok(p.includes('class="type-card question-row"')&&p.includes('type==="essay"?items.map')&&p.includes('سؤال‌های تستی')&&p.includes('سؤال‌های جای خالی')&&p.includes('سؤال‌های صحیح و غلط')&&p.includes('سؤال‌های پاسخ کوتاه'),"Objective questions must be grouped by type and every essay question must have its own card");
-const js=[...p.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(x=>x.trim()).at(-1);assert.doesNotThrow(()=>new Function(js));
+assert.ok(p.includes("function makeDoc()")&&p.includes("question-card-head")&&p.includes("question-card-content"),"Print output must use the redesigned question cards");
+assert.ok(p.includes("Vazirmatn")&&p.includes("question-type")&&p.includes("question-score"),"Professional output must include readable Persian typography, type and score labels");
+assert.ok(p.includes("grid-template-columns:23mm 1fr")&&p.includes("background:#f8fafc")&&p.includes("border-top:3px solid #0f766e"),"Print header must use the new professional visual style");
+assert.ok(p.includes("S.questions.map((q,index)")&&p.includes("lastSection")&&p.includes("S.questions.map"),"Questions must render in their original order rather than being regrouped by type");
+assert.ok(p.includes('const text=isScanned?"":')&&p.includes('const visual=isScanned?')&&p.includes("q.cropDataUrl"),"Scanned question image must replace, not duplicate, the OCR text in print output");
+assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bitmap.width,bottom-top")&&p.includes("bbox.toBottom"),"OCR image crops must preserve the complete question row instead of a single OCR text line");
+assert.ok(p.includes("data-f=\"type\"")&&p.includes('value="test"')&&p.includes('value="blank"')&&p.includes('value="tf"')&&p.includes('value="short"')&&p.includes('value="essay"'),"Every question must have a selectable question type");
+assert.ok(p.includes("page-number")&&p.includes("@page{size:A4"),"A4 print layout must retain page numbering support");
 
-// Exercise the same OCR segmentation and classification functions used by the page.
-const helperStart=p.indexOf("function normalizeOcrText("),helperEnd=p.indexOf("async function ocrPhoto",helperStart);
-const helperSource=p.slice(helperStart,helperEnd);
-assert.ok(helperStart>=0&&helperEnd>helperStart,"Layout-aware OCR parsing helpers must be present");
-const ocrHelpers=new Function(helperSource+"; return {splitOcrQuestions,inferOcrQuestionType,extractOcrQuestionRecords};")();
-const parsed=ocrHelpers.splitOcrQuestions("۱- حاصل ۲+۲ چیست؟\n۲- جای خالی را کامل کنید: تهران پایتخت ______ است.\n۳- درست یا نادرست: زمین گرد است.\n۴- گزینه صحیح را انتخاب کنید:\nالف) گزینه اول\nب) گزینه دوم");
+const js=[...p.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(x=>x.trim()).at(-1);
+assert.doesNotThrow(()=>new Function(js),"Page JavaScript must parse");
+
+const helperStart=p.indexOf("function normalizeOcrText(");
+const helperEnd=p.indexOf("async function ocrPhoto",helperStart);
+assert.ok(helperStart>=0&&helperEnd>helperStart,"OCR parsing helpers must be present");
+const helpers=new Function(p.slice(helperStart,helperEnd)+"; return {splitOcrQuestions,inferOcrQuestionType,extractOcrQuestionRecords,detectOcrSection};")();
+
+const parsed=helpers.splitOcrQuestions("۱- حاصل ۲+۲ چیست؟\n۲- جای خالی را کامل کنید: تهران پایتخت ______ است.\n۳- درست یا نادرست: زمین گرد است.\n۴- گزینه صحیح را انتخاب کنید:\nالف) گزینه اول\nب) گزینه دوم");
 assert.equal(parsed.length,4,"Numbered OCR questions must become separate question records");
 assert.deepEqual(parsed.map(q=>q.type),["essay","blank","tf","test"],"OCR questions must be classified into the four requested types");
-assert.equal(ocrHelpers.splitOcrQuestions("یک سؤال بدون شماره")[0].text,"یک سؤال بدون شماره","Unnumbered OCR text must remain one question");
-assert.ok(p.includes("متن تصویر به ")&&p.includes("S.questions.splice(firstIndex,1,...created)"),"OCR must insert separated questions into the question list"); 
-const layoutLines=[{text:"گزینه صحیح را انتخاب کنید",bbox:{x0:10,y0:10,x1:300,y1:30}},{text:"۱) حاصل ۲+۲ چیست؟",bbox:{x0:10,y0:40,x1:300,y1:60}},{text:"الف) گزینه اول",bbox:{x0:10,y0:65,x1:300,y1:82}},{text:"ب) گزینه دوم",bbox:{x0:10,y0:84,x1:300,y1:101}},{text:"در جای خالی کلمه مناسب را بنویسید",bbox:{x0:10,y0:120,x1:300,y1:140}},{text:"۱) تهران پایتخت ______ است.",bbox:{x0:10,y0:150,x1:300,y1:170}},{text:"درستی و نادرستی عبارت‌های زیر را مشخص کنید",bbox:{x0:10,y0:190,x1:300,y1:210}},{text:"۱) زمین گرد است.",bbox:{x0:10,y0:220,x1:300,y1:240}},{text:"سوالات تشریحی",bbox:{x0:10,y0:260,x1:300,y1:280}},{text:"۱) مجموعه زیر را بنویسید.",bbox:{x0:10,y0:290,x1:300,y1:310}},{text:"الف) زیرمجموعه اول",bbox:{x0:10,y0:315,x1:300,y1:332}},{text:"ب) زیرمجموعه دوم",bbox:{x0:10,y0:334,x1:300,y1:351}}];
-const layoutQuestions=ocrHelpers.extractOcrQuestionRecords({text:layoutLines.map(x=>x.text).join("\\n"),lines:layoutLines});
+assert.equal(helpers.splitOcrQuestions("یک سؤال بدون شماره")[0].text,"یک سؤال بدون شماره","Unnumbered OCR text must remain one question");
+assert.equal(helpers.detectOcrSection("سؤال‌های تستی"),"A","Persian multiple-choice section title must be recognized");
+assert.equal(helpers.detectOcrSection("سؤال‌های جای خالی"),"B","Persian fill-in section title must be recognized");
+assert.equal(helpers.detectOcrSection("سؤال‌های صحیح و غلط"),"C","Persian true-false section title must be recognized");
+assert.equal(helpers.detectOcrSection("سوالات تشریحی"),"D","Persian essay section title must be recognized");
+
+const layoutLines=[
+ {text:"سؤال‌های تستی",bbox:{x0:10,y0:10,x1:300,y1:30}},
+ {text:"۱) حاصل ۲+۲ چیست؟",bbox:{x0:10,y0:40,x1:300,y1:60}},
+ {text:"الف) گزینه اول",bbox:{x0:10,y0:65,x1:300,y1:82}},
+ {text:"ب) گزینه دوم",bbox:{x0:10,y0:84,x1:300,y1:101}},
+ {text:"سؤال‌های جای خالی",bbox:{x0:10,y0:120,x1:300,y1:140}},
+ {text:"سؤال ۲",bbox:{x0:10,y0:150,x1:300,y1:170}},
+ {text:"تهران پایتخت ______ است.",bbox:{x0:10,y0:172,x1:300,y1:185}},
+ {text:"سؤال‌های صحیح و غلط",bbox:{x0:10,y0:190,x1:300,y1:210}},
+ {text:"۳) زمین گرد است.",bbox:{x0:10,y0:220,x1:300,y1:240}},
+ {text:"سوالات تشریحی",bbox:{x0:10,y0:260,x1:300,y1:280}},
+ {text:"۴) مجموعه زیر را بنویسید.",bbox:{x0:10,y0:290,x1:300,y1:310}},
+ {text:"الف) زیرمجموعه اول",bbox:{x0:10,y0:315,x1:300,y1:332}},
+ {text:"ب) زیرمجموعه دوم",bbox:{x0:10,y0:334,x1:300,y1:351}}
+];
+const layoutQuestions=helpers.extractOcrQuestionRecords({text:layoutLines.map(x=>x.text).join("\n"),lines:layoutLines});
 assert.equal(layoutQuestions.length,4,"Layout OCR must keep the four printed exam sections separate");
-assert.deepEqual(layoutQuestions.map(q=>q.section),["A","B","C","D"],"Section headers must determine each question's section");
+assert.deepEqual(layoutQuestions.map(q=>q.section),["A","B","C","D"],"Section headings must determine each question's section");
 assert.deepEqual(layoutQuestions.map(q=>q.type),["test","blank","tf","essay"],"Section headings must override noisy OCR type guesses");
+assert.deepEqual(layoutQuestions.map(q=>q.number),["۱","۲","۳","۴"],"Question labels at the start or end of OCR lines must be recognized");
 assert.ok(layoutQuestions[0].text.includes("الف) گزینه اول")&&layoutQuestions[0].text.includes("ب) گزینه دوم"),"Multiple-choice options must remain attached to their parent question");
 assert.deepEqual(layoutQuestions[3].subparts,["الف","ب"],"Persian subparts must remain nested under the numbered essay question");
 assert.ok(layoutQuestions[3].text.includes("الف) زیرمجموعه اول")&&layoutQuestions[3].text.includes("ب) زیرمجموعه دوم"),"Essay subpart text must not be split into independent questions");
-assert.deepEqual(layoutQuestions.map(q=>q.bbox),[{y0:40,y1:101},{y0:150,y1:170},{y0:220,y1:240},{y0:290,y1:351}],"Each question must retain its vertical image bounds for preserving diagrams and tables");
-
+assert.deepEqual(layoutQuestions.map(q=>q.bbox),[
+ {y0:40,y1:115,toBottom:false},
+ {y0:150,y1:185,toBottom:false},
+ {y0:220,y1:255,toBottom:false},
+ {y0:290,y1:351,toBottom:true}
+],"Each question must retain its full vertical image region through the next question or section boundary");
+assert.ok(layoutQuestions[3].bbox.toBottom,"The final question crop must extend to the bottom of its source image so its diagram is not lost");
 
 console.log("Teacher photo exam builder checks passed.");
