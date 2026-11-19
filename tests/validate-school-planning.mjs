@@ -29,6 +29,7 @@ const attendance = build({category:"غیبت و بی‌نظمی حضور",facts:
 assert.equal(attendance.length, 3, "Challenge analysis must return staged actions");
 assert.ok(attendance[0].phase.includes("امروز"), "First challenge action must be immediate");
 assert.ok(attendance.every(x => x.owner && x.measure && x.action.includes("هزینه")), "Every suggested action must include an owner, a measurable follow-up, and low-cost framing");
+assert.ok(attendance.every(x => x.action.includes("افزایش غیبت دوشنبه‌ها") && x.action.includes("معاون اجرایی")), "Challenge suggestions must explicitly use the manager-entered facts and available school capacity");
 const learning = build({category:"افت یادگیری",facts:"ضعف در یک مبحث"});
 assert.ok(learning.some(x => x.measure.includes("سنجش")), "Learning challenge must include a before/after measurement");
 

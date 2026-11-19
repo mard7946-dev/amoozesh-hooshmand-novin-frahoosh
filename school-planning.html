@@ -61,7 +61,7 @@
    <section class="panel sources"><h2>منابع مبنای طراحی</h2>
     <p><a href="https://samanketab.roshdmag.ir/Roshdmag_content/media/article/6.7%20from%20%2899-400%29%20MATN%20MADRESE%20FADA%205-3_-1.pdf" target="_blank" rel="noopener">راهنمای «تدبیر برای مدرسه» در مجلات رشد</a></p>
     <p><a href="https://www.roshdmag.ir/Roshdmag_content/media/Magazine2/fa/2020/1/1782.pdf" target="_blank" rel="noopener">راهنمای برنامه ویژه مدرسه و پاسخ به نیازهای محلی</a></p>
-    <p><a href="https://newsmedia.tasnimmedia.com/Tasnim/Uploaded/Document/1405/03/10/140503101539371593694051.pdf" target="_blank" rel="noopener">دستورالعمل ثبت‌نام سال تحصیلی ۱۴۰۵–۱۴۰۶</a></p>
+    <p><a href="https://newsmedia.tasnimmedia.com/Tasnim/Uploaded/Document/1405/03/10/140503101539371593694051.pdf" target="_blank" rel="noopener">دستورالعمل ثبت‌نام سال تحصیلی ۱۴۰۵–۱۴۰۶</a></p><p class="muted">تاریخ تعطیلات و مناسبت‌های رسمی باید پیش از ثبت نهایی با ابلاغیه‌های همان سال و اطلاعیه منطقه تطبیق داده شوند؛ این صفحه تاریخ رسمی را حدس نمی‌زند.</p>
    </section>
   </aside>
  </div>
@@ -138,7 +138,8 @@ function buildRecommendations(d){
  "اجرای برنامه و هماهنگی کارکنان":[["امروز","برنامه‌های هم‌زمان و کارهای عقب‌افتاده را فهرست کنید؛ فعالیت‌های کم‌اثر را حذف یا جابه‌جا کنید.","مدیر","فهرست اولویت‌های هفته."],["این هفته","برای هر اقدام فقط یک مسئول پاسخ‌گو، یک مهلت واقع‌بینانه و یک خروجی قابل مشاهده تعیین کنید.","مدیر و مسئولان واحدها","درصد اقدامات دارای مسئول و مهلت روشن."],["پایان هفته","جلسه پیگیری کوتاه برگزار کنید و موانع را ثبت کنید؛ فعالیت انجام‌نشده را صرفاً برای گزارش، انجام‌شده اعلام نکنید.","مدیر","اقدامات تکمیل‌شده، عقب‌افتاده و علت هرکدام."]]
  };
  const selected=map[category]||[["امروز","مسئله را به یک مشاهده قابل بررسی و یک سؤال مشخص تبدیل کنید؛ در صورت کمبود شواهد، ابتدا داده جمع‌آوری کنید.","مدیر و مسئول مرتبط","شواهد اولیه و محدوده مسئله."],["این هفته","یک اقدام کوچک، کم‌هزینه و قابل بازگشت انتخاب کنید و مسئول و زمان مشخص بدهید.","مسئول تعیین‌شده توسط مدیر","خروجی قابل مشاهده و ثبت‌شده."],["هفته آینده","نتیجه را با وضعیت اولیه مقایسه کنید و در صورت بی‌اثر بودن، راهکار را اصلاح یا متوقف کنید.","مدیر و مسئول اقدام","شواهد تغییر و تصمیم بعدی."]];
- return selected.map(([phase,action,owner,measure])=>({phase,action:action+" "+lowCost,owner,measure,context:{observed:d.facts||"",impact:d.impact||"",constraints:limits,available_resources:resources}}));
+ const contextNote=[d.facts?"شاهد ثبت‌شده: "+d.facts:"",d.affected?"دامنه اثر: "+d.affected:"",d.impact?"اثر گزارش‌شده: "+d.impact:"",resources?"ظرفیت موجود: "+resources:"",limits?"محدودیت: "+limits:"",d.desired?"نتیجه مطلوب: "+d.desired:""].filter(Boolean).join(" | ");
+ return selected.map(([phase,action,owner,measure])=>({phase,action:action+" "+lowCost+(contextNote?" مبنای تطبیق: "+contextNote:""),owner,measure,context:{observed:d.facts||"",impact:d.impact||"",constraints:limits,available_resources:resources,desired:d.desired||""}}));
 }
 function showRecommendations(list){
  $("challengeAdvice").hidden=!list?.length;$("recommendations").replaceChildren();if(!list?.length)return;
