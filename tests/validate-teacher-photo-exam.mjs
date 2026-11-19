@@ -19,8 +19,8 @@ assert.ok(wf.includes("'teacher-photo-exam.html'")&&wf.includes("teacher-photo-e
 assert.ok(p.includes("function makeDoc()")&&p.includes("question-card-head")&&p.includes("question-card-content"),"Print output must use the redesigned question cards");
 assert.ok(p.includes("Vazirmatn")&&p.includes("question-type")&&p.includes("question-score"),"Professional output must include readable Persian typography, type and score labels");
 assert.ok(p.includes("grid-template-columns:23mm 1fr")&&p.includes("background:#f8fafc")&&p.includes("border-top:3px solid #0f766e"),"Print header must use the new professional visual style");
-assert.ok(p.includes("S.questions.map((q,index)")&&p.includes("lastSection")&&p.includes("S.questions.map"),"Questions must render in their original order rather than being regrouped by type");
-assert.ok(p.includes('const text=isScanned?"":')&&p.includes('const visual=isScanned?')&&p.includes("q.cropDataUrl"),"Scanned question image must replace, not duplicate, the OCR text in print output");
+assert.ok(p.includes('const groupable=new Set(["test","blank","tf","short"])')&&p.includes("group.items.push")&&p.includes('type==="essay"'),"Independent questions must be grouped by type while essay and composite questions remain separate");
+assert.ok(p.includes("const visual=imageSrc?")&&p.includes("const text=q.text?")&&p.includes("q.cropDataUrl")&&p.includes("question-scan"),"Cropped question images and recognized text must appear together inside the same question card");
 assert.ok(p.includes("cropOcrQuestionImage(p.file,item.bbox)")&&p.includes("bbox.x0")&&p.includes("bbox.x1")&&p.includes("const leftRule=")&&p.includes("const rightRule=")&&p.includes("const topRule=")&&p.includes("const bottomRule="),"OCR crops must use detected table-cell boundaries on both axes");
 assert.ok(p.includes("data-f=\"type\"")&&p.includes('value="test"')&&p.includes('value="blank"')&&p.includes('value="tf"')&&p.includes('value="short"')&&p.includes('value="essay"'),"Every question must have a selectable question type");
 assert.ok(p.includes("page-number")&&p.includes("@page{size:A4"),"A4 print layout must retain page numbering support");
@@ -74,3 +74,6 @@ assert.deepEqual(layoutQuestions.map(q=>q.bbox),[
 assert.ok(layoutQuestions[3].bbox.toBottom,"The final question crop must extend to the bottom of its source image so its diagram is not lost");
 
 console.log("Teacher photo exam builder checks passed.");
+
+assert.ok(p.includes("subparts:item.subparts||[]")&&p.includes("composite:(item.subparts||[]).length>0"),"OCR-detected subparts must keep a multi-part question in one independent card");
+assert.ok(p.includes("question-group")&&p.includes("question-item")&&p.includes("typeNames[group.type]"),"Print output must create shared type groups and individual question cards");
