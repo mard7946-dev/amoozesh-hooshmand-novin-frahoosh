@@ -15,7 +15,6 @@ for (const marker of [
   'student_code.ilike.*',
   'student.father_name',
   'student.birth_date',
-  'student.birth_certificate_no',
   'limit:"12"',
   'پس از انتخاب خودکار تکمیل می‌شود؛ ورود دستی هم ممکن است'
 ]) assert.ok(page.includes(marker), "Study certificate student search is missing: " + marker);
@@ -67,6 +66,7 @@ for (const marker of [
   'id="vQr"'
 ]) assert.ok(page.includes(marker), "Printed certificate layout/content is missing: " + marker);
 assert.ok(!page.includes('id="issueDate"') && !page.includes('vIssueDate'), "The printed sample has only one date field");
+assert.ok(!page.includes('id="identity"') && !page.includes('vIdentity') && !page.includes("شماره شناسنامه"), "Identity certificate number must not appear in the form or printed certificate");
 assert.ok(!page.includes('id="serial" value="۱"'), "Certificate number must be entered by the executive deputy, not prefilled");
 assert.ok(!page.includes('id="grade" value="هشتم"'), "Student grade must be entered or selected, not prefilled with sample data");
 
