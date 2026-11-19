@@ -66,12 +66,12 @@ Deno.serve(async (req: Request) => {
         .select("id,title,cloudflare_meeting_id,status,expires_at,tenant_school_id")
         .eq("id", invite.meeting_id).eq("tenant_school_id", invite.tenant_school_id).maybeSingle();
       if (meetingError) throw meetingError;
-      if (!meeting || meeting.status !== "active" || new Date(meeting.expires_at).getTime() <= Date.now()) {
+      if (!meeting || meeting.status !== "active") {
         return reply({ message: "جلسه آزمایشی پایان یافته است." }, 410);
       }
       const roomName = clean(meeting.cloudflare_meeting_id);
       if (!roomName.startsWith("frahoosh-")) return reply({ message: "اتاق جلسه آماده ورود مهمان نیست." }, 409);
-      const remaining = Math.floor((new Date(meeting.expires_at).getTime() - Date.now()) / 1000);
+      const remaining = Math.floor((new Date(invite.expires_at).getTime() - Date.now()) / 1000);
       const identity = "guest-" + crypto.randomUUID();
       const credentials = await createLiveKitParticipantToken(roomName, identity, guestName, {
         host: false, screenShare: false, role: "guest", ttlSeconds: Math.min(1800, remaining),
