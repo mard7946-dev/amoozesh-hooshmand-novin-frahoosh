@@ -61,7 +61,11 @@ assert.equal(alternating.rows.length,2,"the shared period must be represented fo
 assert.equal(alternating.rows[0].weekday,alternating.rows[1].weekday);
 assert.equal(alternating.rows[0].period,alternating.rows[1].period);
 assert.deepEqual([...alternating.rows[0].teachers].sort(),["دبیر الف","دبیر ب"]);
-assert.ok(alternating.rows.every(r=>r.alternating&&r.alternating_teacher.includes("·")));\nassert.ok(alternating.rows.find(r=>r.class_name==="۷/۱").teacher.includes("علوم"));\nassert.ok(alternating.rows.find(r=>r.class_name==="۷/۱").alternating_teacher.includes("مطالعات"));\nassert.ok(alternating.rows.find(r=>r.class_name==="۷/۲").teacher.includes("مطالعات"));\nassert.ok(alternating.rows.find(r=>r.class_name==="۷/۲").alternating_teacher.includes("علوم"));
+assert.ok(alternating.rows.every(r=>r.alternating&&r.alternating_teacher.includes("·")));
+assert.ok(alternating.rows.find(r=>r.class_name==="۷/۱").teacher.includes("علوم"));
+assert.ok(alternating.rows.find(r=>r.class_name==="۷/۱").alternating_teacher.includes("مطالعات"));
+assert.ok(alternating.rows.find(r=>r.class_name==="۷/۲").teacher.includes("مطالعات"));
+assert.ok(alternating.rows.find(r=>r.class_name==="۷/۲").alternating_teacher.includes("علوم"));
 assert.equal(alternating.rows[0].class_name==="۷/۱"?alternating.rows[0].teacher.includes("دبیر الف"):alternating.rows[1].teacher.includes("دبیر الف"),true);
 
 const noTeacher=generate({...base,requirements:[{className:"۷/۱",subject:"زیست",count:1}]});
