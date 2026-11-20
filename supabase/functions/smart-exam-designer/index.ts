@@ -22,6 +22,13 @@ const sourceTypes = new Set(["official_reference", "ai_generated", "teacher_auth
 function validatePayload(raw: unknown) {
   if (!raw || typeof raw !== "object") throw new Error("اطلاعات آزمون معتبر نیست.");
   const source = raw as Record<string, unknown>;
+  const rawHeader = source.header && typeof source.header === "object" ? source.header as Record<string, unknown> : {};
+  const header = {
+    class_name: clean(rawHeader.class_name, 80),
+    teacher_name: clean(rawHeader.teacher_name, 100),
+    exam_date: clean(rawHeader.exam_date, 24),
+    duration_minutes: clean(rawHeader.duration_minutes, 4),
+  };
   if (!Array.isArray(source.questions) || source.questions.length < 1 || source.questions.length > 100) {
     throw new Error("هر آزمون باید بین ۱ تا ۱۰۰ سؤال داشته باشد.");
   }
@@ -70,7 +77,7 @@ function validatePayload(raw: unknown) {
     };
   });
   if (total > 100) throw new Error("مجموع بارم آزمون نباید از ۱۰۰ بیشتر شود.");
-  return { questions, total_points: Number(total.toFixed(2)) };
+  return { header, questions, total_points: Number(total.toFixed(2)) };
 }
 
 Deno.serve(async (req: Request) => {
