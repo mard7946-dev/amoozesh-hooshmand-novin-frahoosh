@@ -26,7 +26,8 @@ assert.ok(page.includes('id="className"') && page.includes('id="teacherName"') &
 assert.ok(page.includes("counter(page)") && page.includes("counter(pages)") && page.includes("display:table-header-group"), "The print layout must repeat the header and number printed pages");
 assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, questions"), "Validated header metadata must be stored with the draft");
 assert.ok(migration.includes("Official exam header metadata is incomplete") && migration.includes("duration_minutes"), "Database finalization must reject incomplete print-header metadata");
-assert.ok(page.includes("چاپ نهایی تا اتصال فایل سربرگ رسمی مدرسه فعال نمی‌شود"), "Print must not use an unapproved substitute header");
+assert.ok(page.includes("پیش‌نمایش و چاپ این نسخه با سربرگ رسمی ارسالی مدرسه انجام می‌شود"), "Print must use the supplied official school header");
+assert.ok(api.includes("asciiDigits(rawHeader.duration_minutes)"), "Persian numerals in exam duration must be normalized before database validation");
 assert.ok(legacyApi.includes('["executive","executive_deputy","معاون اجرایی"]') && !legacyApi.includes('["educational","educational_deputy","معاون آموزشی"]'), "Legacy question-bank endpoint must no longer authorize educational deputy as vault manager");
 assert.ok(legacyApi.indexOf("if(!manager&&!deputy)") < legacyApi.indexOf('if(action==="add_to_collection"&&(deputy||teacher))'), "Legacy endpoint must reject teachers before shared-bank actions are reachable");
 const scripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(x => x.trim());
