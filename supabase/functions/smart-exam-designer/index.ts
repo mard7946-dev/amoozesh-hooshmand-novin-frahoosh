@@ -140,6 +140,126 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, role: manager ? "manager" : "executive", vault: data || [] });
     }
 
+
+    if (action === "generate_questions" && teacher) {
+      const cloudflareToken = (Deno.env.get("CLOUDFLARE_AI_TOKEN") || "").trim();
+      const cloudflareAccount = (Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || "").trim();
+      if (!cloudflareToken || !/^[a-f0-9]{32}$/.test(cloudflareAccount)) {
+        return reply({ message: "اتصال هوش مصنوعی در محیط مدرسه پیکربندی نشده است." }, 503);
+      }
+      const sourceText = clean(body.source_text, 15000);
+      const pageReference = clean(body.page_reference, 80);
+      const requested = Array.isArray(body.question_plan) ? body.question_plan : [];
+      const targetPoints = Number(body.total_points ?? 20);
+      if (sourceText.length < 200 || !pageReference || requested.length < 1 || requested.length > 8 ||
+          !Number.isFinite(targetPoints) || targetPoints <= 0 || targetPoints > 20) {
+        return reply({ message: "متن کتاب (حداقل ۲۰۰ نویسه)، شماره صفحه، انواع سؤال و بارم کل را کامل کنید." }, 400);
+      }
+      const plan: { type: string; count: number }[] = [];
+      let count = 0;
+      for (const item of requested) {
+        if (!item || typeof item !== "object") return reply({ message: "برنامهٔ تولید سؤال معتبر نیست." }, 400);
+        const type = clean((item as Record<string, unknown>).type, 60);
+        const amount = Number((item as Record<string, unknown>).count);
+        if (!questionTypes.has(type) || !Number.isInteger(amount) || amount < 1 || amount > 15) {
+          return reply({ message: "نوع یا تعداد سؤال درخواستی معتبر نیست." }, 400);
+        }
+        plan.push({ type, count: amount });
+        count += amount;
+      }
+      if (count < 1 || count > 40 || new Set(plan.map(x => x.type)).size !== plan.length) {
+        return reply({ message: "مجموع سؤال‌ها باید بین ۱ تا ۴۰ باشد و هر نوع فقط یک بار ثبت شود." }, 400);
+      }
+      const typeLabels: Record<string, string> = {
+        multiple_choice: "تستی چهارگزینه‌ای", conceptual: "مفهومی", true_false: "صحیح یا غلط",
+        fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
+        problem: "مسئله", equation: "معادله", grammar: "گرامر",
+        vocabulary: "معنی واژه", synonym_antonym: "مترادف یا متضاد",
+        translation: "ترجمه", other: "سایر"
+      };
+      const planText = plan.map(x => ({ نوع: typeLabels[x.type], تعداد: x.count }));
+      const systemPrompt = [
+        "You are an assessment author for Persian-speaking middle-school students.",
+        "Create original questions using ONLY the supplied textbook excerpt. Never import or reproduce a question from an external source.",
+        "Return one valid JSON object only: {\"questions\":[{\"question_type\":string,\"prompt\":string,\"options\":string[],\"correct_answer\":string,\"explanation\":string,\"difficulty\":\"easy|medium|hard\"}]}",
+        "Use exactly the requested question types and exact counts. Do not add or omit questions.",
+        "For multiple_choice provide exactly four distinct options and make correct_answer identify the correct option. For other types options may be empty.",
+        "Write clear age-appropriate Persian. No unsupported facts, trick wording, duplicate questions, or content beyond the excerpt.",
+        "Essay questions must each be independently answerable. Keep questions concise and ensure every answer is supported by the excerpt.",
+        "Do not assign marks. Do not include source URLs. The application will attach the supplied printed page reference."
+      ].join(" ");
+      const userPrompt = JSON.stringify({
+        subject: clean(body.subject, 100),
+        grade: Number(body.grade),
+        chapter: clean(body.chapter, 180),
+        lesson: clean(body.lesson, 180),
+        printed_page_reference: pageReference,
+        requested_question_plan: planText,
+        textbook_excerpt: sourceText
+      });
+      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+      let generated: unknown;
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+            max_tokens: Math.min(7000, 500 + count * 180),
+            temperature: 0.25
+          }),
+          signal: controller.signal
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result?.success !== true) {
+          console.error("Cloudflare Workers AI request failed", response.status, JSON.stringify(result).slice(0, 1200));
+          return reply({ message: "سرویس تولید سؤال پاسخ معتبر نداد. تنظیمات مدل یا سهمیهٔ سرویس را بررسی کنید." }, 502);
+        }
+        let content = clean(result?.result?.response, 30000);
+        content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+        generated = JSON.parse(content);
+      } catch (error) {
+        console.error("Cloudflare Workers AI request error", error instanceof Error ? error.message : "unknown");
+        return reply({ message: "ارتباط با سرویس تولید سؤال برقرار نشد یا پاسخ آن قابل خواندن نبود." }, 502);
+      } finally {
+        clearTimeout(timeout);
+      }
+      const rawQuestions = (generated as Record<string, unknown>)?.questions;
+      if (!Array.isArray(rawQuestions) || rawQuestions.length !== count) {
+        return reply({ message: "تعداد سؤال‌های پاسخ‌داده‌شده با درخواست دبیر برابر نیست؛ دوباره تلاش کنید." }, 502);
+      }
+      const expected = new Map(plan.map(x => [x.type, x.count]));
+      const actual = new Map<string, number>();
+      const perQuestionPoints = Number((targetPoints / count).toFixed(2));
+      const questions = rawQuestions.map((entry, index) => {
+        if (!entry || typeof entry !== "object") throw new Error("ساختار پاسخ هوش مصنوعی معتبر نیست.");
+        const q = entry as Record<string, unknown>;
+        const type = clean(q.question_type, 60);
+        actual.set(type, (actual.get(type) || 0) + 1);
+        const prompt = clean(q.prompt, 5000);
+        const options = Array.isArray(q.options) ? q.options.slice(0, 4).map(x => clean(x, 1000)).filter(Boolean) : [];
+        const answer = clean(q.correct_answer, 3000);
+        if (!expected.has(type) || !prompt || !answer || (type === "multiple_choice" && options.length !== 4)) {
+          throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست.");
+        }
+        return {
+          order: index + 1, question_type: type,
+          difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
+          prompt, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
+          points: perQuestionPoints, source_origin: "ai_generated",
+          source_url: "", source_title: "", source_license: "", source_permission_confirmed: false,
+          source_page_reference: pageReference
+        };
+      });
+      if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
+          Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetPoints) > 0.05) {
+        return reply({ message: "ترکیب یا بارم سؤال‌های تولیدشده با درخواست شما مطابقت ندارد." }, 502);
+      }
+      return reply({ ok: true, questions, total_points: Number(questions.reduce((sum, q) => sum + q.points, 0).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
+    }
+
     if (action === "save_draft" && teacher) {
       const paperId = clean(body.paper_id, 80) || null;
       const title = clean(body.title, 180);

@@ -39,6 +39,20 @@
 <div class="field"><label for="pageReference">شماره صفحه یا بازه صفحات</label><input id="pageReference" maxlength="80" placeholder="مثلاً ۲۴ تا ۲۸"></div>
 <div class="field"><label for="curriculumUrl">مرجع رسمی کتاب</label><input id="curriculumUrl" value="https://chap.sch.ir/" maxlength="1000"></div>
 </div>
+<div class="panel no-print" id="aiGenerationPanel">
+<h2>تولید سؤال از متن کتاب با هوش مصنوعی</h2>
+<p class="muted">متن استخراج‌شده از صفحه یا صفحات کتاب رسمی را وارد کنید. مدل فقط از همین متن سؤال تازه می‌سازد؛ پاسخ‌ها و بارم را قبل از ذخیره بررسی کنید. متن کامل کتاب در سامانه بایگانی نمی‌شود.</p>
+<div class="field"><label for="aiSourceText">متن درس / بخش موردنظر کتاب</label><textarea id="aiSourceText" maxlength="15000" rows="7" placeholder="متن استخراج‌شده از صفحه کتاب را اینجا وارد کنید (حداقل ۲۰۰ نویسه)."></textarea></div>
+<div class="grid">
+<div class="field"><label for="aiPageReference">شماره صفحه چاپی کتاب</label><input id="aiPageReference" maxlength="80" placeholder="مثلاً ۱۵ تا ۱۸"></div>
+<div class="field"><label for="aiTotalPoints">بارم کل سؤال‌های تولیدی</label><input id="aiTotalPoints" type="number" min="0.25" max="20" step="0.25" value="20"></div>
+</div>
+<div class="field"><label>تعداد هر نوع سؤال</label><div class="grid">
+<div class="field"><label for="aiCount_multiple_choice">تستی</label><input id="aiCount_multiple_choice" type="number" min="0" max="15" step="1" value="5" data-ai-type="multiple_choice"></div><div class="field"><label for="aiCount_conceptual">مفهومی</label><input id="aiCount_conceptual" type="number" min="0" max="15" step="1" value="0" data-ai-type="conceptual"></div><div class="field"><label for="aiCount_true_false">صحیح / غلط</label><input id="aiCount_true_false" type="number" min="0" max="15" step="1" value="0" data-ai-type="true_false"></div><div class="field"><label for="aiCount_fill_blank">جای خالی</label><input id="aiCount_fill_blank" type="number" min="0" max="15" step="1" value="0" data-ai-type="fill_blank"></div><div class="field"><label for="aiCount_short_answer">پاسخ کوتاه</label><input id="aiCount_short_answer" type="number" min="0" max="15" step="1" value="0" data-ai-type="short_answer"></div><div class="field"><label for="aiCount_essay">تشریحی</label><input id="aiCount_essay" type="number" min="0" max="15" step="1" value="0" data-ai-type="essay"></div><div class="field"><label for="aiCount_problem">مسئله</label><input id="aiCount_problem" type="number" min="0" max="15" step="1" value="0" data-ai-type="problem"></div><div class="field"><label for="aiCount_equation">معادله</label><input id="aiCount_equation" type="number" min="0" max="15" step="1" value="0" data-ai-type="equation"></div><div class="field"><label for="aiCount_grammar">گرامر</label><input id="aiCount_grammar" type="number" min="0" max="15" step="1" value="0" data-ai-type="grammar"></div><div class="field"><label for="aiCount_vocabulary">معنی لغت</label><input id="aiCount_vocabulary" type="number" min="0" max="15" step="1" value="0" data-ai-type="vocabulary"></div><div class="field"><label for="aiCount_synonym_antonym">مترادف / متضاد</label><input id="aiCount_synonym_antonym" type="number" min="0" max="15" step="1" value="0" data-ai-type="synonym_antonym"></div><div class="field"><label for="aiCount_translation">ترجمه</label><input id="aiCount_translation" type="number" min="0" max="15" step="1" value="0" data-ai-type="translation"></div><div class="field"><label for="aiCount_other">سایر</label><input id="aiCount_other" type="number" min="0" max="15" step="1" value="0" data-ai-type="other"></div>
+</div></div>
+<div class="actions"><button id="generateQuestions" type="button">تولید سؤال با هوش مصنوعی</button></div>
+<p class="muted">تولید سؤال از سرویس هوش مصنوعی استفاده می‌کند و ممکن است مشمول سهمیه یا هزینه حساب Cloudflare باشد. با زدن دکمه، درخواست تولید ارسال می‌شود.</p>
+</div>
 <div class="source-note">مرجع رسمی کتاب‌های درسی: chap.sch.ir. تا زمان ورود فهرست تأییدشده کتاب‌ها و فصل‌ها به سامانه، عنوان کتاب و فصل را عیناً از نسخه رسمی وارد کنید. متن کامل کتاب را در بانک سؤال بازنشر نکنید؛ فقط مشخصات ارجاع و سؤال تازه را ثبت کنید. در این مرحله ثبت و ویرایش سؤال فعال است؛ تولید خودکار سؤال با هوش مصنوعی هنوز به موتور تولید متصل نشده است.</div>
 </div>
 <div class="panel">
@@ -136,6 +150,20 @@ function renderPrintDocument(p){
 
 async function openVault(id){try{const data=await api("vault_get",{paper_id:id});const p=data.paper;state.activeVaultId=id;renderPrintDocument(p);$("vaultTitle").textContent=p.title;$("vaultMeta").textContent=p.subject+" · پایه "+p.grade+" · "+p.book_title+" · چاپ "+p.book_edition+" · مجموع بارم "+p.total_points;$("vaultQuestions").replaceChildren();(p.payload.questions||[]).forEach((q,i)=>{const card=document.createElement("article");card.className="question";const source=origins.find(x=>x[0]===q.source_origin)?.[1]||q.source_origin;card.innerHTML="<h3>سؤال "+(i+1)+" · "+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+" · "+esc(q.points)+" نمره</h3><div class=\"vault-content\">"+esc(q.prompt)+"</div>"+(q.options?.length?"<ol>"+q.options.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol>":"")+"<div class=\"muted\">منشأ: "+esc(source)+(q.source_title?" · "+esc(q.source_title):"")+(q.source_url?" · "+esc(q.source_url):"")+"</div>";$("vaultQuestions").append(card);});$("archiveVault").disabled=p.status!=="active";$("vaultDetail").classList.remove("hidden");$("vaultDetail").scrollIntoView({behavior:"smooth"});}catch(e){status(e.message,"error");}}
 async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");}catch(e){status(e.message,"error");}}
+async function generateQuestions(){
+ const sourceText=$("aiSourceText").value.trim(),pageReference=$("aiPageReference").value.trim();
+ const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(x=>x.count>0);
+ if(sourceText.length<200||!pageReference||!questionPlan.length){status("متن کتاب، شماره صفحه و دست‌کم یک تعداد سؤال را مشخص کنید.","error");return;}
+ if(!confirm("درخواست تولید سؤال به Cloudflare Workers AI ارسال می‌شود و ممکن است از سهمیه یا اعتبار حساب استفاده کند. ادامه می‌دهید؟"))return;
+ const button=$("generateQuestions");button.disabled=true;button.textContent="در حال تولید سؤال...";
+ try{
+  const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:$("subject").value,grade:Number($("grade").value),chapter:$("chapter").value,lesson:$("lesson").value});
+  state.questions=data.questions.map(q=>({...newQuestion(),...q}));
+  renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points,"ok");
+  $("questions").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){status(e.message,"error");}
+ finally{button.disabled=false;button.textContent="تولید سؤال با هوش مصنوعی";}
+}
 $("addQuestion").addEventListener("click",addQuestion);
 $("saveDraft").addEventListener("click",saveDraft);
 $("finalize").addEventListener("click",async()=>{if(!state.paperId){const saved=await saveDraft();if(!saved)return;}else{const saved=await saveDraft();if(!saved)return;}const header=collectMetadata().payload.header;if(!header.class_name||!header.teacher_name||!header.exam_date||!Number.isInteger(Number(header.duration_minutes))||Number(header.duration_minutes)<1||Number(header.duration_minutes)>600){status("برای تأیید نهایی، نام کلاس، نام دبیر، تاریخ شمسی و مدت امتحان را کامل کنید.","error");return;}if(!confirm("با تأیید نهایی، محتوای آزمون از دسترس حساب دبیر خارج و به مخزن محرمانه مدیر و معاون اجرایی منتقل می‌شود. ادامه می‌دهید؟"))return;try{const data=await api("finalize",{paper_id:state.paperId});state.paperId=null;state.questions=[];renderQuestions();await refreshTeacher();status(data.message,"ok");}catch(e){status(e.message,"error");}});
@@ -144,7 +172,7 @@ $("managementBack").addEventListener("click",()=>location.href="portal.html?step
 $("printExam").addEventListener("click",()=>window.print());
 $("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hidden"));
 $("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
-boot();
+$("generateQuestions").addEventListener("click",generateQuestions);\nboot();
 </script>
 </body>
 </html>
