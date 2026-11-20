@@ -41,7 +41,7 @@ console.log("Smart exam designer authorization, provenance, immutability, and UI
 assert.ok(api.includes('action === "generate_questions" && teacher'), "Only authenticated teachers may invoke AI question generation");
 assert.ok(api.includes("CLOUDFLARE_AI_TOKEN") && api.includes("CLOUDFLARE_ACCOUNT_ID"), "Cloudflare credentials must be read only from server-side secrets");
 assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_excerpt"), "AI generation must use the configured multilingual model and supplied textbook excerpt");
-assert.ok(api.includes("count > 40") && api.includes("questions.length !== count"), "Generation must enforce bounded and exact question counts");
-assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference"), "Generated questions must retain AI provenance and printed page reference");
+assert.ok(api.includes("count > 40") && api.includes("rawQuestions.length !== count"), "Generation must enforce bounded and exact question counts");
+assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
 assert.ok(page.includes('id="aiSourceText"') && page.includes('id="generateQuestions"') && page.includes("questionPlan"), "Teacher UI must expose textbook excerpt and question-count controls");
 assert.ok(page.includes("ممکن است از سهمیه یا اعتبار حساب استفاده کند"), "AI generation must disclose potential usage before the request");
