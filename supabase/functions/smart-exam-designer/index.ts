@@ -177,7 +177,7 @@ Deno.serve(async (req: Request) => {
         vocabulary: "معنی واژه", synonym_antonym: "مترادف یا متضاد",
         translation: "ترجمه", other: "سایر"
       };
-      const planText = plan.map(x => ({ نوع: typeLabels[x.type], تعداد: x.count }));
+      const planText = plan.map(x => ({ question_type: x.type, question_type_label: typeLabels[x.type], count: x.count }));
       const systemPrompt = [
         "You are an assessment author for Persian-speaking middle-school students.",
         "Create original questions using ONLY the supplied textbook excerpt. Never import or reproduce a question from an external source.",
