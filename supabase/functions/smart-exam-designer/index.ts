@@ -77,6 +77,7 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       source_title: sourceTitle,
       source_license: clean(q.source_license, 500),
       source_permission_confirmed: permission,
+      source_page_reference: clean(q.source_page_reference, 80),
     };
   });
   if (total > 100) throw new Error("مجموع بارم آزمون نباید از ۱۰۰ بیشتر شود.");

@@ -172,7 +172,8 @@ $("managementBack").addEventListener("click",()=>location.href="portal.html?step
 $("printExam").addEventListener("click",()=>window.print());
 $("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hidden"));
 $("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
-$("generateQuestions").addEventListener("click",generateQuestions);\nboot();
+$("generateQuestions").addEventListener("click",generateQuestions);
+boot();
 </script>
 </body>
 </html>
