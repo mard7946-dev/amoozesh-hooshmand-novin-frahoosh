@@ -8,6 +8,9 @@ const cors = {
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const clean = (value: unknown, max = 12000) => String(value ?? "").trim().slice(0, max);
+const asciiDigits = (value: unknown) => clean(value, 4)
+  .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+  .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
 const normalize = (value: unknown) => clean(value, 200)
   .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
@@ -27,7 +30,7 @@ function validatePayload(raw: unknown) {
     class_name: clean(rawHeader.class_name, 80),
     teacher_name: clean(rawHeader.teacher_name, 100),
     exam_date: clean(rawHeader.exam_date, 24),
-    duration_minutes: clean(rawHeader.duration_minutes, 4),
+    duration_minutes: asciiDigits(rawHeader.duration_minutes),
   };
   if (!Array.isArray(source.questions) || source.questions.length < 1 || source.questions.length > 100) {
     throw new Error("هر آزمون باید بین ۱ تا ۱۰۰ سؤال داشته باشد.");
