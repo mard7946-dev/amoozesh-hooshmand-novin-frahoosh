@@ -5,6 +5,7 @@ declare
   v_vault_count integer;
   v_draft_count integer;
   v_audit_count integer;
+  v_trigger_error text;
 begin
   if not (select relrowsecurity from pg_class where oid='public.smart_exam_papers'::regclass) then
     raise exception 'RLS is not enabled on smart_exam_papers';
@@ -65,11 +66,10 @@ begin
   begin
     update public.smart_exam_vault set payload='{"tampered":true}'::jsonb where paper_id=v_paper;
   exception when others then
-    -- The immutability trigger must reject any content rewrite.
-    v_draft_count := -1;
+    get stacked diagnostics v_trigger_error = message_text;
   end;
-  if v_draft_count <> -1 then
-    raise exception 'Finalized content update unexpectedly succeeded';
+  if v_trigger_error is distinct from 'Final exam content is immutable' then
+    raise exception 'Expected immutable trigger rejection, got %', coalesce(v_trigger_error,'no error');
   end if;
 
   if not public.archive_smart_exam(
