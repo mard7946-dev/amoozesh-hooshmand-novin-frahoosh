@@ -226,6 +226,196 @@ begin
     raise exception 'Draft questions are missing';
   end if;
 
+  if nullif(btrim(coalesce(v_payload->'header'->>'class_name','')),'') is null
+     or nullif(btrim(coalesce(v_payload->'header'->>'teacher_name','')),'') is null
+     or nullif(btrim(coalesce(v_payload->'header'->>'exam_date','')),'') is null
+     or coalesce(v_payload->'header'->>'duration_minutes','') !~ '^[0-9]{1,3}
+         count(*) filter (where coalesce(question->>'points','') !~ '^[0-9]+([.][0-9]{1,2})?$')::integer,
+         coalesce(sum(case
+           when coalesce(question->>'points','') ~ '^[0-9]+([.][0-9]{1,2})?$'
+           then (question->>'points')::numeric else 0 end),0)::numeric(8,2)
+  into v_count,v_invalid_points,v_total
+  from jsonb_array_elements(v_payload->'questions') as items(question);
+
+  if v_count < 1 or v_count > 100 or v_invalid_points > 0
+     or v_total <= 0 or v_total > 100 then
+    raise exception 'Invalid question count or total points';
+  end if;
+
+  insert into public.smart_exam_vault(
+    paper_id,tenant_school_id,created_by,title,subject,grade,book_title,
+    book_edition,chapter,lesson,topic,page_reference,curriculum_source_url,
+    payload,total_points
+  ) values (
+    v_paper.id,v_paper.tenant_school_id,v_paper.created_by,v_paper.title,
+    v_paper.subject,v_paper.grade,v_paper.book_title,v_paper.book_edition,
+    v_paper.chapter,v_paper.lesson,v_paper.topic,v_paper.page_reference,
+    v_paper.curriculum_source_url,v_payload,v_total
+  );
+
+  update public.smart_exam_papers
+  set status='submitted',total_points=v_total,submitted_at=now(),updated_at=now()
+  where id=v_paper.id;
+
+  delete from public.smart_exam_draft_payloads where paper_id=v_paper.id;
+
+  insert into public.smart_exam_audit_logs(
+    tenant_school_id,paper_id,actor_auth_user_id,event_type,details
+  ) values (
+    p_school_id,v_paper.id,p_actor_id,'finalized',
+    jsonb_build_object('total_points',v_total,'question_count',v_count)
+  );
+
+  return jsonb_build_object('paper_id',v_paper.id,'total_points',v_total,'status','submitted');
+end;
+$$;
+
+create or replace function public.archive_smart_exam(
+  p_paper_id uuid,
+  p_school_id uuid,
+  p_actor_id uuid
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_paper_id uuid;
+begin
+  select paper_id into v_paper_id
+  from public.smart_exam_vault
+  where paper_id=p_paper_id and tenant_school_id=p_school_id and status='active'
+  for update;
+  if v_paper_id is null then
+    return false;
+  end if;
+
+  update public.smart_exam_vault
+  set status='archived',archived_at=now(),archived_by=p_actor_id
+  where paper_id=p_paper_id and tenant_school_id=p_school_id;
+
+  update public.smart_exam_papers
+  set status='archived',archived_at=now(),updated_at=now()
+  where id=p_paper_id and tenant_school_id=p_school_id;
+
+  insert into public.smart_exam_audit_logs(
+    tenant_school_id,paper_id,actor_auth_user_id,event_type,details
+  ) values (p_school_id,p_paper_id,p_actor_id,'archived','{}'::jsonb);
+  return true;
+end;
+$$;
+
+revoke all on function public.prevent_smart_exam_vault_content_update() from public, anon, authenticated;
+revoke all on function public.save_smart_exam_draft(uuid,uuid,uuid,text,text,smallint,text,text,text,text,text,text,text,jsonb) from public, anon, authenticated;
+revoke all on function public.finalize_smart_exam(uuid,uuid,uuid) from public, anon, authenticated;
+revoke all on function public.archive_smart_exam(uuid,uuid,uuid) from public, anon, authenticated;
+grant execute on function public.save_smart_exam_draft(uuid,uuid,uuid,text,text,smallint,text,text,text,text,text,text,text,jsonb) to service_role;
+grant execute on function public.finalize_smart_exam(uuid,uuid,uuid) to service_role;
+grant execute on function public.archive_smart_exam(uuid,uuid,uuid) to service_role;
+
+comment on table public.smart_exam_vault is
+  'Immutable finalized school exam content. Access is mediated only by the smart-exam-designer Edge Function for manager and executive deputy roles.';
+comment on table public.smart_exam_draft_payloads is
+  'Mutable teacher-owned draft payloads. Removed atomically when a paper is finalized.';
+
+     or case
+          when coalesce(v_payload->'header'->>'duration_minutes','') ~ '^[0-9]{1,3}
+         count(*) filter (where coalesce(question->>'points','') !~ '^[0-9]+([.][0-9]{1,2})?$')::integer,
+         coalesce(sum(case
+           when coalesce(question->>'points','') ~ '^[0-9]+([.][0-9]{1,2})?$'
+           then (question->>'points')::numeric else 0 end),0)::numeric(8,2)
+  into v_count,v_invalid_points,v_total
+  from jsonb_array_elements(v_payload->'questions') as items(question);
+
+  if v_count < 1 or v_count > 100 or v_invalid_points > 0
+     or v_total <= 0 or v_total > 100 then
+    raise exception 'Invalid question count or total points';
+  end if;
+
+  insert into public.smart_exam_vault(
+    paper_id,tenant_school_id,created_by,title,subject,grade,book_title,
+    book_edition,chapter,lesson,topic,page_reference,curriculum_source_url,
+    payload,total_points
+  ) values (
+    v_paper.id,v_paper.tenant_school_id,v_paper.created_by,v_paper.title,
+    v_paper.subject,v_paper.grade,v_paper.book_title,v_paper.book_edition,
+    v_paper.chapter,v_paper.lesson,v_paper.topic,v_paper.page_reference,
+    v_paper.curriculum_source_url,v_payload,v_total
+  );
+
+  update public.smart_exam_papers
+  set status='submitted',total_points=v_total,submitted_at=now(),updated_at=now()
+  where id=v_paper.id;
+
+  delete from public.smart_exam_draft_payloads where paper_id=v_paper.id;
+
+  insert into public.smart_exam_audit_logs(
+    tenant_school_id,paper_id,actor_auth_user_id,event_type,details
+  ) values (
+    p_school_id,v_paper.id,p_actor_id,'finalized',
+    jsonb_build_object('total_points',v_total,'question_count',v_count)
+  );
+
+  return jsonb_build_object('paper_id',v_paper.id,'total_points',v_total,'status','submitted');
+end;
+$$;
+
+create or replace function public.archive_smart_exam(
+  p_paper_id uuid,
+  p_school_id uuid,
+  p_actor_id uuid
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_paper_id uuid;
+begin
+  select paper_id into v_paper_id
+  from public.smart_exam_vault
+  where paper_id=p_paper_id and tenant_school_id=p_school_id and status='active'
+  for update;
+  if v_paper_id is null then
+    return false;
+  end if;
+
+  update public.smart_exam_vault
+  set status='archived',archived_at=now(),archived_by=p_actor_id
+  where paper_id=p_paper_id and tenant_school_id=p_school_id;
+
+  update public.smart_exam_papers
+  set status='archived',archived_at=now(),updated_at=now()
+  where id=p_paper_id and tenant_school_id=p_school_id;
+
+  insert into public.smart_exam_audit_logs(
+    tenant_school_id,paper_id,actor_auth_user_id,event_type,details
+  ) values (p_school_id,p_paper_id,p_actor_id,'archived','{}'::jsonb);
+  return true;
+end;
+$$;
+
+revoke all on function public.prevent_smart_exam_vault_content_update() from public, anon, authenticated;
+revoke all on function public.save_smart_exam_draft(uuid,uuid,uuid,text,text,smallint,text,text,text,text,text,text,text,jsonb) from public, anon, authenticated;
+revoke all on function public.finalize_smart_exam(uuid,uuid,uuid) from public, anon, authenticated;
+revoke all on function public.archive_smart_exam(uuid,uuid,uuid) from public, anon, authenticated;
+grant execute on function public.save_smart_exam_draft(uuid,uuid,uuid,text,text,smallint,text,text,text,text,text,text,text,jsonb) to service_role;
+grant execute on function public.finalize_smart_exam(uuid,uuid,uuid) to service_role;
+grant execute on function public.archive_smart_exam(uuid,uuid,uuid) to service_role;
+
+comment on table public.smart_exam_vault is
+  'Immutable finalized school exam content. Access is mediated only by the smart-exam-designer Edge Function for manager and executive deputy roles.';
+comment on table public.smart_exam_draft_payloads is
+  'Mutable teacher-owned draft payloads. Removed atomically when a paper is finalized.';
+
+          then (v_payload->'header'->>'duration_minutes')::integer not between 1 and 600
+          else true
+        end then
+    raise exception 'Official exam header metadata is incomplete';
+  end if;
+
   select count(*)::integer,
          count(*) filter (where coalesce(question->>'points','') !~ '^[0-9]+([.][0-9]{1,2})?$')::integer,
          coalesce(sum(case
