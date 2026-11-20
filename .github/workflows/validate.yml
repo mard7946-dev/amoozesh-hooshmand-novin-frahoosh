@@ -37,6 +37,8 @@ jobs:
       - name: Install backend dependencies
         working-directory: server
         run: npm install --package-lock=false
+      - name: Check smart exam validation script syntax
+        run: node --check tests/validate-question-bank.mjs && node --check tests/validate-smart-exam-designer.mjs
       - name: Validate page structure and JavaScript syntax
         run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-question-bank.mjs && node tests/validate-smart-exam-designer.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs && node tests/validate-livekit-classroom.mjs && node tests/validate-teacher-assistant.mjs && node tests/validate-finance-dashboard.mjs && node tests/validate-purchase-invoices.mjs && node tests/validate-teacher-directory-entry.mjs
       - name: Validate professional report card feature
