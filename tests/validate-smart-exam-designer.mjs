@@ -12,7 +12,7 @@ assert.ok(api.includes('"executive"') && api.includes('memberRoles.has("executiv
 assert.ok(api.includes('action === "get_draft" && teacher') && api.includes('.eq("created_by", actorId).eq("status", "draft")'), "Teachers may retrieve only their own mutable drafts");
 assert.ok(api.includes('action === "vault_get" && (manager || executive)'), "Only manager and executive deputy may retrieve final exam content");
 assert.ok(api.includes('action === "archive" && (manager || executive)'), "Only manager and executive deputy may archive final exams");
-assert.ok(api.includes("origin === \\"ai_generated\\" && (sourceUrl || sourceTitle)"), "AI-generated questions must not be misrepresented as source-derived");
+assert.ok(api.includes('origin === "ai_generated" && (sourceUrl || sourceTitle)'), "AI-generated questions must not be misrepresented as source-derived");
 assert.ok(api.includes("chap.sch.ir") && api.includes("permitted_external"), "Official and permission-based source provenance must be validated");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("to service_role"), "All new exam tables must deny direct client access");
 assert.ok(migration.includes("finalize_smart_exam") && migration.includes("delete from public.smart_exam_draft_payloads"), "Finalization must atomically move content and remove teacher draft payload");
