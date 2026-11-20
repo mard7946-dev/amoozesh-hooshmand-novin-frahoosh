@@ -20,6 +20,12 @@ assert.ok(migration.includes("prevent_smart_exam_vault_content_update") && migra
 assert.ok(migration.includes("archive_smart_exam") && migration.includes("smart_exam_audit_logs"), "Archiving must be transactional and audited");
 assert.ok(page.includes("ai_generated") && page.includes("multiple_choice") && page.includes("synonym_antonym") && page.includes("translation"), "Question types and provenance choices must be available");
 assert.ok(page.includes("محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست"), "Teacher UI must not offer finalized content access");
+assert.ok(page.includes("چاپ / ذخیره PDF") && page.includes('src="assets/school-logo.svg"'), "The official school logo and print-to-PDF action must be used");
+assert.ok(page.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران") && page.includes("مدیریت آموزش و پرورش شهرستان قدس") && page.includes("دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲") && page.includes("۱۴۰۵–۱۴۰۶"), "The official school header must match the supplied template");
+assert.ok(page.includes('id="className"') && page.includes('id="teacherName"') && page.includes('id="examDate"') && page.includes('id="durationMinutes"'), "Teacher must enter the official header metadata before finalization");
+assert.ok(page.includes("counter(page)") && page.includes("counter(pages)") && page.includes("display:table-header-group"), "The print layout must repeat the header and number printed pages");
+assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, questions"), "Validated header metadata must be stored with the draft");
+assert.ok(migration.includes("Official exam header metadata is incomplete") && migration.includes("duration_minutes"), "Database finalization must reject incomplete print-header metadata");
 assert.ok(page.includes("چاپ نهایی تا اتصال فایل سربرگ رسمی مدرسه فعال نمی‌شود"), "Print must not use an unapproved substitute header");
 assert.ok(legacyApi.includes('["executive","executive_deputy","معاون اجرایی"]') && !legacyApi.includes('["educational","educational_deputy","معاون آموزشی"]'), "Legacy question-bank endpoint must no longer authorize educational deputy as vault manager");
 assert.ok(legacyApi.indexOf("if(!manager&&!deputy)") < legacyApi.indexOf('if(action==="add_to_collection"&&(deputy||teacher))'), "Legacy endpoint must reject teachers before shared-bank actions are reachable");
