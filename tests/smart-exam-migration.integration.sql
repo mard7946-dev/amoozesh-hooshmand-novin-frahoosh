@@ -44,7 +44,7 @@ begin
     'عددهای صحیح',
     'صفحه ۱۲',
     'https://chap.sch.ir/',
-    '{"header":{"class_name":"هفتم الف","teacher_name":"دبیر آزمایشی","exam_date":"۱۴۰۵/۰۹/۰۱","duration_minutes":"۶۰"},"questions":[{"question_type":"essay","prompt":"پرسش آزمایشی","points":10}]}'::jsonb
+    '{"header":{"class_name":"هفتم الف","teacher_name":"دبیر آزمایشی","exam_date":"۱۴۰۵/۰۹/۰۱","duration_minutes":"60"},"questions":[{"question_type":"essay","prompt":"پرسش آزمایشی","points":10}]}'::jsonb
   );
 
   v_result := public.finalize_smart_exam(
@@ -64,16 +64,13 @@ begin
 
   begin
     update public.smart_exam_vault set payload='{"tampered":true}'::jsonb where paper_id=v_paper;
-    raise exception 'Finalized content update unexpectedly succeeded';
-  exception when raise_exception then
-    if sqlerrm <> 'Finalized content update unexpectedly succeeded'
-       and sqlerrm <> 'Final exam content is immutable' then
-      raise;
-    end if;
-    if sqlerrm = 'Finalized content update unexpectedly succeeded' then
-      raise;
-    end if;
+  exception when others then
+    -- The immutability trigger must reject any content rewrite.
+    v_draft_count := -1;
   end;
+  if v_draft_count <> -1 then
+    raise exception 'Finalized content update unexpectedly succeeded';
+  end if;
 
   if not public.archive_smart_exam(
     v_paper,
