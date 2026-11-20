@@ -23,7 +23,7 @@ end;
 $$;
 
 set role service_role;
-do $
+do $$
 declare
   v_paper uuid;
   v_result jsonb;
