@@ -25,9 +25,9 @@ Deno.serve(async(req:Request)=>{
   if(pErr||!profile?.tenant_school_id) return reply({message:"پروفایل مدرسه تأیید نشد."},403);
   const role=norm(profile.role);
   const manager=["manager","مدیر","school_manager"].includes(role);
-  const deputy=["educational","educational_deputy","معاون آموزشی"].includes(role);
+  const deputy=["executive","executive_deputy","معاون اجرایی"].includes(role);
   const teacher=["teacher","دبیر","معلم"].includes(role);
-  if(!manager&&!deputy&&!teacher) return reply({message:"این نقش به بانک سؤال دسترسی ندارد."},403);
+  if(!manager&&!deputy) return reply({message:"این بخش فقط برای مدیر و معاون اجرایی مجاز است."},403);
   const {data:members,error:mErr}=await db.from("school_memberships").select("role").eq("school_id",profile.tenant_school_id).eq("auth_user_id",auth.user.id).eq("is_active",true);
   if(mErr) return reply({message:"بررسی عضویت مدرسه ناموفق بود."},503);
   const membershipRoles=(members||[]).map(x=>norm(x.role));
@@ -157,7 +157,7 @@ Deno.serve(async(req:Request)=>{
    if(total<=0||total>100)return reply({message:"مجموع نمره‌ها باید بیشتر از صفر و حداکثر ۱۰۰ باشد."},400);
    const {data,error}=await db.from("question_papers").update({status:"submitted",total_points:total,submitted_at:new Date().toISOString(),review_note:"",updated_at:new Date().toISOString()}).eq("id",paperId).in("status",["draft","returned"]).select("id").maybeSingle();
    if(error)throw error;if(!data)return reply({message:"وضعیت برگه تغییر کرده است؛ صفحه را تازه‌سازی کنید."},409);
-   return reply({ok:true,message:"برگه برای تأیید نهایی مدیر یا معاون آموزشی ارسال شد."});
+   return reply({ok:true,message:"برگه برای تأیید نهایی مدیر یا معاون اجرایی ارسال شد."});
   }
   if(action==="review_paper"&&(manager||deputy)){
    const paperId=clean(body.paper_id),decision=clean(body.decision),noteText=clean(body.note);
@@ -166,7 +166,7 @@ Deno.serve(async(req:Request)=>{
    const patch=decision==="approve"?{status:"approved",approved_by:auth.user.id,approved_at:new Date().toISOString(),review_note:"",updated_at:new Date().toISOString()}:{status:"returned",approved_by:null,approved_at:null,review_note:noteText,updated_at:new Date().toISOString()};
    const {data,error}=await db.from("question_papers").update(patch).eq("tenant_school_id",school).eq("id",paperId).eq("status","submitted").select("id").maybeSingle();
    if(error)throw error;if(!data)return reply({message:"فقط برگهٔ در انتظار تأیید قابل بررسی است."},409);
-   return reply({ok:true,message:decision==="approve"?"برگه تأیید نهایی شد؛ خروجی فقط برای مدیر و معاون آموزشی فعال است.":"برگه برای اصلاح به دبیر بازگردانده شد."});
+   return reply({ok:true,message:decision==="approve"?"برگه تأیید نهایی شد؛ خروجی فقط برای مدیر و معاون اجرایی فعال است.":"برگه برای اصلاح به دبیر بازگردانده شد."});
   }
   if(action==="get_approved_paper"&&(manager||deputy)){
    const paperId=clean(body.paper_id);
