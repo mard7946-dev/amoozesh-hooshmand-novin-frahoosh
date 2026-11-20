@@ -16,6 +16,8 @@ assert.ok(api.includes('origin === "ai_generated" && (sourceUrl || sourceTitle)'
 assert.ok(api.includes("chap.sch.ir") && api.includes("permitted_external"), "Official and permission-based source provenance must be validated");
 assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("to service_role"), "All new exam tables must deny direct client access");
 assert.ok(migration.includes("finalize_smart_exam") && migration.includes("delete from public.smart_exam_draft_payloads"), "Finalization must atomically move content and remove teacher draft payload");
+assert.equal(migration.split("create or replace function public.finalize_smart_exam(").length - 1, 1, "The migration must define exactly one complete finalization function");
+assert.ok(migration.includes("v_duration !~") && migration.includes("v_duration::integer not between 1 and 600"), "Database finalization must validate a normalized, bounded exam duration");
 assert.ok(migration.includes("prevent_smart_exam_vault_content_update") && migration.includes("Final exam content is immutable"), "Final vault content must be immutable");
 assert.ok(migration.includes("archive_smart_exam") && migration.includes("smart_exam_audit_logs"), "Archiving must be transactional and audited");
 assert.ok(page.includes("ai_generated") && page.includes("multiple_choice") && page.includes("synonym_antonym") && page.includes("translation"), "Question types and provenance choices must be available");
