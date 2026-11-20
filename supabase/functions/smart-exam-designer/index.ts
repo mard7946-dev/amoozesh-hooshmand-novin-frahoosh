@@ -16,13 +16,13 @@ const normalize = (value: unknown) => clean(value, 200)
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
 
 const questionTypes = new Set([
-  "multiple_choice", "true_false", "fill_blank", "short_answer", "essay",
+  "multiple_choice", "conceptual", "true_false", "fill_blank", "short_answer", "essay",
   "problem", "equation", "grammar", "vocabulary", "synonym_antonym",
   "translation", "other",
 ]);
 const sourceTypes = new Set(["official_reference", "ai_generated", "teacher_authored", "permitted_external"]);
 
-function validatePayload(raw: unknown) {
+function validatePayload(raw: unknown, allowIncomplete = false) {
   if (!raw || typeof raw !== "object") throw new Error("اطلاعات آزمون معتبر نیست.");
   const source = raw as Record<string, unknown>;
   const rawHeader = source.header && typeof source.header === "object" ? source.header as Record<string, unknown> : {};
@@ -43,20 +43,20 @@ function validatePayload(raw: unknown) {
     const type = clean(q.question_type, 60);
     const points = Number(q.points);
     const origin = clean(q.source_origin, 60);
-    if (!prompt || !questionTypes.has(type)) throw new Error("متن یا نوع سؤال " + (index + 1) + " معتبر نیست.");
+    if ((!allowIncomplete && !prompt) || !questionTypes.has(type)) throw new Error("متن یا نوع سؤال " + (index + 1) + " معتبر نیست.");
     if (!Number.isFinite(points) || points <= 0 || points > 100) throw new Error("بارم سؤال " + (index + 1) + " باید بیشتر از صفر و حداکثر ۱۰۰ باشد.");
     if (!sourceTypes.has(origin)) throw new Error("منشأ سؤال " + (index + 1) + " را مشخص کنید.");
     const sourceUrl = clean(q.source_url, 1000);
     const sourceTitle = clean(q.source_title, 240);
     const permission = q.source_permission_confirmed === true;
-    if (origin === "official_reference") {
+    if (origin === "official_reference" && (!allowIncomplete || prompt)) {
       let host = "";
       try { host = new URL(sourceUrl).hostname.toLowerCase(); } catch { /* invalid URL */ }
       if (!sourceTitle || !sourceUrl || !(host === "chap.sch.ir" || host.endsWith(".chap.sch.ir"))) {
         throw new Error("برای سؤال مستند، عنوان منبع و نشانی رسمی chap.sch.ir لازم است.");
       }
     }
-    if (origin === "permitted_external" && (!sourceUrl || !sourceTitle || !permission)) {
+    if (origin === "permitted_external" && (!allowIncomplete || prompt) && (!sourceUrl || !sourceTitle || !permission)) {
       throw new Error("برای منبع بیرونی، نشانی، عنوان و تأیید مجوز استفاده لازم است.");
     }
     if (origin === "ai_generated" && (sourceUrl || sourceTitle)) {
@@ -155,7 +155,7 @@ Deno.serve(async (req: Request) => {
         return reply({ message: "عنوان آزمون، درس، پایه هفتم تا نهم، کتاب رسمی و نشانی chap.sch.ir را کامل کنید." }, 400);
       }
       let validated;
-      try { validated = validatePayload(body.payload); }
+      try { validated = validatePayload(body.payload, true); }
       catch (error) { return reply({ message: error instanceof Error ? error.message : "محتوای سؤال‌ها معتبر نیست." }, 400); }
 
       const { data, error } = await db.rpc("save_smart_exam_draft", {
@@ -201,6 +201,15 @@ Deno.serve(async (req: Request) => {
 
     if (action === "finalize" && teacher) {
       const paperId = clean(body.paper_id, 80);
+      const { data: draft, error: draftError } = await db.from("smart_exam_draft_payloads")
+        .select("payload").eq("paper_id", paperId).maybeSingle();
+      if (draftError) throw draftError;
+      if (!draft?.payload) return reply({ message: "پیش‌نویس آزمون پیدا نشد." }, 404);
+      try {
+        validatePayload(draft.payload, false);
+      } catch (error) {
+        return reply({ message: error instanceof Error ? error.message : "همه سؤال‌ها باید کامل شوند." }, 400);
+      }
       const { data, error } = await db.rpc("finalize_smart_exam", {
         p_paper_id: paperId, p_school_id: schoolId, p_actor_id: actorId,
       });

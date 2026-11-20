@@ -80,7 +80,7 @@ const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
 const role=sessionStorage.getItem("frahoosh_novin_role")||"";
 const $=id=>document.getElementById(id);
 let state={role:"",papers:[],vault:[],questions:[],paperId:null,activeVaultId:null};
-const types=[["multiple_choice","تستی"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
+const types=[["multiple_choice","تستی"],["conceptual","مفهومی"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
 const origins=[["teacher_authored","تألیف دبیر"],["ai_generated","تولیدشده با هوش مصنوعی"],["official_reference","دارای ارجاع به کتاب رسمی"],["permitted_external","منبع بیرونی با مجوز"]];
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const asciiDigits=value=>String(value??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));

@@ -20,13 +20,15 @@ assert.equal(migration.split("create or replace function public.finalize_smart_e
 assert.ok(migration.includes("v_duration !~") && migration.includes("v_duration::integer not between 1 and 600"), "Database finalization must validate a normalized, bounded exam duration");
 assert.ok(migration.includes("prevent_smart_exam_vault_content_update") && migration.includes("Final exam content is immutable"), "Final vault content must be immutable");
 assert.ok(migration.includes("archive_smart_exam") && migration.includes("smart_exam_audit_logs"), "Archiving must be transactional and audited");
-assert.ok(page.includes("ai_generated") && page.includes("multiple_choice") && page.includes("synonym_antonym") && page.includes("translation"), "Question types and provenance choices must be available");
+assert.ok(page.includes("ai_generated") && page.includes("conceptual") && page.includes("multiple_choice") && page.includes("synonym_antonym") && page.includes("translation"), "Question types and provenance choices must be available");
 assert.ok(page.includes("محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست"), "Teacher UI must not offer finalized content access");
 assert.ok(page.includes("چاپ / ذخیره PDF") && page.includes('src="assets/school-logo.svg"'), "The official school logo and print-to-PDF action must be used");
 assert.ok(page.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران") && page.includes("مدیریت آموزش و پرورش شهرستان قدس") && page.includes("دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲") && page.includes("۱۴۰۵–۱۴۰۶"), "The official school header must match the supplied template");
 assert.ok(page.includes('id="className"') && page.includes('id="teacherName"') && page.includes('id="examDate"') && page.includes('id="durationMinutes"'), "Teacher must enter the official header metadata before finalization");
 assert.ok(page.includes("counter(page)") && page.includes("counter(pages)") && page.includes("display:table-header-group"), "The print layout must repeat the header and number printed pages");
 assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, questions"), "Validated header metadata must be stored with the draft");
+assert.ok(api.includes("function validatePayload(raw: unknown, allowIncomplete = false)") && api.includes("validatePayload(body.payload, true)") && api.includes("!allowIncomplete && !prompt"), "Incomplete teacher question cards must be saveable as drafts");
+assert.ok(api.includes("\"conceptual\""), "Conceptual questions must be accepted by the secure backend");
 assert.ok(migration.includes("Official exam header metadata is incomplete") && migration.includes("duration_minutes"), "Database finalization must reject incomplete print-header metadata");
 assert.ok(page.includes("پیش‌نمایش و چاپ این نسخه با سربرگ رسمی ارسالی مدرسه انجام می‌شود"), "Print must use the supplied official school header");
 assert.ok(api.includes("asciiDigits(rawHeader.duration_minutes)"), "Persian numerals in exam duration must be normalized before database validation");
