@@ -227,12 +227,12 @@ begin
   end if;
 
   select count(*)::integer,
-         count(*) filter (where coalesce(q->>'points','') !~ '^[0-9]+([.][0-9]{1,2})?$')::integer,
+         count(*) filter (where coalesce(question->>'points','') !~ '^[0-9]+([.][0-9]{1,2})?$')::integer,
          coalesce(sum(case
-           when coalesce(q->>'points','') ~ '^[0-9]+([.][0-9]{1,2})?$'
-           then (q->>'points')::numeric else 0 end),0)::numeric(8,2)
+           when coalesce(question->>'points','') ~ '^[0-9]+([.][0-9]{1,2})?$'
+           then (question->>'points')::numeric else 0 end),0)::numeric(8,2)
   into v_count,v_invalid_points,v_total
-  from jsonb_array_elements(v_payload->'questions') q;
+  from jsonb_array_elements(v_payload->'questions') as items(question);
 
   if v_count < 1 or v_count > 100 or v_invalid_points > 0
      or v_total <= 0 or v_total > 100 then
