@@ -23,13 +23,14 @@ end;
 $$;
 
 set role service_role;
-do $$
+do $
 declare
   v_paper uuid;
   v_result jsonb;
   v_vault_count integer;
   v_draft_count integer;
   v_audit_count integer;
+  v_trigger_error text;
 begin
   v_paper := public.save_smart_exam_draft(
     null,
