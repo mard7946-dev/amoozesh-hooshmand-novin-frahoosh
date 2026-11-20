@@ -31,7 +31,7 @@ Deno.serve(async(req:Request)=>{
   const {data:members,error:mErr}=await db.from("school_memberships").select("role").eq("school_id",profile.tenant_school_id).eq("auth_user_id",auth.user.id).eq("is_active",true);
   if(mErr) return reply({message:"بررسی عضویت مدرسه ناموفق بود."},503);
   const membershipRoles=(members||[]).map(x=>norm(x.role));
-  const valid=manager?membershipRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?membershipRoles.some(x=>["educational","educational_deputy","معاون آموزشی"].includes(x)):membershipRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
+  const valid=manager?membershipRoles.some(x=>["manager","مدیر","school_manager"].includes(x)):deputy?membershipRoles.some(x=>["executive","executive_deputy","معاون اجرایی"].includes(x)):membershipRoles.some(x=>["teacher","دبیر","معلم"].includes(x));
   if(!valid) return reply({message:"عضویت فعال این نقش در مدرسه تأیید نشد."},403);
   const body=await req.json().catch(()=>({}));
   const action=clean(body.action);
