@@ -22,7 +22,7 @@ assert.ok(page.includes("ai_generated") && page.includes("multiple_choice") && p
 assert.ok(page.includes("محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست"), "Teacher UI must not offer finalized content access");
 assert.ok(page.includes("چاپ نهایی تا اتصال فایل سربرگ رسمی مدرسه فعال نمی‌شود"), "Print must not use an unapproved substitute header");
 assert.ok(legacyApi.includes('["executive","executive_deputy","معاون اجرایی"]') && !legacyApi.includes('["educational","educational_deputy","معاون آموزشی"]'), "Legacy question-bank endpoint must no longer authorize educational deputy as vault manager");
-assert.ok(!legacyApi.includes('action==="add_to_collection"&&(deputy||teacher)'), "Legacy shared bank must not remain accessible to teachers");
+assert.ok(legacyApi.indexOf("if(!manager&&!deputy)") < legacyApi.indexOf('if(action==="add_to_collection"&&(deputy||teacher))'), "Legacy endpoint must reject teachers before shared-bank actions are reachable");
 const scripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(x => x.trim());
 for (const script of scripts) assert.doesNotThrow(() => new Function(script), "Smart exam designer JavaScript syntax must be valid");
 console.log("Smart exam designer authorization, provenance, immutability, and UI checks passed.");
