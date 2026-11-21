@@ -248,22 +248,80 @@ Deno.serve(async (req: Request) => {
       const sourceText = clean(body.source_text, 12000), pageReference = clean(body.page_reference, 120);
       const mode = clean(body.summary_mode, 20) === "compress" ? "compress" : "analyze";
       if (sourceText.length < 120 || !pageReference) return reply({ message: "متن بخش کتاب یا شماره صفحات برای تحلیل کافی نیست." }, 400);
-      const systemPrompt = mode === "compress"
-        ? ["You consolidate Persian middle-school textbook study notes.","Synthesize ALL supplied notes without dropping unique topics, definitions, processes, formulas, examples, or important distinctions.","Remove repetition only. Do not invent facts or add outside knowledge.","Return one valid JSON object only: {\"summary\":\"...\"}.","Write concise Persian notes, maximum 4500 characters, with compact topic headings."].join(" ")
-        : ["You analyze Persian middle-school textbook excerpts for grades 7-9.","Analyze the COMPLETE supplied excerpt, not only its beginning or end.","Preserve all distinct examinable concepts, definitions, facts, cause-effect links, steps, formulas, examples, vocabulary, and descriptions of diagrams or tables present in the text.","Do not create questions. Do not import outside facts. Do not reproduce long textbook passages verbatim; write concise original study notes.","Return one valid JSON object only: {\"summary\":\"...\"}.","Write Persian notes, maximum 900 characters, with the supplied page range as a heading."].join(" ");
+
+      const baseInstructions = mode === "compress"
+        ? [
+          "You consolidate Persian middle-school textbook study notes.",
+          "Preserve every distinct examinable topic, definition, process, formula, example, and important distinction.",
+          "Remove repetition only. Never invent facts or add outside knowledge.",
+          "Return exactly one valid JSON object: {\"summary\":\"Persian notes\"}. No markdown or text outside JSON.",
+          "Keep the summary concise, at most 3000 Persian characters, using compact headings."
+        ]
+        : [
+          "Analyze the COMPLETE supplied Persian textbook excerpt for grades 7-9.",
+          "Preserve all distinct examinable concepts, definitions, facts, cause-effect links, steps, formulas, examples, vocabulary, and diagram/table descriptions actually present.",
+          "Do not create questions, import outside facts, or copy long passages verbatim. Write concise original study notes.",
+          "Return exactly one valid JSON object: {\"summary\":\"Persian notes\"}. No markdown or text outside JSON.",
+          "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
+        ];
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
       const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 90000);
       try {
-        const response = await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+cloudflareToken,"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"system",content:systemPrompt},{role:"user",content:JSON.stringify({pages:pageReference,textbook_content_or_notes:sourceText})}],max_tokens:mode==="compress"?2400:650,temperature:0.15}),signal:controller.signal});
-        const result = await response.json().catch(()=>({}));
-        if(!response.ok||result?.success!==true){console.error("Cloudflare textbook analysis failed",response.status,JSON.stringify(result).slice(0,900));return reply({message:"تحلیل یکی از بخش‌های کتاب توسط هوش مصنوعی ناموفق بود؛ کمی بعد دوباره تلاش کنید."},502);}
-        let content=clean(result?.result?.response,12000);
-        content=content.replace(/^\uFEFF/,"").replace(/^\s*```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
-        const parsed=JSON.parse(content),summary=clean(parsed?.summary,mode==="compress"?4500:900);
-        if(summary.length<80)return reply({message:"یادداشت تحلیلی این بخش کامل دریافت نشد؛ دوباره تلاش کنید."},502);
-        return reply({ok:true,summary,page_reference:pageReference});
-      }catch(error){console.error("Textbook chunk analysis error",error instanceof Error?error.message:"unknown");return reply({message:error instanceof Error&&error.name==="AbortError"?"تحلیل یک بخش کتاب بیش از ۹۰ ثانیه طول کشید؛ دوباره تلاش کنید.":"پاسخ تحلیل کتاب قابل خواندن نبود؛ دوباره تلاش کنید."},502);}
-      finally{clearTimeout(timeout);}
+        let summary = "";
+        let lastParseError = "";
+        for (let attempt = 0; attempt < 2 && !summary; attempt++) {
+          const instructions = attempt === 0
+            ? baseInstructions
+            : baseInstructions.concat(["IMPORTANT: Previous output was incomplete. Produce a shorter complete JSON object; never stop before closing the JSON braces."]);
+          const maxTokens = mode === "compress"
+            ? (attempt === 0 ? 4500 : 6500)
+            : (attempt === 0 ? 1400 : 2200);
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [
+                { role: "system", content: instructions.join(" ") },
+                { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
+              ],
+              max_tokens: maxTokens,
+              temperature: 0.1
+            }),
+            signal: controller.signal
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || result?.success !== true) {
+            console.error("Cloudflare textbook analysis failed", response.status, JSON.stringify(result).slice(0, 900));
+            return reply({ message: "تحلیل یکی از بخش‌های کتاب توسط هوش مصنوعی ناموفق بود؛ کمی بعد دوباره تلاش کنید." }, 502);
+          }
+          const raw = clean(result?.result?.response, 20000).replace(/^\\uFEFF/, "").trim();
+          try {
+            const firstBrace = raw.indexOf("{"), lastBrace = raw.lastIndexOf("}");
+            if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error("Model response did not contain a complete JSON object");
+            const parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1));
+            const candidate = clean(parsed?.summary, mode === "compress" ? 3000 : 700);
+            if (candidate.length < 80) throw new Error("Model summary was empty or too short");
+            summary = candidate;
+          } catch (parseError) {
+            lastParseError = parseError instanceof Error ? parseError.message : "invalid model JSON";
+            console.warn("Textbook summary response was incomplete; retrying", { attempt: attempt + 1, responseLength: raw.length, reason: lastParseError });
+          }
+        }
+        if (!summary) {
+          console.error("Textbook summary failed after retry", { mode, sourceLength: sourceText.length, reason: lastParseError });
+          return reply({ message: "پاسخ هوش مصنوعی ناقص بود و پس از تلاش مجدد هم کامل نشد؛ بازه صفحات را به چند بخش کوچک‌تر تقسیم کنید و دوباره تلاش کنید." }, 502);
+        }
+        return reply({ ok: true, summary, page_reference: pageReference });
+      } catch (error) {
+        console.error("Textbook chunk analysis error", error instanceof Error ? error.message : "unknown");
+        return reply({
+          message: error instanceof Error && error.name === "AbortError"
+            ? "تحلیل یک بخش کتاب بیش از ۹۰ ثانیه طول کشید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
+            : "ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد؛ دوباره تلاش کنید."
+        }, 502);
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     if (action === "generate_questions" && teacher) {
