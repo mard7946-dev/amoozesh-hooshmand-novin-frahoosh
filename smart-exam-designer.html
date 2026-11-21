@@ -182,7 +182,7 @@ async function refreshTextbookLibrary(){
 }
 async function openTextbook(bookId){
   if(!bookId){status("ابتدا یک کتاب از فهرست انتخاب کنید.","error");return;}
-  try{const data=await api("textbook_download_url",{book_id:bookId});const opened=window.open(data.signed_url,"_blank","noopener");if(!opened)status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");}
+  try{const data=await api("textbook_download_url",{book_id:bookId});const opened=window.open("about:blank","_blank");if(!opened){status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");return;}opened.opener=null;opened.location.href=data.signed_url;}
   catch(e){status(e.message,"error");}
 }
 async function uploadTextbook(){
