@@ -40,6 +40,7 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     throw new Error("هر آزمون باید بین ۱ تا ۱۰۰ سؤال داشته باشد.");
   }
   let total = 0;
+  let totalImageBytes = 0;
   const questions = source.questions.map((entry, index) => {
     if (!entry || typeof entry !== "object") throw new Error("ساختار سؤال " + (index + 1) + " معتبر نیست.");
     const q = entry as Record<string, unknown>;
@@ -53,6 +54,12 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     const sourceUrl = clean(q.source_url, 1000);
     const sourceTitle = clean(q.source_title, 240);
     const permission = q.source_permission_confirmed === true;
+    const rawImage = typeof q.image_data_url === "string" ? q.image_data_url.trim() : "";
+    if (rawImage.length > 1500000 || (rawImage && !/^data:image\\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawImage))) {
+      throw new Error("تصویر سؤال معتبر نیست یا حجم آن بیش از حد مجاز است.");
+    }
+    totalImageBytes += rawImage.length;
+    if (totalImageBytes > 5000000) throw new Error("حجم مجموع تصاویر آزمون نباید از ۵ مگابایت بیشتر شود.");
     if (origin === "official_reference" && (!allowIncomplete || prompt)) {
       let host = "";
       try { host = new URL(sourceUrl).hostname.toLowerCase(); } catch { /* invalid URL */ }
@@ -83,6 +90,7 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       source_permission_confirmed: permission,
       source_page_reference: clean(q.source_page_reference, 80),
       source_pdf_page_reference: clean(q.source_pdf_page_reference, 80),
+      image_data_url: rawImage,
     };
   });
   if (total > 100) throw new Error("مجموع بارم آزمون نباید از ۱۰۰ بیشتر شود.");
