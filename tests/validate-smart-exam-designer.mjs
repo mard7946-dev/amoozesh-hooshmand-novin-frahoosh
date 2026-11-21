@@ -77,3 +77,5 @@ assert.ok(page.includes('q.image_data_url') && page.includes('class="question-im
 
 assert.ok(page.includes('data-image-file type="file"') && page.includes('data-image-pdf-crop') && page.includes("ensureSelectedPdfDocument") && page.includes('data-image-canvas') && page.includes('ثبت برش تصویر') && page.includes('state.questions[index].image_data_url=cropped'), "Teachers must be able to crop and attach an image from a textbook PDF page or image file to an individual question");
 assert.ok(api.includes("const rawImage = typeof q.image_data_url") && api.includes("totalImageBytes > 5000000") && api.includes("image_data_url: rawImage"), "Question images must be validated and bounded before they are stored in exam drafts or the final vault");
+
+assert.ok(api.includes("const targetCents = Math.round(targetPoints * 100)") && api.includes("const baseCents = Math.floor(targetCents / count)") && api.includes("(baseCents + (index < extraCents ? 1 : 0)) / 100"), "Generated question marks must sum exactly to the requested total without rounding drift");
