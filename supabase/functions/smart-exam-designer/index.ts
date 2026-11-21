@@ -317,7 +317,7 @@ Deno.serve(async (req: Request) => {
             return reply({ message: "تحلیل یکی از بخش‌های کتاب توسط هوش مصنوعی ناموفق بود؛ کمی بعد دوباره تلاش کنید." }, 502);
           }
           const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
-          const choices = Array.isArray(result?.choices) ? result.choices as Array<Record<string, unknown>> : [];
+          const choices = Array.isArray(resultBody.choices) ? resultBody.choices as Array<Record<string, unknown>> : [];
           const firstChoice = choices[0] || {};
           const firstMessage = firstChoice.message && typeof firstChoice.message === "object" ? firstChoice.message as Record<string, unknown> : {};
           const raw = clean(resultBody.response ?? firstMessage.content ?? "", 20000).replace(/^\\uFEFF/, "").trim();
