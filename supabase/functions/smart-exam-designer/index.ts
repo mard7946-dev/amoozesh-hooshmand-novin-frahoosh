@@ -266,11 +266,11 @@ Deno.serve(async (req: Request) => {
           "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
         ];
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
+      const analysisStartedAt = Date.now();
       try {
         let summary = "";
         let lastParseError = "";
         const maxTokens = mode === "compress" ? 1800 : 900;
-        const analysisStartedAt = Date.now();
         console.info("Textbook summary request started", { mode, sourceLength: sourceText.length, maxTokens });
         for (let attempt = 0; attempt < 1 && !summary; attempt++) {
           const controller = new AbortController();
@@ -283,7 +283,7 @@ Deno.serve(async (req: Request) => {
             headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
             body: JSON.stringify({
               messages: [
-                { role: "system", content: instructions.join(" ") },
+                { role: "system", content: baseInstructions.join(" ") },
                 { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
               ],
               max_completion_tokens: maxTokens,
