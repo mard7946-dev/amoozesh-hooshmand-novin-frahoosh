@@ -52,11 +52,11 @@
 <div class="panel">
 <div class="row"><h2>طراحی سؤال آزمون</h2><span class="pill">پیش‌نویس دبیر</span></div>
 <div class="grid">
-<div class="field"><label for="lesson">نام درس / بخش</label><input id="lesson" maxlength="180" placeholder="مثلاً فصل دوم، درس سوم"></div>
+<div class="field"><label for="lesson">نام درس</label><input id="lesson" maxlength="180" placeholder="پس از انتخاب کتاب تکمیل می‌شود" readonly></div>
 <div class="field"><label for="libraryBookSelect">انتخاب کتاب از مخزن مدرسه</label><select id="libraryBookSelect"><option value="">یک کتاب انتخاب کنید</option></select></div>
 <div class="field"><label for="pageFrom">از صفحه PDF</label><input id="pageFrom" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۱۵"></div>
 <div class="field"><label for="pageTo">تا صفحه PDF</label><input id="pageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۲۲"></div>
-<div class="field"><label for="questionMode">نوع سؤال</label><select id="questionMode"><option value="test">تستی</option><option value="mixed">تستی / تشریحی</option><option value="comprehensive">جامع (تمام بخش‌ها)</option></select></div>
+<div class="field"><label for="questionMode">نوع سؤال</label><select id="questionMode"><option value="">نوع سؤال را انتخاب کنید</option><option value="test">تستی</option><option value="mixed">تستی / تشریحی</option><option value="comprehensive">جامع (تمام بخش‌ها)</option></select></div>
 </div>
 <div id="questionCountsPanel" class="panel hidden"><h3>تعداد سؤال هر بخش</h3><p class="muted">برای هر بخش، تعداد موردنظر را انتخاب کنید. صفر یعنی از آن بخش سؤالی تولید نشود.</p><div id="questionCounts" class="grid"></div></div>
 <details class="panel"><summary>مشخصات برگه آزمون (برای سربرگ و بایگانی)</summary>
@@ -273,7 +273,7 @@ $("generateQuestions").addEventListener("click",generateQuestions);
 $("uploadTextbook").addEventListener("click",uploadTextbook);
 
 $("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
-$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book)return;$("grade").value=String(book.grade);$("subject").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
+$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book){$("lesson").value="";return;}$("grade").value=String(book.grade);$("subject").value=book.subject;$("lesson").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
 $("questionMode").addEventListener("change",renderQuestionCounts);
 renderQuestionCounts();
 async function loginTestAccount(){
