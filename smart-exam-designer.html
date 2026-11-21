@@ -13,7 +13,7 @@
 .exam-paper{display:block;background:#fff;color:#111;direction:rtl;font-family:"B Zar","B Nazanin",Tahoma,serif;width:100%;max-width:210mm;margin:14px auto;padding:7mm;border:1px solid #cbd5e1;box-shadow:0 3px 18px #0f172a18}.exam-paper table{width:100%;border-collapse:collapse;table-layout:fixed}.exam-paper th,.exam-paper td{border:1px solid #111;padding:5px 7px}.exam-paper .school-head td{height:29mm;padding:0}.exam-paper .school-head-inner{width:100%;border-collapse:collapse}.exam-paper .school-head-inner td{border:0}.exam-paper .school-title{text-align:center;font-weight:700;line-height:1.65;font-size:13px}.exam-paper .logo-cell{width:27%;text-align:center;vertical-align:middle}.exam-paper .logo-cell img{width:25mm;height:25mm;object-fit:contain}.exam-paper .meta-grid{width:100%;border-collapse:collapse}.exam-paper .meta-grid td{height:9mm;font-size:11px}.exam-paper .meta-grid .label{font-weight:700;white-space:nowrap}.exam-paper .exam-table{margin-top:3mm}.exam-paper .exam-table thead{display:table-header-group}.exam-paper .exam-table th{font-size:11px;text-align:center;background:#f8fafc}.exam-paper .exam-table > thead > tr:last-child > th:first-child,.exam-paper .exam-table > tbody > tr > td:first-child{width:9mm;text-align:center}.exam-paper .exam-table > thead > tr:last-child > th:last-child,.exam-paper .exam-table > tbody > tr > td:last-child{width:13mm;text-align:center}.exam-paper .exam-table tbody tr{break-inside:avoid;page-break-inside:avoid}.exam-paper .exam-table tbody td{min-height:21mm;height:21mm;vertical-align:top;font-size:12px;line-height:1.8}.exam-paper .question-body{white-space:pre-wrap;overflow-wrap:anywhere}.exam-paper .question-options{margin:3px 0 0;padding-right:18px}.exam-paper .question-type{font-size:9px;color:#444;margin-bottom:3px}.exam-paper .empty-row td{height:21mm}.exam-paper .score-cell{font-weight:700}
 @media print{@page{size:A4 portrait;margin:7mm;@bottom-right{content:"صفحه " counter(page) " از " counter(pages);font-family:Tahoma;font-size:9px}}body{background:#fff!important}.wrap{display:block!important;max-width:none!important;padding:0!important}.hero,#status,#teacherPanel,.no-print{display:none!important}#managementPanel{display:block!important}.panel{display:none!important}#vaultDetail{display:block!important;border:0!important;padding:0!important;margin:0!important}#printDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}#vaultDetail>.row,#vaultMeta,#vaultQuestions{display:none!important}.exam-paper .school-head td{height:27mm}.exam-paper .exam-table tbody td{min-height:20mm;height:20mm}}
 .exam-paper .group-heading th{background:#eef2f7;text-align:right;font-weight:700;font-size:11px;padding:4px 8px}.exam-paper .question-group{break-inside:auto;page-break-inside:auto}.exam-paper .essay-group{break-inside:avoid;page-break-inside:avoid}.exam-paper .essay-group .group-heading th{background:#fff7ed;border-bottom:0}.exam-paper .essay-group>tr:not(.group-heading)>td{border-top:0}
-</style>
+\n#textbookPdfPreview{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}#textbookPdfCanvas{display:block;width:100%;height:auto;max-height:75vh;object-fit:contain;background:#f8fafc}#textbookPdfPreview .preview-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}</style>
 </head>
 <body>
 <main class="wrap">
@@ -47,7 +47,7 @@
     <div class="actions"><button id="uploadTextbook" type="button">بارگذاری و ثبت کتاب</button></div>
     <p class="muted">نام فایل باید با کد کتاب یکسان باشد؛ برای نمونه C706.pdf. سقف هر فایل در این مرحله ۵۰ مگابایت است.</p>
   </div>
-  <div id="textbookLibraryList" class="muted">در حال دریافت کتاب‌های ثبت‌شده…</div>
+  <div id="textbookPdfPreview" class="hidden"><div class="preview-toolbar"><strong id="textbookPreviewTitle">پیش‌نمایش کتاب</strong><div class="actions"><button id="textbookPrevPage" type="button" class="secondary">صفحه قبل</button><span id="textbookPreviewPage" class="muted">۱ / ۱</span><button id="textbookNextPage" type="button" class="secondary">صفحه بعد</button><button id="textbookClosePreview" type="button" class="danger">بستن</button></div></div><canvas id="textbookPdfCanvas" aria-label="پیش‌نمایش صفحه کتاب"></canvas></div>\n  <div id="textbookLibraryList" class="muted">در حال دریافت کتاب‌های ثبت‌شده…</div>
 </section>
 <section id="teacherPanel" class="hidden">
 <div class="panel">
@@ -219,11 +219,37 @@ async function refreshTextbookLibrary(){
   select.innerHTML='<option value="">یک کتاب انتخاب کنید</option>'+textbookBooks.map(book=>'<option value="'+esc(book.id)+'">'+esc("پایه "+book.grade+" · "+book.subject+" · "+book.book_code+" · "+book.edition)+'</option>').join("");
   $("textbookLibraryList").innerHTML=textbookBooks.length?textbookBooks.map(book=>'<div class="book-row"><div><strong>'+esc(book.book_code)+' · '+esc(book.subject)+'</strong><div class="muted">پایه '+esc(book.grade)+' · '+esc(book.edition)+' · '+(Number(book.file_size_bytes)/1048576).toFixed(1)+' مگابایت</div></div><button type="button" class="secondary" data-open-textbook="'+esc(book.id)+'">مشاهده PDF</button></div>').join(""):'هنوز کتابی در کتابخانه مدرسه ثبت نشده است.';
 }
+let textbookPreviewDocument=null,textbookPreviewPageNumber=1,textbookPreviewRenderTask=null;
+async function renderTextbookPreviewPage(){
+  if(!textbookPreviewDocument)return;
+  const page=await textbookPreviewDocument.getPage(textbookPreviewPageNumber),canvas=$("textbookPdfCanvas"),context=canvas.getContext("2d");
+  const base=page.getViewport({scale:1}),scale=Math.min(2,1400/base.width,1800/base.height),viewport=page.getViewport({scale});
+  canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+  if(textbookPreviewRenderTask){try{textbookPreviewRenderTask.cancel();}catch(_){}}
+  textbookPreviewRenderTask=page.render({canvasContext:context,viewport});
+  await textbookPreviewRenderTask.promise;textbookPreviewRenderTask=null;
+  $("textbookPreviewPage").textContent=String(textbookPreviewPageNumber)+" / "+String(textbookPreviewDocument.numPages);
+  $("textbookPrevPage").disabled=textbookPreviewPageNumber<=1;
+  $("textbookNextPage").disabled=textbookPreviewPageNumber>=textbookPreviewDocument.numPages;
+}
 async function openTextbook(bookId){
   if(!bookId){status("ابتدا یک کتاب از فهرست انتخاب کنید.","error");return;}
-  const opened=window.open("about:blank","_blank");if(!opened){status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");return;}
-  try{const data=await api("textbook_download_url",{book_id:bookId});opened.opener=null;opened.location.href=data.signed_url;}
-  catch(e){opened.close();status(e.message,"error");}
+  const button=$("textbookLibraryList").querySelector('[data-open-textbook="'+CSS.escape(bookId)+'"]');
+  if(button){button.disabled=true;button.textContent="در حال دریافت…";}
+  try{
+    status("در حال دریافت امن کتاب و آماده‌سازی پیش‌نمایش…");
+    textbookPreviewDocument=await ensureSelectedPdfDocument(bookId);
+    textbookPreviewPageNumber=1;
+    const book=textbookBooks.find(item=>item.id===bookId);
+    $("textbookPreviewTitle").textContent=(book?.subject||"کتاب درسی")+" · "+(book?.book_code||"");
+    $("textbookPdfPreview").classList.remove("hidden");
+    await renderTextbookPreviewPage();
+    $("textbookPdfPreview").scrollIntoView({behavior:"smooth",block:"start"});
+    status("کتاب با موفقیت باز شد. برای مرور صفحات از دکمه‌های قبل و بعد استفاده کنید.","ok");
+  }catch(e){
+    $("textbookPdfPreview").classList.add("hidden");
+    status("بازکردن PDF ناموفق بود: "+(e.message||"خطای نامشخص") ,"error");
+  }finally{if(button){button.disabled=false;button.textContent="مشاهده PDF";}}
 }
 async function uploadTextbook(){
   const file=$("textbookPdf").files[0],grade=Number($("textbookGrade").value),code=$("textbookCode").value.trim().toUpperCase(),subject=$("textbookSubject").value.trim(),title=$("textbookTitle").value.trim(),edition=$("textbookEdition").value.trim()||"۱۴۰۵–۱۴۰۶";
@@ -312,6 +338,9 @@ $("generateQuestions").addEventListener("click",generateQuestions);
 $("uploadTextbook").addEventListener("click",uploadTextbook);
 
 $("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
+$("textbookPrevPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber<=1)return;textbookPreviewPageNumber--;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
+$("textbookNextPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber>=textbookPreviewDocument.numPages)return;textbookPreviewPageNumber++;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
+$("textbookClosePreview").addEventListener("click",()=>$("textbookPdfPreview").classList.add("hidden"));
 $("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book){$("lesson").value="";return;}$("grade").value=String(book.grade);$("subject").value=book.subject;$("lesson").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
 $("questionMode").addEventListener("change",renderQuestionCounts);
 renderQuestionCounts();
