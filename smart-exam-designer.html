@@ -230,15 +230,15 @@ async function extractSelectedPdfPages(bookId,fromPage,toPage){
  let combined="";
  for(let pageNo=fromPage;pageNo<=toPage;pageNo++){
   status("در حال خواندن صفحه "+pageNo+" از "+toPage+"…");const page=await pdf.getPage(pageNo),content=await page.getTextContent();
-  let pageText=content.items.map(item=>item.str||"").join(" ").replace(/\\s+/g," ").trim();
+  let pageText=content.items.map(item=>item.str||"").join(" ").replace(/\s+/g," ").trim();
   if(pageText.length<45){
    status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});
    const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
    await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;
   }
-  if(pageText)combined+="\\n[صفحه "+pageNo+"]\\n"+pageText;
+  if(pageText)combined+="\n[صفحه "+pageNo+"]\n"+pageText;
  }
- if(combined.replace(/\\s/g,"").length<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");
+ if(combined.replace(/\s/g,"").length<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");
  return combined.slice(0,15000);
 }
 async function generateQuestions(){
