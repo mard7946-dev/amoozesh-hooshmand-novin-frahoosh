@@ -385,7 +385,8 @@ async function generateQuestions(){
   $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
   button.textContent="در حال ساخت آزمون یکپارچه…";status("تمام بخش‌های انتخاب‌شده تحلیل شدند؛ در حال ساخت مجموعه سؤال نهایی…");
   generationStage="تولید مجموعه سؤال نهایی با هوش مصنوعی";
-  const targetPoints=Number($("aiTotalPoints").value),targetCents=Math.round(targetPoints*100);
+  const targetPoints=Number($("aiTotalPoints").value),targetCents=Math.round(targetPoints*100),totalQuestionCount=questionPlan.reduce((sum,item)=>sum+item.count,0);
+  if(!Number.isFinite(targetPoints)||targetPoints<=0||targetPoints>20||Math.abs(targetPoints*100-targetCents)>0.000001||targetCents<totalQuestionCount)throw new Error("بارم کل باید حداکثر دو رقم اعشار داشته باشد و برای هر سؤال دست‌کم یک صدم نمره در نظر گرفته شود.");
   const questionBatches=[];let batch=[],batchCount=0;
   for(const item of questionPlan){
    let remaining=item.count;
@@ -405,7 +406,7 @@ async function generateQuestions(){
    if(!Array.isArray(batchData.questions)||batchData.questions.length!==expectedCount)throw new Error("پاسخ بخش "+(batchIndex+1)+" ناقص است؛ سؤال‌های قبلی در این مرحله ذخیره نشده‌اند. دوباره تلاش کنید.");
    generatedQuestions=generatedQuestions.concat(batchData.questions);
   }
-  if(generatedQuestions.length!==questionPlan.reduce((sum,item)=>sum+item.count,0))throw new Error("تعداد نهایی سؤال‌ها با برنامه درخواستی برابر نیست.");
+  if(generatedQuestions.length!==totalQuestionCount)throw new Error("تعداد نهایی سؤال‌ها با برنامه درخواستی برابر نیست.");
   const baseCents=Math.floor(targetCents/generatedQuestions.length),extraCents=targetCents%generatedQuestions.length;
   state.questions=generatedQuestions.map((q,index)=>({...newQuestion(),...q,order:index+1,points:(baseCents+(index<extraCents?1:0))/100,source_origin:"ai_generated",source_title:"",source_url:""}));
   renderQuestions();status("تمام بخش‌ها با موفقیت تولید شدند. تعداد: "+state.questions.length+" · بارم: "+(targetCents/100).toFixed(2)+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
