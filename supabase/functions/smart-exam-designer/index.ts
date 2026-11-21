@@ -413,33 +413,65 @@ Deno.serve(async (req: Request) => {
         textbook_excerpt: sourceText
       });
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 110000);
       let generated: unknown;
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-            max_tokens: Math.min(7000, 500 + count * 180),
-            temperature: 0.25
-          }),
-          signal: controller.signal
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || result?.success !== true) {
-          console.error("Cloudflare Workers AI request failed", response.status, JSON.stringify(result).slice(0, 1200));
-          return reply({ message: "سرویس تولید سؤال پاسخ معتبر نداد. تنظیمات مدل یا سهمیهٔ سرویس را بررسی کنید." }, 502);
+      let lastAiError = "unknown";
+      for (let attempt = 0; attempt < 2 && !generated; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 48000);
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+              max_tokens: Math.min(7000, 500 + count * 180),
+              temperature: 0.25
+            }),
+            signal: controller.signal
+          });
+          const responseText = await response.text();
+          let result: Record<string, unknown>;
+          try {
+            result = JSON.parse(responseText) as Record<string, unknown>;
+          } catch {
+            throw new Error("Cloudflare returned invalid or truncated JSON (HTTP " + response.status + ", bytes " + responseText.length + ")");
+          }
+          if (!response.ok || result?.success !== true) {
+            const errors = Array.isArray(result?.errors) ? result.errors : [];
+            throw new Error("Cloudflare AI HTTP " + response.status + ": " + JSON.stringify(errors).slice(0, 500));
+          }
+          const resultBody = result?.result && typeof result.result === "object"
+            ? result.result as Record<string, unknown> : {};
+          const choices = Array.isArray(resultBody.choices)
+            ? resultBody.choices as Array<Record<string, unknown>> : [];
+          const firstChoice = choices[0] || {};
+          const firstMessage = firstChoice.message && typeof firstChoice.message === "object"
+            ? firstChoice.message as Record<string, unknown> : {};
+          let content = clean(resultBody.response ?? firstMessage.content ?? firstChoice.text ?? "", 30000);
+          content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+          const firstBrace = content.indexOf("{");
+          const lastBrace = content.lastIndexOf("}");
+          if (firstBrace < 0 || lastBrace <= firstBrace) {
+            throw new Error("Cloudflare AI completion did not contain a complete JSON object (length " + content.length + ")");
+          }
+          generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
+        } catch (error) {
+          lastAiError = error instanceof Error ? error.message : "unknown";
+          console.error("Cloudflare Workers AI generation attempt failed", {
+            attempt: attempt + 1, reason: lastAiError.slice(0, 300)
+          });
+          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 700));
+        } finally {
+          clearTimeout(timeout);
         }
-        let content = clean(result?.result?.response, 30000);
-        content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-        generated = JSON.parse(content);
-      } catch (error) {
-        console.error("Cloudflare Workers AI request error", error instanceof Error ? error.message : "unknown");
-        return reply({ message: error instanceof Error && error.name === "AbortError" ? "پاسخ هوش مصنوعی بیش از ۱۱۰ ثانیه طول کشید؛ تعداد سؤال‌ها یا بازه صفحات را کمتر کنید و دوباره تلاش کنید." : "ارتباط با سرویس تولید سؤال برقرار نشد یا پاسخ آن قابل خواندن نبود." }, 502);
-      } finally {
-        clearTimeout(timeout);
+      }
+      if (!generated) {
+        console.error("Cloudflare Workers AI generation failed after retry", { reason: lastAiError.slice(0, 300) });
+        return reply({
+          message: lastAiError.includes("AbortError")
+            ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ تعداد سؤال‌ها یا بازه صفحات را کمتر کنید."
+            : "سرویس هوش مصنوعی پس از دو تلاش پاسخ کامل و قابل‌خواندن نداد؛ کمی بعد دوباره تلاش کنید."
+        }, 502);
       }
       const rawQuestions = (generated as Record<string, unknown>)?.questions;
       if (!Array.isArray(rawQuestions) || rawQuestions.length !== count) {
