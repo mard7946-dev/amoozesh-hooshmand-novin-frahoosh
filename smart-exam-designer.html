@@ -333,7 +333,7 @@ async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,
   const summary=String(result.summary).trim();textbookSummaryCache.set(cacheKey,summary);return summary;
  }catch(error){
   const message=error?.message||String(error);
-  const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود");
+  const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود")||message.includes("پاسخ هوش مصنوعی کامل نبود");
   const isTimeout=message.includes("پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید");
   const isTransientAiFailure=message.includes("ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد");
   if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=4||sourceText.length<350)throw error;
