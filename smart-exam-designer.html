@@ -182,8 +182,9 @@ async function refreshTextbookLibrary(){
 }
 async function openTextbook(bookId){
   if(!bookId){status("ابتدا یک کتاب از فهرست انتخاب کنید.","error");return;}
-  try{const data=await api("textbook_download_url",{book_id:bookId});const opened=window.open("about:blank","_blank");if(!opened){status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");return;}opened.opener=null;opened.location.href=data.signed_url;}
-  catch(e){status(e.message,"error");}
+  const opened=window.open("about:blank","_blank");if(!opened){status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");return;}
+  try{const data=await api("textbook_download_url",{book_id:bookId});opened.opener=null;opened.location.href=data.signed_url;}
+  catch(e){opened.close();status(e.message,"error");}
 }
 async function uploadTextbook(){
   const file=$("textbookPdf").files[0],grade=Number($("textbookGrade").value),code=$("textbookCode").value.trim().toUpperCase(),subject=$("textbookSubject").value.trim(),title=$("textbookTitle").value.trim(),edition=$("textbookEdition").value.trim()||"۱۴۰۵–۱۴۰۶";
@@ -192,7 +193,7 @@ async function uploadTextbook(){
   try{
     const signed=await api("create_textbook_upload",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size});
     const encodedPath=signed.storage_path.split("/").map(encodeURIComponent).join("/");
-    const uploadUrl="https://gtmmllcxhdejwjjnyzrh.supabase.co/storage/v1/object/upload/sign/"+encodedPath+"?token="+encodeURIComponent(signed.upload_token);
+    const uploadUrl="https://gtmmllcxhdejwjjnyzrh.supabase.co/storage/v1/object/upload/sign/"+encodeURIComponent(signed.bucket)+"/"+encodedPath+"?token="+encodeURIComponent(signed.upload_token);
     const response=await fetch(uploadUrl,{method:"PUT",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
     if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error("بارگذاری PDF ناموفق بود ("+response.status+"). "+detail.slice(0,240));}
     const registered=await api("register_textbook",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size,storage_path:signed.storage_path});
