@@ -304,7 +304,7 @@ Deno.serve(async (req: Request) => {
       });
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
+      const timeout = setTimeout(() => controller.abort(), 110000);
       let generated: unknown;
       try {
         const response = await fetch(endpoint, {
@@ -327,7 +327,7 @@ Deno.serve(async (req: Request) => {
         generated = JSON.parse(content);
       } catch (error) {
         console.error("Cloudflare Workers AI request error", error instanceof Error ? error.message : "unknown");
-        return reply({ message: "ارتباط با سرویس تولید سؤال برقرار نشد یا پاسخ آن قابل خواندن نبود." }, 502);
+        return reply({ message: error instanceof Error && error.name === "AbortError" ? "پاسخ هوش مصنوعی بیش از ۱۱۰ ثانیه طول کشید؛ تعداد سؤال‌ها یا بازه صفحات را کمتر کنید و دوباره تلاش کنید." : "ارتباط با سرویس تولید سؤال برقرار نشد یا پاسخ آن قابل خواندن نبود." }, 502);
       } finally {
         clearTimeout(timeout);
       }
