@@ -265,7 +265,6 @@ Deno.serve(async (req: Request) => {
           "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
         ];
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
-      const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 90000);
       try {
         let summary = "";
         let lastParseError = "";
@@ -276,7 +275,12 @@ Deno.serve(async (req: Request) => {
           const maxTokens = mode === "compress"
             ? (attempt === 0 ? 4500 : 6500)
             : (attempt === 0 ? 1400 : 2200);
-          const response = await fetch(endpoint, {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 28000);
+          let response: Response;
+          let result: Record<string, unknown>;
+          try {
+            response = await fetch(endpoint, {
             method: "POST",
             headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -284,17 +288,27 @@ Deno.serve(async (req: Request) => {
                 { role: "system", content: instructions.join(" ") },
                 { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
               ],
-              max_tokens: maxTokens,
-              temperature: 0.1
+              max_completion_tokens: maxTokens,
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+              chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
             }),
             signal: controller.signal
-          });
-          const result = await response.json().catch(() => ({}));
+            });
+            result = await response.json().catch(() => ({})) as Record<string, unknown>;
+          } finally {
+            clearTimeout(timeout);
+          }
           if (!response.ok || result?.success !== true) {
             console.error("Cloudflare textbook analysis failed", response.status, JSON.stringify(result).slice(0, 900));
             return reply({ message: "تحلیل یکی از بخش‌های کتاب توسط هوش مصنوعی ناموفق بود؛ کمی بعد دوباره تلاش کنید." }, 502);
           }
-          const raw = clean(result?.result?.response, 20000).replace(/^\\uFEFF/, "").trim();
+          const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
+          const choices = Array.isArray(result?.choices) ? result.choices as Array<Record<string, unknown>> : [];
+          const firstChoice = choices[0] || {};
+          const firstMessage = firstChoice.message && typeof firstChoice.message === "object" ? firstChoice.message as Record<string, unknown> : {};
+          const raw = clean(resultBody.response ?? firstMessage.content ?? "", 20000).replace(/^\\uFEFF/, "").trim();
+          if (!raw) console.warn("Textbook model returned an empty completion", { topLevelKeys: Object.keys(result || {}), resultKeys: Object.keys(resultBody), finishReason: firstChoice.finish_reason || resultBody.finish_reason || null });
           try {
             const firstBrace = raw.indexOf("{"), lastBrace = raw.lastIndexOf("}");
             if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error("Model response did not contain a complete JSON object");
@@ -319,8 +333,6 @@ Deno.serve(async (req: Request) => {
             ? "تحلیل یک بخش کتاب بیش از ۹۰ ثانیه طول کشید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
             : "ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد؛ دوباره تلاش کنید."
         }, 502);
-      } finally {
-        clearTimeout(timeout);
       }
     }
 
