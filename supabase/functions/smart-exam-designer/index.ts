@@ -378,8 +378,8 @@ Deno.serve(async (req: Request) => {
         plan.push({ type, count: amount });
         count += amount;
       }
-      if (count < 1 || count > 4 || new Set(plan.map(x => x.type)).size !== plan.length) {
-        return reply({ message: "هر درخواست تولید باید حداکثر ۴ سؤال داشته باشد و هر نوع فقط یک بار در همان بخش ثبت شود." }, 400);
+      if (count < 1 || count > 5 || new Set(plan.map(x => x.type)).size !== plan.length) {
+        return reply({ message: "هر درخواست تولید باید حداکثر ۵ سؤال داشته باشد و هر نوع فقط یک بار در همان بخش ثبت شود." }, 400);
       }
       const targetCents = Math.round(targetPoints * 100);
       if (Math.abs(targetPoints * 100 - targetCents) > 0.000001 || targetCents < count) {
