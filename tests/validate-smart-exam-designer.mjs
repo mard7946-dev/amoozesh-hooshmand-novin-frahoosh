@@ -67,7 +67,7 @@ assert.ok(page.includes('const isTestMode=new URLSearchParams(window.location.se
 assert.ok(page.includes('SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https://gtmmllcxhdejwjjnyzrh.supabase.co"'), "Test and production environments must use separate Supabase projects");
 assert.ok(page.includes('sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")'), "Test mode must never reuse the production access token");
 assert.ok(page.includes('const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"")'), "Test login must not depend on a production role session");
-assert.ok(page.includes('/auth/v1/token?grant_type=password') && page.includes('email:"hmj@test.com",password') && page.includes('id="testLoginPassword"'), "Test mode must authenticate the pre-provisioned test account with its password");
+assert.ok(page.includes('/auth/v1/token?grant_type=password') && page.includes('JSON.stringify({email,password})') && page.includes('id="testLoginEmail"') && page.includes('id="testLoginPassword"'), "Test mode must authenticate the pre-provisioned test account with its password");
 
 assert.ok(page.includes('id="printedPageFrom"') && page.includes('id="printedPageTo"') && page.includes('id="pdfPageReference"'), "Printed textbook pages must be entered separately from PDF page indices");
 assert.ok(page.includes('label for="pageFrom">از صفحه PDF') && page.includes('label for="printedPageFrom">از صفحه چاپی کتاب'), "The UI must clearly distinguish PDF page indices from printed textbook numbering");
