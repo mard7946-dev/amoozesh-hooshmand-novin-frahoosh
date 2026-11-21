@@ -42,6 +42,8 @@ assert.ok(api.includes('action === "generate_questions" && teacher'), "Only auth
 assert.ok(api.includes("CLOUDFLARE_AI_TOKEN") && api.includes("CLOUDFLARE_ACCOUNT_ID"), "Cloudflare credentials must be read only from server-side secrets");
 assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_excerpt"), "AI generation must use the configured multilingual model and supplied textbook excerpt");
 assert.ok(api.includes("count > 5") && api.includes("rawQuestions.length !== count"), "Each AI generation request must enforce a bounded batch and exact question counts");
+assert.ok(api.includes("const maxTokens = mode === \"compress\" ? 1800 : 900") && api.includes("controller.abort(), 65000") && api.includes("attempt < 1 && !summary"), "Textbook analysis must use bounded output, a realistic timeout, and no duplicate model retry");
+assert.ok(page.includes('message.includes("پاسخ هوش مصنوعی کامل نبود")'), "Incomplete textbook summaries must trigger automatic smaller-chunk analysis");
 assert.ok(page.includes("questionBatches") && page.includes("batchCount===5") && page.includes("generatedQuestions.length!==totalQuestionCount"), "The teacher UI must split large exams into five-question batches and verify the combined count");
 assert.ok(page.includes("targetCents") && page.includes("points:(baseCents+(index<extraCents?1:0))/100"), "Marks must be reallocated across the complete exam after batch generation");
 assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
