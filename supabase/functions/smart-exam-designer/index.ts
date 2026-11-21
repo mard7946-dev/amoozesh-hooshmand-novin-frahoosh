@@ -274,7 +274,7 @@ Deno.serve(async (req: Request) => {
             : baseInstructions.concat(["IMPORTANT: Previous output was incomplete. Produce a shorter complete JSON object; never stop before closing the JSON braces."]);
           const maxTokens = mode === "compress"
             ? (attempt === 0 ? 4500 : 6500)
-            : (attempt === 0 ? 1400 : 2200);
+            : (attempt === 0 ? 2400 : 3600);
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 28000);
           let response: Response;
@@ -290,7 +290,20 @@ Deno.serve(async (req: Request) => {
               ],
               max_completion_tokens: maxTokens,
               temperature: 0.1,
-              response_format: { type: "json_object" },
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "textbook_summary",
+                  description: "A concise Persian study-note summary.",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: { summary: { type: "string" } },
+                    required: ["summary"],
+                    additionalProperties: false
+                  }
+                }
+              },
               chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
             }),
             signal: controller.signal
@@ -314,7 +327,8 @@ Deno.serve(async (req: Request) => {
             if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error("Model response did not contain a complete JSON object");
             const parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1));
             const candidate = clean(parsed?.summary, mode === "compress" ? 3000 : 700);
-            if (candidate.length < 80) throw new Error("Model summary was empty or too short");
+            const minimumSummaryLength = mode === "compress" ? 45 : 30;
+            if (candidate.length < minimumSummaryLength) throw new Error("Model summary was empty or too short");
             summary = candidate;
           } catch (parseError) {
             lastParseError = parseError instanceof Error ? parseError.message : "invalid model JSON";
