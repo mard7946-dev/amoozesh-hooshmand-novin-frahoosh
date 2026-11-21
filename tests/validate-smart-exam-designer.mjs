@@ -44,7 +44,7 @@ assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_ex
 assert.ok(api.includes("count > 40") && api.includes("rawQuestions.length !== count"), "Generation must enforce bounded and exact question counts");
 assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
 assert.ok(page.includes('id="pageFrom"') && page.includes('id="pageTo"') && page.includes('id="questionMode"') && page.includes('id="questionCounts"') && page.includes('id="generateQuestions"') && page.includes("extractSelectedPdfPages") && page.includes("questionPlan"), "Teacher UI must extract selected textbook PDF pages and expose dynamic question-count controls");
-assert.ok(page.includes("ممکن است از سهمیه یا اعتبار حساب استفاده کند"), "AI generation must disclose potential usage before the request");
+assert.ok(page.includes("تولید سؤال از هوش مصنوعی ممکن است از سهمیه یا اعتبار سرویس استفاده کند"), "AI generation must disclose potential service usage before the request");
 
 const textbookMigration = readFileSync("supabase/migrations/20261121035442_school_textbook_library.sql", "utf8");
 assert.ok(textbookMigration.includes("school_textbook_library") && textbookMigration.includes("enable row level security"), "Textbook metadata must be isolated behind RLS");
