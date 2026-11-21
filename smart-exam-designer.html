@@ -56,7 +56,7 @@
 <div class="field"><label for="lesson">نام درس</label><input id="lesson" maxlength="180" placeholder="پس از انتخاب کتاب تکمیل می‌شود" readonly></div>
 <div class="field"><label for="libraryBookSelect">انتخاب کتاب از مخزن مدرسه</label><select id="libraryBookSelect"><option value="">یک کتاب انتخاب کنید</option></select></div>
 <div class="field"><label for="pageFrom">از صفحه PDF</label><input id="pageFrom" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۱۵"></div>
-<div class="field"><label for="pageTo">تا صفحه PDF</label><input id="pageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۲۲"></div>
+<div class="field"><label for="pageTo">تا صفحه PDF</label><input id="pageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۲۲"></div>\n<div class="field"><label>انتخاب سریع محدوده</label><button id="selectWholeBook" type="button" class="secondary">انتخاب تمام صفحات PDF کتاب</button></div>
 <div class="field"><label for="printedPageFrom">از صفحه چاپی کتاب</label><input id="printedPageFrom" type="number" min="1" step="1" inputmode="numeric" placeholder="شماره روی کتاب"></div>
 <div class="field"><label for="printedPageTo">تا صفحه چاپی کتاب</label><input id="printedPageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="شماره روی کتاب"></div>
 <div class="field"><label for="questionMode">نوع سؤال</label><select id="questionMode"><option value="">نوع سؤال را انتخاب کنید</option><option value="test">تستی</option><option value="mixed">تستی / تشریحی</option><option value="comprehensive">جامع (تمام بخش‌ها)</option></select></div>
@@ -288,41 +288,55 @@ async function ensureSelectedPdfDocument(bookId){
  selectedPdfDocument=await pdfjsLib.getDocument({data:await response.arrayBuffer()}).promise;selectedPdfBookId=bookId;return selectedPdfDocument;
 }
 let selectedPdfDocument=null,selectedPdfBookId="";
-async function extractSelectedPdfPages(bookId,fromPage,toPage){
+async function extractSelectedPdfChunks(bookId,fromPage,toPage){
  const pdf=await ensureSelectedPdfDocument(bookId);
  if(fromPage<1||toPage<fromPage||toPage>pdf.numPages)throw new Error("بازه صفحات معتبر نیست. تعداد صفحات فایل: "+pdf.numPages);
- let combined="";
+ const chunks=[];let current="",currentStart=fromPage,currentEnd=fromPage;
+ const flush=()=>{if(current.trim()){chunks.push({text:current.trim(),from:currentStart,to:currentEnd});current="";}};
  for(let pageNo=fromPage;pageNo<=toPage;pageNo++){
   status("در حال خواندن صفحه "+pageNo+" از "+toPage+"…");const page=await pdf.getPage(pageNo),content=await page.getTextContent();
   let pageText=content.items.map(item=>item.str||"").join(" ").replace(/\s+/g," ").trim();
-  if(pageText.length<45){
-   status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});
-   const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
-   await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;
-  }
-  if(pageText)combined+="\n[صفحه "+pageNo+"]\n"+pageText;
+  if(pageText.length<45){status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;}
+  if(!pageText)pageText="[متن قابل استخراجی در این صفحه یافت نشد؛ احتمالاً صفحه تصویری یا خالی است.]";
+  const block="\n[صفحه PDF "+pageNo+"]\n"+pageText;
+  if(block.length>9800){flush();for(let offset=0;offset<block.length;offset+=9000)chunks.push({text:block.slice(offset,offset+9000),from:pageNo,to:pageNo});currentStart=pageNo+1;currentEnd=pageNo+1;continue;}
+  if(current&&current.length+block.length>9800)flush();if(!current)currentStart=pageNo;currentEnd=pageNo;current+=block;
  }
- if(combined.replace(/\s/g,"").length<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");
- return combined.slice(0,15000);
+ flush();if(chunks.reduce((sum,c)=>sum+c.text.replace(/\s/g,"").length,0)<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");return chunks;
+}
+async function summarizeAllBookChunks(chunks){
+ let summaries=[];
+ for(let i=0;i<chunks.length;i++){const c=chunks[i],pages=c.from===c.to?String(c.from):c.from+" تا "+c.to;status("تحلیل محتوای کتاب: بخش "+(i+1)+" از "+chunks.length+" · صفحات PDF "+pages+"…");const result=await api("summarize_textbook_chunk",{source_text:c.text,page_reference:"صفحات PDF "+pages,summary_mode:"analyze"});summaries.push({pages,summary:result.summary});}
+ let level=0;
+ while(summaries.map(x=>x.summary).join("\n\n").length>12000){
+  if(level++>5)throw new Error("حجم نکات کل کتاب بیش از حد زیاد است؛ امکان یکپارچه‌سازی امن فراهم نشد.");
+  const groups=[];let group=[];
+  for(const item of summaries){const candidate=group.concat(item);if(group.length&&candidate.map(x=>x.summary).join("\n\n").length>10500){groups.push(group);group=[item];}else group=candidate;}if(group.length)groups.push(group);
+  const compacted=[];
+  for(let i=0;i<groups.length;i++){status("یکپارچه‌سازی نکات کل کتاب: مرحله "+level+" · گروه "+(i+1)+" از "+groups.length+"…");const source=groups[i].map(x=>"["+x.pages+"] "+x.summary).join("\n\n");const result=await api("summarize_textbook_chunk",{source_text:source,page_reference:"یادداشت‌های بخش‌های کتاب",summary_mode:"compress"});compacted.push({pages:groups[i].map(x=>x.pages).join("، "),summary:result.summary});}
+  if(compacted.length>=summaries.length)throw new Error("فشرده‌سازی نکات کتاب پیشرفت نکرد؛ دوباره تلاش کنید.");summaries=compacted;
+ }
+ return summaries.map(x=>"["+x.pages+"] "+x.summary).join("\n\n");
 }
 async function generateQuestions(){
  const bookId=$("libraryBookSelect").value,fromPage=Number(asciiDigits($("pageFrom").value)),toPage=Number(asciiDigits($("pageTo").value)),printedFrom=Number(asciiDigits($("printedPageFrom").value)),printedTo=Number(asciiDigits($("printedPageTo").value));
  const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(item=>item.count>0);
  if(!bookId){status("ابتدا کتاب را از مخزن مدرسه انتخاب کنید.","error");return;}
- if(!Number.isInteger(fromPage)||!Number.isInteger(toPage)||fromPage<1||toPage<fromPage||toPage-fromPage>19){status("بازه صفحات PDF را درست وارد کنید؛ حداکثر ۲۰ صفحه در هر درخواست مجاز است.","error");return;}
+ if(!Number.isInteger(fromPage)||!Number.isInteger(toPage)||fromPage<1||toPage<fromPage){status("بازه صفحات PDF را درست وارد کنید.","error");return;}
  if(!Number.isInteger(printedFrom)||!Number.isInteger(printedTo)||printedFrom<1||printedTo<printedFrom){status("شماره صفحات چاپ‌شده روی خود کتاب را جداگانه وارد کنید.","error");return;}
  if(!questionPlan.length){status("تعداد دست‌کم یک بخش سؤال را بیشتر از صفر انتخاب کنید.","error");return;}
- if(questionPlan.reduce((sum,item)=>sum+item.count,0)>40){status("مجموع سؤال‌ها در هر درخواست حداکثر ۴۰ سؤال است.","error");return;}
- if(!confirm("متن صفحات انتخاب‌شده از PDF دریافت می‌شود و درخواست تولید سؤال به سرویس هوش مصنوعی ارسال خواهد شد. ممکن است از سهمیه یا اعتبار سرویس استفاده شود. ادامه می‌دهید؟"))return;
+ if(questionPlan.reduce((sum,item)=>sum+item.count,0)>40){status("مجموع سؤال‌های هر آزمون فعلاً حداکثر ۴۰ سؤال است.","error");return;}
+ if(!confirm("تمام صفحات بازه انتخاب‌شده، مرحله‌به‌مرحله خوانده و تحلیل می‌شوند؛ سپس نکات همه بخش‌ها در یک آزمون واحد استفاده خواهد شد. این فرایند ممکن است چندین درخواست هوش مصنوعی و مصرف سهمیه یا اعتبار بیشتری داشته باشد. ادامه می‌دهید؟"))return;
  const button=$("generateQuestions");button.disabled=true;button.textContent="در حال استخراج صفحات…";
  try{
-  const sourceText=await extractSelectedPdfPages(bookId,fromPage,toPage),book=textbookBooks.find(item=>item.id===bookId);if(!book)throw new Error("کتاب انتخاب‌شده در فهرست مدرسه پیدا نشد.");
-  const pageReference=printedFrom===printedTo?String(printedFrom):printedFrom+" تا "+printedTo;const pdfPageReference=fromPage===toPage?String(fromPage):fromPage+" تا "+toPage;$("pageReference").value=pageReference;$("pdfPageReference").value=pdfPageReference;
-  $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";
-  if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
-  button.textContent="در حال تولید سؤال…";
+  const book=textbookBooks.find(item=>item.id===bookId);if(!book)throw new Error("کتاب انتخاب‌شده در فهرست مدرسه پیدا نشد.");const pdf=await ensureSelectedPdfDocument(bookId);
+  if(toPage>pdf.numPages)throw new Error("تا صفحه PDF از تعداد صفحات فایل بیشتر است. تعداد صفحات این کتاب: "+pdf.numPages);
+  const chunks=await extractSelectedPdfChunks(bookId,fromPage,toPage),sourceText=await summarizeAllBookChunks(chunks);
+  const pageReference=printedFrom===printedTo?String(printedFrom):printedFrom+" تا "+printedTo,pdfPageReference=fromPage===toPage?String(fromPage):fromPage+" تا "+toPage;$("pageReference").value=pageReference;$("pdfPageReference").value=pdfPageReference;
+  $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
+  button.textContent="در حال ساخت آزمون یکپارچه…";status("تمام بخش‌های انتخاب‌شده تحلیل شدند؛ در حال ساخت مجموعه سؤال نهایی…");
   const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,pdf_page_reference:pdfPageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:book.subject,grade:Number(book.grade),chapter:$("chapter").value,lesson:$("lesson").value});
-  state.questions=data.questions.map(q=>({...newQuestion(),...q,source_origin:"ai_generated",source_title:"",source_url:""}));renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
+  state.questions=data.questions.map(q=>({...newQuestion(),...q,source_origin:"ai_generated",source_title:"",source_url:""}));renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){status(e.message||"تولید سؤال انجام نشد.","error");}
  finally{button.disabled=false;button.textContent="تولید سؤال";}
 }
@@ -341,7 +355,7 @@ $("textbookLibraryList").addEventListener("click",event=>{const button=event.tar
 $("textbookPrevPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber<=1)return;textbookPreviewPageNumber--;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
 $("textbookNextPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber>=textbookPreviewDocument.numPages)return;textbookPreviewPageNumber++;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
 $("textbookClosePreview").addEventListener("click",()=>$("textbookPdfPreview").classList.add("hidden"));
-$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book){$("lesson").value="";return;}$("grade").value=String(book.grade);$("subject").value=book.subject;$("lesson").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
+$("selectWholeBook").addEventListener("click",async()=>{const bookId=$("libraryBookSelect").value;if(!bookId){status("ابتدا کتاب را از مخزن مدرسه انتخاب کنید.","error");return;}const button=$("selectWholeBook");button.disabled=true;try{const pdf=await ensureSelectedPdfDocument(bookId);$("pageFrom").value="1";$("pageTo").value=String(pdf.numPages);status("تمام "+pdf.numPages+" صفحه PDF انتخاب شد. شماره صفحات چاپی کتاب را نیز وارد کنید.","ok");}catch(error){status(error.message||"خواندن تعداد صفحات PDF ناموفق بود.","error");}finally{button.disabled=false;}});\n$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book){$("lesson").value="";return;}$("grade").value=String(book.grade);$("subject").value=book.subject;$("lesson").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
 $("questionMode").addEventListener("change",renderQuestionCounts);
 renderQuestionCounts();
 async function loginTestAccount(){
