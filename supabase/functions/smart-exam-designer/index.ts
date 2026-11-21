@@ -123,6 +123,91 @@ Deno.serve(async (req: Request) => {
     const action = clean(body.action, 80);
     const schoolId = profile.tenant_school_id;
     const actorId = auth.user.id;
+    const textbookBucket = "school-textbooks";
+    const canManageTextbooks = manager || executive;
+
+    if (action === "list_textbooks") {
+      const requestedGrade = Number(body.grade || 0);
+      let query = db.from("school_textbook_library")
+        .select("id,grade,book_code,subject,title,edition,file_name,file_size_bytes,created_at")
+        .eq("school_id", schoolId).eq("is_active", true);
+      if ([7, 8, 9].includes(requestedGrade)) query = query.eq("grade", requestedGrade);
+      const { data, error } = await query.order("grade").order("subject").order("book_code").limit(300);
+      if (error) throw error;
+      return reply({ ok: true, books: data || [] });
+    }
+
+    if (action === "create_textbook_upload" && canManageTextbooks) {
+      const grade = Number(body.grade);
+      const code = clean(body.book_code, 12).toUpperCase();
+      const subject = clean(body.subject, 120);
+      const title = clean(body.title, 180);
+      const edition = clean(body.edition, 40) || "۱۴۰۵–۱۴۰۶";
+      const fileName = clean(body.file_name, 100);
+      const fileSize = Number(body.file_size_bytes);
+      if (![7, 8, 9].includes(grade) || !/^[A-Z][0-9]{2,5}$/.test(code) ||
+          subject.length < 2 || !new RegExp("^" + code + "\\.pdf$", "i").test(fileName) ||
+          !Number.isInteger(fileSize) || fileSize < 1 || fileSize > 52428800) {
+        return reply({ message: "پایه، کد کتاب، نام درس یا مشخصات PDF معتبر نیست. سقف هر فایل ۵۰ مگابایت است." }, 400);
+      }
+      const { data: duplicate, error: duplicateError } = await db.from("school_textbook_library")
+        .select("id").eq("school_id", schoolId).eq("grade", grade)
+        .eq("book_code", code).eq("edition", edition).maybeSingle();
+      if (duplicateError) throw duplicateError;
+      if (duplicate) return reply({ message: "این کد کتاب برای همین پایه و نوبت چاپ قبلاً ثبت شده است." }, 409);
+      const editionFolder = asciiDigits(edition).replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
+      const storagePath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
+      const { data, error } = await db.storage.from(textbookBucket)
+        .createSignedUploadUrl(storagePath, { upsert: false });
+      if (error || !data?.token || !data?.signedUrl) throw error || new Error("ایجاد نشانی بارگذاری امن ناموفق بود.");
+      return reply({ ok: true, bucket: textbookBucket, storage_path: storagePath, signed_url: data.signedUrl, upload_token: data.token });
+    }
+
+    if (action === "register_textbook" && canManageTextbooks) {
+      const grade = Number(body.grade);
+      const code = clean(body.book_code, 12).toUpperCase();
+      const subject = clean(body.subject, 120);
+      const title = clean(body.title, 180);
+      const edition = clean(body.edition, 40) || "۱۴۰۵–۱۴۰۶";
+      const fileName = clean(body.file_name, 100);
+      const fileSize = Number(body.file_size_bytes);
+      const storagePath = clean(body.storage_path, 500);
+      const editionFolder = asciiDigits(edition).replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
+      const expectedPath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
+      if (![7, 8, 9].includes(grade) || !/^[A-Z][0-9]{2,5}$/.test(code) ||
+          subject.length < 2 || fileName.toLowerCase() !== (code + ".pdf").toLowerCase() ||
+          storagePath !== expectedPath || !Number.isInteger(fileSize) || fileSize < 1 || fileSize > 52428800) {
+        return reply({ message: "مشخصات کتاب برای ثبت نهایی معتبر نیست." }, 400);
+      }
+      const folder = schoolId + "/" + grade + "/" + code + "/" + editionFolder;
+      const { data: objects, error: listError } = await db.storage.from(textbookBucket).list(folder, { limit: 100 });
+      if (listError) throw listError;
+      if (!(objects || []).some((item: { name: string }) => item.name === code + ".pdf")) {
+        return reply({ message: "فایل PDF هنوز در فضای خصوصی بارگذاری نشده است." }, 409);
+      }
+      const { data, error } = await db.from("school_textbook_library").insert({
+        school_id: schoolId, grade, book_code: code, subject, title, edition,
+        file_name: code + ".pdf", storage_path: storagePath, file_size_bytes: fileSize,
+        mime_type: "application/pdf", uploaded_by: actorId, is_active: true
+      }).select("id,grade,book_code,subject,title,edition,file_name,file_size_bytes,created_at").single();
+      if (error) {
+        if (error.code === "23505") return reply({ message: "این کتاب قبلاً در کتابخانه ثبت شده است." }, 409);
+        throw error;
+      }
+      return reply({ ok: true, book: data, message: "کتاب با موفقیت به کتابخانه خصوصی مدرسه افزوده شد." });
+    }
+
+    if (action === "textbook_download_url") {
+      const bookId = clean(body.book_id, 80);
+      const { data: book, error: bookError } = await db.from("school_textbook_library")
+        .select("id,storage_path,file_name,grade,book_code,subject,title,edition")
+        .eq("id", bookId).eq("school_id", schoolId).eq("is_active", true).maybeSingle();
+      if (bookError) throw bookError;
+      if (!book) return reply({ message: "کتاب فعال در کتابخانه پیدا نشد." }, 404);
+      const { data, error } = await db.storage.from(textbookBucket).createSignedUrl(book.storage_path, 900);
+      if (error || !data?.signedUrl) throw error || new Error("ساخت پیوند موقت دانلود کتاب ناموفق بود.");
+      return reply({ ok: true, book, signed_url: data.signedUrl, expires_in: 900 });
+    }
 
     if (action === "bootstrap") {
       if (teacher) {
