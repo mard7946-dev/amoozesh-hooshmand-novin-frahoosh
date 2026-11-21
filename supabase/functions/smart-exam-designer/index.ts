@@ -211,16 +211,33 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, book: data, message: "کتاب با موفقیت به کتابخانه خصوصی مدرسه افزوده شد." });
     }
 
-    if (action === "textbook_download_url") {
+    if (action === "textbook_download_pdf") {
       const bookId = clean(body.book_id, 80);
       const { data: book, error: bookError } = await db.from("school_textbook_library")
-        .select("id,storage_path,file_name,grade,book_code,subject,title,edition")
+        .select("id,storage_path,file_name,book_code")
         .eq("id", bookId).eq("school_id", schoolId).eq("is_active", true).maybeSingle();
       if (bookError) throw bookError;
       if (!book) return reply({ message: "کتاب فعال در کتابخانه پیدا نشد." }, 404);
-      const { data, error } = await db.storage.from(textbookBucket).createSignedUrl(book.storage_path, 900);
-      if (error || !data?.signedUrl) throw error || new Error("ساخت پیوند موقت دانلود کتاب ناموفق بود.");
-      return reply({ ok: true, book, signed_url: data.signedUrl, expires_in: 900 });
+
+      // Stream the private object through this authenticated, CORS-enabled function.
+      // This avoids browser-to-Storage CORS failures without making the bucket public.
+      const { data: pdf, error: downloadError } = await db.storage.from(textbookBucket).download(book.storage_path);
+      if (downloadError || !pdf) throw downloadError || new Error("دریافت فایل PDF از مخزن خصوصی ناموفق بود.");
+      if (pdf.size < 5 || pdf.size > 52428800) {
+        return reply({ message: "حجم فایل PDF معتبر نیست یا از سقف ۵۰ مگابایت بیشتر است." }, 422);
+      }
+      const safeFileName = clean(book.book_code, 12).replace(/[^A-Z0-9_-]/gi, "") + ".pdf";
+      return new Response(pdf.stream(), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/pdf",
+          "Content-Length": String(pdf.size),
+          "Content-Disposition": 'inline; filename="' + safeFileName + '"',
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
     }
 
     if (action === "bootstrap") {
