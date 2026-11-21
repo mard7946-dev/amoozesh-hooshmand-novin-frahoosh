@@ -26,7 +26,7 @@ assert.ok(page.includes("چاپ / ذخیره PDF") && page.includes('src="assets
 assert.ok(page.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران") && page.includes("مدیریت آموزش و پرورش شهرستان قدس") && page.includes("دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲") && page.includes("۱۴۰۵–۱۴۰۶"), "The official school header must match the supplied template");
 assert.ok(page.includes('id="className"') && page.includes('id="teacherName"') && page.includes('id="examDate"') && page.includes('id="durationMinutes"'), "Teacher must enter the official header metadata before finalization");
 assert.ok(page.includes("counter(page)") && page.includes("counter(pages)") && page.includes("display:table-header-group"), "The print layout must repeat the header and number printed pages");
-assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, questions"), "Validated header metadata must be stored with the draft");
+assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, pdf_page_reference: clean(source.pdf_page_reference, 80), questions"), "Validated header metadata and PDF page provenance must be stored with the draft");
 assert.ok(api.includes("function validatePayload(raw: unknown, allowIncomplete = false)") && api.includes("validatePayload(body.payload, true)") && api.includes("!allowIncomplete && !prompt"), "Incomplete teacher question cards must be saveable as drafts");
 assert.ok(api.includes("\"conceptual\""), "Conceptual questions must be accepted by the secure backend");
 assert.ok(migration.includes("Official exam header metadata is incomplete") && migration.includes("duration_minutes"), "Database finalization must reject incomplete print-header metadata");
@@ -68,3 +68,9 @@ assert.ok(page.includes('SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.s
 assert.ok(page.includes('sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")'), "Test mode must never reuse the production access token");
 assert.ok(page.includes('const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"")'), "Test login must not depend on a production role session");
 assert.ok(page.includes('/auth/v1/token?grant_type=password') && page.includes('email:"hmj@test.com",password') && page.includes('id="testLoginPassword"'), "Test mode must authenticate the pre-provisioned test account with its password");
+
+assert.ok(page.includes('id="printedPageFrom"') && page.includes('id="printedPageTo"') && page.includes('id="pdfPageReference"'), "Printed textbook pages must be entered separately from PDF page indices");
+assert.ok(page.includes('label for="pageFrom">از صفحه PDF') && page.includes('label for="printedPageFrom">از صفحه چاپی کتاب'), "The UI must clearly distinguish PDF page indices from printed textbook numbering");
+assert.ok(api.includes("const pdfPageReference = clean(body.pdf_page_reference, 80)") && api.includes("source_pdf_page_reference: pdfPageReference") && api.includes("source_page_reference: pageReference"), "Generated questions must preserve both printed and PDF page references");
+assert.ok(page.includes('class="question-group') && page.includes('essay-group') && page.includes('groupMarkup'), "The print layout must group same-type questions and isolate every essay question");
+assert.ok(page.includes('q.image_data_url') && page.includes('class="question-image"'), "The print renderer must safely render an attached question image when present");
