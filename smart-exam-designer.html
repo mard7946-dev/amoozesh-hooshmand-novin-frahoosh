@@ -125,7 +125,7 @@ const SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https:
 const API=SUPABASE_URL+"/functions/v1/smart-exam-designer";
 const KEY=isTestMode?"sb_publishable_-Pu4KA24XUM6ud_T-eE_rw_4lmqMf31":"sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
 let token=sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")||"";
-const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"");
 const $=id=>document.getElementById(id);
 let state={role:"",papers:[],vault:[],questions:[],paperId:null,activeVaultId:null};
 const types=[["multiple_choice","تستی"],["conceptual","مفهومی"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
