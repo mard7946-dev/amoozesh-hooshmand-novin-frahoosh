@@ -385,8 +385,30 @@ async function generateQuestions(){
   $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
   button.textContent="در حال ساخت آزمون یکپارچه…";status("تمام بخش‌های انتخاب‌شده تحلیل شدند؛ در حال ساخت مجموعه سؤال نهایی…");
   generationStage="تولید مجموعه سؤال نهایی با هوش مصنوعی";
-  const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,pdf_page_reference:pdfPageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:book.subject,grade:Number(book.grade),chapter:$("chapter").value,lesson:$("lesson").value});
-  state.questions=data.questions.map(q=>({...newQuestion(),...q,source_origin:"ai_generated",source_title:"",source_url:""}));renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
+  const targetPoints=Number($("aiTotalPoints").value),targetCents=Math.round(targetPoints*100);
+  const questionBatches=[];let batch=[],batchCount=0;
+  for(const item of questionPlan){
+   let remaining=item.count;
+   while(remaining>0){
+    const take=Math.min(remaining,5-batchCount),existing=batch.find(part=>part.type===item.type);
+    if(existing)existing.count+=take;else batch.push({type:item.type,count:take});
+    batchCount+=take;remaining-=take;
+    if(batchCount===5){questionBatches.push(batch);batch=[];batchCount=0;}
+   }
+  }
+  if(batch.length)questionBatches.push(batch);
+  let generatedQuestions=[];
+  for(let batchIndex=0;batchIndex<questionBatches.length;batchIndex++){
+   const batchPlan=questionBatches[batchIndex],expectedCount=batchPlan.reduce((sum,item)=>sum+item.count,0);
+   status("تولید سؤال‌ها: بخش "+(batchIndex+1)+" از "+questionBatches.length+" · "+expectedCount+" سؤال…");
+   const batchData=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,pdf_page_reference:pdfPageReference,question_plan:batchPlan,total_points:targetPoints,subject:book.subject,grade:Number(book.grade),chapter:$("chapter").value,lesson:$("lesson").value});
+   if(!Array.isArray(batchData.questions)||batchData.questions.length!==expectedCount)throw new Error("پاسخ بخش "+(batchIndex+1)+" ناقص است؛ سؤال‌های قبلی در این مرحله ذخیره نشده‌اند. دوباره تلاش کنید.");
+   generatedQuestions=generatedQuestions.concat(batchData.questions);
+  }
+  if(generatedQuestions.length!==questionPlan.reduce((sum,item)=>sum+item.count,0))throw new Error("تعداد نهایی سؤال‌ها با برنامه درخواستی برابر نیست.");
+  const baseCents=Math.floor(targetCents/generatedQuestions.length),extraCents=targetCents%generatedQuestions.length;
+  state.questions=generatedQuestions.map((q,index)=>({...newQuestion(),...q,order:index+1,points:(baseCents+(index<extraCents?1:0))/100,source_origin:"ai_generated",source_title:"",source_url:""}));
+  renderQuestions();status("تمام بخش‌ها با موفقیت تولید شدند. تعداد: "+state.questions.length+" · بارم: "+(targetCents/100).toFixed(2)+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){const detail=e?.message||String(e);status("خطا در مرحله «"+generationStage+"»: "+detail,"error");}
  finally{button.disabled=false;button.textContent="تولید سؤال";}
 }
