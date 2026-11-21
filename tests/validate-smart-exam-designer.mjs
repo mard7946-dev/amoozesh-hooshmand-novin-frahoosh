@@ -45,3 +45,15 @@ assert.ok(api.includes("count > 40") && api.includes("rawQuestions.length !== co
 assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
 assert.ok(page.includes('id="aiSourceText"') && page.includes('id="generateQuestions"') && page.includes("questionPlan"), "Teacher UI must expose textbook excerpt and question-count controls");
 assert.ok(page.includes("ممکن است از سهمیه یا اعتبار حساب استفاده کند"), "AI generation must disclose potential usage before the request");
+
+const textbookMigration = readFileSync("supabase/migrations/20261121070000_school_textbook_library.sql", "utf8");
+assert.ok(textbookMigration.includes("school_textbook_library") && textbookMigration.includes("enable row level security"), "Textbook metadata must be isolated behind RLS");
+assert.ok(textbookMigration.includes("revoke all") && textbookMigration.includes("to service_role"), "Textbook metadata must not be directly accessible to browser roles");
+assert.ok(textbookMigration.includes("'school-textbooks', 'school-textbooks', false") && textbookMigration.includes("application/pdf"), "Textbook PDF bucket must be private and PDF-only");
+assert.ok(api.includes('action === "list_textbooks"') && api.includes('action === "textbook_download_url"'), "Authorized users must be able to list books and obtain temporary download links");
+assert.ok(api.includes('action === "create_textbook_upload" && canManageTextbooks') && api.includes('action === "register_textbook" && canManageTextbooks'), "Only management and executive deputy may upload and register textbooks");
+assert.ok(api.includes("createSignedUploadUrl") && api.includes("createSignedUrl(book.storage_path, 900)"), "Upload and download must use time-limited signed URLs");
+assert.ok(api.includes("fileSize > 52428800") && api.includes("^[A-Z][0-9]{2,5}$"), "Book uploads must enforce a bounded file size and preserve coded filenames");
+assert.ok(page.includes('id="textbookLibraryPanel"') && page.includes('id="textbookPdf"') && page.includes('id="libraryBookSelect"'), "The exam designer must expose textbook upload and selection controls");
+assert.ok(page.includes("uploadToSignedUrl") || page.includes("/object/upload/sign/"), "PDF uploads must use a signed upload endpoint");
+assert.ok(page.includes("textbook_download_url") && page.includes("openTextbook"), "Teachers and management must be able to open private PDFs through temporary URLs");
