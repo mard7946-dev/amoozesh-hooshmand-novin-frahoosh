@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8fafc">
+<title>طراحی هوشمند آزمون | فراهوش نوین</title>
+<style>
+:root{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif;color:#172033;background:#f8fafc;--line:#dbe3ed;--muted:#64748b;--green:#16a34a;--amber:#f59e0b}
+*{box-sizing:border-box}body{margin:0;background:#f8fafc}button,input,select,textarea{font:inherit}button{border:0;border-radius:10px;padding:11px 16px;background:#166534;color:#fff;cursor:pointer}button.secondary{background:#e8eef7;color:#172033}button.danger{background:#9f1239}button:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1100px;margin:auto;padding:16px}.hero{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.hero h1{margin:0 0 8px;font-size:24px}.hero p{margin:0;color:#d5deeb;line-height:1.9}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.field label{display:block;font-size:13px;margin:0 0 5px;color:#334155}.field input,.field select,.field textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#172033}.field textarea{min-height:90px;resize:vertical}.muted{color:var(--muted);font-size:13px;line-height:1.8}.notice{padding:12px 14px;border-radius:10px;background:#eff6ff;color:#1e3a8a;line-height:1.8;margin:10px 0}.notice.error{background:#fff1f2;color:#9f1239}.notice.ok{background:#f0fdf4;color:#166534}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.question{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:#fbfdff}.question h3{margin:0 0 10px}.paper-card{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0}.pill{display:inline-block;padding:4px 9px;border-radius:30px;background:#eef2ff;color:#334155;font-size:12px}.vault-content{white-space:pre-wrap;line-height:2}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.required{color:#b91c1c}.source-note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;color:#854d0e;line-height:1.9}
+@media(max-width:600px){.wrap{padding:10px}.hero{padding:16px}.panel{padding:12px}.grid{grid-template-columns:1fr}}
+.exam-paper{display:block;background:#fff;color:#111;direction:rtl;font-family:"B Zar","B Nazanin",Tahoma,serif;width:100%;max-width:210mm;margin:14px auto;padding:7mm;border:1px solid #cbd5e1;box-shadow:0 3px 18px #0f172a18}.exam-paper table{width:100%;border-collapse:collapse;table-layout:fixed}.exam-paper th,.exam-paper td{border:1px solid #111;padding:5px 7px}.exam-paper .school-head td{height:29mm;padding:0}.exam-paper .school-head-inner{width:100%;border-collapse:collapse}.exam-paper .school-head-inner td{border:0}.exam-paper .school-title{text-align:center;font-weight:700;line-height:1.65;font-size:13px}.exam-paper .logo-cell{width:27%;text-align:center;vertical-align:middle}.exam-paper .logo-cell img{width:25mm;height:25mm;object-fit:contain}.exam-paper .meta-grid{width:100%;border-collapse:collapse}.exam-paper .meta-grid td{height:9mm;font-size:11px}.exam-paper .meta-grid .label{font-weight:700;white-space:nowrap}.exam-paper .exam-table{margin-top:3mm}.exam-paper .exam-table thead{display:table-header-group}.exam-paper .exam-table th{font-size:11px;text-align:center;background:#f8fafc}.exam-paper .exam-table > thead > tr:last-child > th:first-child,.exam-paper .exam-table > tbody > tr > td:first-child{width:9mm;text-align:center}.exam-paper .exam-table > thead > tr:last-child > th:last-child,.exam-paper .exam-table > tbody > tr > td:last-child{width:13mm;text-align:center}.exam-paper .exam-table tbody tr{break-inside:avoid;page-break-inside:avoid}.exam-paper .exam-table tbody td{min-height:21mm;height:21mm;vertical-align:top;font-size:12px;line-height:1.8}.exam-paper .question-body{white-space:pre-wrap;overflow-wrap:anywhere}.exam-paper .question-options{margin:3px 0 0;padding-right:18px}.exam-paper .question-type{font-size:9px;color:#444;margin-bottom:3px}.exam-paper .empty-row td{height:21mm}.exam-paper .score-cell{font-weight:700}
+@media print{@page{size:A4 portrait;margin:7mm;@bottom-right{content:"صفحه " counter(page) " از " counter(pages);font-family:Tahoma;font-size:9px}}body{background:#fff!important}.wrap{display:block!important;max-width:none!important;padding:0!important}.hero,#status,#teacherPanel,.no-print{display:none!important}#managementPanel{display:block!important}.panel{display:none!important}#vaultDetail{display:block!important;border:0!important;padding:0!important;margin:0!important}#printDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}#vaultDetail>.row,#vaultMeta,#vaultQuestions{display:none!important}.exam-paper .school-head td{height:27mm}.exam-paper .exam-table tbody td{min-height:20mm;height:20mm}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="hero">
+<h1>طراحی هوشمند آزمون</h1>
+<p>ویژه پایه‌های هفتم، هشتم و نهم · ثبت منبع سؤال · بارم‌بندی · تأیید نهایی و انتقال امن به مخزن محرمانه</p>
+</header>
+<div id="status" class="notice" role="status" aria-live="polite">در حال بررسی نشست مدرسه…</div>
+<section id="teacherPanel" class="hidden">
+<div class="panel">
+<div class="row"><h2>مشخصات آزمون</h2><span class="pill">پیش‌نویس دبیر</span></div>
+<div class="grid">
+<div class="field"><label for="className">نام کلاس</label><input id="className" maxlength="80" placeholder="مثلاً هفتم الف"></div>
+<div class="field"><label for="teacherName">نام دبیر</label><input id="teacherName" maxlength="100" placeholder="نام و نام خانوادگی دبیر"></div>
+<div class="field"><label for="examDate">تاریخ امتحان (شمسی)</label><input id="examDate" maxlength="20" placeholder="۱۴۰۵/۰۹/۰۱"></div>
+<div class="field"><label for="durationMinutes">مدت امتحان (دقیقه)</label><input id="durationMinutes" type="number" min="1" max="600" step="1" placeholder="۶۰"></div>
+<div class="field"><label for="title">عنوان آزمون</label><input id="title" maxlength="180" placeholder="مثلاً آزمون فصل دوم"></div>
+<div class="field"><label for="subject">درس</label><input id="subject" maxlength="100" placeholder="نام دقیق درس"></div>
+<div class="field"><label for="grade">پایه</label><select id="grade"><option value="7">هفتم</option><option value="8">هشتم</option><option value="9">نهم</option></select></div>
+<div class="field"><label for="bookTitle">عنوان دقیق کتاب درسی</label><input id="bookTitle" maxlength="180" placeholder="مطابق نسخه رسمی کتاب"></div>
+<div class="field"><label for="bookEdition">سال/نوبت چاپ کتاب</label><input id="bookEdition" value="۱۴۰۵–۱۴۰۶" maxlength="40"></div>
+<div class="field"><label for="chapter">فصل</label><input id="chapter" maxlength="180"></div>
+<div class="field"><label for="lesson">درس / بخش</label><input id="lesson" maxlength="180"></div>
+<div class="field"><label for="topic">مبحث</label><input id="topic" maxlength="180"></div>
+<div class="field"><label for="pageReference">شماره صفحه یا بازه صفحات</label><input id="pageReference" maxlength="80" placeholder="مثلاً ۲۴ تا ۲۸"></div>
+<div class="field"><label for="curriculumUrl">مرجع رسمی کتاب</label><input id="curriculumUrl" value="https://chap.sch.ir/" maxlength="1000"></div>
+</div>
+<div class="panel no-print" id="aiGenerationPanel">
+<h2>تولید سؤال از متن کتاب با هوش مصنوعی</h2>
+<p class="muted">متن استخراج‌شده از صفحه یا صفحات کتاب رسمی را وارد کنید. مدل فقط از همین متن سؤال تازه می‌سازد؛ پاسخ‌ها و بارم را قبل از ذخیره بررسی کنید. متن کامل کتاب در سامانه بایگانی نمی‌شود.</p>
+<div class="field"><label for="aiSourceText">متن درس / بخش موردنظر کتاب</label><textarea id="aiSourceText" maxlength="15000" rows="7" placeholder="متن استخراج‌شده از صفحه کتاب را اینجا وارد کنید (حداقل ۲۰۰ نویسه)."></textarea></div>
+<div class="grid">
+<div class="field"><label for="aiPageReference">شماره صفحه چاپی کتاب</label><input id="aiPageReference" maxlength="80" placeholder="مثلاً ۱۵ تا ۱۸"></div>
+<div class="field"><label for="aiTotalPoints">بارم کل سؤال‌های تولیدی</label><input id="aiTotalPoints" type="number" min="0.25" max="20" step="0.25" value="20"></div>
+</div>
+<div class="field"><label>تعداد هر نوع سؤال</label><div class="grid">
+<div class="field"><label for="aiCount_multiple_choice">تستی</label><input id="aiCount_multiple_choice" type="number" min="0" max="15" step="1" value="5" data-ai-type="multiple_choice"></div><div class="field"><label for="aiCount_conceptual">مفهومی</label><input id="aiCount_conceptual" type="number" min="0" max="15" step="1" value="0" data-ai-type="conceptual"></div><div class="field"><label for="aiCount_true_false">صحیح / غلط</label><input id="aiCount_true_false" type="number" min="0" max="15" step="1" value="0" data-ai-type="true_false"></div><div class="field"><label for="aiCount_fill_blank">جای خالی</label><input id="aiCount_fill_blank" type="number" min="0" max="15" step="1" value="0" data-ai-type="fill_blank"></div><div class="field"><label for="aiCount_short_answer">پاسخ کوتاه</label><input id="aiCount_short_answer" type="number" min="0" max="15" step="1" value="0" data-ai-type="short_answer"></div><div class="field"><label for="aiCount_essay">تشریحی</label><input id="aiCount_essay" type="number" min="0" max="15" step="1" value="0" data-ai-type="essay"></div><div class="field"><label for="aiCount_problem">مسئله</label><input id="aiCount_problem" type="number" min="0" max="15" step="1" value="0" data-ai-type="problem"></div><div class="field"><label for="aiCount_equation">معادله</label><input id="aiCount_equation" type="number" min="0" max="15" step="1" value="0" data-ai-type="equation"></div><div class="field"><label for="aiCount_grammar">گرامر</label><input id="aiCount_grammar" type="number" min="0" max="15" step="1" value="0" data-ai-type="grammar"></div><div class="field"><label for="aiCount_vocabulary">معنی لغت</label><input id="aiCount_vocabulary" type="number" min="0" max="15" step="1" value="0" data-ai-type="vocabulary"></div><div class="field"><label for="aiCount_synonym_antonym">مترادف / متضاد</label><input id="aiCount_synonym_antonym" type="number" min="0" max="15" step="1" value="0" data-ai-type="synonym_antonym"></div><div class="field"><label for="aiCount_translation">ترجمه</label><input id="aiCount_translation" type="number" min="0" max="15" step="1" value="0" data-ai-type="translation"></div><div class="field"><label for="aiCount_other">سایر</label><input id="aiCount_other" type="number" min="0" max="15" step="1" value="0" data-ai-type="other"></div>
+</div></div>
+<div class="actions"><button id="generateQuestions" type="button">تولید سؤال با هوش مصنوعی</button></div>
+<p class="muted">تولید سؤال از سرویس هوش مصنوعی استفاده می‌کند و ممکن است مشمول سهمیه یا هزینه حساب Cloudflare باشد. با زدن دکمه، درخواست تولید ارسال می‌شود.</p>
+</div>
+<div class="source-note">مرجع رسمی کتاب‌های درسی: chap.sch.ir. تا زمان ورود فهرست تأییدشده کتاب‌ها و فصل‌ها به سامانه، عنوان کتاب و فصل را عیناً از نسخه رسمی وارد کنید. متن کامل کتاب را در بانک سؤال بازنشر نکنید؛ فقط مشخصات ارجاع و سؤال تازه را ثبت کنید. در این مرحله ثبت و ویرایش سؤال فعال است؛ تولید خودکار سؤال با هوش مصنوعی هنوز به موتور تولید متصل نشده است.</div>
+</div>
+<div class="panel">
+<div class="row"><h2>سؤال‌های آزمون</h2><span id="totalPoints" class="pill">مجموع بارم: ۰</span></div>
+<div id="questions"></div>
+<div class="actions"><button id="addQuestion" type="button">افزودن سؤال</button></div>
+</div>
+<div class="panel no-print">
+<div class="actions">
+<button id="saveDraft" type="button">ذخیره پیش‌نویس</button>
+<button id="finalize" type="button" class="danger">تأیید نهایی و ارسال محرمانه</button>
+<button id="back" type="button" class="secondary">بازگشت به پنل دبیر</button>
+</div>
+<p class="muted">پس از تأیید نهایی، محتوای سؤال‌ها از دسترس دبیر خارج می‌شود و فقط مدیر و معاون اجرایی می‌توانند نسخه نهایی را در مخزن محرمانه دریافت کنند.</p>
+</div>
+<div class="panel"><h2>آزمون‌های من</h2><div id="myPapers"></div></div>
+</section>
+<section id="managementPanel" class="hidden">
+<div class="panel">
+<div class="row"><h2>مخزن محرمانه آزمون‌های نهایی</h2><span class="pill">فقط مدیر و معاون اجرایی</span></div>
+<p class="muted">این فهرست فقط آزمون‌هایی را نشان می‌دهد که دبیر تأیید نهایی کرده است. محتوای نهایی از حساب دبیر قابل بازیابی نیست.</p>
+<div id="vaultList"></div>
+</div>
+<div id="vaultDetail" class="panel hidden">
+<div class="row"><h2 id="vaultTitle">نسخه نهایی آزمون</h2><div class="toolbar"><button id="archiveVault" class="danger" type="button">انتقال به بایگانی</button><button id="closeVault" class="secondary" type="button">بستن</button></div></div>
+<div id="vaultMeta" class="muted"></div>
+<div class="toolbar no-print"><button id="printExam" type="button">چاپ / ذخیره PDF</button></div>
+<div id="vaultQuestions"></div>
+<div id="printDocument" class="exam-paper" aria-label="پیش‌نمایش برگه آزمون"></div>
+<div class="source-note no-print">پیش‌نمایش و چاپ این نسخه با سربرگ رسمی ارسالی مدرسه انجام می‌شود. در پنجره چاپ، گزینه ذخیره به‌صورت PDF را انتخاب کنید.</div>
+</div>
+<div class="actions no-print"><button id="managementBack" class="secondary" type="button">بازگشت به پنل</button></div>
+</section>
+</main>
+<script>
+const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/smart-exam-designer";
+const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const $=id=>document.getElementById(id);
+let state={role:"",papers:[],vault:[],questions:[],paperId:null,activeVaultId:null};
+const types=[["multiple_choice","تستی"],["conceptual","مفهومی"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
+const origins=[["teacher_authored","تألیف دبیر"],["ai_generated","تولیدشده با هوش مصنوعی"],["official_reference","دارای ارجاع به کتاب رسمی"],["permitted_external","منبع بیرونی با مجوز"]];
+const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const asciiDigits=value=>String(value??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+function status(message,kind=""){ $("status").textContent=message;$("status").className="notice"+(kind?" "+kind:""); }
+async function api(action,extra={}){const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.message||"ارتباط با سرویس طراحی آزمون برقرار نشد.");return data;}
+function newQuestion(){return {question_type:"multiple_choice",difficulty:"medium",prompt:"",options:[],correct_answer:"",explanation:"",points:1,source_origin:"teacher_authored",source_url:"",source_title:"",source_license:"",source_permission_confirmed:false};}
+function renderQuestions(){
+ $("questions").replaceChildren();
+ state.questions.forEach((q,index)=>{
+  const card=document.createElement("article");card.className="question";card.dataset.index=String(index);
+  const typeOptions=types.map(([v,l])=>'<option value="'+v+'" '+(q.question_type===v?"selected":"")+'>'+l+'</option>').join("");
+  const originOptions=origins.map(([v,l])=>'<option value="'+v+'" '+(q.source_origin===v?"selected":"")+'>'+l+'</option>').join("");
+  card.innerHTML='<div class="row"><h3>سؤال '+(index+1)+'</h3><button type="button" class="danger" data-remove="'+index+'">حذف سؤال</button></div>'+
+   '<div class="grid"><div class="field"><label>نوع سؤال</label><select data-field="question_type">'+typeOptions+'</select></div>'+
+   '<div class="field"><label>درجه دشواری</label><select data-field="difficulty"><option value="easy" '+(q.difficulty==="easy"?"selected":"")+'>آسان</option><option value="medium" '+(q.difficulty==="medium"?"selected":"")+'>متوسط</option><option value="hard" '+(q.difficulty==="hard"?"selected":"")+'>دشوار</option></select></div>'+
+   '<div class="field"><label>بارم سؤال</label><input data-field="points" type="number" min="0.01" max="100" step="0.25" value="'+esc(q.points)+'"></div>'+
+   '<div class="field"><label>منشأ سؤال</label><select data-field="source_origin">'+originOptions+'</select></div>'+
+   '<div class="field"><label>عنوان منبع</label><input data-field="source_title" value="'+esc(q.source_title)+'" placeholder="برای منبع رسمی یا بیرونی"></div>'+
+   '<div class="field"><label>نشانی منبع</label><input data-field="source_url" value="'+esc(q.source_url)+'" placeholder="https://chap.sch.ir/..."></div>'+
+   '<div class="field"><label>مجوز / توضیح منبع</label><input data-field="source_license" value="'+esc(q.source_license)+'"></div></div>'+
+   '<div class="field"><label>متن سؤال</label><textarea data-field="prompt">'+esc(q.prompt)+'</textarea></div>'+
+   '<div class="field"><label>گزینه‌ها (هر گزینه در یک خط)</label><textarea data-field="options">'+esc((q.options||[]).join("\n"))+'</textarea></div>'+
+   '<div class="grid"><div class="field"><label>پاسخ / کلید</label><textarea data-field="correct_answer">'+esc(q.correct_answer)+'</textarea></div><div class="field"><label>توضیح پاسخ (اختیاری)</label><textarea data-field="explanation">'+esc(q.explanation)+'</textarea></div></div>'+
+   '<label><input data-field="source_permission_confirmed" type="checkbox" '+(q.source_permission_confirmed?"checked":"")+' style="width:auto"> مجوز استفاده از منبع بیرونی را دارم.</label>';
+  card.addEventListener("input",event=>updateQuestionField(card,event.target,index));
+  card.addEventListener("change",event=>updateQuestionField(card,event.target,index));
+  card.querySelector("[data-remove]").addEventListener("click",()=>{state.questions.splice(index,1);renderQuestions();updateTotal();});
+  $("questions").append(card);
+ });
+ updateTotal();
+}
+function updateQuestionField(card,target,index){const field=target.dataset.field;if(!field)return;let value;if(target.type==="checkbox")value=target.checked;else if(field==="points")value=Number(target.value);else if(field==="options")value=target.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);else value=target.value;state.questions[index][field]=value;updateTotal();}
+function updateTotal(){const total=state.questions.reduce((sum,q)=>sum+(Number(q.points)||0),0);$("totalPoints").textContent="مجموع بارم: "+total.toFixed(2).replace(/\.00$/,"");}
+function collectMetadata(){return {paper_id:state.paperId,title:$("title").value.trim(),subject:$("subject").value.trim(),grade:$("grade").value,book_title:$("bookTitle").value.trim(),book_edition:$("bookEdition").value.trim(),chapter:$("chapter").value.trim(),lesson:$("lesson").value.trim(),topic:$("topic").value.trim(),page_reference:$("pageReference").value.trim(),curriculum_source_url:$("curriculumUrl").value.trim(),payload:{header:{class_name:$("className").value.trim(),teacher_name:$("teacherName").value.trim(),exam_date:$("examDate").value.trim(),duration_minutes:asciiDigits($("durationMinutes").value.trim())},questions:state.questions}};}
+function showPaperList(){ $("myPapers").replaceChildren();if(!state.papers.length){$("myPapers").textContent="هنوز آزمونی ثبت نشده است.";return;}state.papers.forEach(p=>{const item=document.createElement("article");item.className="paper-card";item.innerHTML="<strong>"+esc(p.title)+"</strong><div class=\"muted\">"+esc(p.subject)+" · پایه "+esc(p.grade)+" · "+esc(p.book_title)+"</div><span class=\"pill\">"+(p.status==="draft"?"پیش‌نویس":p.status==="submitted"?"ارسال نهایی‌شده":"بایگانی")+"</span>";if(p.status==="draft"){const open=document.createElement("button");open.className="secondary";open.textContent="ادامه و ویرایش";open.addEventListener("click",()=>loadDraft(p.id));item.append(open);}else{const locked=document.createElement("p");locked.className="muted";locked.textContent="محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست.";item.append(locked);} $("myPapers").append(item);});}
+async function refreshTeacher(){const data=await api("bootstrap");state.role=data.role;state.papers=data.papers||[];showPaperList();}
+async function loadDraft(id){try{const data=await api("get_draft",{paper_id:id});state.paperId=id;const p=data.paper;$("title").value=p.title;$("subject").value=p.subject;$("grade").value=String(p.grade);$("className").value=data.payload.header?.class_name||"";$("teacherName").value=data.payload.header?.teacher_name||"";$("examDate").value=data.payload.header?.exam_date||"";$("durationMinutes").value=data.payload.header?.duration_minutes||"";$("bookTitle").value=p.book_title;$("bookEdition").value=p.book_edition;$("chapter").value=p.chapter;$("lesson").value=p.lesson;$("topic").value=p.topic;$("pageReference").value=p.page_reference;$("curriculumUrl").value=p.curriculum_source_url;state.questions=(data.payload.questions||[]).map(q=>({...newQuestion(),...q}));renderQuestions();status("پیش‌نویس بارگذاری شد.","ok");window.scrollTo({top:0,behavior:"smooth"});}catch(e){status(e.message,"error");}}
+async function saveDraft(){const meta=collectMetadata();if(!meta.title||!meta.subject||!meta.book_title){status("عنوان آزمون، درس و کتاب رسمی را کامل کنید.","error");return false;}if(!state.questions.length){status("حداقل یک سؤال اضافه کنید.","error");return false;}try{const data=await api("save_draft",meta);state.paperId=data.paper_id;await refreshTeacher();status(data.message+" مجموع بارم: "+data.total_points,"ok");return true;}catch(e){status(e.message,"error");return false;}}
+function addQuestion(){state.questions.push(newQuestion());renderQuestions();$("questions").lastElementChild?.scrollIntoView({behavior:"smooth",block:"center"});}
+function renderVaultList(){ $("vaultList").replaceChildren();if(!state.vault.length){$("vaultList").textContent="هنوز آزمون نهایی در مخزن ثبت نشده است.";return;}state.vault.forEach(p=>{const item=document.createElement("article");item.className="paper-card";item.innerHTML="<strong>"+esc(p.title)+"</strong><div class=\"muted\">"+esc(p.subject)+" · پایه "+esc(p.grade)+" · "+esc(p.book_title)+" · بارم "+esc(p.total_points)+"</div><span class=\"pill\">"+(p.status==="archived"?"بایگانی":"مخزن فعال")+"</span>";const open=document.createElement("button");open.className="secondary";open.textContent="دریافت نسخه نهایی";open.addEventListener("click",()=>openVault(p.paper_id));item.append(open);$("vaultList").append(item);});}
+function faDigits(value){return String(value??"").replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[Number(d)]);}
+function renderPrintDocument(p){
+ const header=p.payload?.header||{},questions=p.payload?.questions||[],rows=Math.max(9,questions.length);
+ const body=Array.from({length:rows},(_,i)=>{
+  const q=questions[i];
+  if(!q)return '<tr class="empty-row"><td>'+faDigits(i+1)+'</td><td></td><td></td></tr>';
+  const options=q.options?.length?'<ol class="question-options">'+q.options.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>':"";
+  return '<tr><td>'+faDigits(i+1)+'</td><td><div class="question-type">'+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+'</div><div class="question-body">'+esc(q.prompt)+'</div>'+options+'</td><td class="score-cell">'+faDigits(q.points)+'</td></tr>';
+ }).join("");
+ $("printDocument").innerHTML=
+ '<table class="exam-table"><thead><tr class="school-head"><td colspan="3"><table class="school-head-inner"><tbody><tr><td class="school-title">اداره کل آموزش و پرورش شهرستان‌های استان تهران<br>مدیریت آموزش و پرورش شهرستان قدس<br>دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲<br>سال تحصیلی ۱۴۰۵–۱۴۰۶</td><td class="logo-cell"><img src="assets/school-logo.svg" alt="نشان مدرسه"></td></tr></tbody></table></td></tr><tr><td colspan="3"><table class="meta-grid"><tbody><tr><td><span class="label">کلاس:</span> '+esc(header.class_name||"................")+'</td><td><span class="label">نام دبیر:</span> '+esc(header.teacher_name||"................")+'</td><td colspan="2"><span class="label">نام و نام خانوادگی:</span> ....................................</td></tr><tr><td><span class="label">تاریخ امتحان:</span> '+esc(header.exam_date||"....../....../......")+'</td><td><span class="label">مدت امتحان:</span> '+faDigits(header.duration_minutes||"......")+' دقیقه</td><td><span class="label">تعداد صفحه:</span> ........</td><td><span class="label">نام درس:</span> '+esc(p.subject)+'</td></tr><tr><td><span class="label">نمره تجدیدنظر با عدد:</span></td><td><span class="label">نام مصحح:</span></td><td><span class="label">نمره با عدد:</span></td><td><span class="label">نام مصحح:</span></td></tr><tr><td><span class="label">نمره تجدیدنظر با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td><td><span class="label">نمره با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td></tr></tbody></table></td></tr><tr><th>ردیف</th><th>متن سؤال</th><th>نمره</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+
+async function openVault(id){try{const data=await api("vault_get",{paper_id:id});const p=data.paper;state.activeVaultId=id;renderPrintDocument(p);$("vaultTitle").textContent=p.title;$("vaultMeta").textContent=p.subject+" · پایه "+p.grade+" · "+p.book_title+" · چاپ "+p.book_edition+" · مجموع بارم "+p.total_points;$("vaultQuestions").replaceChildren();(p.payload.questions||[]).forEach((q,i)=>{const card=document.createElement("article");card.className="question";const source=origins.find(x=>x[0]===q.source_origin)?.[1]||q.source_origin;card.innerHTML="<h3>سؤال "+(i+1)+" · "+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+" · "+esc(q.points)+" نمره</h3><div class=\"vault-content\">"+esc(q.prompt)+"</div>"+(q.options?.length?"<ol>"+q.options.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol>":"")+"<div class=\"muted\">منشأ: "+esc(source)+(q.source_title?" · "+esc(q.source_title):"")+(q.source_url?" · "+esc(q.source_url):"")+"</div>";$("vaultQuestions").append(card);});$("archiveVault").disabled=p.status!=="active";$("vaultDetail").classList.remove("hidden");$("vaultDetail").scrollIntoView({behavior:"smooth"});}catch(e){status(e.message,"error");}}
+async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");}catch(e){status(e.message,"error");}}
+async function generateQuestions(){
+ const sourceText=$("aiSourceText").value.trim(),pageReference=$("aiPageReference").value.trim();
+ const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(x=>x.count>0);
+ if(sourceText.length<200||!pageReference||!questionPlan.length){status("متن کتاب، شماره صفحه و دست‌کم یک تعداد سؤال را مشخص کنید.","error");return;}
+ if(!confirm("درخواست تولید سؤال به Cloudflare Workers AI ارسال می‌شود و ممکن است از سهمیه یا اعتبار حساب استفاده کند. ادامه می‌دهید؟"))return;
+ const button=$("generateQuestions");button.disabled=true;button.textContent="در حال تولید سؤال...";
+ try{
+  const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:$("subject").value,grade:Number($("grade").value),chapter:$("chapter").value,lesson:$("lesson").value});
+  state.questions=data.questions.map(q=>({...newQuestion(),...q}));
+  renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points,"ok");
+  $("questions").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){status(e.message,"error");}
+ finally{button.disabled=false;button.textContent="تولید سؤال با هوش مصنوعی";}
+}
+$("addQuestion").addEventListener("click",addQuestion);
+$("saveDraft").addEventListener("click",saveDraft);
+$("finalize").addEventListener("click",async()=>{if(!state.paperId){const saved=await saveDraft();if(!saved)return;}else{const saved=await saveDraft();if(!saved)return;}const header=collectMetadata().payload.header;if(!header.class_name||!header.teacher_name||!header.exam_date||!Number.isInteger(Number(header.duration_minutes))||Number(header.duration_minutes)<1||Number(header.duration_minutes)>600){status("برای تأیید نهایی، نام کلاس، نام دبیر، تاریخ شمسی و مدت امتحان را کامل کنید.","error");return;}if(!confirm("با تأیید نهایی، محتوای آزمون از دسترس حساب دبیر خارج و به مخزن محرمانه مدیر و معاون اجرایی منتقل می‌شود. ادامه می‌دهید؟"))return;try{const data=await api("finalize",{paper_id:state.paperId});state.paperId=null;state.questions=[];renderQuestions();await refreshTeacher();status(data.message,"ok");}catch(e){status(e.message,"error");}});
+$("back").addEventListener("click",()=>location.href="portal.html?step=panel&role=teacher");
+$("managementBack").addEventListener("click",()=>location.href="portal.html?step=panel&role="+(role==="manager"?"manager":"deputy"));
+$("printExam").addEventListener("click",()=>window.print());
+$("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hidden"));
+$("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
+$("generateQuestions").addEventListener("click",generateQuestions);
+boot();
+</script>
+</body>
+</html>

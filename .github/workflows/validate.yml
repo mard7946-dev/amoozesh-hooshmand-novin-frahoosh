@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, fix/teacher-class-selector-and-panel-return, feat/livekit-classroom-provider-main-sync]
   pull_request:
-    branches: [main]
+    branches: [main, feat/smart-exam-designer-middle-school-20261119]
   workflow_dispatch:
 
 permissions:
@@ -37,8 +37,17 @@ jobs:
       - name: Install backend dependencies
         working-directory: server
         run: npm install --package-lock=false
+      - name: Check smart exam validation script syntax
+        run: node --check tests/validate-question-bank.mjs && node --check tests/validate-smart-exam-designer.mjs
+      - name: Apply and exercise smart exam migration in isolated PostgreSQL
+        env:
+          DATABASE_URL: postgresql://frahoosh_test:test-password@127.0.0.1:5432/frahoosh_test
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/smart-exam-migration-setup.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261120070000_smart_exam_designer_secure_vault.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/smart-exam-migration.integration.sql
       - name: Validate page structure and JavaScript syntax
-        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-question-bank.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs && node tests/validate-livekit-classroom.mjs && node tests/validate-teacher-assistant.mjs && node tests/validate-finance-dashboard.mjs && node tests/validate-purchase-invoices.mjs && node tests/validate-teacher-directory-entry.mjs && node tests/validate-teacher-photo-exam.mjs
+        run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-question-bank.mjs && node tests/validate-smart-exam-designer.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs && node tests/validate-livekit-classroom.mjs && node tests/validate-teacher-assistant.mjs && node tests/validate-finance-dashboard.mjs && node tests/validate-purchase-invoices.mjs && node tests/validate-teacher-directory-entry.mjs
       - name: Validate professional report card feature
         run: node tests/validate-report-cards.mjs && node tests/validate-study-certificate-search.mjs
       - name: Set up Deno for classroom authorization checks
@@ -46,7 +55,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check classroom authorization and management Edge Functions
-        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-host-login/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-verification/index.ts supabase/functions/assessment-center/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts supabase/functions/question-bank/index.ts supabase/functions/report-cards/index.ts supabase/functions/admin-manage-users/index.ts supabase/functions/school-portal-login/index.ts supabase/functions/login-by-username/index.ts
+        run: deno check supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-host-login/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts supabase/functions/classroom-management/index.ts supabase/functions/classroom-verification/index.ts supabase/functions/assessment-center/index.ts supabase/functions/classroom-management/discipline-rules.ts supabase/functions/classroom-management/teacher-identity.ts supabase/functions/question-bank/index.ts supabase/functions/smart-exam-designer/index.ts supabase/functions/report-cards/index.ts supabase/functions/admin-manage-users/index.ts supabase/functions/school-portal-login/index.ts supabase/functions/login-by-username/index.ts
       - name: Test Tehran schedule activation boundaries
         run: deno test tests/classroom-schedule.test.ts tests/classroom-verification-period.test.ts tests/discipline-rules.test.ts tests/teacher-identity.test.ts tests/question-bank-pdf-parser.test.ts
       - name: Exercise authentication, roles, schedule, and room access against PostgreSQL

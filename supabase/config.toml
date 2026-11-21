@@ -9,3 +9,7 @@ verify_jwt = false
 
 [functions.report-cards]
 verify_jwt = false
+
+# The function also validates the caller's Supabase user and active school membership.
+[functions.smart-exam-designer]
+verify_jwt = true

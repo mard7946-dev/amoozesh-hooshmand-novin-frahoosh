@@ -1,0 +1,47 @@
+import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
+
+const page = readFileSync("smart-exam-designer.html", "utf8");
+const api = readFileSync("supabase/functions/smart-exam-designer/index.ts", "utf8");
+const migration = readFileSync("supabase/migrations/20261120070000_smart_exam_designer_secure_vault.sql", "utf8");
+const portal = readFileSync("portal.html", "utf8");
+const legacyApi = readFileSync("supabase/functions/question-bank/index.ts", "utf8");
+
+assert.ok(portal.includes("طراحی هوشمند آزمون") && portal.includes("مخزن محرمانه آزمون‌ها"), "Teacher designer and management vault routes must be present");
+assert.ok(api.includes('"executive"') && api.includes('memberRoles.has("executive")'), "The actual executive role and active school membership must be required");
+assert.ok(api.includes('action === "get_draft" && teacher') && api.includes('.eq("created_by", actorId).eq("status", "draft")'), "Teachers may retrieve only their own mutable drafts");
+assert.ok(api.includes('action === "vault_get" && (manager || executive)'), "Only manager and executive deputy may retrieve final exam content");
+assert.ok(api.includes('action === "archive" && (manager || executive)'), "Only manager and executive deputy may archive final exams");
+assert.ok(api.includes('origin === "ai_generated" && (sourceUrl || sourceTitle)'), "AI-generated questions must not be misrepresented as source-derived");
+assert.ok(api.includes("chap.sch.ir") && api.includes("permitted_external"), "Official and permission-based source provenance must be validated");
+assert.ok(migration.includes("enable row level security") && migration.includes("revoke all") && migration.includes("to service_role"), "All new exam tables must deny direct client access");
+assert.ok(migration.includes("finalize_smart_exam") && migration.includes("delete from public.smart_exam_draft_payloads"), "Finalization must atomically move content and remove teacher draft payload");
+assert.equal(migration.split("create or replace function public.finalize_smart_exam(").length - 1, 1, "The migration must define exactly one complete finalization function");
+assert.ok(migration.includes("v_duration !~") && migration.includes("v_duration::integer not between 1 and 600"), "Database finalization must validate a normalized, bounded exam duration");
+assert.ok(migration.includes("prevent_smart_exam_vault_content_update") && migration.includes("Final exam content is immutable"), "Final vault content must be immutable");
+assert.ok(migration.includes("archive_smart_exam") && migration.includes("smart_exam_audit_logs"), "Archiving must be transactional and audited");
+assert.ok(page.includes("ai_generated") && page.includes("conceptual") && page.includes("multiple_choice") && page.includes("synonym_antonym") && page.includes("translation"), "Question types and provenance choices must be available");
+assert.ok(page.includes("محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست"), "Teacher UI must not offer finalized content access");
+assert.ok(page.includes("چاپ / ذخیره PDF") && page.includes('src="assets/school-logo.svg"'), "The official school logo and print-to-PDF action must be used");
+assert.ok(page.includes("اداره کل آموزش و پرورش شهرستان‌های استان تهران") && page.includes("مدیریت آموزش و پرورش شهرستان قدس") && page.includes("دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲") && page.includes("۱۴۰۵–۱۴۰۶"), "The official school header must match the supplied template");
+assert.ok(page.includes('id="className"') && page.includes('id="teacherName"') && page.includes('id="examDate"') && page.includes('id="durationMinutes"'), "Teacher must enter the official header metadata before finalization");
+assert.ok(page.includes("counter(page)") && page.includes("counter(pages)") && page.includes("display:table-header-group"), "The print layout must repeat the header and number printed pages");
+assert.ok(api.includes("class_name: clean(rawHeader.class_name") && api.includes("return { header, questions"), "Validated header metadata must be stored with the draft");
+assert.ok(api.includes("function validatePayload(raw: unknown, allowIncomplete = false)") && api.includes("validatePayload(body.payload, true)") && api.includes("!allowIncomplete && !prompt"), "Incomplete teacher question cards must be saveable as drafts");
+assert.ok(api.includes("\"conceptual\""), "Conceptual questions must be accepted by the secure backend");
+assert.ok(migration.includes("Official exam header metadata is incomplete") && migration.includes("duration_minutes"), "Database finalization must reject incomplete print-header metadata");
+assert.ok(page.includes("پیش‌نمایش و چاپ این نسخه با سربرگ رسمی ارسالی مدرسه انجام می‌شود"), "Print must use the supplied official school header");
+assert.ok(api.includes("asciiDigits(rawHeader.duration_minutes)"), "Persian numerals in exam duration must be normalized before database validation");
+assert.ok(legacyApi.includes('["executive","executive_deputy","معاون اجرایی"]') && !legacyApi.includes('["educational","educational_deputy","معاون آموزشی"]'), "Legacy question-bank endpoint must no longer authorize educational deputy as vault manager");
+assert.ok(legacyApi.indexOf("if(!manager&&!deputy)") < legacyApi.indexOf('if(action==="add_to_collection"&&(deputy||teacher))'), "Legacy endpoint must reject teachers before shared-bank actions are reachable");
+const scripts = [...page.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(x => x.trim());
+for (const script of scripts) assert.doesNotThrow(() => new Function(script), "Smart exam designer JavaScript syntax must be valid");
+console.log("Smart exam designer authorization, provenance, immutability, and UI checks passed.");
+
+assert.ok(api.includes('action === "generate_questions" && teacher'), "Only authenticated teachers may invoke AI question generation");
+assert.ok(api.includes("CLOUDFLARE_AI_TOKEN") && api.includes("CLOUDFLARE_ACCOUNT_ID"), "Cloudflare credentials must be read only from server-side secrets");
+assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_excerpt"), "AI generation must use the configured multilingual model and supplied textbook excerpt");
+assert.ok(api.includes("count > 40") && api.includes("rawQuestions.length !== count"), "Generation must enforce bounded and exact question counts");
+assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
+assert.ok(page.includes('id="aiSourceText"') && page.includes('id="generateQuestions"') && page.includes("questionPlan"), "Teacher UI must expose textbook excerpt and question-count controls");
+assert.ok(page.includes("ممکن است از سهمیه یا اعتبار حساب استفاده کند"), "AI generation must disclose potential usage before the request");
