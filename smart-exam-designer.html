@@ -9,6 +9,7 @@
 :root{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif;color:#172033;background:#f8fafc;--line:#dbe3ed;--muted:#64748b;--green:#16a34a;--amber:#f59e0b}
 *{box-sizing:border-box}body{margin:0;background:#f8fafc}button,input,select,textarea{font:inherit}button{border:0;border-radius:10px;padding:11px 16px;background:#166534;color:#fff;cursor:pointer}button.secondary{background:#e8eef7;color:#172033}button.danger{background:#9f1239}button:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1100px;margin:auto;padding:16px}.hero{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.hero h1{margin:0 0 8px;font-size:24px}.hero p{margin:0;color:#d5deeb;line-height:1.9}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.field label{display:block;font-size:13px;margin:0 0 5px;color:#334155}.field input,.field select,.field textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#172033}.field textarea{min-height:90px;resize:vertical}.muted{color:var(--muted);font-size:13px;line-height:1.8}.notice{padding:12px 14px;border-radius:10px;background:#eff6ff;color:#1e3a8a;line-height:1.8;margin:10px 0}.notice.error{background:#fff1f2;color:#9f1239}.notice.ok{background:#f0fdf4;color:#166534}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.question{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:#fbfdff}.question h3{margin:0 0 10px}.paper-card{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0}.pill{display:inline-block;padding:4px 9px;border-radius:30px;background:#eef2ff;color:#334155;font-size:12px}.vault-content{white-space:pre-wrap;line-height:2}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.required{color:#b91c1c}.source-note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;color:#854d0e;line-height:1.9}
 @media(max-width:600px){.wrap{padding:10px}.hero{padding:16px}.panel{padding:12px}.grid{grid-template-columns:1fr}}
+#textbookLibraryPanel{border-top:3px solid #16a34a}#textbookLibraryList{margin-top:14px}.book-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap}.book-row strong{color:#172033}
 .exam-paper{display:block;background:#fff;color:#111;direction:rtl;font-family:"B Zar","B Nazanin",Tahoma,serif;width:100%;max-width:210mm;margin:14px auto;padding:7mm;border:1px solid #cbd5e1;box-shadow:0 3px 18px #0f172a18}.exam-paper table{width:100%;border-collapse:collapse;table-layout:fixed}.exam-paper th,.exam-paper td{border:1px solid #111;padding:5px 7px}.exam-paper .school-head td{height:29mm;padding:0}.exam-paper .school-head-inner{width:100%;border-collapse:collapse}.exam-paper .school-head-inner td{border:0}.exam-paper .school-title{text-align:center;font-weight:700;line-height:1.65;font-size:13px}.exam-paper .logo-cell{width:27%;text-align:center;vertical-align:middle}.exam-paper .logo-cell img{width:25mm;height:25mm;object-fit:contain}.exam-paper .meta-grid{width:100%;border-collapse:collapse}.exam-paper .meta-grid td{height:9mm;font-size:11px}.exam-paper .meta-grid .label{font-weight:700;white-space:nowrap}.exam-paper .exam-table{margin-top:3mm}.exam-paper .exam-table thead{display:table-header-group}.exam-paper .exam-table th{font-size:11px;text-align:center;background:#f8fafc}.exam-paper .exam-table > thead > tr:last-child > th:first-child,.exam-paper .exam-table > tbody > tr > td:first-child{width:9mm;text-align:center}.exam-paper .exam-table > thead > tr:last-child > th:last-child,.exam-paper .exam-table > tbody > tr > td:last-child{width:13mm;text-align:center}.exam-paper .exam-table tbody tr{break-inside:avoid;page-break-inside:avoid}.exam-paper .exam-table tbody td{min-height:21mm;height:21mm;vertical-align:top;font-size:12px;line-height:1.8}.exam-paper .question-body{white-space:pre-wrap;overflow-wrap:anywhere}.exam-paper .question-options{margin:3px 0 0;padding-right:18px}.exam-paper .question-type{font-size:9px;color:#444;margin-bottom:3px}.exam-paper .empty-row td{height:21mm}.exam-paper .score-cell{font-weight:700}
 @media print{@page{size:A4 portrait;margin:7mm;@bottom-right{content:"صفحه " counter(page) " از " counter(pages);font-family:Tahoma;font-size:9px}}body{background:#fff!important}.wrap{display:block!important;max-width:none!important;padding:0!important}.hero,#status,#teacherPanel,.no-print{display:none!important}#managementPanel{display:block!important}.panel{display:none!important}#vaultDetail{display:block!important;border:0!important;padding:0!important;margin:0!important}#printDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}#vaultDetail>.row,#vaultMeta,#vaultQuestions{display:none!important}.exam-paper .school-head td{height:27mm}.exam-paper .exam-table tbody td{min-height:20mm;height:20mm}}
 </style>
@@ -20,6 +21,28 @@
 <p>ویژه پایه‌های هفتم، هشتم و نهم · ثبت منبع سؤال · بارم‌بندی · تأیید نهایی و انتقال امن به مخزن محرمانه</p>
 </header>
 <div id="status" class="notice" role="status" aria-live="polite">در حال بررسی نشست مدرسه…</div>
+<section id="textbookLibraryPanel" class="panel hidden">
+  <div class="row"><h2>کتابخانه کتاب‌های درسی مدرسه</h2><span class="pill">PDF خصوصی</span></div>
+  <p class="muted">کتاب‌ها با کد اصلی مانند C706 ثبت می‌شوند. فایل‌ها در فضای خصوصی مدرسه نگهداری می‌شوند و فقط کاربران مجاز مدرسه می‌توانند پیوند موقت دریافت کنند.</p>
+  <div id="textbookUploadControls" class="hidden">
+    <h3>بارگذاری کتاب جدید</h3>
+    <div class="grid">
+      <div class="field"><label for="textbookGrade">پایه</label><select id="textbookGrade"><option value="7">هفتم</option><option value="8">هشتم</option><option value="9">نهم</option></select></div>
+      <div class="field"><label for="textbookCode">کد اصلی کتاب</label><input id="textbookCode" maxlength="12" placeholder="مثلاً C706" autocapitalize="characters"></div>
+      <div class="field"><label for="textbookSubject">نام درس</label><input id="textbookSubject" maxlength="120" placeholder="مثلاً علوم تجربی"></div>
+      <div class="field"><label for="textbookTitle">عنوان کتاب (اختیاری)</label><input id="textbookTitle" maxlength="180" placeholder="عنوان رسمی کتاب"></div>
+      <div class="field"><label for="textbookEdition">سال تحصیلی / نوبت چاپ</label><input id="textbookEdition" maxlength="40" value="۱۴۰۵–۱۴۰۶"></div>
+      <div class="field"><label for="textbookPdf">فایل PDF</label><input id="textbookPdf" type="file" accept="application/pdf,.pdf"></div>
+    </div>
+    <div class="actions"><button id="uploadTextbook" type="button">بارگذاری و ثبت کتاب</button></div>
+    <p class="muted">نام فایل باید با کد کتاب یکسان باشد؛ برای نمونه C706.pdf. سقف هر فایل در این مرحله ۵۰ مگابایت است.</p>
+  </div>
+  <div id="textbookReaderControls" class="grid">
+    <div class="field"><label for="libraryBookSelect">انتخاب کتاب برای آزمون</label><select id="libraryBookSelect"><option value="">در حال دریافت فهرست کتاب‌ها…</option></select></div>
+    <div class="field"><label>&nbsp;</label><button id="openTextbookPdf" type="button" class="secondary">مشاهده PDF کتاب</button></div>
+  </div>
+  <div id="textbookLibraryList" class="muted">در حال دریافت کتاب‌های ثبت‌شده…</div>
+</section>
 <section id="teacherPanel" class="hidden">
 <div class="panel">
 <div class="row"><h2>مشخصات آزمون</h2><span class="pill">پیش‌نویس دبیر</span></div>
@@ -149,7 +172,36 @@ function renderPrintDocument(p){
 }
 
 async function openVault(id){try{const data=await api("vault_get",{paper_id:id});const p=data.paper;state.activeVaultId=id;renderPrintDocument(p);$("vaultTitle").textContent=p.title;$("vaultMeta").textContent=p.subject+" · پایه "+p.grade+" · "+p.book_title+" · چاپ "+p.book_edition+" · مجموع بارم "+p.total_points;$("vaultQuestions").replaceChildren();(p.payload.questions||[]).forEach((q,i)=>{const card=document.createElement("article");card.className="question";const source=origins.find(x=>x[0]===q.source_origin)?.[1]||q.source_origin;card.innerHTML="<h3>سؤال "+(i+1)+" · "+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+" · "+esc(q.points)+" نمره</h3><div class=\"vault-content\">"+esc(q.prompt)+"</div>"+(q.options?.length?"<ol>"+q.options.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol>":"")+"<div class=\"muted\">منشأ: "+esc(source)+(q.source_title?" · "+esc(q.source_title):"")+(q.source_url?" · "+esc(q.source_url):"")+"</div>";$("vaultQuestions").append(card);});$("archiveVault").disabled=p.status!=="active";$("vaultDetail").classList.remove("hidden");$("vaultDetail").scrollIntoView({behavior:"smooth"});}catch(e){status(e.message,"error");}}
-async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");}catch(e){status(e.message,"error");}}
+let textbookBooks=[];
+async function refreshTextbookLibrary(){
+  const data=await api("list_textbooks");
+  textbookBooks=data.books||[];
+  const select=$("libraryBookSelect");
+  select.innerHTML='<option value="">یک کتاب انتخاب کنید</option>'+textbookBooks.map(book=>'<option value="'+esc(book.id)+'">'+esc("پایه "+book.grade+" · "+book.subject+" · "+book.book_code+" · "+book.edition)+'</option>').join("");
+  $("textbookLibraryList").innerHTML=textbookBooks.length?textbookBooks.map(book=>'<div class="book-row"><div><strong>'+esc(book.book_code)+' · '+esc(book.subject)+'</strong><div class="muted">پایه '+esc(book.grade)+' · '+esc(book.edition)+' · '+(Number(book.file_size_bytes)/1048576).toFixed(1)+' مگابایت</div></div><button type="button" class="secondary" data-open-textbook="'+esc(book.id)+'">مشاهده PDF</button></div>').join(""):'هنوز کتابی در کتابخانه مدرسه ثبت نشده است.';
+}
+async function openTextbook(bookId){
+  if(!bookId){status("ابتدا یک کتاب از فهرست انتخاب کنید.","error");return;}
+  try{const data=await api("textbook_download_url",{book_id:bookId});const opened=window.open(data.signed_url,"_blank","noopener");if(!opened)status("مرورگر بازشدن پنجره جدید را مسدود کرد؛ اجازه بازشدن PDF را بدهید.","error");}
+  catch(e){status(e.message,"error");}
+}
+async function uploadTextbook(){
+  const file=$("textbookPdf").files[0],grade=Number($("textbookGrade").value),code=$("textbookCode").value.trim().toUpperCase(),subject=$("textbookSubject").value.trim(),title=$("textbookTitle").value.trim(),edition=$("textbookEdition").value.trim()||"۱۴۰۵–۱۴۰۶";
+  if(!file||file.type!=="application/pdf"||!/^([A-Z][0-9]{2,5})\.pdf$/i.test(file.name)||file.name.toUpperCase()!==code+".PDF"||subject.length<2||file.size<1||file.size>52428800){status("فایل PDF، کد مطابق نام فایل، نام درس و حجم کمتر از ۵۰ مگابایت را بررسی کنید. مثال: C706.pdf","error");return;}
+  const button=$("uploadTextbook");button.disabled=true;button.textContent="در حال بارگذاری…";
+  try{
+    const signed=await api("create_textbook_upload",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size});
+    const encodedPath=signed.storage_path.split("/").map(encodeURIComponent).join("/");
+    const uploadUrl="https://gtmmllcxhdejwjjnyzrh.supabase.co/storage/v1/object/upload/sign/"+encodedPath+"?token="+encodeURIComponent(signed.upload_token);
+    const response=await fetch(uploadUrl,{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
+    if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error("بارگذاری PDF ناموفق بود ("+response.status+"). "+detail.slice(0,240));}
+    const registered=await api("register_textbook",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size,storage_path:signed.storage_path});
+    $("textbookPdf").value="";$("textbookCode").value="";$("textbookSubject").value="";$("textbookTitle").value="";
+    await refreshTextbookLibrary();status(registered.message,"ok");
+  }catch(e){status(e.message,"error");}
+  finally{button.disabled=false;button.textContent="بارگذاری و ثبت کتاب";}
+}
+async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();$("textbookUploadControls").classList.remove("hidden");}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}$("textbookLibraryPanel").classList.remove("hidden");status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");await refreshTextbookLibrary();}catch(e){status(e.message,"error");}}
 async function generateQuestions(){
  const sourceText=$("aiSourceText").value.trim(),pageReference=$("aiPageReference").value.trim();
  const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(x=>x.count>0);
@@ -173,6 +225,10 @@ $("printExam").addEventListener("click",()=>window.print());
 $("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hidden"));
 $("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
 $("generateQuestions").addEventListener("click",generateQuestions);
+$("uploadTextbook").addEventListener("click",uploadTextbook);
+$("openTextbookPdf").addEventListener("click",()=>openTextbook($("libraryBookSelect").value));
+$("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
+$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book)return;$("grade").value=String(book.grade);$("subject").value=book.subject;$("bookTitle").value=book.title||book.book_code;});
 boot();
 </script>
 </body>
