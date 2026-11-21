@@ -330,7 +330,7 @@ Deno.serve(async (req: Request) => {
         console.error("Textbook chunk analysis error", error instanceof Error ? error.message : "unknown");
         return reply({
           message: error instanceof Error && error.name === "AbortError"
-            ? "تحلیل یک بخش کتاب بیش از ۹۰ ثانیه طول کشید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
+            ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
             : "ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد؛ دوباره تلاش کنید."
         }, 502);
       }
