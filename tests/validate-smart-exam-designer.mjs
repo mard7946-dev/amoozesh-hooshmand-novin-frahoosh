@@ -60,7 +60,8 @@ assert.ok(api.includes("createSignedUploadUrl") && api.includes("createSignedUrl
 assert.ok(api.includes("fileSize > 52428800") && api.includes("^[A-Z][0-9]{2,5}$"), "Book uploads must enforce a bounded file size and preserve coded filenames");
 assert.ok(page.includes('id="textbookLibraryPanel"') && page.includes('id="textbookPdf"') && page.includes('id="libraryBookSelect"'), "The exam designer must expose textbook upload and selection controls");
 assert.ok(api.includes("createSignedUploadUrl(storagePath, { upsert: false })") && page.includes('fetch(signed.signed_url,{method:"PUT"'), "PDF uploads must use the signed upload URL returned by the Edge Function");
-assert.ok(page.includes("textbook_download_url") && page.includes("openTextbook"), "Teachers and management must be able to open private PDFs through temporary URLs");
+assert.ok(api.includes('action === "textbook_download_pdf"') && api.includes(".download(book.storage_path)") && api.includes('"Content-Type": "application/pdf"'), "Private textbook PDFs must stream through the authenticated CORS-enabled Edge Function");
+assert.ok(page.includes('action:"textbook_download_pdf"') && !page.includes("fetch(link.signed_url)"), "The browser must fetch textbook PDFs through the authenticated Edge Function rather than cross-origin Storage URLs");
 
 assert.ok(page.includes('method:"PUT"') && page.includes('"Content-Type":"application/pdf"') && page.includes('"x-upsert":"false"'), "Signed textbook uploads must use a non-overwriting PDF PUT request");
 assert.ok(api.includes('const textbookBucket = "school-textbooks"') && api.includes('createSignedUploadUrl(storagePath, { upsert: false })'), "The signed upload URL must be issued for the private textbook bucket");
