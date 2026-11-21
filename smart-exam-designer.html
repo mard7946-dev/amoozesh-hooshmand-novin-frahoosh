@@ -132,7 +132,7 @@ const origins=[["teacher_authored","تألیف دبیر"],["ai_generated","تو�
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const asciiDigits=value=>String(value??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 function status(message,kind=""){ $("status").textContent=message;$("status").className="notice"+(kind?" "+kind:""); }
-async function api(action,extra={}){const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.message||"ارتباط با سرویس طراحی آزمون برقرار نشد.");return data;}
+async function api(action,extra={}){let response;try{response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});}catch(error){const detail=error?.message||String(error);throw new Error("ارتباط شبکه با سرویس در مرحله «"+action+"» برقرار نشد: "+detail);}const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.message||"سرویس در مرحله «"+action+"» پاسخ موفق نداد (HTTP "+response.status+").");return data;}
 function newQuestion(){return {question_type:"multiple_choice",difficulty:"medium",prompt:"",options:[],correct_answer:"",explanation:"",points:1,source_origin:"teacher_authored",source_url:"",source_title:"",source_license:"",source_permission_confirmed:false,image_data_url:""};}
 function renderQuestions(){
  $("questions").replaceChildren();
@@ -280,13 +280,25 @@ function renderQuestionCounts(){
  });
 }
 let pdfOcrWorker=null;
-async function loadExternalScript(url,globalName){if(window[globalName])return;await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=url;script.crossOrigin="anonymous";script.onload=resolve;script.onerror=()=>reject(new Error("بارگذاری ابزار خواندن PDF یا OCR ناموفق بود."));document.head.append(script);});if(!window[globalName])throw new Error("ابزار موردنیاز در مرورگر بارگذاری نشد.");}
-async function getOcrWorker(){if(pdfOcrWorker)return pdfOcrWorker;await loadExternalScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");pdfOcrWorker=await Tesseract.createWorker("fas",1,{langPath:"https://tessdata.projectnaptha.com/4.0.0",gzip:true});return pdfOcrWorker;}
+async function loadExternalScript(url,globalName){if(window[globalName])return;await new Promise((resolve,reject)=>{const script=document.createElement("script");const timer=setTimeout(()=>{script.remove();reject(new Error("مهلت بارگذاری ابزار "+globalName+" تمام شد؛ نشانی: "+url));},20000);script.src=url;script.crossOrigin="anonymous";script.onload=()=>{clearTimeout(timer);resolve();};script.onerror=()=>{clearTimeout(timer);reject(new Error("مرورگر نتوانست ابزار "+globalName+" را از منبع بارگیری کند: "+url));};document.head.append(script);});if(!window[globalName])throw new Error("فایل ابزار "+globalName+" بارگیری شد اما شیء اجرایی آن در دسترس نیست.");}
+async function getOcrWorker(){if(pdfOcrWorker)return pdfOcrWorker;try{await loadExternalScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");status("ابزار OCR بارگیری شد؛ در حال دریافت داده‌های زبان فارسی…");pdfOcrWorker=await Tesseract.createWorker("fas",1,{langPath:"https://tessdata.projectnaptha.com/4.0.0",gzip:true});return pdfOcrWorker;}catch(error){throw new Error("آماده‌سازی OCR فارسی ناموفق بود: "+(error?.message||String(error)));}}
 async function ensureSelectedPdfDocument(bookId){
- await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","pdfjsLib");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+ status("مرحله ۱ از ۴: آماده‌سازی کتاب‌خوان PDF…");
+ try{await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","pdfjsLib");}catch(error){throw new Error("مرحله آماده‌سازی PDF.js ناموفق بود: "+(error?.message||String(error)));}
+ if(!window.pdfjsLib)throw new Error("کتاب‌خوان PDF.js در مرورگر فعال نشد.");
+ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
  if(selectedPdfDocument&&selectedPdfBookId===bookId)return selectedPdfDocument;
- const link=await api("textbook_download_url",{book_id:bookId}),response=await fetch(link.signed_url);if(!response.ok)throw new Error("دریافت امن PDF کتاب ناموفق بود.");
- selectedPdfDocument=await pdfjsLib.getDocument({data:await response.arrayBuffer()}).promise;selectedPdfBookId=bookId;return selectedPdfDocument;
+ status("مرحله ۲ از ۴: دریافت پیوند امن کتاب…");
+ const link=await api("textbook_download_url",{book_id:bookId});
+ if(!link?.signed_url)throw new Error("سرویس پیوند امن کتاب را برنگرداند.");
+ status("مرحله ۳ از ۴: دریافت فایل PDF کتاب…");
+ let response;try{response=await fetch(link.signed_url);}catch(error){throw new Error("دریافت فایل PDF از فضای خصوصی با خطای شبکه روبه‌رو شد: "+(error?.message||String(error)));}
+ if(!response.ok)throw new Error("دریافت امن PDF کتاب ناموفق بود (HTTP "+response.status+").");
+ const bytes=await response.arrayBuffer();
+ if(bytes.byteLength<5||String.fromCharCode(...new Uint8Array(bytes.slice(0,5)))!=="%PDF-")throw new Error("فایل دریافت‌شده PDF معتبر نیست یا ناقص است.");
+ status("مرحله ۴ از ۴: بازکردن PDF و راه‌اندازی پردازشگر صفحات…");
+ try{const loadingTask=pdfjsLib.getDocument({data:bytes});selectedPdfDocument=await loadingTask.promise;selectedPdfBookId=bookId;return selectedPdfDocument;}
+ catch(error){selectedPdfDocument=null;selectedPdfBookId="";throw new Error("فایل دریافت شد، اما PDF.js نتوانست آن را باز کند. احتمال اختلال در PDF.js یا فایل PDF وجود دارد: "+(error?.message||String(error)));}
 }
 let selectedPdfDocument=null,selectedPdfBookId="";
 async function extractSelectedPdfChunks(bookId,fromPage,toPage){
@@ -320,6 +332,7 @@ async function summarizeAllBookChunks(chunks){
  return summaries.map(x=>"["+x.pages+"] "+x.summary).join("\n\n");
 }
 async function generateQuestions(){
+ let generationStage="اعتبارسنجی اطلاعات آزمون";
  const bookId=$("libraryBookSelect").value,fromPage=Number(asciiDigits($("pageFrom").value)),toPage=Number(asciiDigits($("pageTo").value)),printedFrom=Number(asciiDigits($("printedPageFrom").value)),printedTo=Number(asciiDigits($("printedPageTo").value));
  const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(item=>item.count>0);
  if(!bookId){status("ابتدا کتاب را از مخزن مدرسه انتخاب کنید.","error");return;}
@@ -330,15 +343,20 @@ async function generateQuestions(){
  if(!confirm("تمام صفحات بازه انتخاب‌شده، مرحله‌به‌مرحله خوانده و تحلیل می‌شوند؛ سپس نکات همه بخش‌ها در یک آزمون واحد استفاده خواهد شد. این فرایند ممکن است چندین درخواست هوش مصنوعی و مصرف سهمیه یا اعتبار بیشتری داشته باشد. ادامه می‌دهید؟"))return;
  const button=$("generateQuestions");button.disabled=true;button.textContent="در حال استخراج صفحات…";
  try{
+  generationStage="دریافت و بازکردن PDF";
   const book=textbookBooks.find(item=>item.id===bookId);if(!book)throw new Error("کتاب انتخاب‌شده در فهرست مدرسه پیدا نشد.");const pdf=await ensureSelectedPdfDocument(bookId);
   if(toPage>pdf.numPages)throw new Error("تا صفحه PDF از تعداد صفحات فایل بیشتر است. تعداد صفحات این کتاب: "+pdf.numPages);
-  const chunks=await extractSelectedPdfChunks(bookId,fromPage,toPage),sourceText=await summarizeAllBookChunks(chunks);
+  generationStage="استخراج متن صفحات PDF";
+  const chunks=await extractSelectedPdfChunks(bookId,fromPage,toPage);
+  generationStage="تحلیل بخش‌های کتاب با هوش مصنوعی";
+  const sourceText=await summarizeAllBookChunks(chunks);
   const pageReference=printedFrom===printedTo?String(printedFrom):printedFrom+" تا "+printedTo,pdfPageReference=fromPage===toPage?String(fromPage):fromPage+" تا "+toPage;$("pageReference").value=pageReference;$("pdfPageReference").value=pdfPageReference;
   $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
   button.textContent="در حال ساخت آزمون یکپارچه…";status("تمام بخش‌های انتخاب‌شده تحلیل شدند؛ در حال ساخت مجموعه سؤال نهایی…");
+  generationStage="تولید مجموعه سؤال نهایی با هوش مصنوعی";
   const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,pdf_page_reference:pdfPageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:book.subject,grade:Number(book.grade),chapter:$("chapter").value,lesson:$("lesson").value});
   state.questions=data.questions.map(q=>({...newQuestion(),...q,source_origin:"ai_generated",source_title:"",source_url:""}));renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
- }catch(e){status(e.message||"تولید سؤال انجام نشد.","error");}
+ }catch(e){const detail=e?.message||String(e);status("خطا در مرحله «"+generationStage+"»: "+detail,"error");}
  finally{button.disabled=false;button.textContent="تولید سؤال";}
 }
 $("addQuestion").addEventListener("click",addQuestion);
