@@ -271,7 +271,7 @@ $("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hid
 $("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
 $("generateQuestions").addEventListener("click",generateQuestions);
 $("uploadTextbook").addEventListener("click",uploadTextbook);
-$("openTextbookPdf").addEventListener("click",()=>openTextbook($("libraryBookSelect").value));
+
 $("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
 $("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book)return;$("grade").value=String(book.grade);$("subject").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
 $("questionMode").addEventListener("change",renderQuestionCounts);
