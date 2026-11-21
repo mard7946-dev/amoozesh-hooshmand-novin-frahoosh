@@ -21,6 +21,8 @@ create table if not exists public.school_textbook_library (
 
 create index if not exists school_textbook_library_lookup_idx
   on public.school_textbook_library (school_id, grade, subject, is_active, book_code);
+create index if not exists school_textbook_library_uploaded_by_idx
+  on public.school_textbook_library (uploaded_by);
 
 alter table public.school_textbook_library enable row level security;
 revoke all on public.school_textbook_library from public, anon, authenticated;
