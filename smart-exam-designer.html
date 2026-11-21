@@ -321,7 +321,7 @@ async function extractSelectedPdfChunks(bookId,fromPage,toPage){
   }
   if(current&&current.length+block.length>maxChunkChars)flush();if(!current)currentStart=pageNo;currentEnd=pageNo;current+=block;
  }
- flush();if(chunks.reduce((sum,c)=>sum+c.text.replace(/\s/g,"").length,0)<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");return chunks;
+ flush();if(chunks.reduce((sum,c)=>sum+c.text.replace(/\s/g,"").length,0)<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");for(let i=0;i<chunks.length;i++){if(chunks[i].text.length>=120)continue;if(i>0){chunks[i-1].text+="\n"+chunks[i].text;chunks[i-1].to=chunks[i].to;chunks.splice(i,1);i--;}else if(chunks.length>1){chunks[1].text=chunks[0].text+"\n"+chunks[1].text;chunks[1].from=chunks[0].from;chunks.splice(0,1);i=-1;}else throw new Error("متن استخراج‌شده برای تحلیل کافی نیست؛ صفحات بیشتری انتخاب کنید.");}return chunks;
 }
 const textbookSummaryCache=new Map();
 async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,depth=0){
@@ -336,7 +336,7 @@ async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,
   const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود");
   const isTimeout=message.includes("پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید");
   const isTransientAiFailure=message.includes("ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد");
-  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=4||sourceText.length<120)throw error;
+  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=4||sourceText.length<350)throw error;
   let cut=Math.floor(sourceText.length/2),boundary=sourceText.lastIndexOf("\n",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=sourceText.lastIndexOf(" ",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=cut;
