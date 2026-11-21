@@ -21,6 +21,15 @@
 <p>ویژه پایه‌های هفتم، هشتم و نهم · ثبت منبع سؤال · بارم‌بندی · تأیید نهایی و انتقال امن به مخزن محرمانه</p>
 </header>
 <div id="status" class="notice" role="status" aria-live="polite">در حال بررسی نشست مدرسه…</div>
+<section id="testLoginPanel" class="panel hidden">
+  <h2>ورود امن به محیط آزمایشی</h2>
+  <p class="muted">این محیط به پروژهٔ آزمایشی فراهوش متصل است و هیچ تغییری در پایگاه دادهٔ مدرسهٔ اصلی ایجاد نمی‌کند. کد یک‌بارمصرف فقط به نشانی حساب آزمایشی ارسال می‌شود.</p>
+  <div class="grid">
+    <div class="field"><label for="testLoginEmail">حساب آزمایشی</label><input id="testLoginEmail" value="hmj@test.com" readonly></div>
+    <div class="field"><label for="testLoginOtp">کد یک‌بارمصرف ایمیل</label><input id="testLoginOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="کد دریافتی را وارد کنید"></div>
+  </div>
+  <div class="actions"><button id="sendTestOtp" type="button">ارسال کد ورود</button><button id="verifyTestOtp" type="button" class="secondary">تأیید کد و ورود</button></div>
+</section>
 <section id="textbookLibraryPanel" class="panel hidden">
   <div class="row"><h2>کتابخانه کتاب‌های درسی مدرسه</h2><span class="pill">PDF خصوصی</span></div>
   <p class="muted">کتاب‌ها با کد اصلی مانند C706 ثبت می‌شوند. فایل‌ها در فضای خصوصی مدرسه نگهداری می‌شوند و فقط کاربران مجاز مدرسه می‌توانند پیوند موقت دریافت کنند.</p>
@@ -111,9 +120,11 @@
 </section>
 </main>
 <script>
-const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/smart-exam-designer";
-const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
-const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
+const isTestMode=new URLSearchParams(window.location.search).get("frahoosh-env")==="test";
+const SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const API=SUPABASE_URL+"/functions/v1/smart-exam-designer";
+const KEY=isTestMode?"sb_publishable_-Pu4KA24XUM6ud_T-eE_rw_4lmqMf31":"sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+let token=sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")||"";
 const role=sessionStorage.getItem("frahoosh_novin_role")||"";
 const $=id=>document.getElementById(id);
 let state={role:"",papers:[],vault:[],questions:[],paperId:null,activeVaultId:null};
@@ -228,7 +239,39 @@ $("uploadTextbook").addEventListener("click",uploadTextbook);
 $("openTextbookPdf").addEventListener("click",()=>openTextbook($("libraryBookSelect").value));
 $("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
 $("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book)return;$("grade").value=String(book.grade);$("subject").value=book.subject;$("bookTitle").value=book.title||book.book_code;});
-boot();
+async function sendTestOtp(){
+  if(!isTestMode)return;
+  status("در حال ارسال کد ورود به حساب آزمایشی…");
+  try{
+    const response=await fetch(SUPABASE_URL+"/auth/v1/otp",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",create_user:false})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.msg||data.message||"ارسال کد ورود ناموفق بود؛ تنظیمات ایمیل پروژه آزمایشی را بررسی کنید.");
+    status("درخواست ارسال کد ثبت شد. ایمیل حساب آزمایشی را بررسی کنید.","ok");
+  }catch(error){status(error.message||"ارسال کد ورود ناموفق بود.","error");}
+}
+async function verifyTestOtp(){
+  if(!isTestMode)return;
+  const code=$("testLoginOtp").value.trim();
+  if(!code){status("کد یک‌بارمصرف را وارد کنید.","error");return;}
+  status("در حال بررسی کد ورود…");
+  try{
+    const response=await fetch(SUPABASE_URL+"/auth/v1/verify",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",token:code,type:"email"})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.access_token)throw new Error(data.msg||data.message||"کد ورود معتبر نیست یا منقضی شده است.");
+    token=data.access_token;
+    sessionStorage.setItem("frahoosh_test_access_token",token);
+    $("testLoginPanel").classList.add("hidden");
+    await boot();
+  }catch(error){status(error.message||"ورود به محیط آزمایشی انجام نشد.","error");}
+}
+if(isTestMode){
+  $("testLoginPanel").classList.remove("hidden");
+  $("sendTestOtp").addEventListener("click",sendTestOtp);
+  $("verifyTestOtp").addEventListener("click",verifyTestOtp);
+  if(token) $("testLoginPanel").classList.add("hidden");
+  else status("محیط آزمایشی فعال است؛ برای ادامه کد ورود یک‌بارمصرف را دریافت کنید.");
+}
+if(!isTestMode||token)boot();
 </script>
 </body>
 </html>
