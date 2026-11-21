@@ -43,7 +43,7 @@ assert.ok(api.includes("CLOUDFLARE_AI_TOKEN") && api.includes("CLOUDFLARE_ACCOUN
 assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_excerpt"), "AI generation must use the configured multilingual model and supplied textbook excerpt");
 assert.ok(api.includes("count > 40") && api.includes("rawQuestions.length !== count"), "Generation must enforce bounded and exact question counts");
 assert.ok(api.includes('source_origin: "ai_generated"') && api.includes("source_page_reference") && api.includes("source_page_reference: clean(q.source_page_reference, 80)"), "Generated questions must retain AI provenance and printed page reference");
-assert.ok(page.includes('id="aiSourceText"') && page.includes('id="generateQuestions"') && page.includes("questionPlan"), "Teacher UI must expose textbook excerpt and question-count controls");
+assert.ok(page.includes('id="pageFrom"') && page.includes('id="pageTo"') && page.includes('id="questionMode"') && page.includes('id="questionCounts"') && page.includes('id="generateQuestions"') && page.includes("extractSelectedPdfPages") && page.includes("questionPlan"), "Teacher UI must extract selected textbook PDF pages and expose dynamic question-count controls");
 assert.ok(page.includes("ممکن است از سهمیه یا اعتبار حساب استفاده کند"), "AI generation must disclose potential usage before the request");
 
 const textbookMigration = readFileSync("supabase/migrations/20261121035442_school_textbook_library.sql", "utf8");
@@ -67,4 +67,4 @@ assert.ok(page.includes('const isTestMode=new URLSearchParams(window.location.se
 assert.ok(page.includes('SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https://gtmmllcxhdejwjjnyzrh.supabase.co"'), "Test and production environments must use separate Supabase projects");
 assert.ok(page.includes('sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")'), "Test mode must never reuse the production access token");
 assert.ok(page.includes('const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"")'), "Test login must not depend on a production role session");
-assert.ok(page.includes('body:JSON.stringify({email:"hmj@test.com",create_user:false})') && page.includes('type:"email"'), "Test mode must use passwordless OTP for the pre-provisioned test account");
+assert.ok(page.includes('/auth/v1/token?grant_type=password') && page.includes('email:"hmj@test.com",password') && page.includes('id="testLoginPassword"'), "Test mode must authenticate the pre-provisioned test account with its password");
