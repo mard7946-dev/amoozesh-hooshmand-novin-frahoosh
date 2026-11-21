@@ -22,13 +22,13 @@
 </header>
 <div id="status" class="notice" role="status" aria-live="polite">در حال بررسی نشست مدرسه…</div>
 <section id="testLoginPanel" class="panel hidden">
-  <h2>ورود امن به محیط آزمایشی</h2>
-  <p class="muted">این محیط به پروژهٔ آزمایشی فراهوش متصل است و هیچ تغییری در پایگاه دادهٔ مدرسهٔ اصلی ایجاد نمی‌کند. کد یک‌بارمصرف فقط به نشانی حساب آزمایشی ارسال می‌شود.</p>
+  <h2>ورود به محیط آزمایشی</h2>
+  <p class="muted">با همان حساب کاربری موجود در پروژهٔ آزمایشی وارد شوید. این محیط از پایگاه دادهٔ مدرسهٔ اصلی جداست.</p>
   <div class="grid">
-    <div class="field"><label for="testLoginEmail">حساب آزمایشی</label><input id="testLoginEmail" value="hmj@test.com" readonly></div>
-    <div class="field"><label for="testLoginOtp">کد یک‌بارمصرف ایمیل</label><input id="testLoginOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="کد دریافتی را وارد کنید"></div>
+    <div class="field"><label for="testLoginEmail">ایمیل حساب آزمایشی</label><input id="testLoginEmail" type="email" value="hmj@test.com" autocomplete="username" readonly></div>
+    <div class="field"><label for="testLoginPassword">رمز عبور حساب</label><input id="testLoginPassword" type="password" autocomplete="current-password" placeholder="رمز عبور حساب موجود را وارد کنید"></div>
   </div>
-  <div class="actions"><button id="sendTestOtp" type="button">ارسال کد ورود</button><button id="verifyTestOtp" type="button" class="secondary">تأیید کد و ورود</button></div>
+  <div class="actions"><button id="testPasswordLogin" type="button">ورود با حساب موجود</button></div>
 </section>
 <section id="textbookLibraryPanel" class="panel hidden">
   <div class="row"><h2>کتابخانه کتاب‌های درسی مدرسه</h2><span class="pill">PDF خصوصی</span></div>
@@ -239,37 +239,28 @@ $("uploadTextbook").addEventListener("click",uploadTextbook);
 $("openTextbookPdf").addEventListener("click",()=>openTextbook($("libraryBookSelect").value));
 $("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
 $("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book)return;$("grade").value=String(book.grade);$("subject").value=book.subject;$("bookTitle").value=book.title||book.book_code;});
-async function sendTestOtp(){
+async function loginTestAccount(){
   if(!isTestMode)return;
-  status("در حال ارسال کد ورود به حساب آزمایشی…");
+  const password=$("testLoginPassword").value;
+  if(!password){status("رمز عبور حساب آزمایشی را وارد کنید.","error");return;}
+  status("در حال ورود به حساب آزمایشی…");
   try{
-    const response=await fetch(SUPABASE_URL+"/auth/v1/otp",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",create_user:false})});
+    const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",password})});
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.msg||data.message||"ارسال کد ورود ناموفق بود؛ تنظیمات ایمیل پروژه آزمایشی را بررسی کنید.");
-    status("درخواست ارسال کد ثبت شد. ایمیل حساب آزمایشی را بررسی کنید.","ok");
-  }catch(error){status(error.message||"ارسال کد ورود ناموفق بود.","error");}
-}
-async function verifyTestOtp(){
-  if(!isTestMode)return;
-  const code=$("testLoginOtp").value.trim();
-  if(!code){status("کد یک‌بارمصرف را وارد کنید.","error");return;}
-  status("در حال بررسی کد ورود…");
-  try{
-    const response=await fetch(SUPABASE_URL+"/auth/v1/verify",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",token:code,type:"email"})});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok||!data.access_token)throw new Error(data.msg||data.message||"کد ورود معتبر نیست یا منقضی شده است.");
+    if(!response.ok||!data.access_token)throw new Error(data.msg||data.message||"ورود انجام نشد؛ ایمیل و رمز عبور حساب آزمایشی را بررسی کنید.");
     token=data.access_token;
     sessionStorage.setItem("frahoosh_test_access_token",token);
+    $("testLoginPassword").value="";
     $("testLoginPanel").classList.add("hidden");
     await boot();
   }catch(error){status(error.message||"ورود به محیط آزمایشی انجام نشد.","error");}
 }
 if(isTestMode){
   $("testLoginPanel").classList.remove("hidden");
-  $("sendTestOtp").addEventListener("click",sendTestOtp);
-  $("verifyTestOtp").addEventListener("click",verifyTestOtp);
+  $("testPasswordLogin").addEventListener("click",loginTestAccount);
+  $("testLoginPassword").addEventListener("keydown",event=>{if(event.key==="Enter")loginTestAccount();});
   if(token) $("testLoginPanel").classList.add("hidden");
-  else status("محیط آزمایشی فعال است؛ برای ادامه کد ورود یک‌بارمصرف را دریافت کنید.");
+  else status("محیط آزمایشی فعال است؛ با حساب موجود وارد شوید.");
 }
 if(!isTestMode||token)boot();
 </script>
