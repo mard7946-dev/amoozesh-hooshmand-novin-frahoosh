@@ -288,14 +288,19 @@ async function ensureSelectedPdfDocument(bookId){
  if(!window.pdfjsLib)throw new Error("کتاب‌خوان PDF.js در مرورگر فعال نشد.");
  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
  if(selectedPdfDocument&&selectedPdfBookId===bookId)return selectedPdfDocument;
- status("مرحله ۲ از ۴: دریافت پیوند امن کتاب…");
- const link=await api("textbook_download_url",{book_id:bookId});
- if(!link?.signed_url)throw new Error("سرویس پیوند امن کتاب را برنگرداند.");
+ status("مرحله ۲ از ۴: دریافت امن PDF از سرویس مدرسه…");
+ let response;
+ try{
+  response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action:"textbook_download_pdf",book_id:bookId})});
+ }catch(error){throw new Error("ارتباط با سرویس دریافت امن PDF برقرار نشد: "+(error?.message||String(error)));}
+ if(!response.ok){
+  const contentType=response.headers.get("content-type")||"";
+  const detail=contentType.includes("application/json")?await response.json().catch(()=>({})):null;
+  throw new Error(detail?.message||"دریافت امن PDF کتاب ناموفق بود (HTTP "+response.status+").");
+ }
  status("مرحله ۳ از ۴: دریافت فایل PDF کتاب…");
- let response;try{response=await fetch(link.signed_url);}catch(error){throw new Error("دریافت فایل PDF از فضای خصوصی با خطای شبکه روبه‌رو شد: "+(error?.message||String(error)));}
- if(!response.ok)throw new Error("دریافت امن PDF کتاب ناموفق بود (HTTP "+response.status+").");
  const bytes=await response.arrayBuffer();
- if(bytes.byteLength<5||String.fromCharCode(...new Uint8Array(bytes.slice(0,5)))!=="%PDF-")throw new Error("فایل دریافت‌شده PDF معتبر نیست یا ناقص است.");
+ if(bytes.byteLength<5||bytes.byteLength>52428800||String.fromCharCode(...new Uint8Array(bytes.slice(0,5)))!=="%PDF-")throw new Error("فایل دریافت‌شده PDF معتبر نیست، ناقص است یا از سقف ۵۰ مگابایت بیشتر است.");
  status("مرحله ۴ از ۴: بازکردن PDF و راه‌اندازی پردازشگر صفحات…");
  try{const loadingTask=pdfjsLib.getDocument({data:bytes});selectedPdfDocument=await loadingTask.promise;selectedPdfBookId=bookId;return selectedPdfDocument;}
  catch(error){selectedPdfDocument=null;selectedPdfBookId="";throw new Error("فایل دریافت شد، اما PDF.js نتوانست آن را باز کند. احتمال اختلال در PDF.js یا فایل PDF وجود دارد: "+(error?.message||String(error)));}
