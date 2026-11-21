@@ -15,8 +15,8 @@ begin
   select public,file_size_limit,allowed_mime_types
     into v_public,v_limit,v_types
     from storage.buckets where id='school-textbooks';
-  if not found or v_public is distinct from false or v_limit <> 52428800
-     or not ('application/pdf'=any(v_types)) or cardinality(v_types) <> 1 then
+  if not found or v_public is distinct from false or v_limit is distinct from 52428800
+     or v_types is null or not ('application/pdf'=any(v_types)) or cardinality(v_types) <> 1 then
     raise exception 'Textbook bucket must be private, PDF-only, and capped at 50 MiB';
   end if;
   if not has_table_privilege('service_role','public.school_textbook_library','select')
