@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, fix/teacher-class-selector-and-panel-return, feat/livekit-classroom-provider-main-sync]
   pull_request:
-    branches: [main]
+    branches: [main, feat/smart-exam-designer-middle-school-20261119]
   workflow_dispatch:
 
 permissions:
