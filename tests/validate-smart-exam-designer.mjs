@@ -62,3 +62,9 @@ assert.ok(page.includes('method:"PUT"') && page.includes('"Content-Type":"applic
 assert.ok(api.includes('const textbookBucket = "school-textbooks"') && api.includes('createSignedUploadUrl(storagePath, { upsert: false })'), "The signed upload URL must be issued for the private textbook bucket");
 assert.ok(api.includes('eq("school_id", schoolId)') && api.includes('eq("is_active", true)'), "Textbook listing and retrieval must remain scoped to the authenticated school");
 assert.ok(api.includes("const safeEditionFolder = (value: unknown) => clean(value, 40)") && api.split("safeEditionFolder(edition)").length - 1 === 2, "Different print editions must retain their complete edition identifier in separate storage paths");
+
+assert.ok(page.includes('const isTestMode=new URLSearchParams(window.location.search).get("frahoosh-env")==="test"'), "Test mode must be an explicit opt-in query parameter");
+assert.ok(page.includes('SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https://gtmmllcxhdejwjjnyzrh.supabase.co"'), "Test and production environments must use separate Supabase projects");
+assert.ok(page.includes('sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")'), "Test mode must never reuse the production access token");
+assert.ok(page.includes('const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"")'), "Test login must not depend on a production role session");
+assert.ok(page.includes('body:JSON.stringify({email:"hmj@test.com",create_user:false})') && page.includes('type:"email"'), "Test mode must use passwordless OTP for the pre-provisioned test account");
