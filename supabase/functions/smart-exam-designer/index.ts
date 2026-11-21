@@ -241,7 +241,7 @@ Deno.serve(async (req: Request) => {
       const pageReference = clean(body.page_reference, 80);
       const requested = Array.isArray(body.question_plan) ? body.question_plan : [];
       const targetPoints = Number(body.total_points ?? 20);
-      if (sourceText.length < 200 || !pageReference || requested.length < 1 || requested.length > 8 ||
+      if (sourceText.length < 200 || !pageReference || requested.length < 1 || requested.length > 13 ||
           !Number.isFinite(targetPoints) || targetPoints <= 0 || targetPoints > 20) {
         return reply({ message: "متن کتاب (حداقل ۲۰۰ نویسه)، شماره صفحه، انواع سؤال و بارم کل را کامل کنید." }, 400);
       }
