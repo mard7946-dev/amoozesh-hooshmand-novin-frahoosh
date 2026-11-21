@@ -57,3 +57,7 @@ assert.ok(api.includes("fileSize > 52428800") && api.includes("^[A-Z][0-9]{2,5}$
 assert.ok(page.includes('id="textbookLibraryPanel"') && page.includes('id="textbookPdf"') && page.includes('id="libraryBookSelect"'), "The exam designer must expose textbook upload and selection controls");
 assert.ok(page.includes("uploadToSignedUrl") || page.includes("/object/upload/sign/"), "PDF uploads must use a signed upload endpoint");
 assert.ok(page.includes("textbook_download_url") && page.includes("openTextbook"), "Teachers and management must be able to open private PDFs through temporary URLs");
+
+assert.ok(page.includes('method:"PUT"') && page.includes('/object/upload/sign/'), "Signed textbook uploads must use the Storage signed-upload PUT endpoint");
+assert.ok(page.includes('encodeURIComponent(signed.bucket)'), "Signed upload requests must include the private textbook bucket identifier");
+assert.ok(api.includes('eq("school_id", schoolId)') && api.includes('eq("is_active", true)'), "Textbook listing and retrieval must remain scoped to the authenticated school");
