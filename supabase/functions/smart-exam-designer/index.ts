@@ -55,7 +55,7 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     const sourceTitle = clean(q.source_title, 240);
     const permission = q.source_permission_confirmed === true;
     const rawImage = typeof q.image_data_url === "string" ? q.image_data_url.trim() : "";
-    if (rawImage.length > 1500000 || (rawImage && !/^data:image\\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawImage))) {
+    if (rawImage.length > 1500000 || (rawImage && !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawImage))) {
       throw new Error("تصویر سؤال معتبر نیست یا حجم آن بیش از حد مجاز است.");
     }
     totalImageBytes += rawImage.length;
