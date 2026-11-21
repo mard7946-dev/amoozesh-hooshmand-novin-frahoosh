@@ -269,15 +269,12 @@ Deno.serve(async (req: Request) => {
       try {
         let summary = "";
         let lastParseError = "";
-        for (let attempt = 0; attempt < 2 && !summary; attempt++) {
-          const instructions = attempt === 0
-            ? baseInstructions
-            : baseInstructions.concat(["IMPORTANT: Previous output was incomplete. Produce a shorter complete JSON object; never stop before closing the JSON braces."]);
-          const maxTokens = mode === "compress"
-            ? (attempt === 0 ? 4500 : 6500)
-            : (attempt === 0 ? 2400 : 3600);
+        const maxTokens = mode === "compress" ? 1800 : 900;
+        const analysisStartedAt = Date.now();
+        console.info("Textbook summary request started", { mode, sourceLength: sourceText.length, maxTokens });
+        for (let attempt = 0; attempt < 1 && !summary; attempt++) {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 28000);
+          const timeout = setTimeout(() => controller.abort(), 65000);
           let response: Response;
           let result: Record<string, unknown>;
           try {
@@ -337,12 +334,12 @@ Deno.serve(async (req: Request) => {
           }
         }
         if (!summary) {
-          console.error("Textbook summary failed after retry", { mode, sourceLength: sourceText.length, reason: lastParseError });
-          return reply({ message: "پاسخ هوش مصنوعی ناقص بود و پس از تلاش مجدد هم کامل نشد؛ بازه صفحات را به چند بخش کوچک‌تر تقسیم کنید و دوباره تلاش کنید." }, 502);
+          console.error("Textbook summary response was invalid", { mode, sourceLength: sourceText.length, durationMs: Date.now() - analysisStartedAt, reason: lastParseError });
+          return reply({ message: "پاسخ هوش مصنوعی کامل نبود؛ این بخش را به دو قسمت کوچک‌تر تقسیم کنید و دوباره تحلیل کنید." }, 502);
         }
         return reply({ ok: true, summary, page_reference: pageReference });
       } catch (error) {
-        console.error("Textbook chunk analysis error", error instanceof Error ? error.message : "unknown");
+        console.error("Textbook chunk analysis error", { mode, sourceLength: sourceText.length, durationMs: Date.now() - analysisStartedAt, reason: error instanceof Error ? error.message : "unknown" });
         return reply({
           message: error instanceof Error && error.name === "AbortError"
             ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
