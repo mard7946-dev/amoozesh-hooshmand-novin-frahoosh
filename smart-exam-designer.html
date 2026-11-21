@@ -193,7 +193,7 @@ async function uploadTextbook(){
     const signed=await api("create_textbook_upload",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size});
     const encodedPath=signed.storage_path.split("/").map(encodeURIComponent).join("/");
     const uploadUrl="https://gtmmllcxhdejwjjnyzrh.supabase.co/storage/v1/object/upload/sign/"+encodedPath+"?token="+encodeURIComponent(signed.upload_token);
-    const response=await fetch(uploadUrl,{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
+    const response=await fetch(uploadUrl,{method:"PUT",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
     if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error("بارگذاری PDF ناموفق بود ("+response.status+"). "+detail.slice(0,240));}
     const registered=await api("register_textbook",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size,storage_path:signed.storage_path});
     $("textbookPdf").value="";$("textbookCode").value="";$("textbookSubject").value="";$("textbookTitle").value="";
