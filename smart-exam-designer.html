@@ -26,7 +26,7 @@
   <h2>ورود به محیط آزمایشی</h2>
   <p class="muted">با همان حساب کاربری موجود در پروژهٔ آزمایشی وارد شوید. این محیط از پایگاه دادهٔ مدرسهٔ اصلی جداست.</p>
   <div class="grid">
-    <div class="field"><label for="testLoginEmail">ایمیل حساب آزمایشی</label><input id="testLoginEmail" type="email" value="hmj@test.com" autocomplete="username" readonly></div>
+    <div class="field"><label for="testLoginEmail">ایمیل حساب آزمایشی</label><input id="testLoginEmail" type="email" value="dabir@test.com" autocomplete="username" required></div>
     <div class="field"><label for="testLoginPassword">رمز عبور حساب</label><input id="testLoginPassword" type="password" autocomplete="current-password" placeholder="رمز عبور حساب موجود را وارد کنید"></div>
   </div>
   <div class="actions"><button id="testPasswordLogin" type="button">ورود با حساب موجود</button></div>
@@ -346,11 +346,13 @@ $("questionMode").addEventListener("change",renderQuestionCounts);
 renderQuestionCounts();
 async function loginTestAccount(){
   if(!isTestMode)return;
+  const email=$("testLoginEmail").value.trim();
   const password=$("testLoginPassword").value;
+  if(!email){status("ایمیل حساب آزمایشی را وارد کنید.","error");return;}
   if(!password){status("رمز عبور حساب آزمایشی را وارد کنید.","error");return;}
   status("در حال ورود به حساب آزمایشی…");
   try{
-    const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email:"hmj@test.com",password})});
+    const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email,password})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok||!data.access_token)throw new Error(data.msg||data.message||"ورود انجام نشد؛ ایمیل و رمز عبور حساب آزمایشی را بررسی کنید.");
     token=data.access_token;
