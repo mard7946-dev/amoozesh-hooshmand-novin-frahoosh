@@ -378,8 +378,8 @@ Deno.serve(async (req: Request) => {
         plan.push({ type, count: amount });
         count += amount;
       }
-      if (count < 1 || count > 40 || new Set(plan.map(x => x.type)).size !== plan.length) {
-        return reply({ message: "مجموع سؤال‌ها باید بین ۱ تا ۴۰ باشد و هر نوع فقط یک بار ثبت شود." }, 400);
+      if (count < 1 || count > 4 || new Set(plan.map(x => x.type)).size !== plan.length) {
+        return reply({ message: "هر درخواست تولید باید حداکثر ۴ سؤال داشته باشد و هر نوع فقط یک بار در همان بخش ثبت شود." }, 400);
       }
       const targetCents = Math.round(targetPoints * 100);
       if (Math.abs(targetPoints * 100 - targetCents) > 0.000001 || targetCents < count) {
@@ -416,9 +416,9 @@ Deno.serve(async (req: Request) => {
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
       let generated: unknown;
       let lastAiError = "unknown";
-      for (let attempt = 0; attempt < 2 && !generated; attempt++) {
+      for (let attempt = 0; attempt < 1 && !generated; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 48000);
+        const timeout = setTimeout(() => controller.abort(), 28000);
         try {
           const response = await fetch(endpoint, {
             method: "POST",
@@ -461,17 +461,17 @@ Deno.serve(async (req: Request) => {
           console.error("Cloudflare Workers AI generation attempt failed", {
             attempt: attempt + 1, reason: lastAiError.slice(0, 300)
           });
-          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 700));
+          // Do not retry a costly final-generation request inside the same Edge invocation.
         } finally {
           clearTimeout(timeout);
         }
       }
       if (!generated) {
-        console.error("Cloudflare Workers AI generation failed after retry", { reason: lastAiError.slice(0, 300) });
+        console.error("Cloudflare Workers AI generation failed", { reason: lastAiError.slice(0, 300) });
         return reply({
           message: lastAiError.includes("AbortError")
             ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ تعداد سؤال‌ها یا بازه صفحات را کمتر کنید."
-            : "سرویس هوش مصنوعی پس از دو تلاش پاسخ کامل و قابل‌خواندن نداد؛ کمی بعد دوباره تلاش کنید."
+            : "سرویس هوش مصنوعی پاسخ کامل و قابل‌خواندن نداد؛ تعداد سؤال‌های این بخش را کمتر کنید و دوباره تلاش کنید."
         }, 502);
       }
       const rawQuestions = (generated as Record<string, unknown>)?.questions;
