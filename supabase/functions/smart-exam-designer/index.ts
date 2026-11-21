@@ -82,10 +82,11 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       source_license: clean(q.source_license, 500),
       source_permission_confirmed: permission,
       source_page_reference: clean(q.source_page_reference, 80),
+      source_pdf_page_reference: clean(q.source_pdf_page_reference, 80),
     };
   });
   if (total > 100) throw new Error("مجموع بارم آزمون نباید از ۱۰۰ بیشتر شود.");
-  return { header, questions, total_points: Number(total.toFixed(2)) };
+  return { header, pdf_page_reference: clean(source.pdf_page_reference, 80), questions, total_points: Number(total.toFixed(2)) };
 }
 
 Deno.serve(async (req: Request) => {
@@ -239,9 +240,10 @@ Deno.serve(async (req: Request) => {
       }
       const sourceText = clean(body.source_text, 15000);
       const pageReference = clean(body.page_reference, 80);
+      const pdfPageReference = clean(body.pdf_page_reference, 80);
       const requested = Array.isArray(body.question_plan) ? body.question_plan : [];
       const targetPoints = Number(body.total_points ?? 20);
-      if (sourceText.length < 200 || !pageReference || requested.length < 1 || requested.length > 13 ||
+      if (sourceText.length < 200 || !pageReference || !pdfPageReference || requested.length < 1 || requested.length > 13 ||
           !Number.isFinite(targetPoints) || targetPoints <= 0 || targetPoints > 20) {
         return reply({ message: "متن کتاب (حداقل ۲۰۰ نویسه)، شماره صفحه، انواع سؤال و بارم کل را کامل کنید." }, 400);
       }
@@ -284,6 +286,7 @@ Deno.serve(async (req: Request) => {
         chapter: clean(body.chapter, 180),
         lesson: clean(body.lesson, 180),
         printed_page_reference: pageReference,
+        pdf_page_reference: pdfPageReference,
         requested_question_plan: planText,
         textbook_excerpt: sourceText
       });
@@ -340,7 +343,8 @@ Deno.serve(async (req: Request) => {
           prompt, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
           points: perQuestionPoints, source_origin: "ai_generated",
           source_url: "", source_title: "", source_license: "", source_permission_confirmed: false,
-          source_page_reference: pageReference
+          source_page_reference: pageReference,
+          source_pdf_page_reference: pdfPageReference
         };
       });
       if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
