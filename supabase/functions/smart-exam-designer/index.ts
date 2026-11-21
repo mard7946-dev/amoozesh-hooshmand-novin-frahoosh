@@ -11,6 +11,10 @@ const clean = (value: unknown, max = 12000) => String(value ?? "").trim().slice(
 const asciiDigits = (value: unknown) => clean(value, 4)
   .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
   .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+const safeEditionFolder = (value: unknown) => clean(value, 40)
+  .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+  .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+  .replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
 const normalize = (value: unknown) => clean(value, 200)
   .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
@@ -155,7 +159,7 @@ Deno.serve(async (req: Request) => {
         .eq("book_code", code).eq("edition", edition).maybeSingle();
       if (duplicateError) throw duplicateError;
       if (duplicate) return reply({ message: "این کد کتاب برای همین پایه و نوبت چاپ قبلاً ثبت شده است." }, 409);
-      const editionFolder = asciiDigits(edition).replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
+      const editionFolder = safeEditionFolder(edition);
       const storagePath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
       const { data, error } = await db.storage.from(textbookBucket)
         .createSignedUploadUrl(storagePath, { upsert: false });
@@ -172,7 +176,7 @@ Deno.serve(async (req: Request) => {
       const fileName = clean(body.file_name, 100);
       const fileSize = Number(body.file_size_bytes);
       const storagePath = clean(body.storage_path, 500);
-      const editionFolder = asciiDigits(edition).replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
+      const editionFolder = safeEditionFolder(edition);
       const expectedPath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
       if (![7, 8, 9].includes(grade) || !/^[A-Z][0-9]{2,5}$/.test(code) ||
           subject.length < 2 || fileName.toLowerCase() !== (code + ".pdf").toLowerCase() ||
