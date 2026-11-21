@@ -312,7 +312,7 @@ async function extractSelectedPdfChunks(bookId,fromPage,toPage){
   if(pageText.length<45){status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;}
   if(!pageText)pageText="[متن قابل استخراجی در این صفحه یافت نشد؛ احتمالاً صفحه تصویری یا خالی است.]";
   const block="\n[صفحه PDF "+pageNo+"]\n"+pageText;
-  const maxChunkChars=4200;
+  const maxChunkChars=1600;
   if(block.length>maxChunkChars){
    flush();let remaining=block;
    while(remaining.length>maxChunkChars){let cut=remaining.lastIndexOf(" ",maxChunkChars);if(cut<maxChunkChars*0.55)cut=maxChunkChars;chunks.push({text:remaining.slice(0,cut).trim(),from:pageNo,to:pageNo});remaining=remaining.slice(cut).trim();}
@@ -336,7 +336,7 @@ async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,
   const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود");
   const isTimeout=message.includes("پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید");
   const isTransientAiFailure=message.includes("ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد");
-  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=3||sourceText.length<900)throw error;
+  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=4||sourceText.length<120)throw error;
   let cut=Math.floor(sourceText.length/2),boundary=sourceText.lastIndexOf("\n",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=sourceText.lastIndexOf(" ",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=cut;
