@@ -270,6 +270,10 @@ Deno.serve(async (req: Request) => {
       if (count < 1 || count > 40 || new Set(plan.map(x => x.type)).size !== plan.length) {
         return reply({ message: "مجموع سؤال‌ها باید بین ۱ تا ۴۰ باشد و هر نوع فقط یک بار ثبت شود." }, 400);
       }
+      const targetCents = Math.round(targetPoints * 100);
+      if (Math.abs(targetPoints * 100 - targetCents) > 0.000001 || targetCents < count) {
+        return reply({ message: "بارم کل باید با دقت حداکثر دو رقم اعشار و دست‌کم یک صدم برای هر سؤال باشد." }, 400);
+      }
       const typeLabels: Record<string, string> = {
         multiple_choice: "تستی چهارگزینه‌ای", conceptual: "مفهومی", true_false: "صحیح یا غلط",
         fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
@@ -333,7 +337,8 @@ Deno.serve(async (req: Request) => {
       }
       const expected = new Map(plan.map(x => [x.type, x.count]));
       const actual = new Map<string, number>();
-      const perQuestionPoints = Number((targetPoints / count).toFixed(2));
+      const baseCents = Math.floor(targetCents / count);
+      const extraCents = targetCents % count;
       const questions = rawQuestions.map((entry, index) => {
         if (!entry || typeof entry !== "object") throw new Error("ساختار پاسخ هوش مصنوعی معتبر نیست.");
         const q = entry as Record<string, unknown>;
@@ -349,17 +354,17 @@ Deno.serve(async (req: Request) => {
           order: index + 1, question_type: type,
           difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
           prompt, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
-          points: perQuestionPoints, source_origin: "ai_generated",
+          points: (baseCents + (index < extraCents ? 1 : 0)) / 100, source_origin: "ai_generated",
           source_url: "", source_title: "", source_license: "", source_permission_confirmed: false,
           source_page_reference: pageReference,
           source_pdf_page_reference: pdfPageReference
         };
       });
       if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
-          Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetPoints) > 0.05) {
+          Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetCents / 100) > 0.000001) {
         return reply({ message: "ترکیب یا بارم سؤال‌های تولیدشده با درخواست شما مطابقت ندارد." }, 502);
       }
-      return reply({ ok: true, questions, total_points: Number(questions.reduce((sum, q) => sum + q.points, 0).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
+      return reply({ ok: true, questions, total_points: Number((targetCents / 100).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
     }
 
     if (action === "save_draft" && teacher) {
