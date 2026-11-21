@@ -54,9 +54,9 @@ const textbookMigration = readFileSync("supabase/migrations/20261121035442_schoo
 assert.ok(textbookMigration.includes("school_textbook_library") && textbookMigration.includes("enable row level security"), "Textbook metadata must be isolated behind RLS");
 assert.ok(textbookMigration.includes("revoke all") && textbookMigration.includes("to service_role"), "Textbook metadata must not be directly accessible to browser roles");
 assert.ok(textbookMigration.includes("'school-textbooks', 'school-textbooks', false") && textbookMigration.includes("application/pdf"), "Textbook PDF bucket must be private and PDF-only");
-assert.ok(api.includes('action === "list_textbooks"') && api.includes('action === "textbook_download_url"'), "Authorized users must be able to list books and obtain temporary download links");
+assert.ok(api.includes('action === "list_textbooks"') && api.includes('action === "textbook_download_pdf"'), "Authorized users must be able to list books and retrieve private PDFs through the authenticated function");
 assert.ok(api.includes('action === "create_textbook_upload" && canManageTextbooks') && api.includes('action === "register_textbook" && canManageTextbooks'), "Only management and executive deputy may upload and register textbooks");
-assert.ok(api.includes("createSignedUploadUrl") && api.includes("createSignedUrl(book.storage_path, 900)"), "Upload and download must use time-limited signed URLs");
+assert.ok(api.includes("createSignedUploadUrl") && api.includes("db.storage.from(textbookBucket).download(book.storage_path)"), "Uploads must use a time-limited signed URL and downloads must stream from private Storage through the authenticated function");
 assert.ok(api.includes("fileSize > 52428800") && api.includes("^[A-Z][0-9]{2,5}$"), "Book uploads must enforce a bounded file size and preserve coded filenames");
 assert.ok(page.includes('id="textbookLibraryPanel"') && page.includes('id="textbookPdf"') && page.includes('id="libraryBookSelect"'), "The exam designer must expose textbook upload and selection controls");
 assert.ok(api.includes("createSignedUploadUrl(storagePath, { upsert: false })") && page.includes('fetch(signed.signed_url,{method:"PUT"'), "PDF uploads must use the signed upload URL returned by the Edge Function");
