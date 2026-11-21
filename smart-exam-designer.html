@@ -188,13 +188,11 @@ async function openTextbook(bookId){
 }
 async function uploadTextbook(){
   const file=$("textbookPdf").files[0],grade=Number($("textbookGrade").value),code=$("textbookCode").value.trim().toUpperCase(),subject=$("textbookSubject").value.trim(),title=$("textbookTitle").value.trim(),edition=$("textbookEdition").value.trim()||"۱۴۰۵–۱۴۰۶";
-  if(!file||file.type!=="application/pdf"||!/^([A-Z][0-9]{2,5})\.pdf$/i.test(file.name)||file.name.toUpperCase()!==code+".PDF"||subject.length<2||file.size<1||file.size>52428800){status("فایل PDF، کد مطابق نام فایل، نام درس و حجم کمتر از ۵۰ مگابایت را بررسی کنید. مثال: C706.pdf","error");return;}
+  if(!file||!/^([A-Z][0-9]{2,5})\.pdf$/i.test(file.name)||file.name.toUpperCase()!==code+".PDF"||subject.length<2||file.size<1||file.size>52428800){status("فایل PDF، کد مطابق نام فایل، نام درس و حجم کمتر از ۵۰ مگابایت را بررسی کنید. مثال: C706.pdf","error");return;}const signature=await file.slice(0,5).text();if(signature!=="%PDF-"){status("محتوای انتخاب‌شده فایل PDF معتبر نیست.","error");return;}
   const button=$("uploadTextbook");button.disabled=true;button.textContent="در حال بارگذاری…";
   try{
     const signed=await api("create_textbook_upload",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size});
-    const encodedPath=signed.storage_path.split("/").map(encodeURIComponent).join("/");
-    const uploadUrl="https://gtmmllcxhdejwjjnyzrh.supabase.co/storage/v1/object/upload/sign/"+encodeURIComponent(signed.bucket)+"/"+encodedPath+"?token="+encodeURIComponent(signed.upload_token);
-    const response=await fetch(uploadUrl,{method:"PUT",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
+    const response=await fetch(signed.signed_url,{method:"PUT",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
     if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error("بارگذاری PDF ناموفق بود ("+response.status+"). "+detail.slice(0,240));}
     const registered=await api("register_textbook",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size,storage_path:signed.storage_path});
     $("textbookPdf").value="";$("textbookCode").value="";$("textbookSubject").value="";$("textbookTitle").value="";
