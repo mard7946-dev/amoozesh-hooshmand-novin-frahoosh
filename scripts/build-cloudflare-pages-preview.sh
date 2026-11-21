@@ -6,6 +6,18 @@ rm -rf _site
 mkdir -p _site/assets
 cp smart-exam-designer.html _site/
 cp assets/school-logo.svg _site/assets/
+# Force this dedicated preview hostname to use the test Supabase project,
+# even if someone opens the exam page without the explicit query parameter.
+python3 - <<'PY'
+from pathlib import Path
+page = Path("_site/smart-exam-designer.html")
+source = page.read_text(encoding="utf-8")
+needle = 'const isTestMode=new URLSearchParams(window.location.search).get("frahoosh-env")==="test";'
+replacement = 'const isTestMode=location.hostname.endsWith(".frahoosh-novin-preview.pages.dev")||new URLSearchParams(window.location.search).get("frahoosh-env")==="test";'
+if needle not in source:
+    raise SystemExit("Expected test-mode selector was not found; refusing to publish an unisolated preview.")
+page.write_text(source.replace(needle, replacement, 1), encoding="utf-8")
+PY
 cat > _site/index.html <<'HTML'
 <!doctype html>
 <html lang="fa" dir="rtl">
