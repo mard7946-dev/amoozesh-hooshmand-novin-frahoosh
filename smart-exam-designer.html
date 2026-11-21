@@ -334,7 +334,9 @@ async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,
  }catch(error){
   const message=error?.message||String(error);
   const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود");
-  if(!isIncomplete||depth>=3||sourceText.length<1200)throw error;
+  const isTimeout=message.includes("پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید");
+  const isTransientAiFailure=message.includes("ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد");
+  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=3||sourceText.length<900)throw error;
   let cut=Math.floor(sourceText.length/2),boundary=sourceText.lastIndexOf("\n",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=sourceText.lastIndexOf(" ",cut);
   if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=cut;
