@@ -312,21 +312,50 @@ async function extractSelectedPdfChunks(bookId,fromPage,toPage){
   if(pageText.length<45){status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;}
   if(!pageText)pageText="[متن قابل استخراجی در این صفحه یافت نشد؛ احتمالاً صفحه تصویری یا خالی است.]";
   const block="\n[صفحه PDF "+pageNo+"]\n"+pageText;
-  if(block.length>9800){flush();for(let offset=0;offset<block.length;offset+=9000)chunks.push({text:block.slice(offset,offset+9000),from:pageNo,to:pageNo});currentStart=pageNo+1;currentEnd=pageNo+1;continue;}
-  if(current&&current.length+block.length>9800)flush();if(!current)currentStart=pageNo;currentEnd=pageNo;current+=block;
+  const maxChunkChars=4200;
+  if(block.length>maxChunkChars){
+   flush();let remaining=block;
+   while(remaining.length>maxChunkChars){let cut=remaining.lastIndexOf(" ",maxChunkChars);if(cut<maxChunkChars*0.55)cut=maxChunkChars;chunks.push({text:remaining.slice(0,cut).trim(),from:pageNo,to:pageNo});remaining=remaining.slice(cut).trim();}
+   if(remaining)chunks.push({text:remaining,from:pageNo,to:pageNo});
+   currentStart=pageNo+1;currentEnd=pageNo+1;continue;
+  }
+  if(current&&current.length+block.length>maxChunkChars)flush();if(!current)currentStart=pageNo;currentEnd=pageNo;current+=block;
  }
  flush();if(chunks.reduce((sum,c)=>sum+c.text.replace(/\s/g,"").length,0)<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");return chunks;
 }
+const textbookSummaryCache=new Map();
+async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,depth=0){
+ const cacheKey=mode+"|"+pageReference+"|"+sourceText;
+ if(textbookSummaryCache.has(cacheKey))return textbookSummaryCache.get(cacheKey);
+ try{
+  const result=await api("summarize_textbook_chunk",{source_text:sourceText,page_reference:pageReference,summary_mode:mode});
+  if(!result.summary||!String(result.summary).trim())throw new Error("سرویس هوش مصنوعی یادداشت خالی برگرداند.");
+  const summary=String(result.summary).trim();textbookSummaryCache.set(cacheKey,summary);return summary;
+ }catch(error){
+  const message=error?.message||String(error);
+  const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود");
+  if(!isIncomplete||depth>=3||sourceText.length<1200)throw error;
+  let cut=Math.floor(sourceText.length/2),boundary=sourceText.lastIndexOf("\n",cut);
+  if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=sourceText.lastIndexOf(" ",cut);
+  if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=cut;
+  const left=sourceText.slice(0,boundary).trim(),right=sourceText.slice(boundary).trim();
+  if(!left||!right)throw error;
+  status("پاسخ یک بخش کامل نشد؛ همان بخش به دو زیربخش کوچک‌تر تقسیم و دوباره تحلیل می‌شود…");
+  const leftSummary=await requestTextbookSummaryWithFallback(left,pageReference,mode,depth+1);
+  const rightSummary=await requestTextbookSummaryWithFallback(right,pageReference,mode,depth+1);
+  const combined=leftSummary+"\n"+rightSummary;textbookSummaryCache.set(cacheKey,combined);return combined;
+ }
+}
 async function summarizeAllBookChunks(chunks){
  let summaries=[];
- for(let i=0;i<chunks.length;i++){const c=chunks[i],pages=c.from===c.to?String(c.from):c.from+" تا "+c.to;status("تحلیل محتوای کتاب: بخش "+(i+1)+" از "+chunks.length+" · صفحات PDF "+pages+"…");const result=await api("summarize_textbook_chunk",{source_text:c.text,page_reference:"صفحات PDF "+pages,summary_mode:"analyze"});summaries.push({pages,summary:result.summary});}
+ for(let i=0;i<chunks.length;i++){const c=chunks[i],pages=c.from===c.to?String(c.from):c.from+" تا "+c.to;status("تحلیل محتوای کتاب: بخش "+(i+1)+" از "+chunks.length+" · صفحات PDF "+pages+"…");const summary=await requestTextbookSummaryWithFallback(c.text,"صفحات PDF "+pages,"analyze");summaries.push({pages,summary});}
  let level=0;
  while(summaries.map(x=>x.summary).join("\n\n").length>12000){
   if(level++>5)throw new Error("حجم نکات کل کتاب بیش از حد زیاد است؛ امکان یکپارچه‌سازی امن فراهم نشد.");
   const groups=[];let group=[];
   for(const item of summaries){const candidate=group.concat(item);if(group.length&&candidate.map(x=>x.summary).join("\n\n").length>10500){groups.push(group);group=[item];}else group=candidate;}if(group.length)groups.push(group);
   const compacted=[];
-  for(let i=0;i<groups.length;i++){status("یکپارچه‌سازی نکات کل کتاب: مرحله "+level+" · گروه "+(i+1)+" از "+groups.length+"…");const source=groups[i].map(x=>"["+x.pages+"] "+x.summary).join("\n\n");const result=await api("summarize_textbook_chunk",{source_text:source,page_reference:"یادداشت‌های بخش‌های کتاب",summary_mode:"compress"});compacted.push({pages:groups[i].map(x=>x.pages).join("، "),summary:result.summary});}
+  for(let i=0;i<groups.length;i++){status("یکپارچه‌سازی نکات کل کتاب: مرحله "+level+" · گروه "+(i+1)+" از "+groups.length+"…");const source=groups[i].map(x=>"["+x.pages+"] "+x.summary).join("\n\n");const summary=await requestTextbookSummaryWithFallback(source,"یادداشت‌های بخش‌های کتاب","compress");compacted.push({pages:groups[i].map(x=>x.pages).join("، "),summary});}
   if(compacted.length>=summaries.length)throw new Error("فشرده‌سازی نکات کتاب پیشرفت نکرد؛ دوباره تلاش کنید.");summaries=compacted;
  }
  return summaries.map(x=>"["+x.pages+"] "+x.summary).join("\n\n");
