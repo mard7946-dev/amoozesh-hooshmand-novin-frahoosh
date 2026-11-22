@@ -21,6 +21,54 @@ const normalize = (value: unknown) => clean(value, 200)
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
 const controllerTimeout = (reason: string) => reason.startsWith("AI request timed out after ");
 
+const isCloudflareDailyQuota = (status: number, body: unknown) =>
+  status === 429 && /daily free allocation|neurons/i.test(JSON.stringify(body ?? {}));
+
+async function requestGroqStructured(
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  maxCompletionTokens: number,
+  responseFormat: Record<string, unknown>,
+  temperature: number
+): Promise<Record<string, unknown>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 100000);
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages,
+        max_completion_tokens: maxCompletionTokens,
+        temperature,
+        reasoning_effort: "low",
+        response_format: responseFormat
+      }),
+      signal: controller.signal
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const detail = body.error && typeof body.error === "object"
+        ? JSON.stringify(body.error) : JSON.stringify(body);
+      throw new Error("Groq AI HTTP " + response.status + ": " + detail.slice(0, 500));
+    }
+    const choices = Array.isArray(body.choices) ? body.choices as Array<Record<string, unknown>> : [];
+    const first = choices[0] || {};
+    const message = first.message && typeof first.message === "object"
+      ? first.message as Record<string, unknown> : {};
+    const content = clean(message.content, 30000).replace(/^\uFEFF/, "").trim();
+    const firstBrace = content.indexOf("{"), lastBrace = content.lastIndexOf("}");
+    if (firstBrace < 0 || lastBrace <= firstBrace) {
+      throw new Error("Groq AI returned no complete JSON response (finish_reason=" + clean(first.finish_reason, 80) + ")");
+    }
+    return JSON.parse(content.slice(firstBrace, lastBrace + 1)) as Record<string, unknown>;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
 const questionTypes = new Set([
   "multiple_choice", "knowledge", "conceptual", "application", "experiment_activity", "chart_interpretation", "table_interpretation", "matching", "ordering", "true_false", "fill_blank", "short_answer", "essay",
   "problem", "equation", "grammar", "vocabulary", "synonym_antonym",
@@ -351,6 +399,20 @@ Deno.serve(async (req: Request) => {
           "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
         ];
       const analysisModel = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+      const analysisResponseFormat = {
+        type: "json_schema",
+        json_schema: {
+          name: "textbook_summary",
+          description: "A concise Persian study-note summary.",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: { summary: { type: "string" } },
+            required: ["summary"],
+            additionalProperties: false
+          }
+        }
+      };
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/" + analysisModel;
       const analysisStartedAt = Date.now();
       const analysisTimeoutMs = 40000;
@@ -370,20 +432,7 @@ Deno.serve(async (req: Request) => {
               ],
               max_tokens: mode === "compress" ? 1200 : 600,
               temperature: 0.1,
-              response_format: {
-                type: "json_schema",
-                json_schema: {
-                  name: "textbook_summary",
-                  description: "A concise Persian study-note summary.",
-                  strict: true,
-                  schema: {
-                    type: "object",
-                    properties: { summary: { type: "string" } },
-                    required: ["summary"],
-                    additionalProperties: false
-                  }
-                }
-              }
+              response_format: analysisResponseFormat
             }),
             signal: controller.signal
           });
@@ -393,13 +442,41 @@ Deno.serve(async (req: Request) => {
         }
         const durationMs = Date.now() - analysisStartedAt;
         if (!response.ok || result?.success !== true) {
-          console.error("Textbook AI provider returned an error", {
-            requestId: analysisRequestId, model: analysisModel, status: response.status,
-            durationMs, response: JSON.stringify(result).slice(0, 900)
-          });
-          return reply({
-            message: "سرویس هوش مصنوعی در تحلیل این بخش پاسخ موفق نداد (HTTP " + response.status + "). شناسه پیگیری: " + analysisRequestId
-          }, 502);
+          if (isCloudflareDailyQuota(response.status, result)) {
+            const groqApiKey = (Deno.env.get("GROQ_API_KEY") || "").trim();
+            const fallbackEnabled = (Deno.env.get("AI_FALLBACK_PROVIDER") || "").trim().toLowerCase() === "groq";
+            if (fallbackEnabled && groqApiKey) {
+              const groqSummary = await requestGroqStructured(
+                groqApiKey,
+                [
+                  { role: "system", content: baseInstructions.join(" ") },
+                  { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
+                ],
+                mode === "compress" ? 1200 : 600,
+                analysisResponseFormat,
+                0.1
+              );
+              result = { success: true, result: { response: groqSummary } };
+              console.warn("Cloudflare daily AI quota exhausted; textbook analysis used the configured Groq fallback", {
+                requestId: analysisRequestId, model: "openai/gpt-oss-20b"
+              });
+            } else {
+              console.error("Textbook AI daily free quota exhausted", {
+                requestId: analysisRequestId, model: analysisModel, durationMs
+              });
+              return reply({
+                message: "سهمیهٔ رایگان روزانهٔ هوش مصنوعی Cloudflare تمام شده است. برای ادامهٔ تحلیل، باید مسیر جایگزین Groq با کلید امن سرور فعال شود. شناسه پیگیری: " + analysisRequestId
+              }, 429);
+            }
+          } else {
+            console.error("Textbook AI provider returned an error", {
+              requestId: analysisRequestId, model: analysisModel, status: response.status,
+              durationMs, response: JSON.stringify(result).slice(0, 900)
+            });
+            return reply({
+              message: "سرویس هوش مصنوعی در تحلیل این بخش پاسخ موفق نداد (HTTP " + response.status + "). شناسه پیگیری: " + analysisRequestId
+            }, 502);
+          }
         }
         const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
         const choices = Array.isArray(resultBody.choices) ? resultBody.choices as Array<Record<string, unknown>> : [];
