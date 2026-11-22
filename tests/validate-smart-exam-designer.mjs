@@ -39,6 +39,13 @@ for (const script of scripts) assert.doesNotThrow(() => new Function(script), "S
 console.log("Smart exam designer authorization, provenance, immutability, and UI checks passed.");
 
 assert.ok(api.includes('action === "generate_questions" && teacher'), "Only authenticated teachers may invoke AI question generation");
+
+assert.ok(api.includes("chat_template_kwargs: { enable_thinking: false, clear_thinking: true }"), "GLM question generation must disable reasoning tokens so the model returns usable question content within the request budget");
+assert.ok(api.includes("response_format: {") && api.includes('name: "middle_school_exam_questions"') && api.includes("strict: true"), "AI question generation must request a strict structured JSON response");
+assert.ok(api.includes("1200 + count * 700"), "The output token budget must scale to the requested number of questions and their explanations");
+assert.ok(api.includes("clean(resultBody.response, 30000) ||") && api.includes("clean(firstMessage.content, 30000) ||"), "An empty top-level response must not mask a populated chat completion choice");
+assert.ok(api.includes("finishReason") && api.includes("responseKeys: Object.keys(resultBody)"), "Empty model completions must log finish reason and response shape for diagnosis");
+
 assert.ok(api.includes("CLOUDFLARE_AI_TOKEN") && api.includes("CLOUDFLARE_ACCOUNT_ID"), "Cloudflare credentials must be read only from server-side secrets");
 assert.ok(api.includes("@cf/zai-org/glm-4.7-flash") && api.includes("textbook_excerpt"), "AI generation must use the configured multilingual model and supplied textbook excerpt");
 assert.ok(api.includes("count > 5") && api.includes("rawQuestions.length !== count"), "Each AI generation request must enforce a bounded batch and exact question counts");
