@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - 'portal.html'
+      - 'academic-analytics.html'
+      - 'supabase/functions/academic-analytics/index.ts'
+      - 'tests/validate-academic-analytics.mjs'
       - 'school-planning.html'
       - 'supabase/functions/school-planning/index.ts'
       - 'supabase/migrations/20261119110000_school_planning_center.sql'
@@ -98,6 +101,9 @@ on:
       - 'classroom/weekly-timetable-engine.js'
       - 'tests/validate-weekly-timetable-engine.mjs'
       - 'portal.html'
+      - 'academic-analytics.html'
+      - 'supabase/functions/academic-analytics/index.ts'
+      - 'tests/validate-academic-analytics.mjs'
       - 'family-communication.html'
       - 'tests/validate-family-communication.mjs'
       - 'users.html'
@@ -145,6 +151,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate academic analytics access, reports, and printing
+        run: node tests/validate-academic-analytics.mjs
       - name: Validate manager school planning center and challenge recommendations
         run: node tests/validate-school-planning.mjs
       - name: Validate study certificate search and local QR generation
@@ -177,6 +185,8 @@ jobs:
         run: deno check supabase/functions/platform-management/index.ts supabase/functions/classroom-authorize/index.ts supabase/functions/classroom-realtime-token/index.ts supabase/functions/classroom-meetings/index.ts
       - name: Type-check school portal login Edge Function
         run: deno check supabase/functions/school-portal-login/index.ts
+      - name: Type-check academic analytics Edge Function
+        run: deno check supabase/functions/academic-analytics/index.ts
       - name: Type-check smart exam planner Edge Function
         if: always()
         run: deno check supabase/functions/exam-planner/index.ts
