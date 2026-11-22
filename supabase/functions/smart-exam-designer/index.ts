@@ -669,7 +669,7 @@ Deno.serve(async (req: Request) => {
         const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
         const normalizedPrompt = normalize(prompt).replace(/[\s\p{P}\p{S}]+/gu, "");
         if (!expected.has(type) || prompt.length < 12 || !answer || !normalizedPrompt ||
-            (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4)) ||
+            (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4 || !options.some(option => normalize(option) === normalize(answer)))) ||
             (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
             (type === "ordering" && options.length < 3) ||
             ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
