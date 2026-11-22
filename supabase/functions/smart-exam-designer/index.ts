@@ -560,7 +560,7 @@ Deno.serve(async (req: Request) => {
       let generated: unknown;
       let lastAiError = "unknown";
       const generationStartedAt = Date.now();
-      const generationTimeoutMs = 65000;
+      const generationTimeoutMs = 105000;
       for (let attempt = 0; attempt < 1 && !generated; attempt++) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), generationTimeoutMs);
@@ -667,7 +667,7 @@ Deno.serve(async (req: Request) => {
         });
         return reply({
           message: controllerTimeout(lastAiError)
-            ? "پاسخ هوش مصنوعی بیش از ۶۵ ثانیه زمان برد؛ لطفاً دوباره تلاش کنید یا تعداد سؤال‌های هر بخش را کمتر کنید."
+            ? "پاسخ هوش مصنوعی بیش از ۱۰۵ ثانیه زمان برد؛ لطفاً پس از بررسی اتصال دوباره تلاش کنید."
             : "سرویس هوش مصنوعی پاسخ کامل و قابل‌خواندن نداد؛ تعداد سؤال‌های این بخش را کمتر کنید و دوباره تلاش کنید."
         }, 502);
       }
