@@ -335,6 +335,26 @@ console.log("Teacher classroom schedule checks passed: daily/weekly views, serve
 const academicReviewPage = readFileSync("academic-review.html", "utf8");
 const classroomManagementFunction = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
 const parentManagementFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
+const studentModulePage = readFileSync("student-module.html", "utf8");
+const parentPanelPage = readFileSync("parent-management.html", "utf8");
+assert.ok(classroomManagementFunction.includes("membershipRoles.has(norm(value))"), "Student portal API must require active membership in the same school");
+const studentSummaryBlock = classroomManagementFunction.slice(
+  classroomManagementFunction.indexOf('if (action === "student_academic_summary") {'),
+  classroomManagementFunction.indexOf('if (action === "discipline_review") {')
+);
+for (const tableName of ['from("attendance")', 'from("discipline_records")', 'from("assignments")', 'from("assignment_submissions")']) {
+  assert.ok(studentSummaryBlock.includes(tableName), "Student portal API must read " + tableName);
+}
+assert.ok(!studentSummaryBlock.includes('.eq("manager_released", 1)'), "Student portal must show newly recorded grades with their release state");
+assert.ok(studentSummaryBlock.includes('.eq("tenant_school_id", school)') && studentSummaryBlock.includes('.eq("student_id", student.id)'), "Student portal queries must remain scoped to the current school and student");
+assert.ok(parentManagementFunction.includes('assignmentSubmissions:assignmentSubmissions.data??[]'), "Parent API must return submission states only for linked children");
+assert.ok(parentPanelPage.includes("assignmentSubmissions||[]") && parentPanelPage.includes("ثبت‌شده؛ در انتظار بررسی"), "Parent panel must show child assignment completion and pending grade state");
+for (const source of [...studentModulePage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(Boolean)) {
+  assert.doesNotThrow(() => new Function(source), "Student module page script must have valid JavaScript syntax");
+}
+for (const moduleName of ["غیبت", "نمره", "انضباط", "تکلیف"]) {
+  assert.ok(studentModulePage.includes("selected==='" + moduleName + "'"), "Student module must render " + moduleName);
+}
 assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewPage.includes("academic_review"), "Academic review page must load and submit real review actions");
 assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
 assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
