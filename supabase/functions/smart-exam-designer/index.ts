@@ -22,7 +22,7 @@ const normalize = (value: unknown) => clean(value, 200)
 const controllerTimeout = (reason: string) => reason.startsWith("AI request timed out after ");
 
 const questionTypes = new Set([
-  "multiple_choice", "conceptual", "true_false", "fill_blank", "short_answer", "essay",
+  "multiple_choice", "knowledge", "conceptual", "application", "experiment_activity", "chart_interpretation", "table_interpretation", "matching", "ordering", "true_false", "fill_blank", "short_answer", "essay",
   "problem", "equation", "grammar", "vocabulary", "synonym_antonym",
   "translation", "other",
 ]);
@@ -48,6 +48,7 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     const q = entry as Record<string, unknown>;
     const prompt = clean(q.prompt);
     const type = clean(q.question_type, 60);
+    const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
     const points = Number(q.points);
     const origin = clean(q.source_origin, 60);
     if ((!allowIncomplete && !prompt) || !questionTypes.has(type)) throw new Error("متن یا نوع سؤال " + (index + 1) + " معتبر نیست.");
@@ -81,6 +82,9 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       question_type: type,
       difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
       prompt,
+      cognitive_level: cognitiveLevel,
+      stimulus: clean(q.stimulus, 3000),
+      visual_data: clean(q.visual_data, 4000),
       options: Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)) : [],
       correct_answer: clean(q.correct_answer, 4000),
       explanation: clean(q.explanation, 4000),
@@ -483,21 +487,26 @@ Deno.serve(async (req: Request) => {
         return reply({ message: "بارم کل باید با دقت حداکثر دو رقم اعشار و دست‌کم یک صدم برای هر سؤال باشد." }, 400);
       }
       const typeLabels: Record<string, string> = {
-        multiple_choice: "تستی چهارگزینه‌ای", conceptual: "مفهومی", true_false: "صحیح یا غلط",
-        fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
-        problem: "مسئله", equation: "معادله", grammar: "گرامر",
-        vocabulary: "معنی واژه", synonym_antonym: "مترادف یا متضاد",
-        translation: "ترجمه", other: "سایر"
+        knowledge: "دانشی و یادآوری", conceptual: "مفهومی و درک مطلب", application: "کاربرد آموخته‌ها",
+        experiment_activity: "آزمایش و فعالیت", chart_interpretation: "تحلیل نمودار", table_interpretation: "تحلیل جدول و داده",
+        matching: "وصل‌کردنی و جورکردنی", ordering: "ترتیب‌دادنی", multiple_choice: "تستی چهارگزینه‌ای",
+        true_false: "صحیح یا غلط", fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
+        problem: "مسئله و حل مسئله", equation: "معادله", grammar: "گرامر", vocabulary: "معنی واژه",
+        synonym_antonym: "مترادف یا متضاد", translation: "ترجمه", other: "سایر"
       };
       const planText = plan.map(x => ({ question_type: x.type, question_type_label: typeLabels[x.type], count: x.count }));
       const systemPrompt = [
         "You are an assessment author for Persian-speaking middle-school students.",
         "Create original questions using ONLY the supplied textbook excerpt. Never import or reproduce a question from an external source.",
-        "Return one valid JSON object only: {\"questions\":[{\"question_type\":string,\"prompt\":string,\"options\":string[],\"correct_answer\":string,\"explanation\":string,\"difficulty\":\"easy|medium|hard\"}]}",
-        "Use exactly the requested question types and exact counts. Do not add or omit questions.",
-        "For multiple_choice provide exactly four distinct options and make correct_answer identify the correct option. For other types options may be empty.",
-        "Write clear age-appropriate Persian. No unsupported facts, trick wording, duplicate questions, or content beyond the excerpt.",
-        "Essay questions must each be independently answerable. Keep every prompt concise, explanations to at most two sentences, and ensure every answer is supported by the excerpt.",
+        "Return one valid JSON object only. Each question must contain question_type, cognitive_level (knowledge|comprehension|application|analysis), prompt, stimulus, visual_data, options, correct_answer, explanation, and difficulty.",
+        "Use exactly the requested question types and exact counts. Do not add or omit questions. Questions must be rigorous, age-appropriate, non-trivial, and test different learning objectives rather than merely restating textbook sentences.",
+        "Balance cognitive demand: knowledge items test recall; conceptual questions require explaining why/how or connecting ideas; application transfers learning to a new but textbook-grounded situation; analysis requires interpreting evidence and justifying a conclusion.",
+        "For experiment_activity, describe a real textbook experiment or activity, its procedure and observation as relevant, and ask students to predict, interpret, identify variables, or infer a conclusion. Never invent an experiment unsupported by the excerpt.",
+        "For chart_interpretation and table_interpretation, provide a compact readable chart/table or source data in visual_data and ask a meaningful interpretation question. Never fabricate measurements or values.",
+        "For matching, provide at least four concise items in options with unambiguous labels and a complete answer key. For ordering, provide at least three steps/items and the correct sequence in correct_answer.",
+        "For multiple_choice provide exactly four distinct plausible options, only one defensibly correct answer, and ensure correct_answer matches one option. Distractors must reflect common misconceptions, not absurd choices.",
+        "Avoid repeated stems, duplicate learning objectives, vague pronouns, trick wording, unsupported facts, answer clues, and ambiguous or multiple-correct options. Keep every answer fully supported by the excerpt.",
+        "Vary difficulty deliberately: do not make the whole set easy; use medium and hard items where suitable, and label cognitive_level honestly. Essay questions must each be independently answerable. Keep explanations to at most two sentences.",
         "Do not assign marks. Do not include source URLs. The application will attach the supplied printed page reference."
       ].join(" ");
       const userPrompt = JSON.stringify({
@@ -541,13 +550,16 @@ Deno.serve(async (req: Request) => {
                           type: "object",
                           properties: {
                             question_type: { type: "string", enum: plan.map(item => item.type) },
+                            cognitive_level: { type: "string", enum: ["knowledge", "comprehension", "application", "analysis"] },
                             prompt: { type: "string" },
+                            stimulus: { type: "string" },
+                            visual_data: { type: "string" },
                             options: { type: "array", items: { type: "string" } },
                             correct_answer: { type: "string" },
                             explanation: { type: "string" },
                             difficulty: { type: "string", enum: ["easy", "medium", "hard"] }
                           },
-                          required: ["question_type", "prompt", "options", "correct_answer", "explanation", "difficulty"],
+                          required: ["question_type", "cognitive_level", "prompt", "stimulus", "visual_data", "options", "correct_answer", "explanation", "difficulty"],
                           additionalProperties: false
                         }
                       }
@@ -636,15 +648,24 @@ Deno.serve(async (req: Request) => {
         const type = clean(q.question_type, 60);
         actual.set(type, (actual.get(type) || 0) + 1);
         const prompt = clean(q.prompt, 5000);
-        const options = Array.isArray(q.options) ? q.options.slice(0, 4).map(x => clean(x, 1000)).filter(Boolean) : [];
+        const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)).filter(Boolean) : [];
         const answer = clean(q.correct_answer, 3000);
-        if (!expected.has(type) || !prompt || !answer || (type === "multiple_choice" && options.length !== 4)) {
-          throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست.");
+        const stimulus = clean(q.stimulus, 3000);
+        const visualData = clean(q.visual_data, 4000);
+        const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
+        const normalizedPrompt = normalize(prompt).replace(/[\\s\\p{P}\\p{S}]+/gu, "");
+        if (!expected.has(type) || prompt.length < 12 || !answer || !normalizedPrompt ||
+            (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4)) ||
+            (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
+            (type === "ordering" && options.length < 3) ||
+            ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
+            (type === "experiment_activity" && !stimulus)) {
+          throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست؛ سؤال ناقص، تکراری یا فاقد داده لازم است.");
         }
         return {
-          order: index + 1, question_type: type,
+          order: index + 1, question_type: type, cognitive_level: cognitiveLevel,
           difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
-          prompt, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
+          prompt, stimulus, visual_data: visualData, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
           points: (baseCents + (index < extraCents ? 1 : 0)) / 100, source_origin: "ai_generated",
           source_url: "", source_title: "", source_license: "", source_permission_confirmed: false,
           source_page_reference: pageReference,
