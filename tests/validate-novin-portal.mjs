@@ -349,9 +349,9 @@ assert.ok(!studentSummaryBlock.includes('.eq("manager_released", 1)'), "Student 
 assert.ok(studentSummaryBlock.includes('.eq("tenant_school_id", school)') && studentSummaryBlock.includes('.eq("student_id", student.id)'), "Student portal queries must remain scoped to the current school and student");
 assert.ok(parentManagementFunction.includes('assignmentSubmissions:assignmentSubmissions.data??[]'), "Parent API must return submission states only for linked children");
 assert.ok(parentPanelPage.includes("assignmentSubmissions||[]") && parentPanelPage.includes("ثبت‌شده؛ در انتظار بررسی"), "Parent panel must show child assignment completion and pending grade state");
-for (const source of [...studentModulePage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(match => match[1]).filter(Boolean)) {
-  assert.doesNotThrow(() => new Function(source), "Student module page script must have valid JavaScript syntax");
-}
+const studentModuleScript = studentModulePage.split("<script>")[1]?.split("</script>")[0] ?? "";
+assert.ok(studentModuleScript.trim(), "Student module page must contain its operational script");
+assert.doesNotThrow(() => new Function(studentModuleScript), "Student module page script must have valid JavaScript syntax");
 for (const moduleName of ["غیبت", "نمره", "انضباط", "تکلیف"]) {
   assert.ok(studentModulePage.includes("selected==='" + moduleName + "'"), "Student module must render " + moduleName);
 }
