@@ -9,9 +9,11 @@
 :root{font-family:"B Zar","B Nazanin",Tahoma,Arial,sans-serif;color:#172033;background:#f8fafc;--line:#dbe3ed;--muted:#64748b;--green:#16a34a;--amber:#f59e0b}
 *{box-sizing:border-box}body{margin:0;background:#f8fafc}button,input,select,textarea{font:inherit}button{border:0;border-radius:10px;padding:11px 16px;background:#166534;color:#fff;cursor:pointer}button.secondary{background:#e8eef7;color:#172033}button.danger{background:#9f1239}button:disabled{opacity:.45;cursor:not-allowed}.wrap{max-width:1100px;margin:auto;padding:16px}.hero{background:#14243b;color:#fff;padding:20px;border-radius:16px;margin-bottom:16px}.hero h1{margin:0 0 8px;font-size:24px}.hero p{margin:0;color:#d5deeb;line-height:1.9}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.field label{display:block;font-size:13px;margin:0 0 5px;color:#334155}.field input,.field select,.field textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#172033}.field textarea{min-height:90px;resize:vertical}.muted{color:var(--muted);font-size:13px;line-height:1.8}.notice{padding:12px 14px;border-radius:10px;background:#eff6ff;color:#1e3a8a;line-height:1.8;margin:10px 0}.notice.error{background:#fff1f2;color:#9f1239}.notice.ok{background:#f0fdf4;color:#166534}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.question{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:#fbfdff}.question h3{margin:0 0 10px}.paper-card{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0}.pill{display:inline-block;padding:4px 9px;border-radius:30px;background:#eef2ff;color:#334155;font-size:12px}.vault-content{white-space:pre-wrap;line-height:2}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.required{color:#b91c1c}.source-note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;color:#854d0e;line-height:1.9}
 @media(max-width:600px){.wrap{padding:10px}.hero{padding:16px}.panel{padding:12px}.grid{grid-template-columns:1fr}}
-.exam-paper{display:block;background:#fff;color:#111;direction:rtl;font-family:"B Zar","B Nazanin",Tahoma,serif;width:100%;max-width:210mm;margin:14px auto;padding:7mm;border:1px solid #cbd5e1;box-shadow:0 3px 18px #0f172a18}.exam-paper table{width:100%;border-collapse:collapse;table-layout:fixed}.exam-paper th,.exam-paper td{border:1px solid #111;padding:5px 7px}.exam-paper .school-head td{height:29mm;padding:0}.exam-paper .school-head-inner{width:100%;border-collapse:collapse}.exam-paper .school-head-inner td{border:0}.exam-paper .school-title{text-align:center;font-weight:700;line-height:1.65;font-size:13px}.exam-paper .logo-cell{width:27%;text-align:center;vertical-align:middle}.exam-paper .logo-cell img{width:25mm;height:25mm;object-fit:contain}.exam-paper .meta-grid{width:100%;border-collapse:collapse}.exam-paper .meta-grid td{height:9mm;font-size:11px}.exam-paper .meta-grid .label{font-weight:700;white-space:nowrap}.exam-paper .exam-table{margin-top:3mm}.exam-paper .exam-table thead{display:table-header-group}.exam-paper .exam-table th{font-size:11px;text-align:center;background:#f8fafc}.exam-paper .exam-table > thead > tr:last-child > th:first-child,.exam-paper .exam-table > tbody > tr > td:first-child{width:9mm;text-align:center}.exam-paper .exam-table > thead > tr:last-child > th:last-child,.exam-paper .exam-table > tbody > tr > td:last-child{width:13mm;text-align:center}.exam-paper .exam-table tbody tr{break-inside:avoid;page-break-inside:avoid}.exam-paper .exam-table tbody td{min-height:21mm;height:21mm;vertical-align:top;font-size:12px;line-height:1.8}.exam-paper .question-body{white-space:pre-wrap;overflow-wrap:anywhere}.exam-paper .question-options{margin:3px 0 0;padding-right:18px}.exam-paper .question-type{font-size:9px;color:#444;margin-bottom:3px}.exam-paper .empty-row td{height:21mm}.exam-paper .score-cell{font-weight:700}
-@media print{@page{size:A4 portrait;margin:7mm;@bottom-right{content:"صفحه " counter(page) " از " counter(pages);font-family:Tahoma;font-size:9px}}body{background:#fff!important}.wrap{display:block!important;max-width:none!important;padding:0!important}.hero,#status,#teacherPanel,.no-print{display:none!important}#managementPanel{display:block!important}.panel{display:none!important}#vaultDetail{display:block!important;border:0!important;padding:0!important;margin:0!important}#printDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}#vaultDetail>.row,#vaultMeta,#vaultQuestions{display:none!important}.exam-paper .school-head td{height:27mm}.exam-paper .exam-table tbody td{min-height:20mm;height:20mm}}
-</style>
+#textbookLibraryPanel{border-top:3px solid #16a34a}#textbookLibraryList{margin-top:14px}.book-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap}.book-row strong{color:#172033}.question-crop-canvas{display:block;width:100%;max-width:720px;height:auto;border:1px solid #94a3b8;border-radius:8px;touch-action:none;margin-top:8px}.question-image-preview{display:block;max-width:220px;max-height:150px;object-fit:contain;margin-top:8px;border:1px solid var(--line);border-radius:8px}.exam-paper .question-image{display:block;max-width:72mm;max-height:55mm;object-fit:contain;margin:4px auto}
+.exam-paper{display:block;background:#fff;color:#111;direction:rtl;font-family:"B Zar","B Nazanin",Tahoma,serif;width:100%;max-width:210mm;margin:14px auto;padding:7mm;border:1px solid #cbd5e1;box-shadow:0 3px 18px #0f172a18}.exam-paper table{width:100%;border-collapse:collapse;table-layout:fixed}.exam-paper th,.exam-paper td{border:1px solid #111;padding:2px 4px}.exam-paper .school-head td{height:24mm;padding:0}.exam-paper .school-head-inner{width:100%;border-collapse:collapse}.exam-paper .school-head-inner td{border:0}.exam-paper .school-title{text-align:center;font-weight:700;line-height:1.65;font-size:13px}.exam-paper .logo-cell{width:27%;text-align:center;vertical-align:middle}.exam-paper .logo-cell img{width:25mm;height:25mm;object-fit:contain}.exam-paper .meta-grid{width:100%;border-collapse:collapse}.exam-paper .meta-grid td{height:7mm;font-size:10px}.exam-paper .meta-grid .label{font-weight:700;white-space:nowrap}.exam-paper .exam-table{margin-top:3mm}.exam-paper .exam-table thead{display:table-header-group}.exam-paper .exam-table th{font-size:11px;text-align:center;background:#f8fafc}.exam-paper .exam-table > thead > tr:last-child > th:first-child,.exam-paper .exam-table > tbody > tr > td:first-child{width:9mm;text-align:center}.exam-paper .exam-table > thead > tr:last-child > th:last-child,.exam-paper .exam-table > tbody > tr > td:last-child{width:13mm;text-align:center}.exam-paper .exam-table tbody tr{break-inside:avoid;page-break-inside:avoid}.exam-paper .exam-table tbody td{min-height:0;height:auto;padding:2mm 1.8mm;vertical-align:top;font-size:11px;line-height:1.55}.exam-paper .question-body{white-space:pre-wrap;overflow-wrap:anywhere}.exam-paper .question-options{margin:3px 0 0;padding-right:18px}.exam-paper .question-type{font-size:9px;color:#444;margin-bottom:3px}.exam-paper .empty-row td{height:auto}.exam-paper .score-cell{font-weight:700;font-size:9px!important;white-space:nowrap;padding:1mm!important;text-align:center}.exam-paper .question-options{font-size:10px;line-height:1.45;margin:2px 0 0}.exam-paper .question-stimulus{margin-top:2px;padding:2px 4px;border:1px solid #777;border-radius:2px;font-size:10px}.exam-paper .question-visual{direction:rtl;white-space:pre-wrap;overflow-wrap:anywhere;font:9px/1.4 Tahoma,sans-serif;border:1px solid #777;padding:3px;margin:3px 0}.exam-paper .question-cognitive{font-size:8px;color:#555;border:1px solid #bbb;padding:0 3px;margin-left:3px}.exam-paper .group-heading th{padding:2px 5px!important;font-size:9px!important}
+@media print{@page{size:A4 portrait;margin:7mm;@bottom-right{content:"صفحه " counter(page) " از " counter(pages);font-family:Tahoma;font-size:9px}}body{background:#fff!important}.wrap{display:block!important;max-width:none!important;padding:0!important}.hero,#status,.no-print{display:none!important}.panel{display:none!important}body:not(.teacher-exam-print) #teacherPanel{display:none!important}body:not(.teacher-exam-print) #managementPanel{display:block!important}body:not(.teacher-exam-print) #vaultDetail{display:block!important;border:0!important;padding:0!important;margin:0!important}body:not(.teacher-exam-print) #printDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}body:not(.teacher-exam-print) #vaultDetail>.row,body:not(.teacher-exam-print) #vaultMeta,body:not(.teacher-exam-print) #vaultQuestions{display:none!important}body.teacher-exam-print #teacherPanel{display:block!important}body.teacher-exam-print #teacherPanel>*{display:none!important}body.teacher-exam-print #teacherExamPreview{display:block!important;border:0!important;padding:0!important;margin:0!important}body.teacher-exam-print #teacherPrintDocument{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.exam-paper .school-head td{height:24mm}.exam-paper .exam-table tbody td{min-height:0;height:auto;padding:2mm 1.8mm}}
+.exam-paper .group-heading th{background:#eef2f7;text-align:right;font-weight:700;font-size:11px;padding:4px 8px}.exam-paper .question-group{break-inside:auto;page-break-inside:auto}.exam-paper .essay-group{break-inside:avoid;page-break-inside:avoid}.exam-paper .essay-group .group-heading th{background:#fff7ed;border-bottom:0}.exam-paper .essay-group>tr:not(.group-heading)>td{border-top:0}
+\n#textbookPdfPreview{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}#textbookPdfCanvas{display:block;width:100%;height:auto;max-height:75vh;object-fit:contain;background:#f8fafc}#textbookPdfPreview .preview-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}</style>
 </head>
 <body>
 <main class="wrap">
@@ -20,40 +22,67 @@
 <p>ویژه پایه‌های هفتم، هشتم و نهم · ثبت منبع سؤال · بارم‌بندی · تأیید نهایی و انتقال امن به مخزن محرمانه</p>
 </header>
 <div id="status" class="notice" role="status" aria-live="polite">در حال بررسی نشست مدرسه…</div>
+<section id="testLoginPanel" class="panel hidden">
+  <h2>ورود به محیط آزمایشی</h2>
+  <p class="muted">با همان حساب کاربری موجود در پروژهٔ آزمایشی وارد شوید. این محیط از پایگاه دادهٔ مدرسهٔ اصلی جداست.</p>
+  <div class="grid">
+    <div class="field"><label for="testLoginEmail">ایمیل حساب آزمایشی</label><input id="testLoginEmail" type="email" value="dabir@test.com" autocomplete="username" required></div>
+    <div class="field"><label for="testLoginPassword">رمز عبور حساب</label><input id="testLoginPassword" type="password" autocomplete="current-password" placeholder="رمز عبور حساب موجود را وارد کنید"></div>
+  </div>
+  <div class="actions"><button id="testPasswordLogin" type="button">ورود با حساب موجود</button></div>
+</section>
+<section id="textbookLibraryPanel" class="panel hidden">
+  <div class="row"><h2>کتابخانه کتاب‌های درسی مدرسه</h2><span class="pill">PDF خصوصی</span></div>
+  <p class="muted">کتاب‌ها با کد اصلی مانند C706 ثبت می‌شوند. فایل‌ها در فضای خصوصی مدرسه نگهداری می‌شوند و فقط کاربران مجاز مدرسه می‌توانند پیوند موقت دریافت کنند.</p>
+  <div id="textbookUploadControls" class="hidden">
+    <h3>بارگذاری کتاب جدید</h3>
+    <div class="grid">
+      <div class="field"><label for="textbookGrade">پایه</label><select id="textbookGrade"><option value="7">هفتم</option><option value="8">هشتم</option><option value="9">نهم</option></select></div>
+      <div class="field"><label for="textbookCode">کد اصلی کتاب</label><input id="textbookCode" maxlength="12" placeholder="مثلاً C706" autocapitalize="characters"></div>
+      <div class="field"><label for="textbookSubject">نام درس</label><input id="textbookSubject" maxlength="120" placeholder="مثلاً علوم تجربی"></div>
+      <div class="field"><label for="textbookTitle">عنوان کتاب (اختیاری)</label><input id="textbookTitle" maxlength="180" placeholder="عنوان رسمی کتاب"></div>
+      <div class="field"><label for="textbookEdition">سال تحصیلی / نوبت چاپ</label><input id="textbookEdition" maxlength="40" value="۱۴۰۵–۱۴۰۶"></div>
+      <div class="field"><label for="textbookPdf">فایل PDF</label><input id="textbookPdf" type="file" accept="application/pdf,.pdf"></div>
+    </div>
+    <div class="actions"><button id="uploadTextbook" type="button">بارگذاری و ثبت کتاب</button></div>
+    <p class="muted">نام فایل باید با کد کتاب یکسان باشد؛ برای نمونه C706.pdf. سقف هر فایل در این مرحله ۵۰ مگابایت است.</p>
+  </div>
+  <div id="textbookPdfPreview" class="hidden"><div class="preview-toolbar"><strong id="textbookPreviewTitle">پیش‌نمایش کتاب</strong><div class="actions"><button id="textbookPrevPage" type="button" class="secondary">صفحه قبل</button><span id="textbookPreviewPage" class="muted">۱ / ۱</span><button id="textbookNextPage" type="button" class="secondary">صفحه بعد</button><button id="textbookClosePreview" type="button" class="danger">بستن</button></div></div><canvas id="textbookPdfCanvas" aria-label="پیش‌نمایش صفحه کتاب"></canvas></div>\n  <div id="textbookLibraryList" class="muted">در حال دریافت کتاب‌های ثبت‌شده…</div>
+</section>
 <section id="teacherPanel" class="hidden">
 <div class="panel">
-<div class="row"><h2>مشخصات آزمون</h2><span class="pill">پیش‌نویس دبیر</span></div>
+<div class="row"><h2>طراحی سؤال آزمون</h2><span class="pill">پیش‌نویس دبیر</span></div>
 <div class="grid">
+<div class="field"><label for="lesson">نام درس</label><input id="lesson" maxlength="180" placeholder="پس از انتخاب کتاب تکمیل می‌شود" readonly></div>
+<div class="field"><label for="libraryBookSelect">انتخاب کتاب از مخزن مدرسه</label><select id="libraryBookSelect"><option value="">یک کتاب انتخاب کنید</option></select></div>
+<div class="field"><label for="pageFrom">از صفحه PDF</label><input id="pageFrom" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۱۵"></div>
+<div class="field"><label for="pageTo">تا صفحه PDF</label><input id="pageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="مثلاً ۲۲"></div>
+<div class="field"><label>انتخاب سریع محدوده</label><button id="selectWholeBook" type="button" class="secondary">انتخاب تمام صفحات PDF کتاب</button></div>
+<div class="field"><label for="printedPageFrom">از صفحه چاپی کتاب</label><input id="printedPageFrom" type="number" min="1" step="1" inputmode="numeric" placeholder="شماره روی کتاب"></div>
+<div class="field"><label for="printedPageTo">تا صفحه چاپی کتاب</label><input id="printedPageTo" type="number" min="1" step="1" inputmode="numeric" placeholder="شماره روی کتاب"></div>
+<div class="field"><label for="questionMode">نوع سؤال</label><select id="questionMode"><option value="">نوع سؤال را انتخاب کنید</option><option value="test">تستی</option><option value="mixed">تستی / تشریحی</option><option value="comprehensive">جامع (تمام بخش‌ها)</option></select></div>
+</div>
+<div id="questionCountsPanel" class="panel hidden"><h3>تعداد سؤال هر بخش</h3><p class="muted">برای هر بخش، تعداد موردنظر را انتخاب کنید. صفر یعنی از آن بخش سؤالی تولید نشود.</p><div id="questionCounts" class="grid"></div></div>
+<details class="panel"><summary>مشخصات برگه آزمون (برای سربرگ و بایگانی)</summary>
+<div class="grid" style="margin-top:12px">
 <div class="field"><label for="className">نام کلاس</label><input id="className" maxlength="80" placeholder="مثلاً هفتم الف"></div>
 <div class="field"><label for="teacherName">نام دبیر</label><input id="teacherName" maxlength="100" placeholder="نام و نام خانوادگی دبیر"></div>
 <div class="field"><label for="examDate">تاریخ امتحان (شمسی)</label><input id="examDate" maxlength="20" placeholder="۱۴۰۵/۰۹/۰۱"></div>
 <div class="field"><label for="durationMinutes">مدت امتحان (دقیقه)</label><input id="durationMinutes" type="number" min="1" max="600" step="1" placeholder="۶۰"></div>
-<div class="field"><label for="title">عنوان آزمون</label><input id="title" maxlength="180" placeholder="مثلاً آزمون فصل دوم"></div>
-<div class="field"><label for="subject">درس</label><input id="subject" maxlength="100" placeholder="نام دقیق درس"></div>
+<div class="field"><label for="title">عنوان آزمون</label><input id="title" maxlength="180" placeholder="عنوان آزمون"></div>
+<div class="field"><label for="subject">درس</label><input id="subject" maxlength="100" readonly></div>
 <div class="field"><label for="grade">پایه</label><select id="grade"><option value="7">هفتم</option><option value="8">هشتم</option><option value="9">نهم</option></select></div>
-<div class="field"><label for="bookTitle">عنوان دقیق کتاب درسی</label><input id="bookTitle" maxlength="180" placeholder="مطابق نسخه رسمی کتاب"></div>
-<div class="field"><label for="bookEdition">سال/نوبت چاپ کتاب</label><input id="bookEdition" value="۱۴۰۵–۱۴۰۶" maxlength="40"></div>
-<div class="field"><label for="chapter">فصل</label><input id="chapter" maxlength="180"></div>
-<div class="field"><label for="lesson">درس / بخش</label><input id="lesson" maxlength="180"></div>
-<div class="field"><label for="topic">مبحث</label><input id="topic" maxlength="180"></div>
-<div class="field"><label for="pageReference">شماره صفحه یا بازه صفحات</label><input id="pageReference" maxlength="80" placeholder="مثلاً ۲۴ تا ۲۸"></div>
-<div class="field"><label for="curriculumUrl">مرجع رسمی کتاب</label><input id="curriculumUrl" value="https://chap.sch.ir/" maxlength="1000"></div>
-</div>
-<div class="panel no-print" id="aiGenerationPanel">
-<h2>تولید سؤال از متن کتاب با هوش مصنوعی</h2>
-<p class="muted">متن استخراج‌شده از صفحه یا صفحات کتاب رسمی را وارد کنید. مدل فقط از همین متن سؤال تازه می‌سازد؛ پاسخ‌ها و بارم را قبل از ذخیره بررسی کنید. متن کامل کتاب در سامانه بایگانی نمی‌شود.</p>
-<div class="field"><label for="aiSourceText">متن درس / بخش موردنظر کتاب</label><textarea id="aiSourceText" maxlength="15000" rows="7" placeholder="متن استخراج‌شده از صفحه کتاب را اینجا وارد کنید (حداقل ۲۰۰ نویسه)."></textarea></div>
-<div class="grid">
-<div class="field"><label for="aiPageReference">شماره صفحه چاپی کتاب</label><input id="aiPageReference" maxlength="80" placeholder="مثلاً ۱۵ تا ۱۸"></div>
-<div class="field"><label for="aiTotalPoints">بارم کل سؤال‌های تولیدی</label><input id="aiTotalPoints" type="number" min="0.25" max="20" step="0.25" value="20"></div>
-</div>
-<div class="field"><label>تعداد هر نوع سؤال</label><div class="grid">
-<div class="field"><label for="aiCount_multiple_choice">تستی</label><input id="aiCount_multiple_choice" type="number" min="0" max="15" step="1" value="5" data-ai-type="multiple_choice"></div><div class="field"><label for="aiCount_conceptual">مفهومی</label><input id="aiCount_conceptual" type="number" min="0" max="15" step="1" value="0" data-ai-type="conceptual"></div><div class="field"><label for="aiCount_true_false">صحیح / غلط</label><input id="aiCount_true_false" type="number" min="0" max="15" step="1" value="0" data-ai-type="true_false"></div><div class="field"><label for="aiCount_fill_blank">جای خالی</label><input id="aiCount_fill_blank" type="number" min="0" max="15" step="1" value="0" data-ai-type="fill_blank"></div><div class="field"><label for="aiCount_short_answer">پاسخ کوتاه</label><input id="aiCount_short_answer" type="number" min="0" max="15" step="1" value="0" data-ai-type="short_answer"></div><div class="field"><label for="aiCount_essay">تشریحی</label><input id="aiCount_essay" type="number" min="0" max="15" step="1" value="0" data-ai-type="essay"></div><div class="field"><label for="aiCount_problem">مسئله</label><input id="aiCount_problem" type="number" min="0" max="15" step="1" value="0" data-ai-type="problem"></div><div class="field"><label for="aiCount_equation">معادله</label><input id="aiCount_equation" type="number" min="0" max="15" step="1" value="0" data-ai-type="equation"></div><div class="field"><label for="aiCount_grammar">گرامر</label><input id="aiCount_grammar" type="number" min="0" max="15" step="1" value="0" data-ai-type="grammar"></div><div class="field"><label for="aiCount_vocabulary">معنی لغت</label><input id="aiCount_vocabulary" type="number" min="0" max="15" step="1" value="0" data-ai-type="vocabulary"></div><div class="field"><label for="aiCount_synonym_antonym">مترادف / متضاد</label><input id="aiCount_synonym_antonym" type="number" min="0" max="15" step="1" value="0" data-ai-type="synonym_antonym"></div><div class="field"><label for="aiCount_translation">ترجمه</label><input id="aiCount_translation" type="number" min="0" max="15" step="1" value="0" data-ai-type="translation"></div><div class="field"><label for="aiCount_other">سایر</label><input id="aiCount_other" type="number" min="0" max="15" step="1" value="0" data-ai-type="other"></div>
-</div></div>
-<div class="actions"><button id="generateQuestions" type="button">تولید سؤال با هوش مصنوعی</button></div>
-<p class="muted">تولید سؤال از سرویس هوش مصنوعی استفاده می‌کند و ممکن است مشمول سهمیه یا هزینه حساب Cloudflare باشد. با زدن دکمه، درخواست تولید ارسال می‌شود.</p>
-</div>
-<div class="source-note">مرجع رسمی کتاب‌های درسی: chap.sch.ir. تا زمان ورود فهرست تأییدشده کتاب‌ها و فصل‌ها به سامانه، عنوان کتاب و فصل را عیناً از نسخه رسمی وارد کنید. متن کامل کتاب را در بانک سؤال بازنشر نکنید؛ فقط مشخصات ارجاع و سؤال تازه را ثبت کنید. در این مرحله ثبت و ویرایش سؤال فعال است؛ تولید خودکار سؤال با هوش مصنوعی هنوز به موتور تولید متصل نشده است.</div>
+<div class="field"><label for="bookTitle">عنوان کتاب</label><input id="bookTitle" maxlength="180" readonly></div>
+<div class="field"><label for="bookEdition">سال/نوبت چاپ</label><input id="bookEdition" maxlength="40" readonly></div>
+<div class="field"><label for="chapter">فصل (اختیاری)</label><input id="chapter" maxlength="180"></div>
+<div class="field"><label for="topic">مبحث (اختیاری)</label><input id="topic" maxlength="180"></div>
+<div class="field"><label for="pageReference">بازه صفحات چاپی کتاب</label><input id="pageReference" maxlength="80" readonly><input id="pdfPageReference" type="hidden"></div>
+<div class="field"><label for="curriculumUrl">مرجع رسمی کتاب</label><input id="curriculumUrl" value="https://chap.sch.ir/" maxlength="1000" readonly></div>
+<div class="field"><label for="aiTotalPoints">بارم کل آزمون</label><input id="aiTotalPoints" type="number" min="0.25" max="20" step="0.25" value="20"></div>
+</div></details>
+<div class="notice">متن صفحات از PDF خصوصی کتاب استخراج می‌شود. اگر PDF اسکن‌شده باشد، سامانه تلاش می‌کند متن فارسی را با OCR بخواند. فقط متن صفحات انتخاب‌شده برای تولید سؤال ارسال می‌شود.</div>
+<div class="actions"><button id="generateQuestions" type="button">تولید سؤال</button></div>
+<p class="muted">تولید سؤال از هوش مصنوعی ممکن است از سهمیه یا اعتبار سرویس استفاده کند؛ پیش از ارسال، تأیید گرفته می‌شود.</p>
 </div>
 <div class="panel">
 <div class="row"><h2>سؤال‌های آزمون</h2><span id="totalPoints" class="pill">مجموع بارم: ۰</span></div>
@@ -62,11 +91,17 @@
 </div>
 <div class="panel no-print">
 <div class="actions">
+<button id="previewTeacherExam" type="button" class="secondary">پیش‌نمایش برگه آزمون دبیر</button>
 <button id="saveDraft" type="button">ذخیره پیش‌نویس</button>
 <button id="finalize" type="button" class="danger">تأیید نهایی و ارسال محرمانه</button>
 <button id="back" type="button" class="secondary">بازگشت به پنل دبیر</button>
 </div>
 <p class="muted">پس از تأیید نهایی، محتوای سؤال‌ها از دسترس دبیر خارج می‌شود و فقط مدیر و معاون اجرایی می‌توانند نسخه نهایی را در مخزن محرمانه دریافت کنند.</p>
+</div>
+<div id="teacherExamPreview" class="panel hidden">
+<div class="row"><h2>پیش‌نمایش برگه آزمون</h2><button id="printTeacherExam" type="button">چاپ / ذخیره PDF</button></div>
+<p class="muted no-print">این پیش‌نمایش متعلق به پیش‌نویس دبیر است. پس از تأیید نهایی، نسخه برای دبیر قفل می‌شود و فقط مدیر و معاون اجرایی به نسخه نهایی دسترسی دارند.</p>
+<div id="teacherPrintDocument" class="exam-paper" aria-label="پیش‌نمایش PDF آزمون دبیر"></div>
 </div>
 <div class="panel"><h2>آزمون‌های من</h2><div id="myPapers"></div></div>
 </section>
@@ -87,20 +122,24 @@
 <div class="actions no-print"><button id="managementBack" class="secondary" type="button">بازگشت به پنل</button></div>
 </section>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" crossorigin="anonymous"></script>
 <script>
-const API="https://gtmmllcxhdejwjjnyzrh.supabase.co/functions/v1/smart-exam-designer";
-const KEY="sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
-const token=sessionStorage.getItem("frahoosh_novin_access_token")||"";
-const role=sessionStorage.getItem("frahoosh_novin_role")||"";
+const isTestMode=new URLSearchParams(window.location.search).get("frahoosh-env")==="test";
+const SUPABASE_URL=isTestMode?"https://ljinsvtitzscrrqazszu.supabase.co":"https://gtmmllcxhdejwjjnyzrh.supabase.co";
+const API=SUPABASE_URL+"/functions/v1/smart-exam-designer";
+const KEY=isTestMode?"sb_publishable_-Pu4KA24XUM6ud_T-eE_rw_4lmqMf31":"sb_publishable_esNNTGYl6aXb6FlINJxPKA_Dl6KuInP";
+let token=sessionStorage.getItem(isTestMode?"frahoosh_test_access_token":"frahoosh_novin_access_token")||"";
+const role=isTestMode?"test":(sessionStorage.getItem("frahoosh_novin_role")||"");
 const $=id=>document.getElementById(id);
 let state={role:"",papers:[],vault:[],questions:[],paperId:null,activeVaultId:null};
-const types=[["multiple_choice","تستی"],["conceptual","مفهومی"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
+const types=[["knowledge","دانشی و یادآوری"],["conceptual","مفهومی و درک مطلب"],["application","کاربرد آموخته‌ها"],["experiment_activity","آزمایش و فعالیت"],["chart_interpretation","تحلیل نمودار"],["table_interpretation","تحلیل جدول و داده"],["matching","وصل‌کردنی و جورکردنی"],["ordering","ترتیب‌دادنی"],["multiple_choice","تستی چهارگزینه‌ای"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله و حل مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
 const origins=[["teacher_authored","تألیف دبیر"],["ai_generated","تولیدشده با هوش مصنوعی"],["official_reference","دارای ارجاع به کتاب رسمی"],["permitted_external","منبع بیرونی با مجوز"]];
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const asciiDigits=value=>String(value??"").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 function status(message,kind=""){ $("status").textContent=message;$("status").className="notice"+(kind?" "+kind:""); }
-async function api(action,extra={}){const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action,...extra})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.message||"ارتباط با سرویس طراحی آزمون برقرار نشد.");return data;}
-function newQuestion(){return {question_type:"multiple_choice",difficulty:"medium",prompt:"",options:[],correct_answer:"",explanation:"",points:1,source_origin:"teacher_authored",source_url:"",source_title:"",source_license:"",source_permission_confirmed:false};}
+async function api(action,extra={}){const requestId=action==="summarize_textbook_chunk"?crypto.randomUUID():"";const send=async(payload)=>{const response=await fetch(API,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify(payload)});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.message||"سرویس در مرحله «"+(payload.action||action)+"» پاسخ موفق نداد (HTTP "+response.status+").");return data;};const payload={action,...extra,...(requestId?{client_request_id:requestId}:{})};try{return await send(payload);}catch(error){if(!requestId||!(/Failed to fetch|NetworkError|Load failed|fetch failed/i.test(error?.message||String(error))))throw error;status("ارتباط مرورگر قطع شد؛ نتیجهٔ همان درخواست را بدون اجرای دوبارهٔ هوش مصنوعی بازیابی می‌کنم…");const waits=[900,1600,2600,4000,5500];let lastError=error;for(let attempt=0;attempt<waits.length;attempt++){await new Promise(resolve=>setTimeout(resolve,waits[attempt]));try{const recovered=await send({action:"retrieve_textbook_analysis_result",client_request_id:requestId});if(recovered.pending){status("تحلیل در سرور تمام شده یا در حال ثبت است؛ بازیابی نتیجه ادامه دارد…");continue;}return recovered;}catch(recoveryError){lastError=recoveryError;}}const detail=lastError?.message||String(lastError);throw new Error("مرورگر نتوانست نتیجهٔ تحلیل کتاب را از حافظهٔ موقت دریافت کند. شناسه پیگیری: "+requestId+"؛ جزئیات: "+detail);}}
+function newQuestion(){return {question_type:"multiple_choice",cognitive_level:"application",difficulty:"medium",prompt:"",stimulus:"",visual_data:"",options:[],correct_answer:"",explanation:"",points:1,source_origin:"teacher_authored",source_url:"",source_title:"",source_license:"",source_permission_confirmed:false,image_data_url:""};}
 function renderQuestions(){
  $("questions").replaceChildren();
  state.questions.forEach((q,index)=>{
@@ -115,10 +154,25 @@ function renderQuestions(){
    '<div class="field"><label>عنوان منبع</label><input data-field="source_title" value="'+esc(q.source_title)+'" placeholder="برای منبع رسمی یا بیرونی"></div>'+
    '<div class="field"><label>نشانی منبع</label><input data-field="source_url" value="'+esc(q.source_url)+'" placeholder="https://chap.sch.ir/..."></div>'+
    '<div class="field"><label>مجوز / توضیح منبع</label><input data-field="source_license" value="'+esc(q.source_license)+'"></div></div>'+
-   '<div class="field"><label>متن سؤال</label><textarea data-field="prompt">'+esc(q.prompt)+'</textarea></div>'+
-   '<div class="field"><label>گزینه‌ها (هر گزینه در یک خط)</label><textarea data-field="options">'+esc((q.options||[]).join("\n"))+'</textarea></div>'+
+   '<div class="grid"><div class="field"><label>حیطه شناختی</label><select data-field="cognitive_level"><option value="knowledge" '+(q.cognitive_level==="knowledge"?"selected":"")+'">دانشی</option><option value="comprehension" '+(q.cognitive_level==="comprehension"?"selected":"")+'">درک و فهم</option><option value="application" '+(q.cognitive_level==="application"?"selected":"")+'">کاربرد</option><option value="analysis" '+(q.cognitive_level==="analysis"?"selected":"")+'">تحلیل و استدلال</option></select></div><div class="field"><label>متن سؤال</label><textarea data-field="prompt">'+esc(q.prompt)+'</textarea></div></div>'+
+   '<div class="field"><label>مقدمه / شرح آزمایش یا فعالیت (در صورت نیاز)</label><textarea data-field="stimulus">'+esc(q.stimulus||"")+"</textarea></div>"+
+   '<div class="field"><label>داده، جدول یا اطلاعات نمودار (در صورت نیاز)</label><textarea data-field="visual_data">'+esc(q.visual_data||"")+"</textarea></div>"+
+   '<div class="field"><label>گزینه‌ها یا اجزای جورکردنی (هر مورد در یک خط)</label><textarea data-field="options">'+esc((q.options||[]).join("\n"))+'</textarea></div>'+
    '<div class="grid"><div class="field"><label>پاسخ / کلید</label><textarea data-field="correct_answer">'+esc(q.correct_answer)+'</textarea></div><div class="field"><label>توضیح پاسخ (اختیاری)</label><textarea data-field="explanation">'+esc(q.explanation)+'</textarea></div></div>'+
-   '<label><input data-field="source_permission_confirmed" type="checkbox" '+(q.source_permission_confirmed?"checked":"")+' style="width:auto"> مجوز استفاده از منبع بیرونی را دارم.</label>';
+   '<label><input data-field="source_permission_confirmed" type="checkbox" '+(q.source_permission_confirmed?"checked":"")+' style="width:auto"> مجوز استفاده از منبع بیرونی را دارم.</label>'+
+   '<div class="field"><label>تصویر سؤال (اختیاری؛ ناحیه موردنظر را برش دهید)</label><input data-image-file type="file" accept="image/png,image/jpeg,image/webp"><p class="muted">تصویر صفحه یا شکل سؤال را انتخاب کنید؛ سپس با کشیدن انگشت یا ماوس، فقط بخش مربوط را مشخص و ثبت برش را بزنید.</p><div class="grid"><div class="field"><label>شماره صفحه PDF برای برداشت تصویر</label><input data-image-pdf-page type="number" min="1" step="1" inputmode="numeric" placeholder="صفحه PDF"></div><div class="actions"><button type="button" class="secondary" data-image-pdf-crop>برداشت تصویر از PDF کتاب</button></div></div><canvas data-image-canvas class="question-crop-canvas" hidden></canvas><div class="actions"><button type="button" data-image-save disabled>ثبت برش تصویر</button><button type="button" class="secondary" data-image-clear>حذف تصویر</button></div><img data-image-preview class="question-image-preview" alt="تصویر برش‌خورده سؤال" '+(q.image_data_url?'src="'+q.image_data_url+'"':"hidden")+'></div>';
+  const imageInput=card.querySelector("[data-image-file]"),cropCanvas=card.querySelector("[data-image-canvas]"),cropContext=cropCanvas.getContext("2d"),saveImage=card.querySelector("[data-image-save]"),clearImage=card.querySelector("[data-image-clear]"),imagePreview=card.querySelector("[data-image-preview]");
+  let cropSource=null,cropScale=1,cropSelection=null,cropStart=null;
+  const redrawCrop=()=>{if(!cropSource)return;cropContext.clearRect(0,0,cropCanvas.width,cropCanvas.height);cropContext.drawImage(cropSource,0,0,cropCanvas.width,cropCanvas.height);if(cropSelection&&cropSelection.w>2&&cropSelection.h>2){cropContext.save();cropContext.strokeStyle="#f59e0b";cropContext.lineWidth=3;cropContext.setLineDash([7,4]);cropContext.strokeRect(cropSelection.x,cropSelection.y,cropSelection.w,cropSelection.h);cropContext.restore();}};
+  const setCropSource=img=>{cropSource=img;cropScale=Math.min(1,720/img.naturalWidth,520/img.naturalHeight);cropCanvas.width=Math.max(1,Math.round(img.naturalWidth*cropScale));cropCanvas.height=Math.max(1,Math.round(img.naturalHeight*cropScale));cropSelection=null;cropStart=null;cropCanvas.hidden=false;saveImage.disabled=true;redrawCrop();};
+  imageInput.addEventListener("change",()=>{const chosen=imageInput.files?.[0];if(!chosen)return;if(!["image/png","image/jpeg","image/webp"].includes(chosen.type)||chosen.size>8*1024*1024){status("تصویر باید PNG، JPG یا WEBP و حداکثر ۸ مگابایت باشد.","error");imageInput.value="";return;}const objectUrl=URL.createObjectURL(chosen),img=new Image();img.onload=()=>{setCropSource(img);URL.revokeObjectURL(objectUrl);};img.onerror=()=>{URL.revokeObjectURL(objectUrl);status("خواندن تصویر انتخاب‌شده ناموفق بود.","error");};img.src=objectUrl;});
+  card.querySelector("[data-image-pdf-crop]").addEventListener("click",async()=>{try{const bookId=$("libraryBookSelect").value,pageNo=Number(asciiDigits(card.querySelector("[data-image-pdf-page]").value));if(!bookId||!Number.isInteger(pageNo)||pageNo<1)throw new Error("کتاب و شماره صفحه PDF را مشخص کنید.");const pdf=await ensureSelectedPdfDocument(bookId),from=Number(asciiDigits($("pageFrom").value))||1,to=Number(asciiDigits($("pageTo").value))||pdf.numPages;if(pageNo<from||pageNo>to||pageNo>pdf.numPages)throw new Error("صفحه انتخابی باید در بازه صفحات PDF آزمون باشد.");status("در حال آماده‌سازی تصویر صفحه "+pageNo+"…");const page=await pdf.getPage(pageNo),base=page.getViewport({scale:1}),scale=Math.min(1.5,720/base.width,520/base.height),viewport=page.getViewport({scale}),sourceCanvas=document.createElement("canvas");sourceCanvas.width=Math.ceil(viewport.width);sourceCanvas.height=Math.ceil(viewport.height);await page.render({canvasContext:sourceCanvas.getContext("2d"),viewport}).promise;const img=new Image();img.onload=()=>{setCropSource(img);status("ناحیه تصویر سؤال را با انگشت یا ماوس انتخاب کنید.");};img.onerror=()=>status("آماده‌سازی تصویر صفحه PDF ناموفق بود.","error");img.src=sourceCanvas.toDataURL("image/png");}catch(error){status(error.message||"برداشت تصویر از PDF ناموفق بود.","error");}});
+  const cropPoint=event=>{const bounds=cropCanvas.getBoundingClientRect();return {x:Math.max(0,Math.min(cropCanvas.width,(event.clientX-bounds.left)*cropCanvas.width/bounds.width)),y:Math.max(0,Math.min(cropCanvas.height,(event.clientY-bounds.top)*cropCanvas.height/bounds.height))};};
+  cropCanvas.addEventListener("pointerdown",event=>{if(!cropSource)return;cropStart=cropPoint(event);cropSelection={x:cropStart.x,y:cropStart.y,w:0,h:0};cropCanvas.setPointerCapture(event.pointerId);redrawCrop();});
+  cropCanvas.addEventListener("pointermove",event=>{if(!cropStart)return;const point=cropPoint(event);cropSelection={x:Math.min(cropStart.x,point.x),y:Math.min(cropStart.y,point.y),w:Math.abs(point.x-cropStart.x),h:Math.abs(point.y-cropStart.y)};redrawCrop();saveImage.disabled=cropSelection.w<12||cropSelection.h<12;});
+  cropCanvas.addEventListener("pointerup",()=>{cropStart=null;if(cropSelection)saveImage.disabled=cropSelection.w<12||cropSelection.h<12;});
+  saveImage.addEventListener("click",()=>{if(!cropSource||!cropSelection||cropSelection.w<12||cropSelection.h<12)return;const sx=cropSelection.x/cropScale,sy=cropSelection.y/cropScale,sw=cropSelection.w/cropScale,sh=cropSelection.h/cropScale,out=document.createElement("canvas"),scale=Math.min(1,1000/Math.max(sw,sh));out.width=Math.max(1,Math.round(sw*scale));out.height=Math.max(1,Math.round(sh*scale));out.getContext("2d").drawImage(cropSource,sx,sy,sw,sh,0,0,out.width,out.height);const cropped=out.toDataURL("image/jpeg",0.78);if(cropped.length>1500000){status("تصویر برش‌خورده هنوز بزرگ است؛ بخش کوچک‌تری را انتخاب کنید.","error");return;}state.questions[index].image_data_url=cropped;imagePreview.src=cropped;imagePreview.hidden=false;cropCanvas.hidden=true;status("تصویر برش‌خورده به سؤال "+(index+1)+" پیوست شد.","ok");});
+  clearImage.addEventListener("click",()=>{state.questions[index].image_data_url="";imagePreview.removeAttribute("src");imagePreview.hidden=true;cropCanvas.hidden=true;imageInput.value="";cropSource=null;cropSelection=null;saveImage.disabled=true;});
   card.addEventListener("input",event=>updateQuestionField(card,event.target,index));
   card.addEventListener("change",event=>updateQuestionField(card,event.target,index));
   card.querySelector("[data-remove]").addEventListener("click",()=>{state.questions.splice(index,1);renderQuestions();updateTotal();});
@@ -128,52 +182,306 @@ function renderQuestions(){
 }
 function updateQuestionField(card,target,index){const field=target.dataset.field;if(!field)return;let value;if(target.type==="checkbox")value=target.checked;else if(field==="points")value=Number(target.value);else if(field==="options")value=target.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);else value=target.value;state.questions[index][field]=value;updateTotal();}
 function updateTotal(){const total=state.questions.reduce((sum,q)=>sum+(Number(q.points)||0),0);$("totalPoints").textContent="مجموع بارم: "+total.toFixed(2).replace(/\.00$/,"");}
-function collectMetadata(){return {paper_id:state.paperId,title:$("title").value.trim(),subject:$("subject").value.trim(),grade:$("grade").value,book_title:$("bookTitle").value.trim(),book_edition:$("bookEdition").value.trim(),chapter:$("chapter").value.trim(),lesson:$("lesson").value.trim(),topic:$("topic").value.trim(),page_reference:$("pageReference").value.trim(),curriculum_source_url:$("curriculumUrl").value.trim(),payload:{header:{class_name:$("className").value.trim(),teacher_name:$("teacherName").value.trim(),exam_date:$("examDate").value.trim(),duration_minutes:asciiDigits($("durationMinutes").value.trim())},questions:state.questions}};}
+function collectMetadata(){return {paper_id:state.paperId,title:$("title").value.trim(),subject:$("subject").value.trim(),grade:$("grade").value,book_title:$("bookTitle").value.trim(),book_edition:$("bookEdition").value.trim(),chapter:$("chapter").value.trim(),lesson:$("lesson").value.trim(),topic:$("topic").value.trim(),page_reference:$("pageReference").value.trim(),curriculum_source_url:$("curriculumUrl").value.trim(),payload:{pdf_page_reference:$("pdfPageReference").value.trim(),header:{class_name:$("className").value.trim(),teacher_name:$("teacherName").value.trim(),exam_date:$("examDate").value.trim(),duration_minutes:asciiDigits($("durationMinutes").value.trim())},questions:state.questions}};}
 function showPaperList(){ $("myPapers").replaceChildren();if(!state.papers.length){$("myPapers").textContent="هنوز آزمونی ثبت نشده است.";return;}state.papers.forEach(p=>{const item=document.createElement("article");item.className="paper-card";item.innerHTML="<strong>"+esc(p.title)+"</strong><div class=\"muted\">"+esc(p.subject)+" · پایه "+esc(p.grade)+" · "+esc(p.book_title)+"</div><span class=\"pill\">"+(p.status==="draft"?"پیش‌نویس":p.status==="submitted"?"ارسال نهایی‌شده":"بایگانی")+"</span>";if(p.status==="draft"){const open=document.createElement("button");open.className="secondary";open.textContent="ادامه و ویرایش";open.addEventListener("click",()=>loadDraft(p.id));item.append(open);}else{const locked=document.createElement("p");locked.className="muted";locked.textContent="محتوای آزمون پس از تأیید نهایی برای دبیر قابل مشاهده نیست.";item.append(locked);} $("myPapers").append(item);});}
 async function refreshTeacher(){const data=await api("bootstrap");state.role=data.role;state.papers=data.papers||[];showPaperList();}
-async function loadDraft(id){try{const data=await api("get_draft",{paper_id:id});state.paperId=id;const p=data.paper;$("title").value=p.title;$("subject").value=p.subject;$("grade").value=String(p.grade);$("className").value=data.payload.header?.class_name||"";$("teacherName").value=data.payload.header?.teacher_name||"";$("examDate").value=data.payload.header?.exam_date||"";$("durationMinutes").value=data.payload.header?.duration_minutes||"";$("bookTitle").value=p.book_title;$("bookEdition").value=p.book_edition;$("chapter").value=p.chapter;$("lesson").value=p.lesson;$("topic").value=p.topic;$("pageReference").value=p.page_reference;$("curriculumUrl").value=p.curriculum_source_url;state.questions=(data.payload.questions||[]).map(q=>({...newQuestion(),...q}));renderQuestions();status("پیش‌نویس بارگذاری شد.","ok");window.scrollTo({top:0,behavior:"smooth"});}catch(e){status(e.message,"error");}}
+async function loadDraft(id){try{const data=await api("get_draft",{paper_id:id});state.paperId=id;const p=data.paper;$("title").value=p.title;$("subject").value=p.subject;$("grade").value=String(p.grade);$("className").value=data.payload.header?.class_name||"";$("teacherName").value=data.payload.header?.teacher_name||"";$("examDate").value=data.payload.header?.exam_date||"";$("durationMinutes").value=data.payload.header?.duration_minutes||"";$("bookTitle").value=p.book_title;$("bookEdition").value=p.book_edition;$("chapter").value=p.chapter;$("lesson").value=p.lesson;$("topic").value=p.topic;$("pageReference").value=p.page_reference;$("curriculumUrl").value=p.curriculum_source_url;const printedParts=asciiDigits(p.page_reference||"").match(/\d+/g)||[];$("printedPageFrom").value=printedParts[0]||"";$("printedPageTo").value=printedParts[1]||printedParts[0]||"";const pdfParts=asciiDigits(data.payload.pdf_page_reference||"").match(/\d+/g)||[];$("pdfPageReference").value=data.payload.pdf_page_reference||"";$("pageFrom").value=pdfParts[0]||"";$("pageTo").value=pdfParts[1]||pdfParts[0]||"";const savedBook=textbookBooks.find(book=>Number(book.grade)===Number(p.grade)&&book.subject===p.subject&&(book.title||book.book_code)===p.book_title);if(savedBook)$("libraryBookSelect").value=savedBook.id;state.questions=(data.payload.questions||[]).map(q=>({...newQuestion(),...q}));renderQuestions();status("پیش‌نویس بارگذاری شد.","ok");window.scrollTo({top:0,behavior:"smooth"});}catch(e){status(e.message,"error");}}
 async function saveDraft(){const meta=collectMetadata();if(!meta.title||!meta.subject||!meta.book_title){status("عنوان آزمون، درس و کتاب رسمی را کامل کنید.","error");return false;}if(!state.questions.length){status("حداقل یک سؤال اضافه کنید.","error");return false;}try{const data=await api("save_draft",meta);state.paperId=data.paper_id;await refreshTeacher();status(data.message+" مجموع بارم: "+data.total_points,"ok");return true;}catch(e){status(e.message,"error");return false;}}
 function addQuestion(){state.questions.push(newQuestion());renderQuestions();$("questions").lastElementChild?.scrollIntoView({behavior:"smooth",block:"center"});}
 function renderVaultList(){ $("vaultList").replaceChildren();if(!state.vault.length){$("vaultList").textContent="هنوز آزمون نهایی در مخزن ثبت نشده است.";return;}state.vault.forEach(p=>{const item=document.createElement("article");item.className="paper-card";item.innerHTML="<strong>"+esc(p.title)+"</strong><div class=\"muted\">"+esc(p.subject)+" · پایه "+esc(p.grade)+" · "+esc(p.book_title)+" · بارم "+esc(p.total_points)+"</div><span class=\"pill\">"+(p.status==="archived"?"بایگانی":"مخزن فعال")+"</span>";const open=document.createElement("button");open.className="secondary";open.textContent="دریافت نسخه نهایی";open.addEventListener("click",()=>openVault(p.paper_id));item.append(open);$("vaultList").append(item);});}
 function faDigits(value){return String(value??"").replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[Number(d)]);}
-function renderPrintDocument(p){
- const header=p.payload?.header||{},questions=p.payload?.questions||[],rows=Math.max(9,questions.length);
- const body=Array.from({length:rows},(_,i)=>{
-  const q=questions[i];
-  if(!q)return '<tr class="empty-row"><td>'+faDigits(i+1)+'</td><td></td><td></td></tr>';
-  const options=q.options?.length?'<ol class="question-options">'+q.options.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>':"";
-  return '<tr><td>'+faDigits(i+1)+'</td><td><div class="question-type">'+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+'</div><div class="question-body">'+esc(q.prompt)+'</div>'+options+'</td><td class="score-cell">'+faDigits(q.points)+'</td></tr>';
+function renderPrintDocument(p,targetId="printDocument"){
+ const header=p.payload?.header||{},questions=p.payload?.questions||[],groups=[],byType=new Map();
+ questions.forEach((q,index)=>{
+  const type=q.question_type||"other";
+  const entry={q,index};
+  if(type==="essay"){
+   groups.push({type,label:"تشریحی · سؤال "+faDigits(index+1),questions:[entry],essay:true});
+   return;
+  }
+  let group=byType.get(type);
+  if(!group){group={type,label:types.find(x=>x[0]===type)?.[1]||type,questions:[]};byType.set(type,group);groups.push(group);}
+  group.questions.push(entry);
+ });
+ const groupMarkup=groups.map(group=>{
+  const title=group.essay?group.label:group.label+" · "+faDigits(group.questions.length)+" سؤال";
+  const rows=group.questions.map(({q,index})=>{
+   const options=q.options?.length?'<div class="question-options">'+q.options.map(x=>'<div>'+(q.question_type==="matching"?"□ ":"")+esc(x)+'</div>').join("")+'</div>':"";
+   const stimulus=q.stimulus?'<div class="question-stimulus">'+esc(q.stimulus)+'</div>':"";
+   const visual=q.visual_data?'<pre class="question-visual">'+esc(q.visual_data)+'</pre>':"";
+   const image=/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(String(q.image_data_url||""))?'<img class="question-image" src="'+q.image_data_url+'" alt="تصویر سؤال">':"";
+   const cognitive=q.cognitive_level?'<span class="question-cognitive">'+({knowledge:"دانشی",comprehension:"درک و فهم",application:"کاربرد",analysis:"تحلیل"}[q.cognitive_level]||"")+"</span> ":"";
+   return '<tr><td>'+faDigits(index+1)+'</td><td>'+cognitive+'<div class="question-body">'+esc(q.prompt)+'</div>'+stimulus+visual+image+options+'</td><td class="score-cell">'+faDigits(q.points)+'</td></tr>';
+  }).join("");
+  return '<tbody class="question-group'+(group.essay?' essay-group':'')+'"><tr class="group-heading"><th colspan="3">'+esc(title)+'</th></tr>'+rows+'</tbody>';
  }).join("");
- $("printDocument").innerHTML=
- '<table class="exam-table"><thead><tr class="school-head"><td colspan="3"><table class="school-head-inner"><tbody><tr><td class="school-title">اداره کل آموزش و پرورش شهرستان‌های استان تهران<br>مدیریت آموزش و پرورش شهرستان قدس<br>دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲<br>سال تحصیلی ۱۴۰۵–۱۴۰۶</td><td class="logo-cell"><img src="assets/school-logo.svg" alt="نشان مدرسه"></td></tr></tbody></table></td></tr><tr><td colspan="3"><table class="meta-grid"><tbody><tr><td><span class="label">کلاس:</span> '+esc(header.class_name||"................")+'</td><td><span class="label">نام دبیر:</span> '+esc(header.teacher_name||"................")+'</td><td colspan="2"><span class="label">نام و نام خانوادگی:</span> ....................................</td></tr><tr><td><span class="label">تاریخ امتحان:</span> '+esc(header.exam_date||"....../....../......")+'</td><td><span class="label">مدت امتحان:</span> '+faDigits(header.duration_minutes||"......")+' دقیقه</td><td><span class="label">تعداد صفحه:</span> ........</td><td><span class="label">نام درس:</span> '+esc(p.subject)+'</td></tr><tr><td><span class="label">نمره تجدیدنظر با عدد:</span></td><td><span class="label">نام مصحح:</span></td><td><span class="label">نمره با عدد:</span></td><td><span class="label">نام مصحح:</span></td></tr><tr><td><span class="label">نمره تجدیدنظر با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td><td><span class="label">نمره با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td></tr></tbody></table></td></tr><tr><th>ردیف</th><th>متن سؤال</th><th>نمره</th></tr></thead><tbody>'+body+'</tbody></table>';
+ const emptyCount=0;
+ const emptyRows=Array.from({length:emptyCount},(_,i)=>'<tr class="empty-row"><td>'+faDigits(questions.length+i+1)+'</td><td></td><td></td></tr>').join("");
+ const emptyMarkup=emptyRows?'<tbody class="empty-group">'+emptyRows+'</tbody>':"";
+ $(targetId).innerHTML=
+ '<table class="exam-table"><thead><tr class="school-head"><td colspan="3"><table class="school-head-inner"><tbody><tr><td class="school-title">اداره کل آموزش و پرورش شهرستان‌های استان تهران<br>مدیریت آموزش و پرورش شهرستان قدس<br>دبیرستان دوره اول متوسطه سردار شهید حاجی‌زاده ۲<br>سال تحصیلی ۱۴۰۵–۱۴۰۶</td><td class="logo-cell"><img src="assets/school-logo.svg" alt="نشان مدرسه"></td></tr></tbody></table></td></tr><tr><td colspan="3"><table class="meta-grid"><tbody><tr><td><span class="label">کلاس:</span> '+esc(header.class_name||"................")+'</td><td><span class="label">نام دبیر:</span> '+esc(header.teacher_name||"................")+'</td><td colspan="2"><span class="label">نام و نام خانوادگی:</span> ....................................</td></tr><tr><td><span class="label">تاریخ امتحان:</span> '+esc(header.exam_date||"....../....../......")+'</td><td><span class="label">مدت امتحان:</span> '+faDigits(header.duration_minutes||"......")+' دقیقه</td><td><span class="label">تعداد صفحه:</span> ........</td><td><span class="label">نام درس:</span> '+esc(p.subject)+'</td></tr><tr><td><span class="label">نمره تجدیدنظر با عدد:</span></td><td><span class="label">نام مصحح:</span></td><td><span class="label">نمره با عدد:</span></td><td><span class="label">نام مصحح:</span></td></tr><tr><td><span class="label">نمره تجدیدنظر با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td><td><span class="label">نمره با حروف:</span></td><td><span class="label">تاریخ و امضاء:</span></td></tr></tbody></table></td></tr><tr><th>ردیف</th><th>متن سؤال</th><th>نمره</th></tr></thead>'+groupMarkup+emptyMarkup+'</table>';
 }
 
 async function openVault(id){try{const data=await api("vault_get",{paper_id:id});const p=data.paper;state.activeVaultId=id;renderPrintDocument(p);$("vaultTitle").textContent=p.title;$("vaultMeta").textContent=p.subject+" · پایه "+p.grade+" · "+p.book_title+" · چاپ "+p.book_edition+" · مجموع بارم "+p.total_points;$("vaultQuestions").replaceChildren();(p.payload.questions||[]).forEach((q,i)=>{const card=document.createElement("article");card.className="question";const source=origins.find(x=>x[0]===q.source_origin)?.[1]||q.source_origin;card.innerHTML="<h3>سؤال "+(i+1)+" · "+esc(types.find(x=>x[0]===q.question_type)?.[1]||q.question_type)+" · "+esc(q.points)+" نمره</h3><div class=\"vault-content\">"+esc(q.prompt)+"</div>"+(q.options?.length?"<ol>"+q.options.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol>":"")+"<div class=\"muted\">منشأ: "+esc(source)+(q.source_title?" · "+esc(q.source_title):"")+(q.source_url?" · "+esc(q.source_url):"")+"</div>";$("vaultQuestions").append(card);});$("archiveVault").disabled=p.status!=="active";$("vaultDetail").classList.remove("hidden");$("vaultDetail").scrollIntoView({behavior:"smooth"});}catch(e){status(e.message,"error");}}
-async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");}catch(e){status(e.message,"error");}}
-async function generateQuestions(){
- const sourceText=$("aiSourceText").value.trim(),pageReference=$("aiPageReference").value.trim();
- const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(x=>x.count>0);
- if(sourceText.length<200||!pageReference||!questionPlan.length){status("متن کتاب، شماره صفحه و دست‌کم یک تعداد سؤال را مشخص کنید.","error");return;}
- if(!confirm("درخواست تولید سؤال به Cloudflare Workers AI ارسال می‌شود و ممکن است از سهمیه یا اعتبار حساب استفاده کند. ادامه می‌دهید؟"))return;
- const button=$("generateQuestions");button.disabled=true;button.textContent="در حال تولید سؤال...";
+let textbookBooks=[];
+async function refreshTextbookLibrary(){
+  const data=await api("list_textbooks");
+  textbookBooks=data.books||[];
+  const select=$("libraryBookSelect");
+  select.innerHTML='<option value="">یک کتاب انتخاب کنید</option>'+textbookBooks.map(book=>'<option value="'+esc(book.id)+'">'+esc("پایه "+book.grade+" · "+book.subject+" · "+book.book_code+" · "+book.edition)+'</option>').join("");
+  $("textbookLibraryList").innerHTML=textbookBooks.length?textbookBooks.map(book=>'<div class="book-row"><div><strong>'+esc(book.book_code)+' · '+esc(book.subject)+'</strong><div class="muted">پایه '+esc(book.grade)+' · '+esc(book.edition)+' · '+(Number(book.file_size_bytes)/1048576).toFixed(1)+' مگابایت</div></div><button type="button" class="secondary" data-open-textbook="'+esc(book.id)+'">مشاهده PDF</button></div>').join(""):'هنوز کتابی در کتابخانه مدرسه ثبت نشده است.';
+}
+let textbookPreviewDocument=null,textbookPreviewPageNumber=1,textbookPreviewRenderTask=null;
+async function renderTextbookPreviewPage(){
+  if(!textbookPreviewDocument)return;
+  const page=await textbookPreviewDocument.getPage(textbookPreviewPageNumber),canvas=$("textbookPdfCanvas"),context=canvas.getContext("2d");
+  const base=page.getViewport({scale:1}),scale=Math.min(2,1400/base.width,1800/base.height),viewport=page.getViewport({scale});
+  canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+  if(textbookPreviewRenderTask){try{textbookPreviewRenderTask.cancel();}catch(_){}}
+  textbookPreviewRenderTask=page.render({canvasContext:context,viewport});
+  await textbookPreviewRenderTask.promise;textbookPreviewRenderTask=null;
+  $("textbookPreviewPage").textContent=String(textbookPreviewPageNumber)+" / "+String(textbookPreviewDocument.numPages);
+  $("textbookPrevPage").disabled=textbookPreviewPageNumber<=1;
+  $("textbookNextPage").disabled=textbookPreviewPageNumber>=textbookPreviewDocument.numPages;
+}
+async function openTextbook(bookId){
+  if(!bookId){status("ابتدا یک کتاب از فهرست انتخاب کنید.","error");return;}
+  const button=$("textbookLibraryList").querySelector('[data-open-textbook="'+CSS.escape(bookId)+'"]');
+  if(button){button.disabled=true;button.textContent="در حال دریافت…";}
+  try{
+    status("در حال دریافت امن کتاب و آماده‌سازی پیش‌نمایش…");
+    textbookPreviewDocument=await ensureSelectedPdfDocument(bookId);
+    textbookPreviewPageNumber=1;
+    const book=textbookBooks.find(item=>item.id===bookId);
+    $("textbookPreviewTitle").textContent=(book?.subject||"کتاب درسی")+" · "+(book?.book_code||"");
+    $("textbookPdfPreview").classList.remove("hidden");
+    await renderTextbookPreviewPage();
+    $("textbookPdfPreview").scrollIntoView({behavior:"smooth",block:"start"});
+    status("کتاب با موفقیت باز شد. برای مرور صفحات از دکمه‌های قبل و بعد استفاده کنید.","ok");
+  }catch(e){
+    $("textbookPdfPreview").classList.add("hidden");
+    status("بازکردن PDF ناموفق بود: "+(e.message||"خطای نامشخص") ,"error");
+  }finally{if(button){button.disabled=false;button.textContent="مشاهده PDF";}}
+}
+async function uploadTextbook(){
+  const file=$("textbookPdf").files[0],grade=Number($("textbookGrade").value),code=$("textbookCode").value.trim().toUpperCase(),subject=$("textbookSubject").value.trim(),title=$("textbookTitle").value.trim(),edition=$("textbookEdition").value.trim()||"۱۴۰۵–۱۴۰۶";
+  if(!file||!/^([A-Z][0-9]{2,5})\.pdf$/i.test(file.name)||file.name.toUpperCase()!==code+".PDF"||subject.length<2||file.size<1||file.size>52428800){status("فایل PDF، کد مطابق نام فایل، نام درس و حجم کمتر از ۵۰ مگابایت را بررسی کنید. مثال: C706.pdf","error");return;}const signature=await file.slice(0,5).text();if(signature!=="%PDF-"){status("محتوای انتخاب‌شده فایل PDF معتبر نیست.","error");return;}
+  const button=$("uploadTextbook");button.disabled=true;button.textContent="در حال بارگذاری…";
+  try{
+    const signed=await api("create_textbook_upload",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size});
+    const response=await fetch(signed.signed_url,{method:"PUT",headers:{"apikey":KEY,"Authorization":"Bearer "+token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
+    if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error("بارگذاری PDF ناموفق بود ("+response.status+"). "+detail.slice(0,240));}
+    const registered=await api("register_textbook",{grade,book_code:code,subject,title,edition,file_name:file.name,file_size_bytes:file.size,storage_path:signed.storage_path});
+    $("textbookPdf").value="";$("textbookCode").value="";$("textbookSubject").value="";$("textbookTitle").value="";
+    await refreshTextbookLibrary();status(registered.message,"ok");
+  }catch(e){status(e.message,"error");}
+  finally{button.disabled=false;button.textContent="بارگذاری و ثبت کتاب";}
+}
+async function boot(){if(!token||!role){status("نشست معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.","error");return;}try{const data=await api("bootstrap");state.role=data.role;if(data.role==="teacher"){$("teacherPanel").classList.remove("hidden");state.papers=data.papers||[];state.questions=[newQuestion()];renderQuestions();showPaperList();}else if(data.role==="manager"||data.role==="executive"){$("managementPanel").classList.remove("hidden");state.vault=data.vault||[];renderVaultList();$("textbookUploadControls").classList.remove("hidden");}else{status("این نقش اجازه ورود به این بخش را ندارد.","error");return;}$("textbookLibraryPanel").classList.remove("hidden");status("نشست و سطح دسترسی مدرسه تأیید شد.","ok");await refreshTextbookLibrary();}catch(e){status(e.message,"error");}}
+const countableTypes=[["knowledge","دانشی و یادآوری"],["conceptual","مفهومی و درک مطلب"],["application","کاربرد آموخته‌ها"],["experiment_activity","آزمایش و فعالیت"],["chart_interpretation","تحلیل نمودار"],["table_interpretation","تحلیل جدول و داده"],["matching","وصل‌کردنی و جورکردنی"],["ordering","ترتیب‌دادنی"],["multiple_choice","تستی چهارگزینه‌ای"],["true_false","صحیح / غلط"],["fill_blank","جای خالی"],["short_answer","پاسخ کوتاه"],["essay","تشریحی"],["problem","مسئله و حل مسئله"],["equation","معادله"],["grammar","گرامر"],["vocabulary","معنی لغت"],["synonym_antonym","مترادف / متضاد"],["translation","ترجمه"],["other","سایر"]];
+const questionModeTypes={test:["multiple_choice"],mixed:["multiple_choice","essay"],comprehensive:countableTypes.map(x=>x[0])};
+function renderQuestionCounts(){
+ const allowed=questionModeTypes[$("questionMode").value]||[],panel=$("questionCountsPanel"),host=$("questionCounts");host.replaceChildren();
+ if(!allowed.length){panel.classList.add("hidden");return;}panel.classList.remove("hidden");
+ countableTypes.filter(([type])=>allowed.includes(type)).forEach(([type,label])=>{
+  const field=document.createElement("div"),caption=document.createElement("label"),select=document.createElement("select");
+  field.className="field";caption.textContent="تعداد "+label;caption.htmlFor="count_"+type;select.id="count_"+type;select.dataset.aiType=type;
+  for(let n=0;n<=15;n++){const option=document.createElement("option");option.value=String(n);option.textContent=String(n);if(n===(type==="multiple_choice"?5:0))option.selected=true;select.append(option);}
+  field.append(caption,select);host.append(field);
+ });
+}
+let pdfOcrWorker=null;
+async function loadExternalScript(url,globalName){if(window[globalName])return;await new Promise((resolve,reject)=>{const script=document.createElement("script");const timer=setTimeout(()=>{script.remove();reject(new Error("مهلت بارگذاری ابزار "+globalName+" تمام شد؛ نشانی: "+url));},20000);script.src=url;script.crossOrigin="anonymous";script.onload=()=>{clearTimeout(timer);resolve();};script.onerror=()=>{clearTimeout(timer);reject(new Error("مرورگر نتوانست ابزار "+globalName+" را از منبع بارگیری کند: "+url));};document.head.append(script);});if(!window[globalName])throw new Error("فایل ابزار "+globalName+" بارگیری شد اما شیء اجرایی آن در دسترس نیست.");}
+async function getOcrWorker(){if(pdfOcrWorker)return pdfOcrWorker;try{await loadExternalScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");status("ابزار OCR بارگیری شد؛ در حال دریافت داده‌های زبان فارسی…");pdfOcrWorker=await Tesseract.createWorker("fas",1,{langPath:"https://tessdata.projectnaptha.com/4.0.0",gzip:true});return pdfOcrWorker;}catch(error){throw new Error("آماده‌سازی OCR فارسی ناموفق بود: "+(error?.message||String(error)));}}
+async function ensureSelectedPdfDocument(bookId){
+ status("مرحله ۱ از ۴: آماده‌سازی کتاب‌خوان PDF…");
+ try{await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","pdfjsLib");}catch(error){throw new Error("مرحله آماده‌سازی PDF.js ناموفق بود: "+(error?.message||String(error)));}
+ if(!window.pdfjsLib)throw new Error("کتاب‌خوان PDF.js در مرورگر فعال نشد.");
+ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+ if(selectedPdfDocument&&selectedPdfBookId===bookId)return selectedPdfDocument;
+ status("مرحله ۲ از ۴: دریافت امن PDF از سرویس مدرسه…");
+ let response;
  try{
-  const data=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,question_plan:questionPlan,total_points:Number($("aiTotalPoints").value),subject:$("subject").value,grade:Number($("grade").value),chapter:$("chapter").value,lesson:$("lesson").value});
-  state.questions=data.questions.map(q=>({...newQuestion(),...q}));
-  renderQuestions();status(data.message+" تعداد: "+state.questions.length+" · بارم: "+data.total_points,"ok");
-  $("questions").scrollIntoView({behavior:"smooth",block:"start"});
- }catch(e){status(e.message,"error");}
- finally{button.disabled=false;button.textContent="تولید سؤال با هوش مصنوعی";}
+  response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY,"Authorization":"Bearer "+token},body:JSON.stringify({action:"textbook_download_pdf",book_id:bookId})});
+ }catch(error){throw new Error("ارتباط با سرویس دریافت امن PDF برقرار نشد: "+(error?.message||String(error)));}
+ if(!response.ok){
+  const contentType=response.headers.get("content-type")||"";
+  const detail=contentType.includes("application/json")?await response.json().catch(()=>({})):null;
+  throw new Error(detail?.message||"دریافت امن PDF کتاب ناموفق بود (HTTP "+response.status+").");
+ }
+ status("مرحله ۳ از ۴: دریافت فایل PDF کتاب…");
+ const bytes=await response.arrayBuffer();
+ if(bytes.byteLength<5||bytes.byteLength>52428800||String.fromCharCode(...new Uint8Array(bytes.slice(0,5)))!=="%PDF-")throw new Error("فایل دریافت‌شده PDF معتبر نیست، ناقص است یا از سقف ۵۰ مگابایت بیشتر است.");
+ status("مرحله ۴ از ۴: بازکردن PDF و راه‌اندازی پردازشگر صفحات…");
+ try{const loadingTask=pdfjsLib.getDocument({data:bytes});selectedPdfDocument=await loadingTask.promise;selectedPdfBookId=bookId;return selectedPdfDocument;}
+ catch(error){selectedPdfDocument=null;selectedPdfBookId="";throw new Error("فایل دریافت شد، اما PDF.js نتوانست آن را باز کند. احتمال اختلال در PDF.js یا فایل PDF وجود دارد: "+(error?.message||String(error)));}
+}
+let selectedPdfDocument=null,selectedPdfBookId="";
+async function extractSelectedPdfChunks(bookId,fromPage,toPage){
+ const pdf=await ensureSelectedPdfDocument(bookId);
+ if(fromPage<1||toPage<fromPage||toPage>pdf.numPages)throw new Error("بازه صفحات معتبر نیست. تعداد صفحات فایل: "+pdf.numPages);
+ const chunks=[];let current="",currentStart=fromPage,currentEnd=fromPage;
+ const flush=()=>{if(current.trim()){chunks.push({text:current.trim(),from:currentStart,to:currentEnd});current="";}};
+ for(let pageNo=fromPage;pageNo<=toPage;pageNo++){
+  status("در حال خواندن صفحه "+pageNo+" از "+toPage+"…");const page=await pdf.getPage(pageNo),content=await page.getTextContent();
+  let pageText=content.items.map(item=>item.str||"").join(" ").replace(/\s+/g," ").trim();
+  if(pageText.length<45){status("صفحه "+pageNo+" اسکن‌شده است؛ OCR فارسی در حال اجراست…");const worker=await getOcrWorker(),viewport=page.getViewport({scale:1.6});const canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:context,viewport}).promise;const result=await worker.recognize(canvas);pageText=(result.data.text||"").trim();canvas.width=canvas.height=1;}
+  if(!pageText)pageText="[متن قابل استخراجی در این صفحه یافت نشد؛ احتمالاً صفحه تصویری یا خالی است.]";
+  const block="\n[صفحه PDF "+pageNo+"]\n"+pageText;
+  const maxChunkChars=1600;
+  if(block.length>maxChunkChars){
+   flush();let remaining=block;
+   while(remaining.length>maxChunkChars){let cut=remaining.lastIndexOf(" ",maxChunkChars);if(cut<maxChunkChars*0.55)cut=maxChunkChars;chunks.push({text:remaining.slice(0,cut).trim(),from:pageNo,to:pageNo});remaining=remaining.slice(cut).trim();}
+   if(remaining)chunks.push({text:remaining,from:pageNo,to:pageNo});
+   currentStart=pageNo+1;currentEnd=pageNo+1;continue;
+  }
+  if(current&&current.length+block.length>maxChunkChars)flush();if(!current)currentStart=pageNo;currentEnd=pageNo;current+=block;
+ }
+ flush();if(chunks.reduce((sum,c)=>sum+c.text.replace(/\s/g,"").length,0)<200)throw new Error("از صفحات انتخاب‌شده متن کافی استخراج نشد. کیفیت اسکن یا شماره صفحات را بررسی کنید.");for(let i=0;i<chunks.length;i++){if(chunks[i].text.length>=120)continue;if(i>0){chunks[i-1].text+="\n"+chunks[i].text;chunks[i-1].to=chunks[i].to;chunks.splice(i,1);i--;}else if(chunks.length>1){chunks[1].text=chunks[0].text+"\n"+chunks[1].text;chunks[1].from=chunks[0].from;chunks.splice(0,1);i=-1;}else throw new Error("متن استخراج‌شده برای تحلیل کافی نیست؛ صفحات بیشتری انتخاب کنید.");}return chunks;
+}
+const textbookSummaryCache=new Map();
+async function requestTextbookSummaryWithFallback(sourceText,pageReference,mode,depth=0){
+ const cacheKey=mode+"|"+pageReference+"|"+sourceText;
+ if(textbookSummaryCache.has(cacheKey))return textbookSummaryCache.get(cacheKey);
+ try{
+  const result=await api("summarize_textbook_chunk",{source_text:sourceText,page_reference:pageReference,summary_mode:mode});
+  if(!result.summary||!String(result.summary).trim())throw new Error("سرویس هوش مصنوعی یادداشت خالی برگرداند.");
+  const summary=String(result.summary).trim();textbookSummaryCache.set(cacheKey,summary);return summary;
+ }catch(error){
+  const message=error?.message||String(error);
+  const isIncomplete=message.includes("پاسخ هوش مصنوعی ناقص بود")||message.includes("پاسخ هوش مصنوعی کامل نبود");
+  const isTimeout=message.includes("پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید");
+  const isTransientAiFailure=message.includes("ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد");
+  if((!isIncomplete&&!isTimeout&&!isTransientAiFailure)||depth>=4||sourceText.length<350)throw error;
+  let cut=Math.floor(sourceText.length/2),boundary=sourceText.lastIndexOf("\n",cut);
+  if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=sourceText.lastIndexOf(" ",cut);
+  if(boundary<sourceText.length*0.35||boundary>sourceText.length*0.65)boundary=cut;
+  const left=sourceText.slice(0,boundary).trim(),right=sourceText.slice(boundary).trim();
+  if(!left||!right)throw error;
+  status("پاسخ یک بخش کامل نشد؛ همان بخش به دو زیربخش کوچک‌تر تقسیم و دوباره تحلیل می‌شود…");
+  const leftSummary=await requestTextbookSummaryWithFallback(left,pageReference,mode,depth+1);
+  const rightSummary=await requestTextbookSummaryWithFallback(right,pageReference,mode,depth+1);
+  const combined=leftSummary+"\n"+rightSummary;textbookSummaryCache.set(cacheKey,combined);return combined;
+ }
+}
+async function summarizeAllBookChunks(chunks){
+ let summaries=[];
+ for(let i=0;i<chunks.length;i++){const c=chunks[i],pages=c.from===c.to?String(c.from):c.from+" تا "+c.to;status("تحلیل محتوای کتاب: بخش "+(i+1)+" از "+chunks.length+" · صفحات PDF "+pages+"…");const summary=await requestTextbookSummaryWithFallback(c.text,"صفحات PDF "+pages,"analyze");summaries.push({pages,summary});}
+ let level=0;
+ while(summaries.map(x=>x.summary).join("\n\n").length>12000){
+  if(level++>5)throw new Error("حجم نکات کل کتاب بیش از حد زیاد است؛ امکان یکپارچه‌سازی امن فراهم نشد.");
+  const groups=[];let group=[];
+  for(const item of summaries){const candidate=group.concat(item);if(group.length&&candidate.map(x=>x.summary).join("\n\n").length>10500){groups.push(group);group=[item];}else group=candidate;}if(group.length)groups.push(group);
+  const compacted=[];
+  for(let i=0;i<groups.length;i++){status("یکپارچه‌سازی نکات کل کتاب: مرحله "+level+" · گروه "+(i+1)+" از "+groups.length+"…");const source=groups[i].map(x=>"["+x.pages+"] "+x.summary).join("\n\n");const summary=await requestTextbookSummaryWithFallback(source,"یادداشت‌های بخش‌های کتاب","compress");compacted.push({pages:groups[i].map(x=>x.pages).join("، "),summary});}
+  if(compacted.length>=summaries.length)throw new Error("فشرده‌سازی نکات کتاب پیشرفت نکرد؛ دوباره تلاش کنید.");summaries=compacted;
+ }
+ return summaries.map(x=>"["+x.pages+"] "+x.summary).join("\n\n");
+}
+async function generateQuestions(){
+ let generationStage="اعتبارسنجی اطلاعات آزمون";
+ const bookId=$("libraryBookSelect").value,fromPage=Number(asciiDigits($("pageFrom").value)),toPage=Number(asciiDigits($("pageTo").value)),printedFrom=Number(asciiDigits($("printedPageFrom").value)),printedTo=Number(asciiDigits($("printedPageTo").value));
+ const questionPlan=[...document.querySelectorAll("[data-ai-type]")].map(input=>({type:input.dataset.aiType,count:Number(input.value)||0})).filter(item=>item.count>0);
+ if(!bookId){status("ابتدا کتاب را از مخزن مدرسه انتخاب کنید.","error");return;}
+ if(!Number.isInteger(fromPage)||!Number.isInteger(toPage)||fromPage<1||toPage<fromPage){status("بازه صفحات PDF را درست وارد کنید.","error");return;}
+ if(!Number.isInteger(printedFrom)||!Number.isInteger(printedTo)||printedFrom<1||printedTo<printedFrom){status("شماره صفحات چاپ‌شده روی خود کتاب را جداگانه وارد کنید.","error");return;}
+ if(!questionPlan.length){status("تعداد دست‌کم یک بخش سؤال را بیشتر از صفر انتخاب کنید.","error");return;}
+ if(questionPlan.reduce((sum,item)=>sum+item.count,0)>40){status("مجموع سؤال‌های هر آزمون فعلاً حداکثر ۴۰ سؤال است.","error");return;}
+ if(!confirm("تمام صفحات بازه انتخاب‌شده، مرحله‌به‌مرحله خوانده و تحلیل می‌شوند؛ سپس نکات همه بخش‌ها در یک آزمون واحد استفاده خواهد شد. این فرایند ممکن است چندین درخواست هوش مصنوعی و مصرف سهمیه یا اعتبار بیشتری داشته باشد. ادامه می‌دهید؟"))return;
+ const button=$("generateQuestions");button.disabled=true;button.textContent="در حال استخراج صفحات…";
+ try{
+  generationStage="دریافت و بازکردن PDF";
+  const book=textbookBooks.find(item=>item.id===bookId);if(!book)throw new Error("کتاب انتخاب‌شده در فهرست مدرسه پیدا نشد.");const pdf=await ensureSelectedPdfDocument(bookId);
+  if(toPage>pdf.numPages)throw new Error("تا صفحه PDF از تعداد صفحات فایل بیشتر است. تعداد صفحات این کتاب: "+pdf.numPages);
+  generationStage="استخراج متن صفحات PDF";
+  const chunks=await extractSelectedPdfChunks(bookId,fromPage,toPage);
+  generationStage="تحلیل بخش‌های کتاب با هوش مصنوعی";
+  const sourceText=await summarizeAllBookChunks(chunks);
+  const pageReference=printedFrom===printedTo?String(printedFrom):printedFrom+" تا "+printedTo,pdfPageReference=fromPage===toPage?String(fromPage):fromPage+" تا "+toPage;$("pageReference").value=pageReference;$("pdfPageReference").value=pdfPageReference;
+  $("subject").value=book.subject;$("grade").value=String(book.grade);$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject+" · صفحات "+pageReference;
+  button.textContent="در حال ساخت آزمون یکپارچه…";status("تمام بخش‌های انتخاب‌شده تحلیل شدند؛ در حال ساخت مجموعه سؤال نهایی…");
+  generationStage="تولید مجموعه سؤال نهایی با هوش مصنوعی";
+  const targetPoints=Number($("aiTotalPoints").value),targetCents=Math.round(targetPoints*100),totalQuestionCount=questionPlan.reduce((sum,item)=>sum+item.count,0);
+  if(!Number.isFinite(targetPoints)||targetPoints<=0||targetPoints>20||Math.abs(targetPoints*100-targetCents)>0.000001||targetCents<totalQuestionCount)throw new Error("بارم کل باید حداکثر دو رقم اعشار داشته باشد و برای هر سؤال دست‌کم یک صدم نمره در نظر گرفته شود.");
+  const questionBatches=[];let batch=[],batchCount=0;
+  for(const item of questionPlan){
+   let remaining=item.count;
+   while(remaining>0){
+    const take=Math.min(remaining,5-batchCount),existing=batch.find(part=>part.type===item.type);
+    if(existing)existing.count+=take;else batch.push({type:item.type,count:take});
+    batchCount+=take;remaining-=take;
+    if(batchCount===5){questionBatches.push(batch);batch=[];batchCount=0;}
+   }
+  }
+  if(batch.length)questionBatches.push(batch);
+  let generatedQuestions=[];
+  for(let batchIndex=0;batchIndex<questionBatches.length;batchIndex++){
+   const batchPlan=questionBatches[batchIndex],expectedCount=batchPlan.reduce((sum,item)=>sum+item.count,0);
+   status("تولید سؤال‌ها: بخش "+(batchIndex+1)+" از "+questionBatches.length+" · "+expectedCount+" سؤال…");
+   const batchData=await api("generate_questions",{source_text:sourceText,page_reference:pageReference,pdf_page_reference:pdfPageReference,question_plan:batchPlan,total_points:targetPoints,subject:book.subject,grade:Number(book.grade),chapter:$("chapter").value,lesson:$("lesson").value});
+   if(!Array.isArray(batchData.questions)||batchData.questions.length!==expectedCount)throw new Error("پاسخ بخش "+(batchIndex+1)+" ناقص است؛ سؤال‌های قبلی در این مرحله ذخیره نشده‌اند. دوباره تلاش کنید.");
+   generatedQuestions=generatedQuestions.concat(batchData.questions);
+  }
+  if(generatedQuestions.length!==totalQuestionCount)throw new Error("تعداد نهایی سؤال‌ها با برنامه درخواستی برابر نیست.");
+  const finalHardCount=generatedQuestions.filter(q=>q.difficulty==="hard").length;
+  const finalNonEasyCount=generatedQuestions.filter(q=>q.difficulty!=="easy").length;
+  if((totalQuestionCount>=3&&finalHardCount<1)||(totalQuestionCount>=4&&finalNonEasyCount<Math.ceil(totalQuestionCount*0.6))){
+   console.warn("Final exam difficulty mix needs revision",{totalQuestionCount,hardCount:finalHardCount,nonEasyCount:finalNonEasyCount});
+   throw new Error("ترکیب دشواری مجموعه کامل متوازن نیست؛ دست‌کم یک سؤال دشوار و سهم کافی از سؤال‌های متوسط و دشوار لازم است. لطفاً دوباره تولید کنید.");
+  }
+  const baseCents=Math.floor(targetCents/generatedQuestions.length),extraCents=targetCents%generatedQuestions.length;
+  state.questions=generatedQuestions.map((q,index)=>({...newQuestion(),...q,order:index+1,points:(baseCents+(index<extraCents?1:0))/100,source_origin:"ai_generated",source_title:"",source_url:""}));
+  renderQuestions();status("تمام بخش‌ها با موفقیت تولید شدند. تعداد: "+state.questions.length+" · بارم: "+(targetCents/100).toFixed(2)+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){const detail=e?.message||String(e);status("خطا در مرحله «"+generationStage+"»: "+detail,"error");}
+ finally{button.disabled=false;button.textContent="تولید سؤال";}
 }
 $("addQuestion").addEventListener("click",addQuestion);
 $("saveDraft").addEventListener("click",saveDraft);
 $("finalize").addEventListener("click",async()=>{if(!state.paperId){const saved=await saveDraft();if(!saved)return;}else{const saved=await saveDraft();if(!saved)return;}const header=collectMetadata().payload.header;if(!header.class_name||!header.teacher_name||!header.exam_date||!Number.isInteger(Number(header.duration_minutes))||Number(header.duration_minutes)<1||Number(header.duration_minutes)>600){status("برای تأیید نهایی، نام کلاس، نام دبیر، تاریخ شمسی و مدت امتحان را کامل کنید.","error");return;}if(!confirm("با تأیید نهایی، محتوای آزمون از دسترس حساب دبیر خارج و به مخزن محرمانه مدیر و معاون اجرایی منتقل می‌شود. ادامه می‌دهید؟"))return;try{const data=await api("finalize",{paper_id:state.paperId});state.paperId=null;state.questions=[];renderQuestions();await refreshTeacher();status(data.message,"ok");}catch(e){status(e.message,"error");}});
 $("back").addEventListener("click",()=>location.href="portal.html?step=panel&role=teacher");
 $("managementBack").addEventListener("click",()=>location.href="portal.html?step=panel&role="+(role==="manager"?"manager":"deputy"));
+$("previewTeacherExam").addEventListener("click",()=>{if(!state.questions.length){status("ابتدا سؤال‌های آزمون را تولید یا وارد کنید.","error");return;}const meta=collectMetadata();renderPrintDocument({title:meta.title,subject:meta.subject,grade:meta.grade,book_title:meta.book_title,book_edition:meta.book_edition,total_points:state.questions.reduce((sum,q)=>sum+(Number(q.points)||0),0),payload:meta.payload},"teacherPrintDocument");$("teacherExamPreview").classList.remove("hidden");$("teacherExamPreview").scrollIntoView({behavior:"smooth",block:"start"});status("پیش‌نمایش برگه آزمون دبیر آماده شد. می‌توانید آن را به PDF ذخیره کنید.","ok");});
+$("printTeacherExam").addEventListener("click",()=>{document.body.classList.add("teacher-exam-print");const cleanup=()=>document.body.classList.remove("teacher-exam-print");window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,1500);});
 $("printExam").addEventListener("click",()=>window.print());
 $("closeVault").addEventListener("click",()=>$("vaultDetail").classList.add("hidden"));
 $("archiveVault").addEventListener("click",async()=>{if(!state.activeVaultId||!confirm("این آزمون به بایگانی منتقل شود؟"))return;try{const data=await api("archive",{paper_id:state.activeVaultId});const refreshed=await api("bootstrap");state.vault=refreshed.vault||[];renderVaultList();$("vaultDetail").classList.add("hidden");status(data.message,"ok");}catch(e){status(e.message,"error");}});
 $("generateQuestions").addEventListener("click",generateQuestions);
-boot();
+$("uploadTextbook").addEventListener("click",uploadTextbook);
+
+$("textbookLibraryList").addEventListener("click",event=>{const button=event.target.closest("[data-open-textbook]");if(button)openTextbook(button.dataset.openTextbook);});
+$("textbookPrevPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber<=1)return;textbookPreviewPageNumber--;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
+$("textbookNextPage").addEventListener("click",async()=>{if(!textbookPreviewDocument||textbookPreviewPageNumber>=textbookPreviewDocument.numPages)return;textbookPreviewPageNumber++;try{await renderTextbookPreviewPage();}catch(e){status("نمایش صفحه ناموفق بود: "+e.message,"error");}});
+$("textbookClosePreview").addEventListener("click",()=>$("textbookPdfPreview").classList.add("hidden"));
+$("selectWholeBook").addEventListener("click",async()=>{const bookId=$("libraryBookSelect").value;if(!bookId){status("ابتدا کتاب را از مخزن مدرسه انتخاب کنید.","error");return;}const button=$("selectWholeBook");button.disabled=true;try{const pdf=await ensureSelectedPdfDocument(bookId);$("pageFrom").value="1";$("pageTo").value=String(pdf.numPages);status("تمام "+pdf.numPages+" صفحه PDF انتخاب شد. شماره صفحات چاپی کتاب را نیز وارد کنید.","ok");}catch(error){status(error.message||"خواندن تعداد صفحات PDF ناموفق بود.","error");}finally{button.disabled=false;}});
+$("libraryBookSelect").addEventListener("change",()=>{const book=textbookBooks.find(item=>item.id===$("libraryBookSelect").value);if(!book){$("lesson").value="";return;}$("grade").value=String(book.grade);$("subject").value=book.subject;$("lesson").value=book.subject;$("bookTitle").value=book.title||book.book_code;$("bookEdition").value=book.edition||"";if(!$("title").value.trim())$("title").value="آزمون "+book.subject;});
+$("questionMode").addEventListener("change",renderQuestionCounts);
+renderQuestionCounts();
+async function loginTestAccount(){
+  if(!isTestMode)return;
+  const email=$("testLoginEmail").value.trim();
+  const password=$("testLoginPassword").value;
+  if(!email){status("ایمیل حساب آزمایشی را وارد کنید.","error");return;}
+  if(!password){status("رمز عبور حساب آزمایشی را وارد کنید.","error");return;}
+  status("در حال ورود به حساب آزمایشی…");
+  try{
+    const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({email,password})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.access_token)throw new Error(data.msg||data.message||"ورود انجام نشد؛ ایمیل و رمز عبور حساب آزمایشی را بررسی کنید.");
+    token=data.access_token;
+    sessionStorage.setItem("frahoosh_test_access_token",token);
+    $("testLoginPassword").value="";
+    $("testLoginPanel").classList.add("hidden");
+    await boot();
+  }catch(error){status(error.message||"ورود به محیط آزمایشی انجام نشد.","error");}
+}
+if(isTestMode){
+  $("testLoginPanel").classList.remove("hidden");
+  $("testPasswordLogin").addEventListener("click",loginTestAccount);
+  $("testLoginPassword").addEventListener("keydown",event=>{if(event.key==="Enter")loginTestAccount();});
+  if(token) $("testLoginPanel").classList.add("hidden");
+  else status("محیط آزمایشی فعال است؛ با حساب موجود وارد شوید.");
+}
+if(!isTestMode||token)boot();
 </script>
 </body>
 </html>

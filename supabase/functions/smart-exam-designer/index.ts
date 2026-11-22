@@ -4,6 +4,7 @@ const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "600",
 };
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -11,12 +12,65 @@ const clean = (value: unknown, max = 12000) => String(value ?? "").trim().slice(
 const asciiDigits = (value: unknown) => clean(value, 4)
   .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
   .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+const safeEditionFolder = (value: unknown) => clean(value, 40)
+  .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+  .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+  .replace(/[^A-Za-z0-9._-]/g, "_") || "edition";
 const normalize = (value: unknown) => clean(value, 200)
   .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
+const controllerTimeout = (reason: string) => reason.startsWith("AI request timed out after ");
+
+const isCloudflareDailyQuota = (status: number, body: unknown) =>
+  status === 429 && /daily free allocation|neurons/i.test(JSON.stringify(body ?? {}));
+
+async function requestGroqStructured(
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  maxCompletionTokens: number,
+  responseFormat: Record<string, unknown>,
+  temperature: number
+): Promise<Record<string, unknown>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 100000);
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages,
+        max_completion_tokens: maxCompletionTokens,
+        temperature,
+        reasoning_effort: "low",
+        response_format: responseFormat
+      }),
+      signal: controller.signal
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const detail = body.error && typeof body.error === "object"
+        ? JSON.stringify(body.error) : JSON.stringify(body);
+      throw new Error("Groq AI HTTP " + response.status + ": " + detail.slice(0, 500));
+    }
+    const choices = Array.isArray(body.choices) ? body.choices as Array<Record<string, unknown>> : [];
+    const first = choices[0] || {};
+    const message = first.message && typeof first.message === "object"
+      ? first.message as Record<string, unknown> : {};
+    const content = clean(message.content, 30000).replace(/^\uFEFF/, "").trim();
+    const firstBrace = content.indexOf("{"), lastBrace = content.lastIndexOf("}");
+    if (firstBrace < 0 || lastBrace <= firstBrace) {
+      throw new Error("Groq AI returned no complete JSON response (finish_reason=" + clean(first.finish_reason, 80) + ")");
+    }
+    return JSON.parse(content.slice(firstBrace, lastBrace + 1)) as Record<string, unknown>;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 
 const questionTypes = new Set([
-  "multiple_choice", "conceptual", "true_false", "fill_blank", "short_answer", "essay",
+  "multiple_choice", "knowledge", "conceptual", "application", "experiment_activity", "chart_interpretation", "table_interpretation", "matching", "ordering", "true_false", "fill_blank", "short_answer", "essay",
   "problem", "equation", "grammar", "vocabulary", "synonym_antonym",
   "translation", "other",
 ]);
@@ -36,11 +90,13 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     throw new Error("هر آزمون باید بین ۱ تا ۱۰۰ سؤال داشته باشد.");
   }
   let total = 0;
+  let totalImageBytes = 0;
   const questions = source.questions.map((entry, index) => {
     if (!entry || typeof entry !== "object") throw new Error("ساختار سؤال " + (index + 1) + " معتبر نیست.");
     const q = entry as Record<string, unknown>;
     const prompt = clean(q.prompt);
     const type = clean(q.question_type, 60);
+    const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
     const points = Number(q.points);
     const origin = clean(q.source_origin, 60);
     if ((!allowIncomplete && !prompt) || !questionTypes.has(type)) throw new Error("متن یا نوع سؤال " + (index + 1) + " معتبر نیست.");
@@ -49,6 +105,24 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     const sourceUrl = clean(q.source_url, 1000);
     const sourceTitle = clean(q.source_title, 240);
     const permission = q.source_permission_confirmed === true;
+    const rawImage = typeof q.image_data_url === "string" ? q.image_data_url.trim() : "";
+    const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)).filter(Boolean) : [];
+    const stimulus = clean(q.stimulus, 3000);
+    const visualData = clean(q.visual_data, 4000);
+    const correctAnswer = clean(q.correct_answer, 4000);
+    if (!allowIncomplete && prompt && (prompt.length < 12 ||
+        (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4 || !options.some(option => normalize(option) === normalize(correctAnswer)))) ||
+        (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
+        (type === "ordering" && options.length < 3) ||
+        ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
+        (type === "experiment_activity" && !stimulus))) {
+      throw new Error("سؤال " + (index + 1) + " کامل نیست؛ گزینه‌ها، داده نمودار یا شرح فعالیت را بازبینی کنید.");
+    }
+    if (rawImage.length > 1500000 || (rawImage && !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawImage))) {
+      throw new Error("تصویر سؤال معتبر نیست یا حجم آن بیش از حد مجاز است.");
+    }
+    totalImageBytes += rawImage.length;
+    if (totalImageBytes > 5000000) throw new Error("حجم مجموع تصاویر آزمون نباید از ۵ مگابایت بیشتر شود.");
     if (origin === "official_reference" && (!allowIncomplete || prompt)) {
       let host = "";
       try { host = new URL(sourceUrl).hostname.toLowerCase(); } catch { /* invalid URL */ }
@@ -68,8 +142,11 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       question_type: type,
       difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
       prompt,
-      options: Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)) : [],
-      correct_answer: clean(q.correct_answer, 4000),
+      cognitive_level: cognitiveLevel,
+      stimulus,
+      visual_data: visualData,
+      options,
+      correct_answer: correctAnswer,
       explanation: clean(q.explanation, 4000),
       points,
       source_origin: origin,
@@ -78,10 +155,12 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       source_license: clean(q.source_license, 500),
       source_permission_confirmed: permission,
       source_page_reference: clean(q.source_page_reference, 80),
+      source_pdf_page_reference: clean(q.source_pdf_page_reference, 80),
+      image_data_url: rawImage,
     };
   });
   if (total > 100) throw new Error("مجموع بارم آزمون نباید از ۱۰۰ بیشتر شود.");
-  return { header, questions, total_points: Number(total.toFixed(2)) };
+  return { header, pdf_page_reference: clean(source.pdf_page_reference, 80), questions, total_points: Number(total.toFixed(2)) };
 }
 
 Deno.serve(async (req: Request) => {
@@ -123,6 +202,108 @@ Deno.serve(async (req: Request) => {
     const action = clean(body.action, 80);
     const schoolId = profile.tenant_school_id;
     const actorId = auth.user.id;
+    const textbookBucket = "school-textbooks";
+    const canManageTextbooks = manager || executive;
+
+    if (action === "list_textbooks") {
+      const requestedGrade = Number(body.grade || 0);
+      let query = db.from("school_textbook_library")
+        .select("id,grade,book_code,subject,title,edition,file_name,file_size_bytes,created_at")
+        .eq("school_id", schoolId).eq("is_active", true);
+      if ([7, 8, 9].includes(requestedGrade)) query = query.eq("grade", requestedGrade);
+      const { data, error } = await query.order("grade").order("subject").order("book_code").limit(300);
+      if (error) throw error;
+      return reply({ ok: true, books: data || [] });
+    }
+
+    if (action === "create_textbook_upload" && canManageTextbooks) {
+      const grade = Number(body.grade);
+      const code = clean(body.book_code, 12).toUpperCase();
+      const subject = clean(body.subject, 120);
+      const title = clean(body.title, 180);
+      const edition = clean(body.edition, 40) || "۱۴۰۵–۱۴۰۶";
+      const fileName = clean(body.file_name, 100);
+      const fileSize = Number(body.file_size_bytes);
+      if (![7, 8, 9].includes(grade) || !/^[A-Z][0-9]{2,5}$/.test(code) ||
+          subject.length < 2 || !new RegExp("^" + code + "\\.pdf$", "i").test(fileName) ||
+          !Number.isInteger(fileSize) || fileSize < 1 || fileSize > 52428800) {
+        return reply({ message: "پایه، کد کتاب، نام درس یا مشخصات PDF معتبر نیست. سقف هر فایل ۵۰ مگابایت است." }, 400);
+      }
+      const { data: duplicate, error: duplicateError } = await db.from("school_textbook_library")
+        .select("id").eq("school_id", schoolId).eq("grade", grade)
+        .eq("book_code", code).eq("edition", edition).maybeSingle();
+      if (duplicateError) throw duplicateError;
+      if (duplicate) return reply({ message: "این کد کتاب برای همین پایه و نوبت چاپ قبلاً ثبت شده است." }, 409);
+      const editionFolder = safeEditionFolder(edition);
+      const storagePath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
+      const { data, error } = await db.storage.from(textbookBucket)
+        .createSignedUploadUrl(storagePath, { upsert: false });
+      if (error || !data?.token || !data?.signedUrl) throw error || new Error("ایجاد نشانی بارگذاری امن ناموفق بود.");
+      return reply({ ok: true, bucket: textbookBucket, storage_path: storagePath, signed_url: data.signedUrl, upload_token: data.token });
+    }
+
+    if (action === "register_textbook" && canManageTextbooks) {
+      const grade = Number(body.grade);
+      const code = clean(body.book_code, 12).toUpperCase();
+      const subject = clean(body.subject, 120);
+      const title = clean(body.title, 180);
+      const edition = clean(body.edition, 40) || "۱۴۰۵–۱۴۰۶";
+      const fileName = clean(body.file_name, 100);
+      const fileSize = Number(body.file_size_bytes);
+      const storagePath = clean(body.storage_path, 500);
+      const editionFolder = safeEditionFolder(edition);
+      const expectedPath = schoolId + "/" + grade + "/" + code + "/" + editionFolder + "/" + code + ".pdf";
+      if (![7, 8, 9].includes(grade) || !/^[A-Z][0-9]{2,5}$/.test(code) ||
+          subject.length < 2 || fileName.toLowerCase() !== (code + ".pdf").toLowerCase() ||
+          storagePath !== expectedPath || !Number.isInteger(fileSize) || fileSize < 1 || fileSize > 52428800) {
+        return reply({ message: "مشخصات کتاب برای ثبت نهایی معتبر نیست." }, 400);
+      }
+      const folder = schoolId + "/" + grade + "/" + code + "/" + editionFolder;
+      const { data: objects, error: listError } = await db.storage.from(textbookBucket).list(folder, { limit: 100 });
+      if (listError) throw listError;
+      if (!(objects || []).some((item: { name: string }) => item.name === code + ".pdf")) {
+        return reply({ message: "فایل PDF هنوز در فضای خصوصی بارگذاری نشده است." }, 409);
+      }
+      const { data, error } = await db.from("school_textbook_library").insert({
+        school_id: schoolId, grade, book_code: code, subject, title, edition,
+        file_name: code + ".pdf", storage_path: storagePath, file_size_bytes: fileSize,
+        mime_type: "application/pdf", uploaded_by: actorId, is_active: true
+      }).select("id,grade,book_code,subject,title,edition,file_name,file_size_bytes,created_at").single();
+      if (error) {
+        if (error.code === "23505") return reply({ message: "این کتاب قبلاً در کتابخانه ثبت شده است." }, 409);
+        throw error;
+      }
+      return reply({ ok: true, book: data, message: "کتاب با موفقیت به کتابخانه خصوصی مدرسه افزوده شد." });
+    }
+
+    if (action === "textbook_download_pdf") {
+      const bookId = clean(body.book_id, 80);
+      const { data: book, error: bookError } = await db.from("school_textbook_library")
+        .select("id,storage_path,file_name,book_code")
+        .eq("id", bookId).eq("school_id", schoolId).eq("is_active", true).maybeSingle();
+      if (bookError) throw bookError;
+      if (!book) return reply({ message: "کتاب فعال در کتابخانه پیدا نشد." }, 404);
+
+      // Stream the private object through this authenticated, CORS-enabled function.
+      // This avoids browser-to-Storage CORS failures without making the bucket public.
+      const { data: pdf, error: downloadError } = await db.storage.from(textbookBucket).download(book.storage_path);
+      if (downloadError || !pdf) throw downloadError || new Error("دریافت فایل PDF از مخزن خصوصی ناموفق بود.");
+      if (pdf.size < 5 || pdf.size > 52428800) {
+        return reply({ message: "حجم فایل PDF معتبر نیست یا از سقف ۵۰ مگابایت بیشتر است." }, 422);
+      }
+      const safeFileName = clean(book.book_code, 12).replace(/[^A-Z0-9_-]/gi, "") + ".pdf";
+      return new Response(pdf.stream(), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/pdf",
+          "Content-Length": String(pdf.size),
+          "Content-Disposition": 'inline; filename="' + safeFileName + '"',
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
+    }
 
     if (action === "bootstrap") {
       if (teacher) {
@@ -142,6 +323,248 @@ Deno.serve(async (req: Request) => {
     }
 
 
+
+    if (action === "retrieve_textbook_analysis_result" && teacher) {
+      const requestedId = clean(body.client_request_id, 80);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedId)) {
+        return reply({ message: "شناسهٔ بازیابی نتیجه معتبر نیست." }, 400);
+      }
+      const { data: cachedAnalysis, error: cacheReadError } = await db
+        .from("smart_exam_textbook_analysis_cache")
+        .select("summary,page_reference")
+        .eq("request_id", requestedId)
+        .eq("tenant_school_id", schoolId)
+        .eq("auth_user_id", actorId)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (cacheReadError) throw cacheReadError;
+      if (!cachedAnalysis?.summary) return reply({ ok: true, pending: true });
+      console.info("Textbook AI analysis recovered from cache", {
+        requestId: requestedId, summaryLength: cachedAnalysis.summary.length
+      });
+      return reply({
+        ok: true, summary: cachedAnalysis.summary,
+        page_reference: cachedAnalysis.page_reference, recovered: true
+      });
+    }
+
+    if (action === "summarize_textbook_chunk" && teacher) {
+      const cloudflareToken = (Deno.env.get("CLOUDFLARE_AI_TOKEN") || "").trim();
+      const cloudflareAccount = (Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || "").trim();
+      if (!cloudflareToken || !/^[a-f0-9]{32}$/.test(cloudflareAccount)) return reply({ message: "اتصال هوش مصنوعی در محیط مدرسه پیکربندی نشده است." }, 503);
+      const sourceText = clean(body.source_text, 12000), pageReference = clean(body.page_reference, 120);
+      const mode = clean(body.summary_mode, 20) === "compress" ? "compress" : "analyze";
+      if (sourceText.length < 120 || !pageReference) return reply({ message: "متن بخش کتاب یا شماره صفحات برای تحلیل کافی نیست." }, 400);
+      const requestedId = clean(body.client_request_id, 80);
+      const analysisRequestId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedId)
+        ? requestedId : crypto.randomUUID();
+
+      // Recover a completed result before calling the model again. Only the
+      // owning teacher in the same school can retrieve the cached summary.
+      const { data: cachedAnalysis, error: cacheReadError } = await db
+        .from("smart_exam_textbook_analysis_cache")
+        .select("summary,page_reference")
+        .eq("request_id", analysisRequestId)
+        .eq("tenant_school_id", schoolId)
+        .eq("auth_user_id", actorId)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (cacheReadError) {
+        console.error("Textbook analysis cache lookup failed", {
+          requestId: analysisRequestId, code: cacheReadError.code || null
+        });
+      } else if (cachedAnalysis?.summary) {
+        console.info("Textbook AI analysis recovered from cache", {
+          requestId: analysisRequestId, summaryLength: cachedAnalysis.summary.length
+        });
+        return reply({
+          ok: true, summary: cachedAnalysis.summary,
+          page_reference: cachedAnalysis.page_reference, recovered: true
+        });
+      }
+
+      const baseInstructions = mode === "compress"
+        ? [
+          "You consolidate Persian middle-school textbook study notes.",
+          "Preserve every distinct examinable topic, definition, process, formula, example, and important distinction.",
+          "Remove repetition only. Never invent facts or add outside knowledge.",
+          "Return exactly one valid JSON object: {\"summary\":\"Persian notes\"}. No markdown or text outside JSON.",
+          "Keep the summary concise, at most 3000 Persian characters, using compact headings."
+        ]
+        : [
+          "Analyze the COMPLETE supplied Persian textbook excerpt for grades 7-9.",
+          "Preserve all distinct examinable concepts, definitions, facts, cause-effect links, steps, formulas, examples, vocabulary, and diagram/table descriptions actually present.",
+          "Do not create questions, import outside facts, or copy long passages verbatim. Write concise original study notes.",
+          "Return exactly one valid JSON object: {\"summary\":\"Persian notes\"}. No markdown or text outside JSON.",
+          "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
+        ];
+      const analysisModel = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+      const analysisResponseFormat = {
+        type: "json_schema",
+        json_schema: {
+          name: "textbook_summary",
+          description: "A concise Persian study-note summary.",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: { summary: { type: "string" } },
+            required: ["summary"],
+            additionalProperties: false
+          }
+        }
+      };
+      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/" + analysisModel;
+      const analysisStartedAt = Date.now();
+      const analysisTimeoutMs = 40000;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), analysisTimeoutMs);
+        let response: Response;
+        let result: Record<string, unknown>;
+        try {
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [
+                { role: "system", content: baseInstructions.join(" ") },
+                { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
+              ],
+              max_tokens: mode === "compress" ? 1200 : 600,
+              temperature: 0.1,
+              response_format: analysisResponseFormat
+            }),
+            signal: controller.signal
+          });
+          result = await response.json().catch(() => ({})) as Record<string, unknown>;
+        } finally {
+          clearTimeout(timeout);
+        }
+        const durationMs = Date.now() - analysisStartedAt;
+        if (!response.ok || result?.success !== true) {
+          if (isCloudflareDailyQuota(response.status, result)) {
+            const groqApiKey = (Deno.env.get("GROQ_API_KEY") || "").trim();
+            const fallbackEnabled = (Deno.env.get("AI_FALLBACK_PROVIDER") || "").trim().toLowerCase() === "groq";
+            if (fallbackEnabled && groqApiKey) {
+              const groqSummary = await requestGroqStructured(
+                groqApiKey,
+                [
+                  { role: "system", content: baseInstructions.join(" ") },
+                  { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
+                ],
+                mode === "compress" ? 1200 : 600,
+                analysisResponseFormat,
+                0.1
+              );
+              result = { success: true, result: { response: groqSummary } };
+              console.warn("Cloudflare daily AI quota exhausted; textbook analysis used the configured Groq fallback", {
+                requestId: analysisRequestId, model: "openai/gpt-oss-20b"
+              });
+            } else {
+              console.error("Textbook AI daily free quota exhausted", {
+                requestId: analysisRequestId, model: analysisModel, durationMs
+              });
+              return reply({
+                message: "سهمیهٔ رایگان روزانهٔ هوش مصنوعی Cloudflare تمام شده است. برای ادامهٔ تحلیل، باید مسیر جایگزین Groq با کلید امن سرور فعال شود. شناسه پیگیری: " + analysisRequestId
+              }, 429);
+            }
+          } else {
+            console.error("Textbook AI provider returned an error", {
+              requestId: analysisRequestId, model: analysisModel, status: response.status,
+              durationMs, response: JSON.stringify(result).slice(0, 900)
+            });
+            return reply({
+              message: "سرویس هوش مصنوعی در تحلیل این بخش پاسخ موفق نداد (HTTP " + response.status + "). شناسه پیگیری: " + analysisRequestId
+            }, 502);
+          }
+        }
+        const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
+        const choices = Array.isArray(resultBody.choices) ? resultBody.choices as Array<Record<string, unknown>> : [];
+        const firstChoice = choices[0] || {};
+        const firstMessage = firstChoice.message && typeof firstChoice.message === "object" ? firstChoice.message as Record<string, unknown> : {};
+        const modelOutput = resultBody.response ?? firstMessage.content ?? "";
+        let parsed: Record<string, unknown>;
+        if (modelOutput && typeof modelOutput === "object" && !Array.isArray(modelOutput)) {
+          parsed = modelOutput as Record<string, unknown>;
+        } else {
+          const raw = clean(modelOutput, 20000).replace(/^\\uFEFF/, "").trim();
+          const firstBrace = raw.indexOf("{"), lastBrace = raw.lastIndexOf("}");
+          if (firstBrace < 0 || lastBrace <= firstBrace) {
+            console.error("Textbook AI returned no JSON object", {
+              requestId: analysisRequestId, model: analysisModel, durationMs,
+              outputLength: raw.length, finishReason: firstChoice.finish_reason || resultBody.finish_reason || null,
+              resultKeys: Object.keys(resultBody)
+            });
+            return reply({ message: "پاسخ مدل برای تحلیل کتاب ساختار JSON معتبر نداشت. شناسه پیگیری: " + analysisRequestId }, 502);
+          }
+          try {
+            parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1)) as Record<string, unknown>;
+          } catch {
+            console.error("Textbook AI returned malformed JSON", {
+              requestId: analysisRequestId, model: analysisModel, durationMs, outputLength: raw.length
+            });
+            return reply({ message: "ساختار پاسخ هوش مصنوعی قابل‌خواندن نبود. شناسه پیگیری: " + analysisRequestId }, 502);
+          }
+        }
+        const summary = clean(parsed?.summary, mode === "compress" ? 3000 : 700);
+        const minimumSummaryLength = mode === "compress" ? 45 : 30;
+        if (summary.length < minimumSummaryLength) {
+          console.error("Textbook AI returned an empty or short summary", {
+            requestId: analysisRequestId, model: analysisModel, durationMs,
+            summaryLength: summary.length, resultKeys: Object.keys(resultBody)
+          });
+          return reply({ message: "مدل یادداشت کافی برای این بخش تولید نکرد. شناسه پیگیری: " + analysisRequestId }, 502);
+        }
+        const { error: cacheWriteError } = await db.from("smart_exam_textbook_analysis_cache").insert({
+          request_id: analysisRequestId,
+          tenant_school_id: schoolId,
+          auth_user_id: actorId,
+          summary,
+          page_reference: pageReference,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+        if (cacheWriteError && cacheWriteError.code !== "23505") {
+          console.error("Textbook analysis cache write failed", {
+            requestId: analysisRequestId, code: cacheWriteError.code || null
+          });
+        } else if (cacheWriteError?.code === "23505") {
+          // A concurrent retry may have completed the same request first.
+          const { data: racedCache } = await db.from("smart_exam_textbook_analysis_cache")
+            .select("summary,page_reference")
+            .eq("request_id", analysisRequestId)
+            .eq("tenant_school_id", schoolId)
+            .eq("auth_user_id", actorId)
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle();
+          if (racedCache?.summary) {
+            console.info("Textbook AI analysis reused concurrent cached result", {
+              requestId: analysisRequestId, summaryLength: racedCache.summary.length
+            });
+            return reply({ ok: true, summary: racedCache.summary, page_reference: racedCache.page_reference, recovered: true });
+          }
+        }
+        console.info("Textbook AI analysis completed", {
+          requestId: analysisRequestId, model: analysisModel, durationMs,
+          sourceLength: sourceText.length, summaryLength: summary.length,
+          cacheStored: !cacheWriteError || cacheWriteError.code === "23505"
+        });
+        return reply({ ok: true, summary, page_reference: pageReference });
+      } catch (error) {
+        const durationMs = Date.now() - analysisStartedAt;
+        const timedOut = error instanceof Error && error.name === "AbortError";
+        console.error("Textbook chunk analysis failed", {
+          requestId: analysisRequestId, model: analysisModel, mode,
+          sourceLength: sourceText.length, durationMs, timedOut,
+          reason: error instanceof Error ? error.message : "unknown"
+        });
+        return reply({
+          message: timedOut
+            ? "مدل هوش مصنوعی در مهلت ۴۰ ثانیه پاسخ نداد؛ درخواست به‌صورت کنترل‌شده متوقف شد. شناسه پیگیری: " + analysisRequestId
+            : "ارتباط سرور با سرویس هوش مصنوعی برقرار نشد؛ شناسه پیگیری: " + analysisRequestId
+        }, timedOut ? 504 : 502);
+      }
+    }
+
     if (action === "generate_questions" && teacher) {
       const cloudflareToken = (Deno.env.get("CLOUDFLARE_AI_TOKEN") || "").trim();
       const cloudflareAccount = (Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || "").trim();
@@ -150,9 +573,10 @@ Deno.serve(async (req: Request) => {
       }
       const sourceText = clean(body.source_text, 15000);
       const pageReference = clean(body.page_reference, 80);
+      const pdfPageReference = clean(body.pdf_page_reference, 80);
       const requested = Array.isArray(body.question_plan) ? body.question_plan : [];
       const targetPoints = Number(body.total_points ?? 20);
-      if (sourceText.length < 200 || !pageReference || requested.length < 1 || requested.length > 8 ||
+      if (sourceText.length < 200 || !pageReference || !pdfPageReference || requested.length < 1 || requested.length > 13 ||
           !Number.isFinite(targetPoints) || targetPoints <= 0 || targetPoints > 20) {
         return reply({ message: "متن کتاب (حداقل ۲۰۰ نویسه)، شماره صفحه، انواع سؤال و بارم کل را کامل کنید." }, 400);
       }
@@ -168,25 +592,35 @@ Deno.serve(async (req: Request) => {
         plan.push({ type, count: amount });
         count += amount;
       }
-      if (count < 1 || count > 40 || new Set(plan.map(x => x.type)).size !== plan.length) {
-        return reply({ message: "مجموع سؤال‌ها باید بین ۱ تا ۴۰ باشد و هر نوع فقط یک بار ثبت شود." }, 400);
+      if (count < 1 || count > 5 || new Set(plan.map(x => x.type)).size !== plan.length) {
+        return reply({ message: "هر درخواست تولید باید حداکثر ۵ سؤال داشته باشد و هر نوع فقط یک بار در همان بخش ثبت شود." }, 400);
+      }
+      const targetCents = Math.round(targetPoints * 100);
+      if (Math.abs(targetPoints * 100 - targetCents) > 0.000001 || targetCents < count) {
+        return reply({ message: "بارم کل باید با دقت حداکثر دو رقم اعشار و دست‌کم یک صدم برای هر سؤال باشد." }, 400);
       }
       const typeLabels: Record<string, string> = {
-        multiple_choice: "تستی چهارگزینه‌ای", conceptual: "مفهومی", true_false: "صحیح یا غلط",
-        fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
-        problem: "مسئله", equation: "معادله", grammar: "گرامر",
-        vocabulary: "معنی واژه", synonym_antonym: "مترادف یا متضاد",
-        translation: "ترجمه", other: "سایر"
+        knowledge: "دانشی و یادآوری", conceptual: "مفهومی و درک مطلب", application: "کاربرد آموخته‌ها",
+        experiment_activity: "آزمایش و فعالیت", chart_interpretation: "تحلیل نمودار", table_interpretation: "تحلیل جدول و داده",
+        matching: "وصل‌کردنی و جورکردنی", ordering: "ترتیب‌دادنی", multiple_choice: "تستی چهارگزینه‌ای",
+        true_false: "صحیح یا غلط", fill_blank: "جای خالی", short_answer: "پاسخ کوتاه", essay: "تشریحی",
+        problem: "مسئله و حل مسئله", equation: "معادله", grammar: "گرامر", vocabulary: "معنی واژه",
+        synonym_antonym: "مترادف یا متضاد", translation: "ترجمه", other: "سایر"
       };
       const planText = plan.map(x => ({ question_type: x.type, question_type_label: typeLabels[x.type], count: x.count }));
       const systemPrompt = [
         "You are an assessment author for Persian-speaking middle-school students.",
         "Create original questions using ONLY the supplied textbook excerpt. Never import or reproduce a question from an external source.",
-        "Return one valid JSON object only: {\"questions\":[{\"question_type\":string,\"prompt\":string,\"options\":string[],\"correct_answer\":string,\"explanation\":string,\"difficulty\":\"easy|medium|hard\"}]}",
-        "Use exactly the requested question types and exact counts. Do not add or omit questions.",
-        "For multiple_choice provide exactly four distinct options and make correct_answer identify the correct option. For other types options may be empty.",
-        "Write clear age-appropriate Persian. No unsupported facts, trick wording, duplicate questions, or content beyond the excerpt.",
-        "Essay questions must each be independently answerable. Keep questions concise and ensure every answer is supported by the excerpt.",
+        "Return one valid JSON object only. Each question must contain question_type, cognitive_level (knowledge|comprehension|application|analysis), prompt, stimulus, visual_data, options, correct_answer, explanation, and difficulty.",
+        "Use exactly the requested question types and exact counts. Do not add or omit questions. Questions must be rigorous, age-appropriate, non-trivial, and test different learning objectives rather than merely restating textbook sentences.",
+        "Balance cognitive demand: knowledge items test recall; conceptual questions require explaining why/how or connecting ideas; application transfers learning to a new but textbook-grounded situation; analysis requires interpreting evidence and justifying a conclusion.",
+        "For experiment_activity, describe a real textbook experiment or activity, its procedure and observation as relevant, and ask students to predict, interpret, identify variables, or infer a conclusion. Never invent an experiment unsupported by the excerpt.",
+        "For chart_interpretation and table_interpretation, provide a compact readable chart/table or source data in visual_data and ask a meaningful interpretation question. Never fabricate measurements or values.",
+        "Format visual_data as plain Persian text without Markdown fences: table rows use | separators; simple charts use labelled horizontal bars and a visible scale. Keep it compact enough for an A4 question sheet.",
+        "For matching, provide at least four concise items in options with unambiguous labels and a complete answer key. For ordering, provide at least three steps/items and the correct sequence in correct_answer.",
+        "For multiple_choice provide exactly four distinct plausible options, only one defensibly correct answer, and ensure correct_answer matches one option. Distractors must reflect common misconceptions, not absurd choices.",
+        "Avoid repeated stems, duplicate learning objectives, vague pronouns, trick wording, unsupported facts, answer clues, and ambiguous or multiple-correct options. Keep every answer fully supported by the excerpt.",
+        "Vary difficulty deliberately within THIS requested batch: if this batch has 3 or more questions, include at least one hard question; if it has 4 or 5 questions, at least 60 percent must be medium or hard. Label difficulty honestly from the actual reasoning demand, and label cognitive_level honestly. Essay questions must each be independently answerable. Keep explanations to at most two sentences.",
         "Do not assign marks. Do not include source URLs. The application will attach the supplied printed page reference."
       ].join(" ");
       const userPrompt = JSON.stringify({
@@ -195,37 +629,156 @@ Deno.serve(async (req: Request) => {
         chapter: clean(body.chapter, 180),
         lesson: clean(body.lesson, 180),
         printed_page_reference: pageReference,
+        pdf_page_reference: pdfPageReference,
         requested_question_plan: planText,
         textbook_excerpt: sourceText
       });
-      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
-      let generated: unknown;
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-            max_tokens: Math.min(7000, 500 + count * 180),
-            temperature: 0.25
-          }),
-          signal: controller.signal
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || result?.success !== true) {
-          console.error("Cloudflare Workers AI request failed", response.status, JSON.stringify(result).slice(0, 1200));
-          return reply({ message: "سرویس تولید سؤال پاسخ معتبر نداد. تنظیمات مدل یا سهمیهٔ سرویس را بررسی کنید." }, 502);
+      const questionResponseFormat = {
+        type: "json_schema",
+        json_schema: {
+          name: "middle_school_exam_questions",
+          description: "A complete set of Persian middle-school exam questions.",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question_type: { type: "string", enum: plan.map(item => item.type) },
+                    cognitive_level: { type: "string", enum: ["knowledge", "comprehension", "application", "analysis"] },
+                    prompt: { type: "string" },
+                    stimulus: { type: "string" },
+                    visual_data: { type: "string" },
+                    options: { type: "array", items: { type: "string" } },
+                    correct_answer: { type: "string" },
+                    explanation: { type: "string" },
+                    difficulty: { type: "string", enum: ["easy", "medium", "hard"] }
+                  },
+                  required: ["question_type", "cognitive_level", "prompt", "stimulus", "visual_data", "options", "correct_answer", "explanation", "difficulty"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["questions"],
+            additionalProperties: false
+          }
         }
-        let content = clean(result?.result?.response, 30000);
-        content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-        generated = JSON.parse(content);
-      } catch (error) {
-        console.error("Cloudflare Workers AI request error", error instanceof Error ? error.message : "unknown");
-        return reply({ message: "ارتباط با سرویس تولید سؤال برقرار نشد یا پاسخ آن قابل خواندن نبود." }, 502);
-      } finally {
-        clearTimeout(timeout);
+      };
+      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
+      let generated: unknown;
+      let lastAiError = "unknown";
+      const generationStartedAt = Date.now();
+      const generationTimeoutMs = 105000;
+      for (let attempt = 0; attempt < 1 && !generated; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), generationTimeoutMs);
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+              max_completion_tokens: Math.min(3600, 900 + count * 540),
+              temperature: 0.2,
+              response_format: questionResponseFormat,
+              reasoning_effort: "low",
+              chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
+            }),
+            signal: controller.signal
+          });
+          const responseText = await response.text();
+          let result: Record<string, unknown>;
+          try {
+            result = JSON.parse(responseText) as Record<string, unknown>;
+          } catch {
+            throw new Error("Cloudflare returned invalid or truncated JSON (HTTP " + response.status + ", bytes " + responseText.length + ")");
+          }
+          if (!response.ok || result?.success !== true) {
+            if (isCloudflareDailyQuota(response.status, result)) {
+              const groqApiKey = (Deno.env.get("GROQ_API_KEY") || "").trim();
+              const fallbackEnabled = (Deno.env.get("AI_FALLBACK_PROVIDER") || "").trim().toLowerCase() === "groq";
+              if (fallbackEnabled && groqApiKey) {
+                generated = await requestGroqStructured(
+                  groqApiKey,
+                  [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+                  Math.min(3600, 900 + count * 540),
+                  questionResponseFormat,
+                  0.2
+                );
+                console.warn("Cloudflare daily AI quota exhausted; question generation used the configured Groq fallback", {
+                  model: "openai/gpt-oss-20b", questionCount: count
+                });
+              } else {
+                const errors = Array.isArray(result?.errors) ? result.errors : [];
+                throw new Error("Cloudflare AI HTTP 429: " + JSON.stringify(errors).slice(0, 500));
+              }
+            } else {
+              const errors = Array.isArray(result?.errors) ? result.errors : [];
+              throw new Error("Cloudflare AI HTTP " + response.status + ": " + JSON.stringify(errors).slice(0, 500));
+            }
+          }
+          if (!generated) {
+            const resultBody = result?.result && typeof result.result === "object"
+              ? result.result as Record<string, unknown> : {};
+            const choices = Array.isArray(resultBody.choices)
+              ? resultBody.choices as Array<Record<string, unknown>> : [];
+            const firstChoice = choices[0] || {};
+            const firstMessage = firstChoice.message && typeof firstChoice.message === "object"
+              ? firstChoice.message as Record<string, unknown> : {};
+            // Prefer the first non-empty completion: Workers AI may return an empty top-level response with content in choices.
+            let content = clean(resultBody.response, 30000) ||
+              clean(firstMessage.content, 30000) ||
+              clean(firstChoice.text, 30000);
+            content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+            const firstBrace = content.indexOf("{");
+            const lastBrace = content.lastIndexOf("}");
+            if (firstBrace < 0 || lastBrace <= firstBrace) {
+              const finishReason = clean(firstChoice.finish_reason ?? resultBody.finish_reason ?? "", 80) || "unknown";
+              console.error("Cloudflare AI returned no usable question content", {
+                durationMs: Date.now() - generationStartedAt,
+                responseKeys: Object.keys(resultBody),
+                choiceKeys: Object.keys(firstChoice),
+                finishReason,
+                contentLength: content.length
+              });
+              throw new Error("Cloudflare AI returned no usable JSON content (finish_reason=" + finishReason + ", length=" + content.length + ")");
+            }
+            generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
+          }
+        } catch (error) {
+          lastAiError = controller.signal.aborted
+            ? "AI request timed out after " + generationTimeoutMs + "ms"
+            : error instanceof Error ? error.message : "unknown";
+          console.error("Cloudflare Workers AI generation attempt failed", {
+            attempt: attempt + 1, durationMs: Date.now() - generationStartedAt,
+            timedOut: controller.signal.aborted, reason: lastAiError.slice(0, 300)
+          });
+          // Do not retry a costly final-generation request inside the same Edge invocation.
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+      if (!generated) {
+        const quotaExhausted = /Cloudflare AI HTTP 429/.test(lastAiError) &&
+          /daily free allocation|neurons/i.test(lastAiError);
+        console.error("Cloudflare Workers AI generation failed", {
+          durationMs: Date.now() - generationStartedAt,
+          failureKind: quotaExhausted ? "daily_free_quota_exhausted" : controllerTimeout(lastAiError) ? "timeout" : "provider_or_format_error",
+          reason: lastAiError.slice(0, 300)
+        });
+        if (quotaExhausted) {
+          return reply({
+            message: "سهمیهٔ رایگان روزانهٔ سرویس هوش مصنوعی تمام شده است. پس از بازنشانی سهمیه دوباره تلاش کنید یا از مسئول فنی بخواهید اعتبار سرویس را بررسی کند؛ کم‌کردن تعداد سؤال‌ها این خطا را برطرف نمی‌کند."
+          }, 429);
+        }
+        return reply({
+          message: controllerTimeout(lastAiError)
+            ? "پاسخ هوش مصنوعی بیش از ۱۰۵ ثانیه زمان برد؛ لطفاً پس از بررسی اتصال دوباره تلاش کنید."
+            : "سرویس هوش مصنوعی پاسخ کامل و قابل‌خواندن نداد؛ تعداد سؤال‌های این بخش را کمتر کنید و دوباره تلاش کنید."
+        }, 502);
       }
       const rawQuestions = (generated as Record<string, unknown>)?.questions;
       if (!Array.isArray(rawQuestions) || rawQuestions.length !== count) {
@@ -233,32 +786,54 @@ Deno.serve(async (req: Request) => {
       }
       const expected = new Map(plan.map(x => [x.type, x.count]));
       const actual = new Map<string, number>();
-      const perQuestionPoints = Number((targetPoints / count).toFixed(2));
+      const baseCents = Math.floor(targetCents / count);
+      const extraCents = targetCents % count;
+      const seenPrompts = new Set<string>();
       const questions = rawQuestions.map((entry, index) => {
         if (!entry || typeof entry !== "object") throw new Error("ساختار پاسخ هوش مصنوعی معتبر نیست.");
         const q = entry as Record<string, unknown>;
         const type = clean(q.question_type, 60);
         actual.set(type, (actual.get(type) || 0) + 1);
         const prompt = clean(q.prompt, 5000);
-        const options = Array.isArray(q.options) ? q.options.slice(0, 4).map(x => clean(x, 1000)).filter(Boolean) : [];
+        const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)).filter(Boolean) : [];
         const answer = clean(q.correct_answer, 3000);
-        if (!expected.has(type) || !prompt || !answer || (type === "multiple_choice" && options.length !== 4)) {
-          throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست.");
+        const stimulus = clean(q.stimulus, 3000);
+        const visualData = clean(q.visual_data, 4000);
+        const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
+        const normalizedPrompt = normalize(prompt).replace(/[\s\p{P}\p{S}]+/gu, "");
+        if (!expected.has(type) || prompt.length < 12 || !answer || !normalizedPrompt ||
+            (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4 || !options.some(option => normalize(option) === normalize(answer)))) ||
+            (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
+            (type === "ordering" && options.length < 3) ||
+            ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
+            (type === "experiment_activity" && !stimulus) || seenPrompts.has(normalizedPrompt)) {
+          throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست؛ سؤال ناقص، تکراری یا فاقد داده لازم است.");
         }
+        seenPrompts.add(normalizedPrompt);
         return {
-          order: index + 1, question_type: type,
+          order: index + 1, question_type: type, cognitive_level: cognitiveLevel,
           difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
-          prompt, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
-          points: perQuestionPoints, source_origin: "ai_generated",
+          prompt, stimulus, visual_data: visualData, options, correct_answer: answer, explanation: clean(q.explanation, 3000),
+          points: (baseCents + (index < extraCents ? 1 : 0)) / 100, source_origin: "ai_generated",
           source_url: "", source_title: "", source_license: "", source_permission_confirmed: false,
-          source_page_reference: pageReference
+          source_page_reference: pageReference,
+          source_pdf_page_reference: pdfPageReference
         };
       });
-      if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
-          Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetPoints) > 0.05) {
-        return reply({ message: "ترکیب یا بارم سؤال‌های تولیدشده با درخواست شما مطابقت ندارد." }, 502);
+      const actualTypesMatch = [...expected].every(([type, amount]) => actual.get(type) === amount);
+      const batchPointsMatch = Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetCents / 100) <= 0.000001;
+      if (!actualTypesMatch || !batchPointsMatch) {
+        console.error("Generated exam batch failed structural validation", {
+          requested: Object.fromEntries(expected), actual: Object.fromEntries(actual),
+          requestedCount: count, receivedCount: questions.length,
+          requestedPoints: targetCents / 100,
+          receivedPoints: Number(questions.reduce((sum, q) => sum + q.points, 0).toFixed(2))
+        });
+        return reply({ message: !actualTypesMatch
+          ? "ترکیب نوع سؤال‌های تولیدشده با برنامه درخواستی برابر نیست؛ دوباره تولید کنید."
+          : "بارم داخلی بخش تولیدشده معتبر نیست؛ دوباره تلاش کنید." }, 502);
       }
-      return reply({ ok: true, questions, total_points: Number(questions.reduce((sum, q) => sum + q.points, 0).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
+      return reply({ ok: true, questions, total_points: Number((targetCents / 100).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
     }
 
     if (action === "save_draft" && teacher) {
