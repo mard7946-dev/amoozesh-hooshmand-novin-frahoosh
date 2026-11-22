@@ -335,11 +335,36 @@ console.log("Teacher classroom schedule checks passed: daily/weekly views, serve
 const academicReviewPage = readFileSync("academic-review.html", "utf8");
 const classroomManagementFunction = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
 const parentManagementFunction = readFileSync("supabase/functions/parent-management/index.ts", "utf8");
+const studentModulePage = readFileSync("student-module.html", "utf8");
+const parentPanelPage = readFileSync("parent-management.html", "utf8");
+assert.ok(classroomManagementFunction.includes("membershipRoles.has(norm(value))"), "Student portal API must require active membership in the same school");
+const studentSummaryBlock = classroomManagementFunction.slice(
+  classroomManagementFunction.indexOf('if (action === "student_academic_summary") {'),
+  classroomManagementFunction.indexOf('if (action === "discipline_review") {')
+);
+for (const tableName of ['from("attendance")', 'from("discipline_records")', 'from("assignments")', 'from("assignment_submissions")']) {
+  assert.ok(studentSummaryBlock.includes(tableName), "Student portal API must read " + tableName);
+}
+assert.ok(!studentSummaryBlock.includes('.eq("manager_released", 1)'), "Student portal must show newly recorded grades with their release state");
+assert.ok(studentSummaryBlock.includes('.eq("tenant_school_id", school)') && studentSummaryBlock.includes('.eq("student_id", student.id)'), "Student portal queries must remain scoped to the current school and student");
+assert.ok(parentManagementFunction.includes('assignmentSubmissions:assignmentSubmissions.data??[]'), "Parent API must return submission states only for linked children");
+assert.ok(parentPanelPage.includes("assignmentSubmissions||[]") && parentPanelPage.includes("ثبت‌شده؛ در انتظار بررسی"), "Parent panel must show child assignment completion and pending grade state");
+const studentModuleScript = studentModulePage.split("<script>")[1]?.split("</script>")[0] ?? "";
+assert.ok(studentModuleScript.trim(), "Student module page must contain its operational script");
+assert.doesNotThrow(() => new Function(studentModuleScript), "Student module page script must have valid JavaScript syntax");
+for (const moduleName of ["غیبت", "نمره", "انضباط", "تکلیف"]) {
+  assert.ok(studentModulePage.includes("selected==='" + moduleName + "'"), "Student module must render " + moduleName);
+}
 assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewPage.includes("academic_review"), "Academic review page must load and submit real review actions");
 assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
 assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
 assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('or("manager_released.eq.0,manager_released.is.null")') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include only pending attendance, unpublished grades, and pending discipline");
-assert.ok(parentManagementFunction.includes('eq("approval_status","approved")') && parentManagementFunction.includes('eq("manager_released",1)') && parentManagementFunction.includes('eq("status","approved")'), "Parent API must return only approved attendance, released grades, and approved discipline");
+const parentAttendanceQuery = parentManagementFunction.split("\n").find(line => line.includes('from("attendance")'));
+const parentGradeQuery = parentManagementFunction.split("\n").find(line => line.includes('from("student_grades")'));
+const parentDisciplineQuery = parentManagementFunction.split("\n").find(line => line.includes('from("discipline_records")'));
+assert.ok(parentAttendanceQuery && !parentAttendanceQuery.includes('eq("approval_status","approved")'), "Parent API must show newly recorded attendance with its review state");
+assert.ok(parentGradeQuery && !parentGradeQuery.includes('eq("manager_released",1)'), "Parent API must show newly recorded grades with their publication state");
+assert.ok(parentDisciplineQuery && !parentDisciplineQuery.includes('eq("status","approved")'), "Parent API must show newly recorded discipline and praise with their review state");
 assert.ok(parentManagementFunction.includes('eq("status","active")'), "Parent API must return only active assignments");
 assert.ok(html.includes("academic-review.html") && html.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
 assert.ok(publishWorkflow.includes("'academic-review.html'") && publishWorkflow.includes("academic-review.html"), "Academic review page must trigger and enter GitHub Pages deployment");
