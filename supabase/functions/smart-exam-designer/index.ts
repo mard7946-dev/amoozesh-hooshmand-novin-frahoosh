@@ -276,6 +276,30 @@ Deno.serve(async (req: Request) => {
 
 
 
+    if (action === "retrieve_textbook_analysis_result" && teacher) {
+      const requestedId = clean(body.client_request_id, 80);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedId)) {
+        return reply({ message: "شناسهٔ بازیابی نتیجه معتبر نیست." }, 400);
+      }
+      const { data: cachedAnalysis, error: cacheReadError } = await db
+        .from("smart_exam_textbook_analysis_cache")
+        .select("summary,page_reference")
+        .eq("request_id", requestedId)
+        .eq("tenant_school_id", schoolId)
+        .eq("auth_user_id", actorId)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (cacheReadError) throw cacheReadError;
+      if (!cachedAnalysis?.summary) return reply({ ok: true, pending: true });
+      console.info("Textbook AI analysis recovered from cache", {
+        requestId: requestedId, summaryLength: cachedAnalysis.summary.length
+      });
+      return reply({
+        ok: true, summary: cachedAnalysis.summary,
+        page_reference: cachedAnalysis.page_reference, recovered: true
+      });
+    }
+
     if (action === "summarize_textbook_chunk" && teacher) {
       const cloudflareToken = (Deno.env.get("CLOUDFLARE_AI_TOKEN") || "").trim();
       const cloudflareAccount = (Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || "").trim();
