@@ -59,8 +59,9 @@ Deno.serve(async (req: Request) => {
     const schoolManager = isSchoolManagerRole(role);
     const teacher = isTeacher(role);
     const deputy = isDeputy(role);
-    const studentRole = ["student", "دانش آموز", "دانش‌آموز"].includes(role);
+    const studentRole = ["student", "دانش آموز", "دانشآموز"].includes(role);
     if (!manager && !teacher && !deputy && !studentRole) return reply({ message: "این نقش مجوز دسترسی به اطلاعات کلاس را ندارد." }, 403);
+    if (studentRole && !["student", "دانش آموز", "دانشآموز"].some(value => membershipRoles.has(norm(value)))) return reply({ message: "عضویت فعال دانش‌آموز در این مدرسه تأیید نشد." }, 403);
     if (!profile.tenant_school_id) return reply({ message: "شناسه مدرسه برای این حساب ثبت نشده است." }, 403);
     const school = profile.tenant_school_id;
     const callerName = clean(profile.display_name) || clean(profile.username);
@@ -479,33 +480,80 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "student_academic_summary") {
-      if(!studentRole) return reply({message:"این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است."},403);
-      const {data:student,error:studentError}=await admin.from("students").select("id,first_name,last_name,class_name,grade")
-        .eq("tenant_school_id",school).eq("national_code",clean(profile.national_code)).maybeSingle();
-      if(studentError) throw studentError;
-      if(!student) return reply({message:"پرونده دانش‌آموز پیدا نشد."},404);
-      const [gradesResult,adjustmentsResult]=await Promise.all([
-        admin.from("student_grades").select("id,subject,assessment_type,assessment_title,score,coefficient,grade_date_shamsi,term")
-          .eq("tenant_school_id",school).eq("student_id",student.id).eq("manager_released",1).order("id",{ascending:false}).limit(1000),
-        admin.from("student_grade_adjustments").select("id,target_score,subject,term,delta,actor_role,applied_at")
-          .eq("tenant_school_id",school).eq("student_id",student.id).order("applied_at",{ascending:false}).limit(500)
+      if (!studentRole) return reply({ message: "این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است." }, 403);
+      const { data: student, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade")
+        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
+      if (studentError) throw studentError;
+      if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
+
+      const [gradesResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult] = await Promise.all([
+        admin.from("student_grades")
+          .select("id,subject,assessment_type,assessment_title,score,coefficient,grade_date_shamsi,term,manager_released")
+          .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(1000),
+        admin.from("student_grade_adjustments")
+          .select("id,target_score,subject,term,delta,actor_role,applied_at")
+          .eq("tenant_school_id", school).eq("student_id", student.id).order("applied_at", { ascending: false }).limit(500),
+        admin.from("attendance")
+          .select("id,date,attendance_date,status,description,subject,approval_status")
+          .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(1000),
+        admin.from("discipline_records")
+          .select("id,title,description,priority,status,incident_date,record_type,subject,class_name,actor_role,created_at")
+          .eq("tenant_school_id", school).eq("student_id", student.id).is("deleted_at", null)
+          .order("id", { ascending: false }).limit(1000),
+        admin.from("assignments")
+          .select("id,student_id,title,description,status,created_at,due_date,subject,class_name")
+          .eq("tenant_school_id", school).eq("status", "active").eq("student_id", student.id)
+          .order("id", { ascending: false }).limit(1000),
+        admin.from("assignments")
+          .select("id,student_id,title,description,status,created_at,due_date,subject,class_name")
+          .eq("tenant_school_id", school).eq("status", "active").is("student_id", null)
+          .eq("class_name", clean(student.class_name)).order("id", { ascending: false }).limit(1000),
       ]);
-      if(gradesResult.error) throw gradesResult.error;
-      if(adjustmentsResult.error) throw adjustmentsResult.error;
-      const grades=gradesResult.data??[],adjustments=adjustmentsResult.data??[];
-      const groups=new Map<string,any>();
-      for(const g of grades){
-        const key=clean(g.subject);
-        const item=groups.get(key)??{subject:clean(g.subject),term:"مجموع نوبت‌های منتشرشده",weighted:0,weight:0};
-        const w=Math.max(0,Number(g.coefficient)||1);item.weighted+=Number(g.score||0)*w;item.weight+=w;groups.set(key,item);
+      const failed = [gradesResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult].find((result: any) => result.error);
+      if (failed) throw failed.error;
+
+      const assignments = [...(personalAssignmentsResult.data ?? []), ...(classAssignmentsResult.data ?? [])]
+        .filter((row: any, index: number, all: any[]) => all.findIndex((item: any) => Number(item.id) === Number(row.id)) === index);
+      const assignmentIds = assignments.map((row: any) => Number(row.id)).filter(Number.isInteger);
+      const submissionsResult = assignmentIds.length
+        ? await admin.from("assignment_submissions")
+          .select("id,assignment_id,student_id,status,submitted_at,created_at")
+          .eq("tenant_school_id", school).eq("student_id", student.id).in("assignment_id", assignmentIds)
+          .order("id", { ascending: false }).limit(1000)
+        : { data: [], error: null };
+      if (submissionsResult.error) throw submissionsResult.error;
+
+      const grades = gradesResult.data ?? [];
+      const releasedGrades = grades.filter((grade: any) => Number(grade.manager_released) === 1);
+      const adjustments = adjustmentsResult.data ?? [];
+      const groups = new Map<string, any>();
+      for (const grade of releasedGrades) {
+        const key = clean(grade.subject);
+        const item = groups.get(key) ?? { subject: clean(grade.subject), term: "مجموع نمره‌های منتشرشده", weighted: 0, weight: 0 };
+        const weight = Math.max(0, Number(grade.coefficient) || 1);
+        item.weighted += Number(grade.score || 0) * weight;
+        item.weight += weight;
+        groups.set(key, item);
       }
-      const continuous=[...groups.values()].map(g=>{
-        const delta=adjustments.filter(a=>a.target_score==="continuous"&&a.subject===g.subject).reduce((n,a)=>n+Number(a.delta||0),0);
-        const base=g.weight?g.weighted/g.weight:0;
-        return {...g,base_score:Number(base.toFixed(2)),adjustment:Number(delta.toFixed(2)),final_score:Number(Math.max(0,Math.min(20,base+delta)).toFixed(2))};
+      const continuous = [...groups.values()].map(group => {
+        const delta = adjustments.filter((item: any) => item.target_score === "continuous" && item.subject === group.subject)
+          .reduce((sum: number, item: any) => sum + Number(item.delta || 0), 0);
+        const base = group.weight ? group.weighted / group.weight : 0;
+        return { ...group, base_score: Number(base.toFixed(2)), adjustment: Number(delta.toFixed(2)),
+          final_score: Number(Math.max(0, Math.min(20, base + delta)).toFixed(2)) };
       });
-      const disciplineDelta=adjustments.filter(a=>a.target_score==="discipline").reduce((n,a)=>n+Number(a.delta||0),0);
-      return reply({ok:true,student,grades,adjustments,continuous,discipline_adjustment:Number(disciplineDelta.toFixed(2))});
+      const disciplineDelta = adjustments.filter((item: any) => item.target_score === "discipline")
+        .reduce((sum: number, item: any) => sum + Number(item.delta || 0), 0);
+
+      return reply({
+        ok: true, student, grades, adjustments, continuous,
+        discipline_adjustment: Number(disciplineDelta.toFixed(2)),
+        attendance: attendanceResult.data ?? [],
+        discipline: disciplineResult.data ?? [],
+        assignments,
+        assignment_submissions: submissionsResult.data ?? [],
+      });
     }
 
     if (action === "discipline_review") {
