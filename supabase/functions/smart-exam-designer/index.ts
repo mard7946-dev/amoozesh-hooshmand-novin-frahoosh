@@ -642,6 +642,7 @@ Deno.serve(async (req: Request) => {
       const actual = new Map<string, number>();
       const baseCents = Math.floor(targetCents / count);
       const extraCents = targetCents % count;
+      const seenPrompts = new Set<string>();
       const questions = rawQuestions.map((entry, index) => {
         if (!entry || typeof entry !== "object") throw new Error("ساختار پاسخ هوش مصنوعی معتبر نیست.");
         const q = entry as Record<string, unknown>;
@@ -653,15 +654,16 @@ Deno.serve(async (req: Request) => {
         const stimulus = clean(q.stimulus, 3000);
         const visualData = clean(q.visual_data, 4000);
         const cognitiveLevel = ["knowledge", "comprehension", "application", "analysis"].includes(clean(q.cognitive_level)) ? clean(q.cognitive_level) : "application";
-        const normalizedPrompt = normalize(prompt).replace(/[\\s\\p{P}\\p{S}]+/gu, "");
+        const normalizedPrompt = normalize(prompt).replace(/[\s\p{P}\p{S}]+/gu, "");
         if (!expected.has(type) || prompt.length < 12 || !answer || !normalizedPrompt ||
             (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4)) ||
             (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
             (type === "ordering" && options.length < 3) ||
             ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
-            (type === "experiment_activity" && !stimulus)) {
+            (type === "experiment_activity" && !stimulus) || seenPrompts.has(normalizedPrompt)) {
           throw new Error("کیفیت یا ساختار یکی از سؤال‌های تولیدشده قابل قبول نیست؛ سؤال ناقص، تکراری یا فاقد داده لازم است.");
         }
+        seenPrompts.add(normalizedPrompt);
         return {
           order: index + 1, question_type: type, cognitive_level: cognitiveLevel,
           difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
