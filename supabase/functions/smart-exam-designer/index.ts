@@ -455,8 +455,6 @@ Deno.serve(async (req: Request) => {
                     properties: {
                       questions: {
                         type: "array",
-                        minItems: count,
-                        maxItems: count,
                         items: {
                           type: "object",
                           properties: {
@@ -503,7 +501,7 @@ Deno.serve(async (req: Request) => {
           let content = clean(resultBody.response, 30000) ||
             clean(firstMessage.content, 30000) ||
             clean(firstChoice.text, 30000);
-          content = content.replace(/^\\uFEFF/, "").replace(/^\\s*```(?:json)?\\s*/i, "").replace(/\\s*```\\s*$/, "");
+          content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
           const firstBrace = content.indexOf("{");
           const lastBrace = content.lastIndexOf("}");
           if (firstBrace < 0 || lastBrace <= firstBrace) {
