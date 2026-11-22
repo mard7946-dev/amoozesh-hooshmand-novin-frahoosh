@@ -105,3 +105,14 @@ assert.match(page,/id="printAllGradeBtn"/,"A grade-wide bulk PDF action is avail
 assert.match(page,/data\.cards\.filter\(c=>String\(c\.grade\|\|\"\"\)\.trim\(\)===grade\)/,"Grade-wide export includes every class in the selected grade");
 assert.match(page,/printCards\(cards\)/,"Grade-wide export uses the existing report-card print/PDF layout");
 assert.match(page,/ابتدا پایهٔ موردنظر را انتخاب کنید/,"Grade-wide export requires an explicitly selected grade");
+
+assert.ok(page.includes('id="bulkPrintPanel"'),"A school-wide student selection panel is available");
+assert.ok(page.includes('id="bulkSearch"'),"The complete student roster can be searched");
+assert.ok(page.includes('id="bulkGrade"')&&page.includes('id="bulkClass"'),"The student roster can be filtered by grade and class");
+assert.ok(page.includes('id="bulkSelectVisible"'),"All filtered students can be selected together");
+assert.ok(page.includes('id="bulkPrintSelected"'),"Selected students can be printed as a group");
+assert.ok(page.includes('data-bulk-student'),"Every student roster row has an individual selection control");
+assert.ok(page.includes('function bulkCardFor(studentId)'),"Bulk printing matches cards to the selected academic year and term");
+assert.ok(page.includes('ids.map(id=>bulkCardFor(id)).filter(Boolean)'),"Only saved report cards are printed");
+assert.ok(api.includes('function fetchAllSchoolStudents('),"The backend fetches the complete school roster");
+assert.ok(api.includes('.range(offset,offset+size-1)'),"Student roster retrieval is paginated beyond the default API row limit");

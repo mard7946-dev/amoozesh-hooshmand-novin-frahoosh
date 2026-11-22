@@ -5,6 +5,16 @@ const clean=(v:unknown,max=180)=>String(v??"").trim().slice(0,max);
 const managerRoles=new Set(["manager","مدیر","مدیریت"]);
 const executiveRoles=new Set(["executive","executive_deputy","معاون اجرایی","معاونت اجرایی","معاون اجرایی مدرسه"]);
 const subjects=["ریاضی","عربی","فارسی","مطالعات","زبان","علوم","انضباط"];
+async function fetchAllSchoolStudents(admin:any,schoolId:string){
+ const all:any[]=[];const size=1000;
+ for(let offset=0;offset<100000;offset+=size){
+  const {data,error}=await admin.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",schoolId).order("last_name").order("id").range(offset,offset+size-1);
+  if(error)return {data:null,error};
+  const page=data??[];all.push(...page);if(page.length<size)return {data:all,error:null};
+ }
+ return {data:null,error:new Error("فهرست دانش‌آموزان بیش از سقف ایمن دریافت اطلاعات است.")};
+}
+
 async function getCaller(admin:any,token:string){
  const {data:{user},error}=await admin.auth.getUser(token);
  if(error||!user)throw Object.assign(new Error("نشست ورود معتبر نیست؛ دوباره وارد شوید."),{status:401});
@@ -37,7 +47,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="list"){
    const [school,students,teachers,cards,teacherAssignments]=await Promise.all([
     admin.from("schools").select("id,name").eq("id",schoolId).maybeSingle(),
-    admin.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",schoolId).order("last_name"),
+    fetchAllSchoolStudents(admin,schoolId),
     admin.from("teachers").select("id,first_name,last_name,subject,employment_status").eq("tenant_school_id",schoolId).order("last_name"),
     admin.from("school_report_cards").select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at,updated_at").eq("school_id",schoolId).order("updated_at",{ascending:false}),
     admin.from("school_report_card_teachers").select("grade,class_name,subject,teacher_name").eq("school_id",schoolId).order("grade").order("class_name")
