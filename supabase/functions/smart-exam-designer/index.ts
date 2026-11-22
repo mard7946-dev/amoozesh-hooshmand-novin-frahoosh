@@ -543,7 +543,7 @@ Deno.serve(async (req: Request) => {
         "For matching, provide at least four concise items in options with unambiguous labels and a complete answer key. For ordering, provide at least three steps/items and the correct sequence in correct_answer.",
         "For multiple_choice provide exactly four distinct plausible options, only one defensibly correct answer, and ensure correct_answer matches one option. Distractors must reflect common misconceptions, not absurd choices.",
         "Avoid repeated stems, duplicate learning objectives, vague pronouns, trick wording, unsupported facts, answer clues, and ambiguous or multiple-correct options. Keep every answer fully supported by the excerpt.",
-        "Vary difficulty deliberately: do not make the whole set easy; use medium and hard items where suitable, and label cognitive_level honestly. Essay questions must each be independently answerable. Keep explanations to at most two sentences.",
+        "Vary difficulty deliberately within THIS requested batch: if this batch has 3 or more questions, include at least one hard question; if it has 4 or 5 questions, at least 60 percent must be medium or hard. Label difficulty honestly from the actual reasoning demand, and label cognitive_level honestly. Essay questions must each be independently answerable. Keep explanations to at most two sentences.",
         "Do not assign marks. Do not include source URLs. The application will attach the supplied printed page reference."
       ].join(" ");
       const userPrompt = JSON.stringify({
@@ -711,12 +711,18 @@ Deno.serve(async (req: Request) => {
           source_pdf_page_reference: pdfPageReference
         };
       });
-      const nonEasyCount = questions.filter(q => q.difficulty !== "easy").length;
-      const hardCount = questions.filter(q => q.difficulty === "hard").length;
-      if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
-          (count >= 3 && hardCount < 1) || (count >= 4 && nonEasyCount < Math.ceil(count * 0.6)) ||
-          Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetCents / 100) > 0.000001) {
-        return reply({ message: "ترکیب، سطح دشواری یا بارم سؤال‌های تولیدشده با استاندارد آزمون درخواستی مطابقت ندارد؛ دوباره تولید کنید." }, 502);
+      const actualTypesMatch = [...expected].every(([type, amount]) => actual.get(type) === amount);
+      const batchPointsMatch = Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetCents / 100) <= 0.000001;
+      if (!actualTypesMatch || !batchPointsMatch) {
+        console.error("Generated exam batch failed structural validation", {
+          requested: Object.fromEntries(expected), actual: Object.fromEntries(actual),
+          requestedCount: count, receivedCount: questions.length,
+          requestedPoints: targetCents / 100,
+          receivedPoints: Number(questions.reduce((sum, q) => sum + q.points, 0).toFixed(2))
+        });
+        return reply({ message: !actualTypesMatch
+          ? "ترکیب نوع سؤال‌های تولیدشده با برنامه درخواستی برابر نیست؛ دوباره تولید کنید."
+          : "بارم داخلی بخش تولیدشده معتبر نیست؛ دوباره تلاش کنید." }, 502);
       }
       return reply({ ok: true, questions, total_points: Number((targetCents / 100).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
     }
