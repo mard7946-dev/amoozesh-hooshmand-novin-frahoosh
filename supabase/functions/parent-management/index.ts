@@ -34,7 +34,7 @@ Deno.serve(async(req:Request)=>{
   if(!isManager)return reply({message:"فقط مدیر مدرسه می‌تواند ارتباط فرزندان و اولیا را مدیریت کند."},403);
   const {data:actorMembership,error:actorMembershipError}=await db.from("school_memberships").select("id").eq("auth_user_id",a.user.id).eq("school_id",school).eq("role","manager").eq("is_active",true).maybeSingle();
   if(actorMembershipError||!actorMembership)return reply({message:"عضویت فعال مدیر مدرسه تأیید نشد."},403);
-  const parentUsername=clean(input.parent_username),studentIds=[...new Set((Array.isArray(input.student_ids)?input.student_ids:[]).map((v:any)=>Number(v)).filter((v:number)=>Number.isInteger(v)&&v>0))],relationshipType=["father","mother","guardian"].includes(clean(input.relationship_type))?clean(input.relationship_type):"guardian";
+  const parentUsername=clean(input.parent_username),rawStudentIds:unknown[]=Array.isArray(input.student_ids)?input.student_ids:[],studentIds:number[]=[...new Set<number>(rawStudentIds.map((v:unknown)=>Number(v)).filter((v:number)=>Number.isInteger(v)&&v>0))],relationshipType=["father","mother","guardian"].includes(clean(input.relationship_type))?clean(input.relationship_type):"guardian";
   if(!parentUsername||!studentIds.length||studentIds.length>20)return reply({message:"انتخاب حساب ولی و دست‌کم یک دانش‌آموز (حداکثر ۲۰ نفر) الزامی است."},400);
   const {data:targetParent,error:parentError}=await db.from("account_settings").select("username,national_code,auth_user_id,role").eq("tenant_school_id",school).eq("username",parentUsername).eq("role","parent").maybeSingle();
   if(parentError||!targetParent?.auth_user_id)return reply({message:"حساب ولی انتخاب‌شده معتبر نیست."},404);
