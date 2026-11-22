@@ -686,9 +686,12 @@ Deno.serve(async (req: Request) => {
           source_pdf_page_reference: pdfPageReference
         };
       });
+      const nonEasyCount = questions.filter(q => q.difficulty !== "easy").length;
+      const hardCount = questions.filter(q => q.difficulty === "hard").length;
       if ([...expected].some(([type, amount]) => actual.get(type) !== amount) ||
+          (count >= 3 && hardCount < 1) || (count >= 4 && nonEasyCount < Math.ceil(count * 0.6)) ||
           Math.abs(questions.reduce((sum, q) => sum + q.points, 0) - targetCents / 100) > 0.000001) {
-        return reply({ message: "ترکیب یا بارم سؤال‌های تولیدشده با درخواست شما مطابقت ندارد." }, 502);
+        return reply({ message: "ترکیب، سطح دشواری یا بارم سؤال‌های تولیدشده با استاندارد آزمون درخواستی مطابقت ندارد؛ دوباره تولید کنید." }, 502);
       }
       return reply({ ok: true, questions, total_points: Number((targetCents / 100).toFixed(2)), message: "سؤال‌ها تولید شدند؛ آن‌ها را بازبینی و سپس پیش‌نویس را ذخیره کنید." });
     }
