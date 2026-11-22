@@ -42,7 +42,7 @@ assert.ok(api.includes('action === "generate_questions" && teacher'), "Only auth
 
 assert.ok(api.includes("chat_template_kwargs: { enable_thinking: false, clear_thinking: true }"), "GLM question generation must disable reasoning tokens so the model returns usable question content within the request budget");
 assert.ok(api.includes("response_format: {") && api.includes('name: "middle_school_exam_questions"') && api.includes("strict: true"), "AI question generation must request a strict structured JSON response");
-assert.ok(api.includes("1200 + count * 700"), "The output token budget must scale to the requested number of questions and their explanations");
+assert.ok(api.includes("max_completion_tokens: Math.min(3600, 900 + count * 540)") && api.includes('reasoning_effort: "low"'), "Question generation must use a bounded completion budget and low reasoning effort to reduce avoidable latency");
 assert.ok(api.includes("clean(resultBody.response, 30000) ||") && api.includes("clean(firstMessage.content, 30000) ||"), "An empty top-level response must not mask a populated chat completion choice");
 assert.ok(api.includes("finishReason") && api.includes("responseKeys: Object.keys(resultBody)"), "Empty model completions must log finish reason and response shape for diagnosis");
 
