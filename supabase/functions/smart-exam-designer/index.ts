@@ -633,6 +633,40 @@ Deno.serve(async (req: Request) => {
         requested_question_plan: planText,
         textbook_excerpt: sourceText
       });
+      const questionResponseFormat = {
+        type: "json_schema",
+        json_schema: {
+          name: "middle_school_exam_questions",
+          description: "A complete set of Persian middle-school exam questions.",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              questions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question_type: { type: "string", enum: plan.map(item => item.type) },
+                    cognitive_level: { type: "string", enum: ["knowledge", "comprehension", "application", "analysis"] },
+                    prompt: { type: "string" },
+                    stimulus: { type: "string" },
+                    visual_data: { type: "string" },
+                    options: { type: "array", items: { type: "string" } },
+                    correct_answer: { type: "string" },
+                    explanation: { type: "string" },
+                    difficulty: { type: "string", enum: ["easy", "medium", "hard"] }
+                  },
+                  required: ["question_type", "cognitive_level", "prompt", "stimulus", "visual_data", "options", "correct_answer", "explanation", "difficulty"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["questions"],
+            additionalProperties: false
+          }
+        }
+      };
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
       let generated: unknown;
       let lastAiError = "unknown";
@@ -649,40 +683,7 @@ Deno.serve(async (req: Request) => {
               messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
               max_completion_tokens: Math.min(3600, 900 + count * 540),
               temperature: 0.2,
-              response_format: {
-                type: "json_schema",
-                json_schema: {
-                  name: "middle_school_exam_questions",
-                  description: "A complete set of Persian middle-school exam questions.",
-                  strict: true,
-                  schema: {
-                    type: "object",
-                    properties: {
-                      questions: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            question_type: { type: "string", enum: plan.map(item => item.type) },
-                            cognitive_level: { type: "string", enum: ["knowledge", "comprehension", "application", "analysis"] },
-                            prompt: { type: "string" },
-                            stimulus: { type: "string" },
-                            visual_data: { type: "string" },
-                            options: { type: "array", items: { type: "string" } },
-                            correct_answer: { type: "string" },
-                            explanation: { type: "string" },
-                            difficulty: { type: "string", enum: ["easy", "medium", "hard"] }
-                          },
-                          required: ["question_type", "cognitive_level", "prompt", "stimulus", "visual_data", "options", "correct_answer", "explanation", "difficulty"],
-                          additionalProperties: false
-                        }
-                      }
-                    },
-                    required: ["questions"],
-                    additionalProperties: false
-                  }
-                }
-              },
+              response_format: questionResponseFormat,
               reasoning_effort: "low",
               chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
             }),
@@ -696,35 +697,57 @@ Deno.serve(async (req: Request) => {
             throw new Error("Cloudflare returned invalid or truncated JSON (HTTP " + response.status + ", bytes " + responseText.length + ")");
           }
           if (!response.ok || result?.success !== true) {
-            const errors = Array.isArray(result?.errors) ? result.errors : [];
-            throw new Error("Cloudflare AI HTTP " + response.status + ": " + JSON.stringify(errors).slice(0, 500));
+            if (isCloudflareDailyQuota(response.status, result)) {
+              const groqApiKey = (Deno.env.get("GROQ_API_KEY") || "").trim();
+              const fallbackEnabled = (Deno.env.get("AI_FALLBACK_PROVIDER") || "").trim().toLowerCase() === "groq";
+              if (fallbackEnabled && groqApiKey) {
+                generated = await requestGroqStructured(
+                  groqApiKey,
+                  [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+                  Math.min(3600, 900 + count * 540),
+                  questionResponseFormat,
+                  0.2
+                );
+                console.warn("Cloudflare daily AI quota exhausted; question generation used the configured Groq fallback", {
+                  model: "openai/gpt-oss-20b", questionCount: count
+                });
+              } else {
+                const errors = Array.isArray(result?.errors) ? result.errors : [];
+                throw new Error("Cloudflare AI HTTP 429: " + JSON.stringify(errors).slice(0, 500));
+              }
+            } else {
+              const errors = Array.isArray(result?.errors) ? result.errors : [];
+              throw new Error("Cloudflare AI HTTP " + response.status + ": " + JSON.stringify(errors).slice(0, 500));
+            }
           }
-          const resultBody = result?.result && typeof result.result === "object"
-            ? result.result as Record<string, unknown> : {};
-          const choices = Array.isArray(resultBody.choices)
-            ? resultBody.choices as Array<Record<string, unknown>> : [];
-          const firstChoice = choices[0] || {};
-          const firstMessage = firstChoice.message && typeof firstChoice.message === "object"
-            ? firstChoice.message as Record<string, unknown> : {};
-          // Prefer the first non-empty completion: Workers AI may return an empty top-level response with content in choices.
-          let content = clean(resultBody.response, 30000) ||
-            clean(firstMessage.content, 30000) ||
-            clean(firstChoice.text, 30000);
-          content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-          const firstBrace = content.indexOf("{");
-          const lastBrace = content.lastIndexOf("}");
-          if (firstBrace < 0 || lastBrace <= firstBrace) {
-            const finishReason = clean(firstChoice.finish_reason ?? resultBody.finish_reason ?? "", 80) || "unknown";
-            console.error("Cloudflare AI returned no usable question content", {
-              durationMs: Date.now() - generationStartedAt,
-              responseKeys: Object.keys(resultBody),
-              choiceKeys: Object.keys(firstChoice),
-              finishReason,
-              contentLength: content.length
-            });
-            throw new Error("Cloudflare AI returned no usable JSON content (finish_reason=" + finishReason + ", length=" + content.length + ")");
+          if (!generated) {
+            const resultBody = result?.result && typeof result.result === "object"
+              ? result.result as Record<string, unknown> : {};
+            const choices = Array.isArray(resultBody.choices)
+              ? resultBody.choices as Array<Record<string, unknown>> : [];
+            const firstChoice = choices[0] || {};
+            const firstMessage = firstChoice.message && typeof firstChoice.message === "object"
+              ? firstChoice.message as Record<string, unknown> : {};
+            // Prefer the first non-empty completion: Workers AI may return an empty top-level response with content in choices.
+            let content = clean(resultBody.response, 30000) ||
+              clean(firstMessage.content, 30000) ||
+              clean(firstChoice.text, 30000);
+            content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+            const firstBrace = content.indexOf("{");
+            const lastBrace = content.lastIndexOf("}");
+            if (firstBrace < 0 || lastBrace <= firstBrace) {
+              const finishReason = clean(firstChoice.finish_reason ?? resultBody.finish_reason ?? "", 80) || "unknown";
+              console.error("Cloudflare AI returned no usable question content", {
+                durationMs: Date.now() - generationStartedAt,
+                responseKeys: Object.keys(resultBody),
+                choiceKeys: Object.keys(firstChoice),
+                finishReason,
+                contentLength: content.length
+              });
+              throw new Error("Cloudflare AI returned no usable JSON content (finish_reason=" + finishReason + ", length=" + content.length + ")");
+            }
+            generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
           }
-          generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
         } catch (error) {
           lastAiError = controller.signal.aborted
             ? "AI request timed out after " + generationTimeoutMs + "ms"
