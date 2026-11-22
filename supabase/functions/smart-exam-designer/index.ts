@@ -286,7 +286,7 @@ Deno.serve(async (req: Request) => {
       const analysisModel = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/" + analysisModel;
       const analysisStartedAt = Date.now();
-      const analysisRequestId = crypto.randomUUID();
+      const analysisRequestId = clean(body.client_request_id, 80) || crypto.randomUUID();
       const analysisTimeoutMs = 40000;
       try {
         const controller = new AbortController();
