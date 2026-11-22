@@ -267,6 +267,33 @@ Deno.serve(async (req: Request) => {
       const sourceText = clean(body.source_text, 12000), pageReference = clean(body.page_reference, 120);
       const mode = clean(body.summary_mode, 20) === "compress" ? "compress" : "analyze";
       if (sourceText.length < 120 || !pageReference) return reply({ message: "متن بخش کتاب یا شماره صفحات برای تحلیل کافی نیست." }, 400);
+      const requestedId = clean(body.client_request_id, 80);
+      const analysisRequestId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedId)
+        ? requestedId : crypto.randomUUID();
+
+      // Recover a completed result before calling the model again. Only the
+      // owning teacher in the same school can retrieve the cached summary.
+      const { data: cachedAnalysis, error: cacheReadError } = await db
+        .from("smart_exam_textbook_analysis_cache")
+        .select("summary,page_reference")
+        .eq("request_id", analysisRequestId)
+        .eq("tenant_school_id", schoolId)
+        .eq("auth_user_id", actorId)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (cacheReadError) {
+        console.error("Textbook analysis cache lookup failed", {
+          requestId: analysisRequestId, code: cacheReadError.code || null
+        });
+      } else if (cachedAnalysis?.summary) {
+        console.info("Textbook AI analysis recovered from cache", {
+          requestId: analysisRequestId, summaryLength: cachedAnalysis.summary.length
+        });
+        return reply({
+          ok: true, summary: cachedAnalysis.summary,
+          page_reference: cachedAnalysis.page_reference, recovered: true
+        });
+      }
 
       const baseInstructions = mode === "compress"
         ? [
@@ -286,7 +313,6 @@ Deno.serve(async (req: Request) => {
       const analysisModel = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/" + analysisModel;
       const analysisStartedAt = Date.now();
-      const analysisRequestId = clean(body.client_request_id, 80) || crypto.randomUUID();
       const analysisTimeoutMs = 40000;
       try {
         const controller = new AbortController();
@@ -372,9 +398,38 @@ Deno.serve(async (req: Request) => {
           });
           return reply({ message: "مدل یادداشت کافی برای این بخش تولید نکرد. شناسه پیگیری: " + analysisRequestId }, 502);
         }
+        const { error: cacheWriteError } = await db.from("smart_exam_textbook_analysis_cache").insert({
+          request_id: analysisRequestId,
+          tenant_school_id: schoolId,
+          auth_user_id: actorId,
+          summary,
+          page_reference: pageReference,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+        if (cacheWriteError && cacheWriteError.code !== "23505") {
+          console.error("Textbook analysis cache write failed", {
+            requestId: analysisRequestId, code: cacheWriteError.code || null
+          });
+        } else if (cacheWriteError?.code === "23505") {
+          // A concurrent retry may have completed the same request first.
+          const { data: racedCache } = await db.from("smart_exam_textbook_analysis_cache")
+            .select("summary,page_reference")
+            .eq("request_id", analysisRequestId)
+            .eq("tenant_school_id", schoolId)
+            .eq("auth_user_id", actorId)
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle();
+          if (racedCache?.summary) {
+            console.info("Textbook AI analysis reused concurrent cached result", {
+              requestId: analysisRequestId, summaryLength: racedCache.summary.length
+            });
+            return reply({ ok: true, summary: racedCache.summary, page_reference: racedCache.page_reference, recovered: true });
+          }
+        }
         console.info("Textbook AI analysis completed", {
           requestId: analysisRequestId, model: analysisModel, durationMs,
-          sourceLength: sourceText.length, summaryLength: summary.length
+          sourceLength: sourceText.length, summaryLength: summary.length,
+          cacheStored: !cacheWriteError || cacheWriteError.code === "23505"
         });
         return reply({ ok: true, summary, page_reference: pageReference });
       } catch (error) {
