@@ -104,3 +104,5 @@ assert.ok(page.includes("height:auto;padding:2mm 1.8mm") && page.includes("const
 
 assert.ok(api.includes("const nonEasyCount = questions.filter") && api.includes("(count >= 3 && hardCount < 1)") && api.includes("Math.ceil(count * 0.6)"), "AI batches must reject an all-easy or insufficiently challenging difficulty distribution");
 assert.ok(api.includes("options.some(option => normalize(option) === normalize(correctAnswer))") && api.includes('type === "chart_interpretation" || type === "table_interpretation"') && api.includes('type === "experiment_activity" && !stimulus'), "Final approval must reject invalid answer keys and incomplete experiment/chart/table questions");
+
+assert.ok(api.includes('!options.some(option => normalize(option) === normalize(answer))') && api.includes("table rows use | separators") && api.includes("horizontal bars"), "Generated multiple-choice keys must match a real option and visual data must have a printable compact format");
