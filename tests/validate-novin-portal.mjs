@@ -339,7 +339,12 @@ assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewP
 assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
 assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
 assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('or("manager_released.eq.0,manager_released.is.null")') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include only pending attendance, unpublished grades, and pending discipline");
-assert.ok(parentManagementFunction.includes('eq("approval_status","approved")') && parentManagementFunction.includes('eq("manager_released",1)') && parentManagementFunction.includes('eq("status","approved")'), "Parent API must return only approved attendance, released grades, and approved discipline");
+const parentAttendanceQuery = parentManagementFunction.split("\n").find(line => line.includes('from("attendance")'));
+const parentGradeQuery = parentManagementFunction.split("\n").find(line => line.includes('from("student_grades")'));
+const parentDisciplineQuery = parentManagementFunction.split("\n").find(line => line.includes('from("discipline_records")'));
+assert.ok(parentAttendanceQuery && !parentAttendanceQuery.includes('eq("approval_status","approved")'), "Parent API must show newly recorded attendance with its review state");
+assert.ok(parentGradeQuery && !parentGradeQuery.includes('eq("manager_released",1)'), "Parent API must show newly recorded grades with their publication state");
+assert.ok(parentDisciplineQuery && !parentDisciplineQuery.includes('eq("status","approved")'), "Parent API must show newly recorded discipline and praise with their review state");
 assert.ok(parentManagementFunction.includes('eq("status","active")'), "Parent API must return only active assignments");
 assert.ok(html.includes("academic-review.html") && html.includes("بررسی اطلاعات آموزشی"), "Manager and deputy portals must route to the academic review page");
 assert.ok(publishWorkflow.includes("'academic-review.html'") && publishWorkflow.includes("academic-review.html"), "Academic review page must trigger and enter GitHub Pages deployment");
