@@ -423,6 +423,12 @@ async function generateQuestions(){
    generatedQuestions=generatedQuestions.concat(batchData.questions);
   }
   if(generatedQuestions.length!==totalQuestionCount)throw new Error("تعداد نهایی سؤال‌ها با برنامه درخواستی برابر نیست.");
+  const finalHardCount=generatedQuestions.filter(q=>q.difficulty==="hard").length;
+  const finalNonEasyCount=generatedQuestions.filter(q=>q.difficulty!=="easy").length;
+  if((totalQuestionCount>=3&&finalHardCount<1)||(totalQuestionCount>=4&&finalNonEasyCount<Math.ceil(totalQuestionCount*0.6))){
+   console.warn("Final exam difficulty mix needs revision",{totalQuestionCount,hardCount:finalHardCount,nonEasyCount:finalNonEasyCount});
+   throw new Error("ترکیب دشواری مجموعه کامل متوازن نیست؛ دست‌کم یک سؤال دشوار و سهم کافی از سؤال‌های متوسط و دشوار لازم است. لطفاً دوباره تولید کنید.");
+  }
   const baseCents=Math.floor(targetCents/generatedQuestions.length),extraCents=targetCents%generatedQuestions.length;
   state.questions=generatedQuestions.map((q,index)=>({...newQuestion(),...q,order:index+1,points:(baseCents+(index<extraCents?1:0))/100,source_origin:"ai_generated",source_title:"",source_url:""}));
   renderQuestions();status("تمام بخش‌ها با موفقیت تولید شدند. تعداد: "+state.questions.length+" · بارم: "+(targetCents/100).toFixed(2)+" · پوشش PDF: "+pdfPageReference,"ok");$("questions").scrollIntoView({behavior:"smooth",block:"start"});
