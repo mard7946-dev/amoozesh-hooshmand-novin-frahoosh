@@ -269,7 +269,7 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id), score = Number(r.score);
         const maxScore = Number(body.max_score) > 0 ? Number(body.max_score) : 20;
         if (!studentId || !allowed.has(studentId) || !Number.isFinite(score) || score < 0 || score > maxScore) continue;
-        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 0 });
+        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 1 });
       }
       if (!inserts.length) return reply({ message: "هیچ نمره معتبر (۰ تا ۲۰) برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("student_grades").insert(inserts).select("id");
