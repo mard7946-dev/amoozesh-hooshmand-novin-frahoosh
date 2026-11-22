@@ -36,5 +36,4 @@ assert.match(page, /بدون امکان ویرایش/);
 assert.match(portal, /مرکز تحلیل آموزشی و عملکرد کلاس‌ها/);
 assert.match(portal, /تولید نمودار آموزشی/);
 assert.match(portal, /academic-analytics\.html/);
-assert.match(portal, /academic-analytics\.html/);
 console.log("Academic analytics feature checks passed.");
