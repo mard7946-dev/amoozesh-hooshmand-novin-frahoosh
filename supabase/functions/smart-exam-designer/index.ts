@@ -497,7 +497,7 @@ Deno.serve(async (req: Request) => {
         "Use exactly the requested question types and exact counts. Do not add or omit questions.",
         "For multiple_choice provide exactly four distinct options and make correct_answer identify the correct option. For other types options may be empty.",
         "Write clear age-appropriate Persian. No unsupported facts, trick wording, duplicate questions, or content beyond the excerpt.",
-        "Essay questions must each be independently answerable. Keep questions concise and ensure every answer is supported by the excerpt.",
+        "Essay questions must each be independently answerable. Keep every prompt concise, explanations to at most two sentences, and ensure every answer is supported by the excerpt.",
         "Do not assign marks. Do not include source URLs. The application will attach the supplied printed page reference."
       ].join(" ");
       const userPrompt = JSON.stringify({
@@ -524,7 +524,7 @@ Deno.serve(async (req: Request) => {
             headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
             body: JSON.stringify({
               messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-              max_tokens: Math.min(7000, 1200 + count * 700),
+              max_completion_tokens: Math.min(3600, 900 + count * 540),
               temperature: 0.2,
               response_format: {
                 type: "json_schema",
@@ -557,6 +557,7 @@ Deno.serve(async (req: Request) => {
                   }
                 }
               },
+              reasoning_effort: "low",
               chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
             }),
             signal: controller.signal
