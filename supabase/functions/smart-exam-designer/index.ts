@@ -58,6 +58,18 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
     const sourceTitle = clean(q.source_title, 240);
     const permission = q.source_permission_confirmed === true;
     const rawImage = typeof q.image_data_url === "string" ? q.image_data_url.trim() : "";
+    const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)).filter(Boolean) : [];
+    const stimulus = clean(q.stimulus, 3000);
+    const visualData = clean(q.visual_data, 4000);
+    const correctAnswer = clean(q.correct_answer, 4000);
+    if (!allowIncomplete && prompt && (prompt.length < 12 ||
+        (type === "multiple_choice" && (options.length !== 4 || new Set(options.map(normalize)).size !== 4 || !options.some(option => normalize(option) === normalize(correctAnswer)))) ||
+        (type === "matching" && (options.length < 4 || new Set(options.map(normalize)).size !== options.length)) ||
+        (type === "ordering" && options.length < 3) ||
+        ((type === "chart_interpretation" || type === "table_interpretation") && !visualData) ||
+        (type === "experiment_activity" && !stimulus))) {
+      throw new Error("سؤال " + (index + 1) + " کامل نیست؛ گزینه‌ها، داده نمودار یا شرح فعالیت را بازبینی کنید.");
+    }
     if (rawImage.length > 1500000 || (rawImage && !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawImage))) {
       throw new Error("تصویر سؤال معتبر نیست یا حجم آن بیش از حد مجاز است.");
     }
@@ -83,10 +95,10 @@ function validatePayload(raw: unknown, allowIncomplete = false) {
       difficulty: ["easy", "medium", "hard"].includes(clean(q.difficulty)) ? clean(q.difficulty) : "medium",
       prompt,
       cognitive_level: cognitiveLevel,
-      stimulus: clean(q.stimulus, 3000),
-      visual_data: clean(q.visual_data, 4000),
-      options: Array.isArray(q.options) ? q.options.slice(0, 8).map(x => clean(x, 1000)) : [],
-      correct_answer: clean(q.correct_answer, 4000),
+      stimulus,
+      visual_data: visualData,
+      options,
+      correct_answer: correctAnswer,
       explanation: clean(q.explanation, 4000),
       points,
       source_origin: origin,
