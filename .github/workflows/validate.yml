@@ -48,6 +48,8 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/smart-exam-migration.integration.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261121035442_school_textbook_library.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/textbook-library-migration.integration.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261122070000_smart_exam_textbook_analysis_cache.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/textbook-analysis-cache-migration.integration.sql
       - name: Validate page structure and JavaScript syntax
         run: node --check server/src/server.js && node tests/validate.mjs && node tests/validate-question-bank.mjs && node tests/validate-smart-exam-designer.mjs && node tests/validate-jalali-dates.mjs && node tests/validate-bulletin-roles.mjs && node tests/validate-school-reports.mjs && node tests/validate-teacher-class-navigation.mjs && node tests/validate-weekly-schedule-import.mjs && node tests/validate-livekit-classroom.mjs && node tests/validate-teacher-assistant.mjs && node tests/validate-finance-dashboard.mjs && node tests/validate-purchase-invoices.mjs && node tests/validate-teacher-directory-entry.mjs
       - name: Validate professional report card feature
