@@ -30,6 +30,29 @@ Deno.serve(async(req:Request)=>{
  const expectedRole=isManager?"manager":"parent";
  const input=await req.json().catch(()=>({}));
  const action=clean(input.action||"list");
+ if(action==="manage_child_links"){
+  if(!isManager)return reply({message:"فقط مدیر مدرسه می‌تواند ارتباط فرزندان و اولیا را مدیریت کند."},403);
+  const {data:actorMembership,error:actorMembershipError}=await db.from("school_memberships").select("id").eq("auth_user_id",a.user.id).eq("school_id",school).eq("role","manager").eq("is_active",true).maybeSingle();
+  if(actorMembershipError||!actorMembership)return reply({message:"عضویت فعال مدیر مدرسه تأیید نشد."},403);
+  const parentUsername=clean(input.parent_username),rawStudentIds:unknown[]=Array.isArray(input.student_ids)?input.student_ids:[],studentIds:number[]=[...new Set<number>(rawStudentIds.map((v:unknown)=>Number(v)).filter((v:number)=>Number.isInteger(v)&&v>0))],relationshipType=["father","mother","guardian"].includes(clean(input.relationship_type))?clean(input.relationship_type):"guardian";
+  if(!parentUsername||!studentIds.length||studentIds.length>20)return reply({message:"انتخاب حساب ولی و دست‌کم یک دانش‌آموز (حداکثر ۲۰ نفر) الزامی است."},400);
+  const {data:targetParent,error:parentError}=await db.from("account_settings").select("username,national_code,auth_user_id,role").eq("tenant_school_id",school).eq("username",parentUsername).eq("role","parent").maybeSingle();
+  if(parentError||!targetParent?.auth_user_id)return reply({message:"حساب ولی انتخاب‌شده معتبر نیست."},404);
+  const {data:activeMembership,error:membershipError}=await db.from("school_memberships").select("id").eq("auth_user_id",targetParent.auth_user_id).eq("school_id",school).eq("role","parent").eq("is_active",true).maybeSingle();
+  if(membershipError||!activeMembership)return reply({message:"عضویت فعال این ولی در مدرسه تأیید نشد."},409);
+  const {data:validStudents,error:studentError}=await db.from("students").select("id").eq("tenant_school_id",school).in("id",studentIds);
+  if(studentError||!validStudents||validStudents.length!==studentIds.length)return reply({message:"حداقل یکی از دانش‌آموزان انتخاب‌شده متعلق به این مدرسه نیست."},400);
+  const identityKeys=[...new Set([clean(targetParent.username),clean(targetParent.national_code)].filter(Boolean))];
+  const {data:existing,error:existingError}=await db.from("parent_children").select("parent_username,student_id").eq("tenant_school_id",school).in("parent_username",identityKeys).in("student_id",studentIds);
+  if(existingError)return reply({message:"بررسی ارتباط‌های قبلی انجام نشد."},500);
+  const already=new Set((existing??[]).map((x:any)=>Number(x.student_id)));
+  const rows=studentIds.filter((id:number)=>!already.has(id)).map((id:number)=>({parent_username:clean(targetParent.username),student_id:id,tenant_school_id:school,relationship_type:relationshipType}));
+  if(rows.length){
+   const {error:insertError}=await db.from("parent_children").upsert(rows,{onConflict:"parent_username,student_id",ignoreDuplicates:true});
+   if(insertError){console.error("parent child link save",insertError.code);return reply({message:"ذخیره ارتباط فرزندان با حساب ولی انجام نشد."},500)}
+  }
+  return reply({ok:true,added:rows.length,already_linked:already.size,total:studentIds.length});
+ }
  if(action==="create_association"){
   if(!isParent)return reply({message:"ثبت درخواست انجمن فقط از پنل ولی مجاز است."},403);
   const studentId=Number(input.student_id),requestType=clean(input.request_type),expertise=clean(input.expertise).slice(0,500),message=clean(input.message);
@@ -57,6 +80,8 @@ Deno.serve(async(req:Request)=>{
 
  const {data:m,error:me}=await db.from("school_memberships").select("id").eq("auth_user_id",a.user.id).eq("school_id",school).eq("role",expectedRole).eq("is_active",true).maybeSingle();
  if(me||!m)return reply({message:"عضویت فعال مدرسه تأیید نشد."},403);
+ const availableStudentsResult=isManager?await db.from("students").select("id,first_name,last_name,grade,class_name,student_code").eq("tenant_school_id",school).order("last_name").limit(1000):{data:[],error:null};
+ if(availableStudentsResult.error)return reply({message:"فهرست دانش‌آموزان مدرسه دریافت نشد."},500);
  const [parentsResult,linksResult]=await Promise.all([
   isManager
    ? db.from("account_settings").select("username,display_name,phone,email,national_code,role,auth_user_id").eq("tenant_school_id",school).eq("role","parent").order("display_name").limit(1000)
@@ -91,5 +116,5 @@ Deno.serve(async(req:Request)=>{
  const failed=[students,discipline,grades,gradeAdjustments,meetings,activities,associationRequests,attendance,assignments,schedule,exams,payments,messages,bulletins,assignmentSubmissions].find((x:any)=>x.error);
  if(failed){console.error("parent-management query failed",failed.error?.code);return reply({message:"دریافت اطلاعات پنل اولیا ناموفق بود؛ ساختار جدول‌ها را بررسی کنید."},500)}
  const responseLinks=isParent?links.map((link:any)=>({...link,parent_username:clean(c.username)})):links;
- return reply({ok:true,role:expectedRole,parents,links:responseLinks,students:students.data??[],discipline:discipline.data??[],grades:grades.data??[],gradeAdjustments:gradeAdjustments.data??[],meetings:meetings.data??[],activities:activities.data??[],associationRequests:associationRequests.data??[],attendance:attendance.data??[],assignments:safeAssignments,assignmentSubmissions:assignmentSubmissions.data??[],schedule:schedule.data??[],exams:exams.data??[],payments:payments.data??[],messages:messages.data??[],bulletins:bulletins.data??[]});
+ return reply({ok:true,role:expectedRole,parents,links:responseLinks,students:students.data??[],availableStudents:isManager?(availableStudentsResult.data??[]):[],discipline:discipline.data??[],grades:grades.data??[],gradeAdjustments:gradeAdjustments.data??[],meetings:meetings.data??[],activities:activities.data??[],associationRequests:associationRequests.data??[],attendance:attendance.data??[],assignments:safeAssignments,assignmentSubmissions:assignmentSubmissions.data??[],schedule:schedule.data??[],exams:exams.data??[],payments:payments.data??[],messages:messages.data??[],bulletins:bulletins.data??[]});
 });

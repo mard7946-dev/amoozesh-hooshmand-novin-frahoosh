@@ -23,6 +23,7 @@ on:
       - 'classroom/weekly-timetable-engine.js'
       - 'tests/validate-weekly-timetable-engine.mjs'
       - 'tests/validate-novin-portal.mjs'
+      - 'tests/validate-parent-child-linking.mjs'
       - 'question-bank.html'
       - 'school-library.html'
       - 'supabase/functions/school-library/index.ts'
@@ -151,6 +152,8 @@ jobs:
           node-version: '22'
       - name: Validate portal, parent panel, settings, reports access, and JavaScript
         run: node tests/validate-novin-portal.mjs
+      - name: Validate multi-child parent linking and identity matching
+        run: node tests/validate-parent-child-linking.mjs
       - name: Validate academic analytics access, reports, and printing
         run: node tests/validate-academic-analytics.mjs
       - name: Validate manager school planning center and challenge recommendations
