@@ -42,15 +42,15 @@ if(selected==='نمره'){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  (async()=>{
   if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
-  box.textContent='در حال دریافت نمره‌های منتشرشده و تعدیلات تأییدشده…';
+  box.textContent='در حال دریافت نمره‌های ثبت‌شده و تعدیلات تأییدشده…';
   try{
    const res=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json','apikey':apiKey,'Authorization':'Bearer '+token},body:JSON.stringify({action:'student_academic_summary'})});
    const data=await res.json().catch(()=>({}));
    if(!res.ok)throw new Error(data.message||'دریافت نمره‌ها ناموفق بود.');
    box.textContent='اطلاعات تحصیلی '+esc(data.student?.first_name)+' '+esc(data.student?.last_name)+' · کلاس '+esc(data.student?.class_name);
    const rows=data.grades||[],adjustments=data.adjustments||[],continuous=data.continuous||[];
-   out.innerHTML='<h2>نمره‌های منتشرشده</h2>'+(rows.length?'<table><thead><tr><th>درس</th><th>نوع ارزیابی</th><th>عنوان</th><th>نمره</th><th>ضریب</th><th>نوبت</th><th>تاریخ</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.assessment_type)+'</td><td>'+esc(x.assessment_title)+'</td><td>'+esc(x.score)+'</td><td>'+esc(x.coefficient)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.grade_date_shamsi)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">هنوز نمره‌ای برای نمایش منتشر نشده است.</p>');
-   out.innerHTML+='<h2>نمره مستمر نهایی پس از تعدیلات مصوب</h2>'+(continuous.length?'<table><thead><tr><th>درس</th><th>نوبت</th><th>میانگین پایه</th><th>تعدیل</th><th>نمره نهایی از ۲۰</th></tr></thead><tbody>'+continuous.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.base_score)+'</td><td>'+esc(x.adjustment)+'</td><td>'+esc(x.final_score)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">برای محاسبه مستمر، نمره منتشرشده‌ای وجود ندارد.</p>');
+   out.innerHTML='<h2>نمره‌های منتشرشده</h2>'+(rows.length?'<table><thead><tr><th>درس</th><th>نوع ارزیابی</th><th>عنوان</th><th>نمره</th><th>ضریب</th><th>نوبت</th><th>تاریخ</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.assessment_type)+'</td><td>'+esc(x.assessment_title)+'</td><td>'+esc(x.score)+'</td><td>'+esc(x.coefficient)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.grade_date_shamsi)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">هنوز نمره‌ای برای نمایش ثبت نشده است.</p>');
+   out.innerHTML+='<h2>نمره مستمر نهایی پس از تعدیلات مصوب</h2>'+(continuous.length?'<table><thead><tr><th>درس</th><th>نوبت</th><th>میانگین پایه</th><th>تعدیل</th><th>نمره نهایی از ۲۰</th></tr></thead><tbody>'+continuous.map(x=>'<tr><td>'+esc(x.subject)+'</td><td>'+esc(x.term)+'</td><td>'+esc(x.base_score)+'</td><td>'+esc(x.adjustment)+'</td><td>'+esc(x.final_score)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">برای محاسبه مستمر، نمره‌ای وجود ندارد.</p>');
    out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+(adjustments.filter(x=>x.target_score==='discipline').length?'<table><thead><tr><th>میزان تعدیل</th><th>تاریخ اعمال</th></tr></thead><tbody>'+adjustments.filter(x=>x.target_score==='discipline').map(x=>'<tr><td>'+esc(x.delta)+'</td><td>'+esc(x.applied_at)+'</td></tr>').join('')+'</tbody></table>':'<p class="muted">تعدیل انضباطی مصوبی ثبت نشده است.</p>');
   }catch(e){box.textContent=e.message}
  })();
