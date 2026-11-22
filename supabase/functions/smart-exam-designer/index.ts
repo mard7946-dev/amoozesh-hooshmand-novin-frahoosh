@@ -283,20 +283,18 @@ Deno.serve(async (req: Request) => {
           "Return exactly one valid JSON object: {\"summary\":\"Persian notes\"}. No markdown or text outside JSON.",
           "Keep the summary concise, at most 700 Persian characters, and begin with the supplied page range."
         ];
-      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
+      const analysisModel = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+      const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/" + analysisModel;
       const analysisStartedAt = Date.now();
+      const analysisRequestId = crypto.randomUUID();
+      const analysisTimeoutMs = 40000;
       try {
-        let summary = "";
-        let lastParseError = "";
-        const maxTokens = mode === "compress" ? 1800 : 900;
-        console.info("Textbook summary request started", { mode, sourceLength: sourceText.length, maxTokens });
-        for (let attempt = 0; attempt < 1 && !summary; attempt++) {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 65000);
-          let response: Response;
-          let result: Record<string, unknown>;
-          try {
-            response = await fetch(endpoint, {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), analysisTimeoutMs);
+        let response: Response;
+        let result: Record<string, unknown>;
+        try {
+          response = await fetch(endpoint, {
             method: "POST",
             headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -304,7 +302,7 @@ Deno.serve(async (req: Request) => {
                 { role: "system", content: baseInstructions.join(" ") },
                 { role: "user", content: JSON.stringify({ pages: pageReference, textbook_content_or_notes: sourceText }) }
               ],
-              max_completion_tokens: maxTokens,
+              max_tokens: mode === "compress" ? 1200 : 600,
               temperature: 0.1,
               response_format: {
                 type: "json_schema",
@@ -319,50 +317,79 @@ Deno.serve(async (req: Request) => {
                     additionalProperties: false
                   }
                 }
-              },
-              chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
+              }
             }),
             signal: controller.signal
+          });
+          result = await response.json().catch(() => ({})) as Record<string, unknown>;
+        } finally {
+          clearTimeout(timeout);
+        }
+        const durationMs = Date.now() - analysisStartedAt;
+        if (!response.ok || result?.success !== true) {
+          console.error("Textbook AI provider returned an error", {
+            requestId: analysisRequestId, model: analysisModel, status: response.status,
+            durationMs, response: JSON.stringify(result).slice(0, 900)
+          });
+          return reply({
+            message: "سرویس هوش مصنوعی در تحلیل این بخش پاسخ موفق نداد (HTTP " + response.status + "). شناسه پیگیری: " + analysisRequestId
+          }, 502);
+        }
+        const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
+        const choices = Array.isArray(resultBody.choices) ? resultBody.choices as Array<Record<string, unknown>> : [];
+        const firstChoice = choices[0] || {};
+        const firstMessage = firstChoice.message && typeof firstChoice.message === "object" ? firstChoice.message as Record<string, unknown> : {};
+        const modelOutput = resultBody.response ?? firstMessage.content ?? "";
+        let parsed: Record<string, unknown>;
+        if (modelOutput && typeof modelOutput === "object" && !Array.isArray(modelOutput)) {
+          parsed = modelOutput as Record<string, unknown>;
+        } else {
+          const raw = clean(modelOutput, 20000).replace(/^\\uFEFF/, "").trim();
+          const firstBrace = raw.indexOf("{"), lastBrace = raw.lastIndexOf("}");
+          if (firstBrace < 0 || lastBrace <= firstBrace) {
+            console.error("Textbook AI returned no JSON object", {
+              requestId: analysisRequestId, model: analysisModel, durationMs,
+              outputLength: raw.length, finishReason: firstChoice.finish_reason || resultBody.finish_reason || null,
+              resultKeys: Object.keys(resultBody)
             });
-            result = await response.json().catch(() => ({})) as Record<string, unknown>;
-          } finally {
-            clearTimeout(timeout);
+            return reply({ message: "پاسخ مدل برای تحلیل کتاب ساختار JSON معتبر نداشت. شناسه پیگیری: " + analysisRequestId }, 502);
           }
-          if (!response.ok || result?.success !== true) {
-            console.error("Cloudflare textbook analysis failed", response.status, JSON.stringify(result).slice(0, 900));
-            return reply({ message: "تحلیل یکی از بخش‌های کتاب توسط هوش مصنوعی ناموفق بود؛ کمی بعد دوباره تلاش کنید." }, 502);
-          }
-          const resultBody = result?.result && typeof result.result === "object" ? result.result as Record<string, unknown> : {};
-          const choices = Array.isArray(resultBody.choices) ? resultBody.choices as Array<Record<string, unknown>> : [];
-          const firstChoice = choices[0] || {};
-          const firstMessage = firstChoice.message && typeof firstChoice.message === "object" ? firstChoice.message as Record<string, unknown> : {};
-          const raw = clean(resultBody.response ?? firstMessage.content ?? "", 20000).replace(/^\\uFEFF/, "").trim();
-          if (!raw) console.warn("Textbook model returned an empty completion", { topLevelKeys: Object.keys(result || {}), resultKeys: Object.keys(resultBody), finishReason: firstChoice.finish_reason || resultBody.finish_reason || null });
           try {
-            const firstBrace = raw.indexOf("{"), lastBrace = raw.lastIndexOf("}");
-            if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error("Model response did not contain a complete JSON object");
-            const parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1));
-            const candidate = clean(parsed?.summary, mode === "compress" ? 3000 : 700);
-            const minimumSummaryLength = mode === "compress" ? 45 : 30;
-            if (candidate.length < minimumSummaryLength) throw new Error("Model summary was empty or too short");
-            summary = candidate;
-          } catch (parseError) {
-            lastParseError = parseError instanceof Error ? parseError.message : "invalid model JSON";
-            console.warn("Textbook summary response was incomplete; retrying", { attempt: attempt + 1, responseLength: raw.length, reason: lastParseError });
+            parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1)) as Record<string, unknown>;
+          } catch {
+            console.error("Textbook AI returned malformed JSON", {
+              requestId: analysisRequestId, model: analysisModel, durationMs, outputLength: raw.length
+            });
+            return reply({ message: "ساختار پاسخ هوش مصنوعی قابل‌خواندن نبود. شناسه پیگیری: " + analysisRequestId }, 502);
           }
         }
-        if (!summary) {
-          console.error("Textbook summary response was invalid", { mode, sourceLength: sourceText.length, durationMs: Date.now() - analysisStartedAt, reason: lastParseError });
-          return reply({ message: "پاسخ هوش مصنوعی کامل نبود؛ این بخش را به دو قسمت کوچک‌تر تقسیم کنید و دوباره تحلیل کنید." }, 502);
+        const summary = clean(parsed?.summary, mode === "compress" ? 3000 : 700);
+        const minimumSummaryLength = mode === "compress" ? 45 : 30;
+        if (summary.length < minimumSummaryLength) {
+          console.error("Textbook AI returned an empty or short summary", {
+            requestId: analysisRequestId, model: analysisModel, durationMs,
+            summaryLength: summary.length, resultKeys: Object.keys(resultBody)
+          });
+          return reply({ message: "مدل یادداشت کافی برای این بخش تولید نکرد. شناسه پیگیری: " + analysisRequestId }, 502);
         }
+        console.info("Textbook AI analysis completed", {
+          requestId: analysisRequestId, model: analysisModel, durationMs,
+          sourceLength: sourceText.length, summaryLength: summary.length
+        });
         return reply({ ok: true, summary, page_reference: pageReference });
       } catch (error) {
-        console.error("Textbook chunk analysis error", { mode, sourceLength: sourceText.length, durationMs: Date.now() - analysisStartedAt, reason: error instanceof Error ? error.message : "unknown" });
+        const durationMs = Date.now() - analysisStartedAt;
+        const timedOut = error instanceof Error && error.name === "AbortError";
+        console.error("Textbook chunk analysis failed", {
+          requestId: analysisRequestId, model: analysisModel, mode,
+          sourceLength: sourceText.length, durationMs, timedOut,
+          reason: error instanceof Error ? error.message : "unknown"
+        });
         return reply({
-          message: error instanceof Error && error.name === "AbortError"
-            ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ بازه صفحات را کوچک‌تر کنید و دوباره تلاش کنید."
-            : "ارتباط با هوش مصنوعی هنگام تحلیل کتاب برقرار نشد؛ دوباره تلاش کنید."
-        }, 502);
+          message: timedOut
+            ? "مدل هوش مصنوعی در مهلت ۴۰ ثانیه پاسخ نداد؛ درخواست به‌صورت کنترل‌شده متوقف شد. شناسه پیگیری: " + analysisRequestId
+            : "ارتباط سرور با سرویس هوش مصنوعی برقرار نشد؛ شناسه پیگیری: " + analysisRequestId
+        }, timedOut ? 504 : 502);
       }
     }
 
