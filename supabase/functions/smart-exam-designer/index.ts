@@ -19,6 +19,7 @@ const safeEditionFolder = (value: unknown) => clean(value, 40)
 const normalize = (value: unknown) => clean(value, 200)
   .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
   .replace(/ي/g, "ی").replace(/ك/g, "ک").toLocaleLowerCase("fa");
+const controllerTimeout = (reason: string) => reason.startsWith("AI request timed out after ");
 
 const questionTypes = new Set([
   "multiple_choice", "conceptual", "true_false", "fill_blank", "short_answer", "essay",
@@ -430,9 +431,11 @@ Deno.serve(async (req: Request) => {
       const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + cloudflareAccount + "/ai/run/@cf/zai-org/glm-4.7-flash";
       let generated: unknown;
       let lastAiError = "unknown";
+      const generationStartedAt = Date.now();
+      const generationTimeoutMs = 65000;
       for (let attempt = 0; attempt < 1 && !generated; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 28000);
+        const timeout = setTimeout(() => controller.abort(), generationTimeoutMs);
         try {
           const response = await fetch(endpoint, {
             method: "POST",
@@ -471,9 +474,12 @@ Deno.serve(async (req: Request) => {
           }
           generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
         } catch (error) {
-          lastAiError = error instanceof Error ? error.message : "unknown";
+          lastAiError = controller.signal.aborted
+            ? "AI request timed out after " + generationTimeoutMs + "ms"
+            : error instanceof Error ? error.message : "unknown";
           console.error("Cloudflare Workers AI generation attempt failed", {
-            attempt: attempt + 1, reason: lastAiError.slice(0, 300)
+            attempt: attempt + 1, durationMs: Date.now() - generationStartedAt,
+            timedOut: controller.signal.aborted, reason: lastAiError.slice(0, 300)
           });
           // Do not retry a costly final-generation request inside the same Edge invocation.
         } finally {
@@ -481,10 +487,12 @@ Deno.serve(async (req: Request) => {
         }
       }
       if (!generated) {
-        console.error("Cloudflare Workers AI generation failed", { reason: lastAiError.slice(0, 300) });
+        console.error("Cloudflare Workers AI generation failed", {
+          durationMs: Date.now() - generationStartedAt, reason: lastAiError.slice(0, 300)
+        });
         return reply({
-          message: lastAiError.includes("AbortError")
-            ? "پاسخ هوش مصنوعی در مهلت تعیین‌شده نرسید؛ تعداد سؤال‌ها یا بازه صفحات را کمتر کنید."
+          message: controllerTimeout(lastAiError)
+            ? "پاسخ هوش مصنوعی بیش از ۶۵ ثانیه زمان برد؛ لطفاً دوباره تلاش کنید یا تعداد سؤال‌های هر بخش را کمتر کنید."
             : "سرویس هوش مصنوعی پاسخ کامل و قابل‌خواندن نداد؛ تعداد سؤال‌های این بخش را کمتر کنید و دوباره تلاش کنید."
         }, 502);
       }
