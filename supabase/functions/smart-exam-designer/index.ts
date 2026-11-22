@@ -442,8 +442,42 @@ Deno.serve(async (req: Request) => {
             headers: { "Authorization": "Bearer " + cloudflareToken, "Content-Type": "application/json" },
             body: JSON.stringify({
               messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-              max_tokens: Math.min(7000, 500 + count * 180),
-              temperature: 0.25
+              max_tokens: Math.min(7000, 1200 + count * 700),
+              temperature: 0.2,
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "middle_school_exam_questions",
+                  description: "A complete set of Persian middle-school exam questions.",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      questions: {
+                        type: "array",
+                        minItems: count,
+                        maxItems: count,
+                        items: {
+                          type: "object",
+                          properties: {
+                            question_type: { type: "string", enum: plan.map(item => item.type) },
+                            prompt: { type: "string" },
+                            options: { type: "array", items: { type: "string" } },
+                            correct_answer: { type: "string" },
+                            explanation: { type: "string" },
+                            difficulty: { type: "string", enum: ["easy", "medium", "hard"] }
+                          },
+                          required: ["question_type", "prompt", "options", "correct_answer", "explanation", "difficulty"],
+                          additionalProperties: false
+                        }
+                      }
+                    },
+                    required: ["questions"],
+                    additionalProperties: false
+                  }
+                }
+              },
+              chat_template_kwargs: { enable_thinking: false, clear_thinking: true }
             }),
             signal: controller.signal
           });
@@ -465,12 +499,23 @@ Deno.serve(async (req: Request) => {
           const firstChoice = choices[0] || {};
           const firstMessage = firstChoice.message && typeof firstChoice.message === "object"
             ? firstChoice.message as Record<string, unknown> : {};
-          let content = clean(resultBody.response ?? firstMessage.content ?? firstChoice.text ?? "", 30000);
-          content = content.replace(/^\uFEFF/, "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+          // Prefer the first non-empty completion: Workers AI may return an empty top-level response with content in choices.
+          let content = clean(resultBody.response, 30000) ||
+            clean(firstMessage.content, 30000) ||
+            clean(firstChoice.text, 30000);
+          content = content.replace(/^\\uFEFF/, "").replace(/^\\s*```(?:json)?\\s*/i, "").replace(/\\s*```\\s*$/, "");
           const firstBrace = content.indexOf("{");
           const lastBrace = content.lastIndexOf("}");
           if (firstBrace < 0 || lastBrace <= firstBrace) {
-            throw new Error("Cloudflare AI completion did not contain a complete JSON object (length " + content.length + ")");
+            const finishReason = clean(firstChoice.finish_reason ?? resultBody.finish_reason ?? "", 80) || "unknown";
+            console.error("Cloudflare AI returned no usable question content", {
+              durationMs: Date.now() - generationStartedAt,
+              responseKeys: Object.keys(resultBody),
+              choiceKeys: Object.keys(firstChoice),
+              finishReason,
+              contentLength: content.length
+            });
+            throw new Error("Cloudflare AI returned no usable JSON content (finish_reason=" + finishReason + ", length=" + content.length + ")");
           }
           generated = JSON.parse(content.slice(firstBrace, lastBrace + 1));
         } catch (error) {
