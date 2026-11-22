@@ -662,9 +662,18 @@ Deno.serve(async (req: Request) => {
         }
       }
       if (!generated) {
+        const quotaExhausted = /Cloudflare AI HTTP 429/.test(lastAiError) &&
+          /daily free allocation|neurons/i.test(lastAiError);
         console.error("Cloudflare Workers AI generation failed", {
-          durationMs: Date.now() - generationStartedAt, reason: lastAiError.slice(0, 300)
+          durationMs: Date.now() - generationStartedAt,
+          failureKind: quotaExhausted ? "daily_free_quota_exhausted" : controllerTimeout(lastAiError) ? "timeout" : "provider_or_format_error",
+          reason: lastAiError.slice(0, 300)
         });
+        if (quotaExhausted) {
+          return reply({
+            message: "سهمیهٔ رایگان روزانهٔ سرویس هوش مصنوعی تمام شده است. پس از بازنشانی سهمیه دوباره تلاش کنید یا از مسئول فنی بخواهید اعتبار سرویس را بررسی کند؛ کم‌کردن تعداد سؤال‌ها این خطا را برطرف نمی‌کند."
+          }, 429);
+        }
         return reply({
           message: controllerTimeout(lastAiError)
             ? "پاسخ هوش مصنوعی بیش از ۱۰۵ ثانیه زمان برد؛ لطفاً پس از بررسی اتصال دوباره تلاش کنید."
