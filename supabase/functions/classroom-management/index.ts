@@ -501,10 +501,13 @@ Deno.serve(async (req: Request) => {
       if (studentError) throw studentError;
       if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
 
-      const [gradesResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult] = await Promise.all([
+      const [gradesResult, reportCardsResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult] = await Promise.all([
         admin.from("student_grades")
           .select("id,subject,assessment_type,assessment_title,score,coefficient,grade_date_shamsi,term,manager_released")
           .eq("tenant_school_id", school).eq("student_id", student.id).order("id", { ascending: false }).limit(1000),
+        admin.from("school_report_cards")
+          .select("id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,executive_name,manager_name,created_at")
+          .eq("school_id", school).eq("student_id", student.id).order("created_at", { ascending: false }).limit(100),
         admin.from("student_grade_adjustments")
           .select("id,target_score,subject,term,delta,actor_role,applied_at")
           .eq("tenant_school_id", school).eq("student_id", student.id).order("applied_at", { ascending: false }).limit(500),
@@ -524,7 +527,7 @@ Deno.serve(async (req: Request) => {
           .eq("tenant_school_id", school).eq("status", "active").is("student_id", null)
           .eq("class_name", clean(student.class_name)).order("id", { ascending: false }).limit(1000),
       ]);
-      const failed = [gradesResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult].find((result: any) => result.error);
+      const failed = [gradesResult, reportCardsResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult].find((result: any) => result.error);
       if (failed) throw failed.error;
 
       const assignments = [...(personalAssignmentsResult.data ?? []), ...(classAssignmentsResult.data ?? [])]
@@ -563,7 +566,7 @@ Deno.serve(async (req: Request) => {
         .reduce((sum: number, item: any) => sum + Number(item.delta || 0), 0);
 
       return reply({
-        ok: true, student, grades, adjustments, continuous,
+        ok: true, student, grades, report_cards: reportCardsResult.data ?? [], adjustments, continuous,
         discipline_adjustment: Number(disciplineDelta.toFixed(2)),
         attendance: attendanceResult.data ?? [],
         discipline: disciplineResult.data ?? [],
