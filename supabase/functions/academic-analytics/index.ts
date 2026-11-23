@@ -11,12 +11,12 @@ const clean = (value: unknown, max = 180) => String(value ?? "").trim().slice(0,
 const managerRoles = new Set(["manager", "مدیر", "مدیریت"]);
 const executiveRoles = new Set(["executive", "executive_deputy", "معاون اجرایی", "معاونت اجرایی", "معاون اجرایی مدرسه"]);
 
-async function fetchAll(admin: any, table: string, columns: string, schoolId: string) {
+async function fetchAll(admin: any, table: string, columns: string, schoolId: string, schoolColumn = "tenant_school_id") {
   const rows: Record<string, unknown>[] = [];
   const pageSize = 1000;
   for (let offset = 0; offset < 10000; offset += pageSize) {
     const { data, error } = await admin.from(table).select(columns)
-      .eq("tenant_school_id", schoolId).range(offset, offset + pageSize - 1);
+      .eq(schoolColumn, schoolId).range(offset, offset + pageSize - 1);
     if (error) throw new Error("دریافت اطلاعات " + table + " ناموفق بود.");
     const page = (data ?? []) as Record<string, unknown>[];
     rows.push(...page);
@@ -71,11 +71,12 @@ Deno.serve(async (req: Request) => {
     if (clean(body.action || "get", 20) !== "get")
       return reply({ message: "عملیات درخواستی پشتیبانی نمی‌شود." }, 400);
 
-    const [school, students, grades, assignments] = await Promise.all([
+    const [school, students, grades, assignments, reportCards] = await Promise.all([
       admin.from("schools").select("id,name").eq("id", schoolId).maybeSingle(),
       fetchAll(admin, "students", "id,first_name,last_name,student_code,grade,class_name", schoolId),
       fetchAll(admin, "student_grades", "id,student_id,teacher_id,subject,class_name,assessment_type,assessment_title,score,coefficient,grade_date,grade_date_shamsi,description,term,created_at,manager_released", schoolId),
-      fetchAll(admin, "teacher_classes", "id,teacher_id,teacher_name,subject,grade,class_name,active", schoolId)
+      fetchAll(admin, "teacher_classes", "id,teacher_id,teacher_name,subject,grade,class_name,active", schoolId),
+      fetchAll(admin, "school_report_cards", "id,student_ref,student_id,student_name,grade,class_name,academic_year,term,subjects,created_at", schoolId, "school_id")
     ]);
     if (!school.data) return reply({ message: "اطلاعات مدرسه پیدا نشد." }, 404);
 
@@ -86,6 +87,7 @@ Deno.serve(async (req: Request) => {
       students: students,
       grades: analysisGrades,
       assignments: activeAssignments,
+      reportCards: reportCards,
       metadata: {
         studentsCount: students.length,
         gradesCount: analysisGrades.length,
