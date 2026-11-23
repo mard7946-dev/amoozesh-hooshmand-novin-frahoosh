@@ -31,6 +31,10 @@ const groupAverage = new Function("average", "validScores", groupAverageSource[0
 );
 assert.equal(groupAverage([{ subject: "ریاضی", score: 18 }, { subject: "ریاضی", score: 16 }], "subject")[0].value, 17);
 assert.equal(groupAverage([{ subject: "علوم", score: 15 }], row => row.subject)[0].label, "علوم");
+assert.match(page, /<details class="roster-disclosure" id="rosterDetails">/);
+assert.match(page, /id="rosterSummaryCount"/);
+assert.match(page, /\$\("rosterSummaryCount"\)\.textContent=fa\(students\.length\)/);
+assert.match(page, /\.roster-content\{display:block!important(?:;padding:0)?\}/);
 assert.match(page, /id="roster"/);
 assert.match(page, /دارای نمره/);
 assert.match(page, /بدون نمره/);
