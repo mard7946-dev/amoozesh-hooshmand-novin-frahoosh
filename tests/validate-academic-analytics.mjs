@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const page = readFileSync("academic-analytics.html", "utf8");
 const api = readFileSync("supabase/functions/academic-analytics/index.ts", "utf8");
 const portal = readFileSync("portal.html", "utf8");
+const classroom = readFileSync("supabase/functions/classroom-management/index.ts", "utf8");
 const script = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
 assert.ok(script, "Analytics page script exists");
 assert.doesNotThrow(() => new Function(script), "Analytics page JavaScript parses");
@@ -15,6 +16,10 @@ assert.match(api, /tenant_school_id/);
 assert.match(api, /manager_released/);
 assert.match(api, /grades: analysisGrades/);
 assert.match(api, /managerPendingGradesCount/);
+assert.match(classroom, /isManagerApprovalRequiredForGrade/);
+assert.match(classroom, /انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است/);
+assert.match(classroom, /manager_released: isManagerApprovalRequiredForGrade/);
+assert.match(classroom, /Number\(grade\.manager_released\) !== -1/);
 const groupAverageSource = script.match(/function groupAverage\(rows,key\)\{[\s\S]*?\nfunction classAssignments/);
 assert.ok(groupAverageSource, "groupAverage helper exists");
 const groupAverage = new Function("average", "validScores", groupAverageSource[0].replace(/\nfunction classAssignments[\s\S]*$/, "") + "; return groupAverage;")(
