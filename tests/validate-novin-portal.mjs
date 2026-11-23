@@ -348,7 +348,10 @@ for (const tableName of ['from("attendance")', 'from("discipline_records")', 'fr
 assert.ok(!studentSummaryBlock.includes('.eq("manager_released", 1)'), "Student portal must show newly recorded grades with their release state");
 assert.ok(studentSummaryBlock.includes('.eq("tenant_school_id", school)') && studentSummaryBlock.includes('.eq("student_id", student.id)'), "Student portal queries must remain scoped to the current school and student");
 assert.ok(parentManagementFunction.includes('assignmentSubmissions:assignmentSubmissions.data??[]'), "Parent API must return submission states only for linked children");
-assert.ok(parentPanelPage.includes("assignmentSubmissions||[]") && parentPanelPage.includes("ثبت‌شده؛ در انتظار بررسی"), "Parent panel must show child assignment completion and pending grade state");
+assert.ok(parentPanelPage.includes("assignmentSubmissions||[]"), "Parent panel must show child assignment completion state");
+assert.ok(parentPanelPage.includes("function needsManagerRelease(x)") && parentPanelPage.includes("filter(x=>!needsManagerRelease(x)||Number(x.manager_released)===1)"), "Parent panel must show ordinary grades immediately and hide unpublished continuous/final grades");
+assert.ok(!parentPanelPage.includes("ثبت‌شده؛ در انتظار بررسی"), "Parent panel must not reveal unpublished continuous/final grade status");
+assert.ok(studentModulePage.includes("needsManagerRelease=x=>") && studentModulePage.includes(".filter(x=>!needsManagerRelease(x)||Number(x.manager_released)===1)"), "Student panel must show ordinary grades immediately and only released continuous/final grades");
 const studentModuleScript = studentModulePage.split("<script>")[1]?.split("</script>")[0] ?? "";
 assert.ok(studentModuleScript.trim(), "Student module page must contain its operational script");
 assert.doesNotThrow(() => new Function(studentModuleScript), "Student module page script must have valid JavaScript syntax");
@@ -358,7 +361,9 @@ for (const moduleName of ["غیبت", "نمره", "انضباط", "تکلیف"])
 assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewPage.includes("academic_review"), "Academic review page must load and submit real review actions");
 assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
 assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
-assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('or("manager_released.eq.0,manager_released.is.null")') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include only pending attendance, unpublished grades, and pending discipline");
+assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('or("manager_released.eq.0,manager_released.is.null")') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include pending attendance, unreleased grades, and pending discipline");
+assert.ok(classroomManagementFunction.includes("manager ?") && classroomManagementFunction.includes("filter((row: any) => isManagerApprovalRequiredForGrade(row))"), "Only the manager review queue may contain pending continuous/final grades");
+assert.ok(classroomManagementFunction.includes("if (!manager) return reply({message:\"انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است.\"},403)") && classroomManagementFunction.includes("!isManagerApprovalRequiredForGrade(gradeForReview)"), "Server must restrict publication decisions to managers and continuous/final grades");
 const parentAttendanceQuery = parentManagementFunction.split("\n").find(line => line.includes('from("attendance")'));
 const parentGradeQuery = parentManagementFunction.split("\n").find(line => line.includes('from("student_grades")'));
 const parentDisciplineQuery = parentManagementFunction.split("\n").find(line => line.includes('from("discipline_records")'));
