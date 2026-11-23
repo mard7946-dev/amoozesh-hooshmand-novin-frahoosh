@@ -43,6 +43,17 @@ assert.match(page, /مقایسه کل کلاس با میانگین پایه/);
 assert.match(page, /ابتدا پایه و سپس کلاس را انتخاب کنید/);
 assert.match(page, /نمرات معتبر/);
 assert.match(page, /id="subjectChart"/);
+assert.match(page, /id="schoolSubjectChart"/);
+assert.match(page, /id="classDotChart"/);
+assert.match(page, /id="scoreDonutChart"/);
+assert.match(page, /id="studentScatterChart"/);
+assert.match(page, /function svgDotPlot/);
+assert.match(page, /function svgDonut/);
+assert.match(page, /function svgScatter/);
+assert.match(page, /میانگین همان درس در کل مدرسه/);
+assert.match(page, /نمودار نقطه‌ای مقایسه کلاس‌ها/);
+assert.match(page, /پراکندگی میانگین دانش‌آموزان/);
+
 assert.match(page, /id="teacherChart"/);
 assert.match(page, /id="monthlyTrendChart"/);
 assert.match(page, /id="reportCardPanel"/);
