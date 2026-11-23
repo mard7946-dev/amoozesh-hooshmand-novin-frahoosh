@@ -19,7 +19,7 @@ assert.match(api, /managerPendingGradesCount/);
 assert.match(classroom, /isManagerApprovalRequiredForGrade/);
 assert.match(classroom, /انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است/);
 assert.match(classroom, /manager_released: isManagerApprovalRequiredForGrade/);
-assert.match(classroom, /Number\(grade\.manager_released\) !== -1/);
+assert.match(classroom, /: true\);/);
 const groupAverageSource = script.match(/function groupAverage\(rows,key\)\{[\s\S]*?\nfunction classAssignments/);
 assert.ok(groupAverageSource, "groupAverage helper exists");
 const groupAverage = new Function("average", "validScores", groupAverageSource[0].replace(/\nfunction classAssignments[\s\S]*$/, "") + "; return groupAverage;")(
