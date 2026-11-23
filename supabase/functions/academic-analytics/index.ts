@@ -79,16 +79,17 @@ Deno.serve(async (req: Request) => {
     ]);
     if (!school.data) return reply({ message: "اطلاعات مدرسه پیدا نشد." }, 404);
 
-    const publishedGrades = grades.filter((row: any) => Number(row.manager_released) === 1);
+    const analysisGrades = grades;
     const activeAssignments = assignments.filter((row: any) => Number(row.active) === 1 || row.active === true);
     return reply({
       school: school.data,
       students: students,
-      grades: publishedGrades,
+      grades: analysisGrades,
       assignments: activeAssignments,
       metadata: {
         studentsCount: students.length,
-        publishedGradesCount: publishedGrades.length,
+        gradesCount: analysisGrades.length,
+        managerPendingGradesCount: analysisGrades.filter((row: any) => Number(row.manager_released) !== 1 && ["مستمر","پایان","نهایی","نوبت اول","نوبت دوم","ترم اول","ترم دوم"].some(value => (String(row.assessment_type ?? "") + " " + String(row.assessment_title ?? "")).includes(value))).length,
         activeAssignmentsCount: activeAssignments.length,
         gradeYearFieldAvailable: false
       }
