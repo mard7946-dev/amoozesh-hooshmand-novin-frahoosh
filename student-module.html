@@ -51,7 +51,7 @@ if(modules[selected]){
    const data=await res.json().catch(()=>({}));
    if(!res.ok||!data.ok)throw new Error(data.message||'دریافت اطلاعات دانش‌آموز ناموفق بود.');
    box.textContent='اطلاعات '+esc(data.student?.first_name)+' '+esc(data.student?.last_name)+' · کلاس '+esc(data.student?.class_name);
-   const grades=(data.grades||[]).filter(x=>!needsManagerRelease(x)||Number(x.manager_released)!==-1? !needsManagerRelease(x) : Number(x.manager_released)===1);
+   const grades=(data.grades||[]).filter(x=>!needsManagerRelease(x)||Number(x.manager_released)===1);
    const adjustments=data.adjustments||[],continuous=data.continuous||[];
    if(selected==='نمره'){
     out.innerHTML='<h2>نمره‌های ثبت‌شده</h2>'+table(['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ','وضعیت'],grades.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi,!needsManagerRelease(x)?'ثبت‌شده':Number(x.manager_released)===1?'منتشرشده':'ثبت‌شده؛ در انتظار انتشار مدیر']),'هنوز نمره‌ای ثبت نشده است.');
