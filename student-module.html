@@ -42,7 +42,7 @@ if(modules[selected]){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const table=(heads,rows,empty)=>rows.length?'<table><thead><tr>'+heads.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'<p class="muted">'+esc(empty)+'</p>';
  const approval=x=>x==='approved'?'تأییدشده':x==='pending'?'در انتظار بررسی':x==='rejected'?'ردشده':(x||'ثبت‌شده');
- const needsManagerRelease=x=>{const label=(String(x.assessment_type||'')+' '+String(x.assessment_title||'')).replace(/ي/g,'ی').replace(/ك/g,'ک');return ['مستمر','پایان','نهایی','نوبت اول','نوبت دوم','ترم اول','ترم دوم'].some(v=>label.includes(v))};
+ const needsManagerRelease=x=>{const label=(String(x.assessment_type||'')+' '+String(x.assessment_title||'')).replace(/ي/g,'ی').replace(/ك/g,'ک');return ['مستمر','پایان','نهایی'].some(v=>label.includes(v))};
  (async()=>{
   if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
   box.textContent='در حال دریافت اطلاعات ثبت‌شده برای حساب شما…';
