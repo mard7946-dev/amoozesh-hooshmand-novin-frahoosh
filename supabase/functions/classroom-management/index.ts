@@ -22,7 +22,7 @@ const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
 // Only continuous and final grades require explicit manager publication.
 const isManagerApprovalRequiredForGrade = (row: any) => {
   const label = `${norm(row?.assessment_type)} ${norm(row?.assessment_title)}`;
-  return ["مستمر", "پایان", "نهایی", "نوبت اول", "نوبت دوم", "ترم اول", "ترم دوم"].some(value => label.includes(value));
+  return ["مستمر", "پایان", "نهایی"].some(value => label.includes(value));
 };
 
 Deno.serve(async (req: Request) => {
