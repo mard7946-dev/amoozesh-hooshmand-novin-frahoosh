@@ -52,6 +52,7 @@ const interpretation = chartInsight([{label:"ریاضی",value:18},{label:"عل�
 assert.ok(interpretation.includes("ریاضی"));
 assert.ok(interpretation.includes("4.00"));
 assert.match(page, /\$\("rosterSummaryCount"\)\.textContent=fa\(students\.length\)/);
+assert.match(page, /\$\("studentCount"\)\.textContent=fa\(allStudents\.length\)/, "The class-wide student KPI remains independent of roster search");
 assert.match(page, /\.roster-content\{display:block!important(?:;padding:0)?\}/);
 assert.match(page, /id="roster"/);
 assert.match(page, /دارای نمره/);
