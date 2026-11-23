@@ -42,6 +42,7 @@ if(modules[selected]){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const table=(heads,rows,empty)=>rows.length?'<table><thead><tr>'+heads.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'<p class="muted">'+esc(empty)+'</p>';
  const approval=x=>x==='approved'?'تأییدشده':x==='pending'?'در انتظار بررسی':x==='rejected'?'ردشده':(x||'ثبت‌شده');
+ const needsManagerRelease=x=>{const label=(String(x.assessment_type||'')+' '+String(x.assessment_title||'')).replace(/ي/g,'ی').replace(/ك/g,'ک');return ['مستمر','پایان','نهایی'].some(v=>label.includes(v))};
  (async()=>{
   if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
   box.textContent='در حال دریافت اطلاعات ثبت‌شده برای حساب شما…';
@@ -50,11 +51,11 @@ if(modules[selected]){
    const data=await res.json().catch(()=>({}));
    if(!res.ok||!data.ok)throw new Error(data.message||'دریافت اطلاعات دانش‌آموز ناموفق بود.');
    box.textContent='اطلاعات '+esc(data.student?.first_name)+' '+esc(data.student?.last_name)+' · کلاس '+esc(data.student?.class_name);
-   const grades=(data.grades||[]).filter(x=>Number(x.manager_released)!==-1);
+   const grades=(data.grades||[]).filter(x=>!needsManagerRelease(x)||Number(x.manager_released)===1);
    const adjustments=data.adjustments||[],continuous=data.continuous||[];
    if(selected==='نمره'){
-    out.innerHTML='<h2>نمره‌های ثبت‌شده</h2>'+table(['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ','وضعیت'],grades.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi,Number(x.manager_released)===1?'منتشرشده':'ثبت‌شده؛ در انتظار بررسی']),'هنوز نمره‌ای ثبت نشده است.');
-    out.innerHTML+='<h2>نمره مستمر بر اساس نمره‌های منتشرشده</h2>'+table(['درس','نوبت','میانگین پایه','تعدیل','نمره نهایی از ۲۰'],continuous.map(x=>[x.subject,x.term,x.base_score,x.adjustment,x.final_score]),'هنوز نمره منتشرشده‌ای برای محاسبه وجود ندارد.');
+    out.innerHTML='<h2>نمره‌های ثبت‌شده</h2>'+table(['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ','وضعیت'],grades.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi,!needsManagerRelease(x)?'ثبت‌شده':Number(x.manager_released)===1?'منتشرشده':'ثبت‌شده؛ در انتظار انتشار مدیر']),'هنوز نمره‌ای ثبت نشده است.');
+    out.innerHTML+='<h2>نمره مستمر بر اساس نمره‌های قابل محاسبه</h2>'+table(['درس','نوبت','میانگین پایه','تعدیل','نمره نهایی از ۲۰'],continuous.map(x=>[x.subject,x.term,x.base_score,x.adjustment,x.final_score]),'هنوز نمره‌ای برای محاسبه وجود ندارد.');
     out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+table(['میزان تعدیل','تاریخ اعمال'],adjustments.filter(x=>x.target_score==='discipline').map(x=>[x.delta,x.applied_at]),'تعدیل انضباطی مصوبی ثبت نشده است.');
    }else if(selected==='غیبت'){
     out.innerHTML='<h2>سوابق حضور و غیاب</h2>'+table(['تاریخ','وضعیت','درس','توضیح','وضعیت بررسی'],(data.attendance||[]).map(x=>[x.attendance_date||x.date,x.status,x.subject,x.description,approval(x.approval_status)]),'هنوز سابقه حضور و غیابی برای شما ثبت نشده است.');

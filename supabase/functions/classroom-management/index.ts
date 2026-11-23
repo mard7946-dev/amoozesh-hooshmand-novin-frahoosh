@@ -19,6 +19,11 @@ const isManager = (role: string) => rolesManager.some(r => norm(role).includes(n
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
+// Only continuous and final grades require explicit manager publication.
+const isManagerApprovalRequiredForGrade = (row: any) => {
+  const label = `${norm(row?.assessment_type)} ${norm(row?.assessment_title)}`;
+  return ["مستمر", "پایان", "نهایی"].some(value => label.includes(value));
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -192,19 +197,22 @@ Deno.serve(async (req: Request) => {
       if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به بررسی اطلاعات آموزشی است." }, 403);
       const [attendanceRows, gradeRows, disciplineRows] = await Promise.all([
         admin.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,class_name,approval_status").eq("tenant_school_id",school).eq("approval_status","pending").order("id",{ascending:false}).limit(1500),
-        admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).or("manager_released.eq.0,manager_released.is.null").order("id",{ascending:false}).limit(1500),
+        manager
+          ? admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).or("manager_released.eq.0,manager_released.is.null").order("id",{ascending:false}).limit(1500)
+          : Promise.resolve({data:[],error:null}),
         admin.from("discipline_records").select("id,student_id,title,description,record_type,incident_date,class_name,subject,actor_role,status").eq("tenant_school_id",school).eq("status","pending").is("deleted_at",null).order("id",{ascending:false}).limit(1500)
       ]);
       const failed = [attendanceRows,gradeRows,disciplineRows].find((x:any)=>x.error);
       if (failed) throw failed.error;
-      const ids = [...new Set([...(attendanceRows.data??[]),...(gradeRows.data??[]),...(disciplineRows.data??[])].map((x:any)=>Number(x.student_id)).filter(Boolean))];
+      const pendingGrades = (gradeRows.data ?? []).filter((row: any) => isManagerApprovalRequiredForGrade(row));
+      const ids = [...new Set([...(attendanceRows.data??[]),...pendingGrades,...(disciplineRows.data??[])].map((x:any)=>Number(x.student_id)).filter(Boolean))];
       const {data:students,error:studentsError}=ids.length
         ? await admin.from("students").select("id,first_name,last_name,class_name").eq("tenant_school_id",school).in("id",ids)
         : {data:[],error:null};
       if(studentsError) throw studentsError;
       const names=new Map((students??[]).map((x:any)=>[Number(x.id),clean(x.first_name)+" "+clean(x.last_name)]));
       const enrich=(rows:any[])=>rows.map((x:any)=>({...x,student_name:names.get(Number(x.student_id))??"دانش‌آموز"}));
-      return reply({ok:true,attendance:enrich(attendanceRows.data??[]),grades:enrich(gradeRows.data??[]),discipline:enrich(disciplineRows.data??[])});
+      return reply({ok:true,attendance:enrich(attendanceRows.data??[]),grades:enrich(pendingGrades),discipline:enrich(disciplineRows.data??[])});
     }
 
     if (action === "academic_review") {
@@ -219,6 +227,12 @@ Deno.serve(async (req: Request) => {
           .eq("tenant_school_id",school).eq("id",id).eq("approval_status","pending").select("id,approval_status").maybeSingle();
         updated=result.data;error=result.error;
       } else if(type==="grade"){
+        if (!manager) return reply({message:"انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است."},403);
+        const {data:gradeForReview,error:gradeLookupError}=await admin.from("student_grades")
+          .select("id,assessment_type,assessment_title").eq("tenant_school_id",school).eq("id",id).maybeSingle();
+        if(gradeLookupError) throw gradeLookupError;
+        if(!gradeForReview || !isManagerApprovalRequiredForGrade(gradeForReview))
+          return reply({message:"این نوع نمره نیاز به تأیید مدیر ندارد یا پیدا نشد."},400);
         const result=await admin.from("student_grades").update({manager_released:status==="approved"?1:-1})
           .eq("tenant_school_id",school).eq("id",id).or("manager_released.eq.0,manager_released.is.null").select("id,manager_released").maybeSingle();
         updated=result.data;error=result.error;
@@ -270,7 +284,7 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id), score = Number(r.score);
         const maxScore = Number(body.max_score) > 0 ? Number(body.max_score) : 20;
         if (!studentId || !allowed.has(studentId) || !Number.isFinite(score) || score < 0 || score > maxScore) continue;
-        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 0 });
+        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: isManagerApprovalRequiredForGrade({assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment}) ? 0 : 1 });
       }
       if (!inserts.length) return reply({ message: "هیچ نمره معتبر (۰ تا ۲۰) برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("student_grades").insert(inserts).select("id");
@@ -525,7 +539,9 @@ Deno.serve(async (req: Request) => {
       if (submissionsResult.error) throw submissionsResult.error;
 
       const grades = gradesResult.data ?? [];
-      const releasedGrades = grades.filter((grade: any) => Number(grade.manager_released) === 1);
+      const releasedGrades = grades.filter((grade: any) => isManagerApprovalRequiredForGrade(grade)
+        ? Number(grade.manager_released) === 1
+        : true);
       const adjustments = adjustmentsResult.data ?? [];
       const groups = new Map<string, any>();
       for (const grade of releasedGrades) {
