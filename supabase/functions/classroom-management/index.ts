@@ -541,7 +541,7 @@ Deno.serve(async (req: Request) => {
       const grades = gradesResult.data ?? [];
       const releasedGrades = grades.filter((grade: any) => isManagerApprovalRequiredForGrade(grade)
         ? Number(grade.manager_released) === 1
-        : Number(grade.manager_released) !== -1);
+        : true);
       const adjustments = adjustmentsResult.data ?? [];
       const groups = new Map<string, any>();
       for (const grade of releasedGrades) {
