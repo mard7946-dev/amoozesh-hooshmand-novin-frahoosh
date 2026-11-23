@@ -116,6 +116,11 @@ assert.match(api,/\.eq\("school_id",schoolId\)\.eq\("grade",grade\)\.eq\("class_
 assert.doesNotMatch(api,/action==="delete_all"/,"The school-wide delete action is removed");
 
 assert.match(page,/id="printAllGradeBtn"/,"A grade-wide bulk PDF action is available");
+assert.match(page,/<details id="recordsDisclosure" class="panel no-print records-disclosure">/,"Saved report cards are contained in a collapsible disclosure");
+assert.match(page,/<summary><span>کارنامه‌های ثبت‌شده<\/span><span id="recordsSummaryCount"/,"The collapsed heading shows the live report-card count");
+assert.doesNotMatch(page,/<details id="recordsDisclosure"[^>]*\bopen\b/,"The report-card list is collapsed by default");
+assert.match(page,/function renderRecords\(\)\{\$\("recordsSummaryCount"\)\.textContent=fa\(data\.cards\.length\)/,"The disclosure count updates whenever the existing list is rendered");
+assert.match(page,/id="records" class="card-list"/,"The existing record list container remains intact for search-independent edit, print and delete actions");
 assert.match(page,/data\.cards\.filter\(c=>String\(c\.grade\|\|\"\"\)\.trim\(\)===grade\)/,"Grade-wide export includes every class in the selected grade");
 assert.match(page,/printCards\(cards\)/,"Grade-wide export uses the existing report-card print/PDF layout");
 assert.match(page,/ابتدا پایهٔ موردنظر را انتخاب کنید/,"Grade-wide export requires an explicitly selected grade");
