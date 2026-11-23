@@ -14,9 +14,9 @@ assert.match(api, /is_active/);
 assert.match(api, /tenant_school_id/);
 assert.match(api, /manager_released/);
 assert.match(api, /Number\(row\.manager_released\) === 1/);
-const groupAverageSource = script.match(/function groupAverage\\(rows,key\\)\\{[\\s\\S]*?\\nfunction classAssignments/);
+const groupAverageSource = script.match(/function groupAverage\(rows,key\)\{[\s\S]*?\nfunction classAssignments/);
 assert.ok(groupAverageSource, "groupAverage helper exists");
-const groupAverage = new Function("average", "validScores", groupAverageSource[0].replace(/\\nfunction classAssignments[\\s\\S]*$/, "") + "; return groupAverage;")(
+const groupAverage = new Function("average", "validScores", groupAverageSource[0].replace(/\nfunction classAssignments[\s\S]*$/, "") + "; return groupAverage;")(
   rows => rows.length ? rows.reduce((sum, row) => sum + Number(row.score), 0) / rows.length : null,
   rows => rows.filter(row => Number.isFinite(Number(row.score)))
 );
