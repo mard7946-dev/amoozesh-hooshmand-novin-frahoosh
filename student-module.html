@@ -54,7 +54,8 @@ if(modules[selected]){
    const grades=(data.grades||[]).filter(x=>!needsManagerRelease(x)||Number(x.manager_released)===1);
    const adjustments=data.adjustments||[],continuous=data.continuous||[];
    if(selected==='نمره'){
-    out.innerHTML='<h2>نمره‌های ثبت‌شده</h2>'+table(['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ','وضعیت'],grades.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi,!needsManagerRelease(x)?'ثبت‌شده':Number(x.manager_released)===1?'منتشرشده':'ثبت‌شده؛ در انتظار انتشار مدیر']),'هنوز نمره‌ای ثبت نشده است.');
+    out.innerHTML='<h2>کارنامه میان‌ترم</h2>'+table(['سال تحصیلی','نوبت','پایه','کلاس','درس','نمره','دبیر','وضعیت'],(data.report_cards||[]).flatMap(card=>(Array.isArray(card.subjects)?card.subjects:[]).map(item=>[card.academic_year,card.term,card.grade,card.class_name,item.subject,item.attendance==='غایب'?'غایب':item.score,item.teacher,item.attendance||'ثبت‌شده'])),'کارنامه میان‌ترمی برای حساب شما ثبت نشده است.');
+    out.innerHTML+='<h2>نمره‌های ثبت‌شده دبیران</h2>'+table(['درس','نوع ارزیابی','عنوان','نمره','ضریب','نوبت','تاریخ','وضعیت'],grades.map(x=>[x.subject,x.assessment_type,x.assessment_title,x.score,x.coefficient,x.term,x.grade_date_shamsi,!needsManagerRelease(x)?'ثبت‌شده':Number(x.manager_released)===1?'منتشرشده':'ثبت‌شده؛ در انتظار انتشار مدیر']),'هنوز نمره‌ای ثبت نشده است.');
     out.innerHTML+='<h2>نمره مستمر بر اساس نمره‌های قابل محاسبه</h2>'+table(['درس','نوبت','میانگین پایه','تعدیل','نمره نهایی از ۲۰'],continuous.map(x=>[x.subject,x.term,x.base_score,x.adjustment,x.final_score]),'هنوز نمره‌ای برای محاسبه وجود ندارد.');
     out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+table(['میزان تعدیل','تاریخ اعمال'],adjustments.filter(x=>x.target_score==='discipline').map(x=>[x.delta,x.applied_at]),'تعدیل انضباطی مصوبی ثبت نشده است.');
    }else if(selected==='غیبت'){
