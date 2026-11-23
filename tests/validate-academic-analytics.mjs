@@ -13,7 +13,8 @@ assert.match(api, /school_memberships/);
 assert.match(api, /is_active/);
 assert.match(api, /tenant_school_id/);
 assert.match(api, /manager_released/);
-assert.match(api, /Number\(row\.manager_released\) === 1/);
+assert.match(api, /grades: analysisGrades/);
+assert.match(api, /managerPendingGradesCount/);
 const groupAverageSource = script.match(/function groupAverage\(rows,key\)\{[\s\S]*?\nfunction classAssignments/);
 assert.ok(groupAverageSource, "groupAverage helper exists");
 const groupAverage = new Function("average", "validScores", groupAverageSource[0].replace(/\nfunction classAssignments[\s\S]*$/, "") + "; return groupAverage;")(
