@@ -28,6 +28,7 @@ assert.ok(studentSummary.includes('from("assignments")'), "class and student ass
 assert.ok(studentSummary.includes('from("assignment_submissions")'), "student submission status is loaded");
 assert.ok(studentSummary.includes("manager_released"), "grade release state is returned");
 assert.ok(studentSummary.includes('from("school_report_cards")'), "student midterm report cards are loaded");
+assert.ok(studentSummary.includes('.eq("school_id", school).eq("student_id", student.id)'), "student report cards are restricted to the authenticated student's school and id");
 assert.ok(studentSummary.includes("report_cards:"), "student API returns midterm report cards");
 assert.ok(!studentSummary.includes('.eq("manager_released", 1)'), "unreleased grades are not hidden from the student");
 assert.ok(studentSummary.includes('eq("tenant_school_id", school)'), "student queries are school-scoped");
@@ -39,6 +40,7 @@ const parentAttendanceLine = parentApi.split("\n").find(line => line.includes('f
 assert.ok(parentDisciplineLine && !parentDisciplineLine.includes('.eq("status","approved")'), "pending family-visible discipline records are included");
 assert.ok(parentGradeLine && !parentGradeLine.includes('.eq("manager_released",1)'), "unreleased family-visible grades are included");
 assert.ok(parentApi.includes('from("school_report_cards")'), "parent API loads saved midterm report cards");
+assert.ok(parentApi.includes('.eq("school_id",school).in("student_id",studentIds)'), "parent report cards are restricted to linked children in the current school");
 assert.ok(parentApi.includes("reportCards:reportCards.data??[]"), "parent API returns linked midterm report cards");
 assert.ok(parentAttendanceLine && !parentAttendanceLine.includes('.eq("approval_status","approved")'), "pending attendance records are included");
 assert.ok(parentApi.includes("assignmentSubmissions:assignmentSubmissions.data??[]"), "parent API returns child-scoped submission statuses");
@@ -51,5 +53,6 @@ assert.ok(parentPage.includes("ثبت‌شده؛ در انتظار بررسی"),
 assert.ok(studentPage.includes("data.report_cards"), "student page renders midterm report cards");
 assert.ok(studentPage.includes("کارنامه میان‌ترم"), "student page labels midterm report cards");
 assert.ok(parentPage.includes("reportCardsTable"), "parent page renders midterm report cards");
+assert.ok(parentPage.includes("filt(d.reportCards||[])"), "parent page shows only the currently selected child's report cards");
 
 console.log("Student and parent portal activation checks passed.");
