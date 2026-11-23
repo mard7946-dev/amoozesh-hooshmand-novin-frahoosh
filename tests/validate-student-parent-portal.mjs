@@ -49,7 +49,7 @@ for (const moduleName of ["غیبت", "نمره", "انضباط", "تکلیف"])
   assert.ok(studentPage.includes("selected==='" + moduleName + "'"), "student page renders " + moduleName);
 }
 assert.ok(parentPage.includes("assignmentSubmissions||[]"), "parent page renders assignment submission status");
-assert.ok(parentPage.includes("ثبت‌شده؛ در انتظار بررسی"), "parent page distinguishes unreviewed grades");
+assert.ok(parentPage.includes("Number(x.manager_released)===1"), "parent page preserves manager release rules for ordinary continuous/final grade entries");
 assert.ok(studentPage.includes("data.report_cards"), "student page renders midterm report cards");
 assert.ok(studentPage.includes("کارنامه میان‌ترم"), "student page labels midterm report cards");
 assert.ok(parentPage.includes("reportCardsTable"), "parent page renders midterm report cards");
