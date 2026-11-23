@@ -4,7 +4,7 @@ const adjustments=filt(d.gradeAdjustments||[]);
 const grouped=new Map();
 for(const g of filt(d.grades).filter(x=>!needsManagerRelease(x)||+x.manager_released===1)){
  const k=g.subject||"";
- const v=grouped.get(k)||{subject:g.subject||"—",term:"مجموع نوبت‌های منتشرشده",weighted:0,weight:0};
+ const v=grouped.get(k)||{subject:g.subject||"—",term:"مجموع نمرات قابل مشاهده",weighted:0,weight:0};
  const w=Math.max(0,Number(g.coefficient)||1);v.weighted+=Number(g.score||0)*w;v.weight+=w;grouped.set(k,v);
 }
 const summaries=[...grouped.values()].map(v=>{
