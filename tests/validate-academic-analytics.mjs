@@ -33,6 +33,24 @@ assert.equal(groupAverage([{ subject: "ریاضی", score: 18 }, { subject: "ر�
 assert.equal(groupAverage([{ subject: "علوم", score: 15 }], row => row.subject)[0].label, "علوم");
 assert.match(page, /<details class="roster-disclosure" id="rosterDetails">/);
 assert.match(page, /id="rosterSummaryCount"/);
+assert.match(page, /<details class="roster-disclosure" id="rosterDetails">[\\s\\S]*?class="field roster-search no-print"/);
+assert.match(page, /id="search" type="search"/);
+assert.match(page, /function chartColor\\(label\\)/);
+assert.match(page, /function chartLegend\\(items\\)/);
+assert.match(page, /function chartInsight\\(items,metricName\\)/);
+assert.match(page, /chart-legend-item/);
+assert.match(page, /chart-insight/);
+assert.match(page, /خط‌چین: میانگین مدرسه/);
+assert.match(page, /هر نقطه: میانگین یک دانش‌آموز/);
+assert.match(page, /بیشترین فراوانی مربوط به بازهٔ/);
+assert.match(page, /svgBars\\("distributionChart",bands,Math.max\\(1,scores.length\\)," نفر","تعداد نمره"\\)/);
+const insightMatch = script.match(/function chartInsight\\(items,metricName\\)\\{[\\s\\S]*?\\nfunction svgBars/);
+assert.ok(insightMatch, "chart insight helper exists");
+const chartInsight = new Function(insightMatch[0].replace(/\\nfunction svgBars[\\s\\S]*$/, "") + "; return chartInsight;")();
+const interpretation = chartInsight([{label:"ریاضی",value:18},{label:"علوم",value:14}],"میانگین نمره");
+assert.match(interpretation, /ریاضی/);
+assert.match(interpretation, /4\\.00/);
+
 assert.match(page, /\$\("rosterSummaryCount"\)\.textContent=fa\(students\.length\)/);
 assert.match(page, /\.roster-content\{display:block!important(?:;padding:0)?\}/);
 assert.match(page, /id="roster"/);
