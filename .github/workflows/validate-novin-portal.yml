@@ -44,7 +44,11 @@ on:
       - 'supabase/functions/request-manager-password-recovery/index.ts'
       - 'supabase/functions/login-by-username/index.ts'
       - 'supabase/functions/admin-manage-users/index.ts'
+      - 'parent-management.html'
+      - 'student-module.html'
+      - 'supabase/functions/classroom-management/index.ts'
       - 'supabase/functions/parent-management/index.ts'
+      - 'tests/validate-student-parent-portal.mjs'
       - 'supabase/functions/parent-meetings/index.ts'
       - 'supabase/functions/family-education/index.ts'
       - 'supabase/migrations/20261107133000_enforce_parent_first_login_password_change.sql'
@@ -154,6 +158,8 @@ jobs:
         run: node tests/validate-novin-portal.mjs
       - name: Validate multi-child parent linking and identity matching
         run: node tests/validate-parent-child-linking.mjs
+      - name: Validate student and parent midterm report card visibility
+        run: node tests/validate-student-parent-portal.mjs
       - name: Validate academic analytics access, reports, and printing
         run: node tests/validate-academic-analytics.mjs
       - name: Validate manager school planning center and challenge recommendations
