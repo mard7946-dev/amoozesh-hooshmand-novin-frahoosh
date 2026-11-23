@@ -13,6 +13,12 @@ const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body)
 const clean = (v: unknown) => String(v ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
 const norm = (v: unknown) => clean(v).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
+const normalizeNationalCode = (value: unknown) => {
+  let code = clean(value).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[^0-9]/g, "");
+  if (code.length === 8 || code.length === 9) code = code.padStart(10, "0");
+  return code.length === 10 || code.length === 11 ? code : "";
+};
 const rolesManager = ["manager", "مدیر", "مدیریت", "executive", "educational", "deputy", "معاون", "معاون اجرایی", "معاون آموزشی"];
 const isManager = (role: string) => rolesManager.some(r => norm(role).includes(norm(r)));
 
@@ -110,11 +116,22 @@ Deno.serve(async (req: Request) => {
       }
     }
     let studentClassName = "";
+    let resolvedStudent: any = null;
     if (studentRole) {
-      const { data: studentProfile, error: studentError } = await admin.from("students").select("class_name")
-        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
-      if (studentError || !studentProfile?.class_name) return reply({ message: "کلاس ثبت‌شده برای دانش‌آموز پیدا نشد." }, 403);
-      studentClassName = clean(studentProfile.class_name);
+      const code = normalizeNationalCode(profile.national_code);
+      if (!code) return reply({ message: "کد ملی حساب دانش‌آموز معتبر نیست؛ پرونده را با مدیریت مدرسه بررسی کنید." }, 403);
+      const { data: studentRows, error: studentError } = await admin.from("students")
+        .select("id,first_name,last_name,class_name,grade,national_code")
+        .eq("tenant_school_id", school).limit(1000);
+      if (studentError) throw studentError;
+      const matches = (studentRows ?? []).filter((row: any) => normalizeNationalCode(row.national_code) === code);
+      if (matches.length !== 1) return reply({
+        message: matches.length ? "برای این کد ملی بیش از یک پرونده پیدا شد؛ مدیریت مدرسه باید اطلاعات را بررسی کند."
+          : "پرونده دانش‌آموز با کد ملی حساب پیدا نشد؛ اطلاعات هویتی را بررسی کنید."
+      }, matches.length ? 409 : 403);
+      resolvedStudent = matches[0];
+      if (!clean(resolvedStudent.class_name)) return reply({ message: "کلاس ثبت‌شده برای دانش‌آموز پیدا نشد." }, 403);
+      studentClassName = clean(resolvedStudent.class_name);
     }
     const assertTeacherClass = async (className: string) => {
       if (manager) return true;
@@ -495,10 +512,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "student_academic_summary") {
       if (!studentRole) return reply({ message: "این گزارش فقط برای حساب دانش‌آموز قابل مشاهده است." }, 403);
-      const { data: student, error: studentError } = await admin.from("students")
-        .select("id,first_name,last_name,class_name,grade")
-        .eq("tenant_school_id", school).eq("national_code", clean(profile.national_code)).maybeSingle();
-      if (studentError) throw studentError;
+      const student = resolvedStudent;
       if (!student) return reply({ message: "پرونده دانش‌آموز پیدا نشد." }, 404);
 
       const [gradesResult, reportCardsResult, adjustmentsResult, attendanceResult, disciplineResult, personalAssignmentsResult, classAssignmentsResult] = await Promise.all([
