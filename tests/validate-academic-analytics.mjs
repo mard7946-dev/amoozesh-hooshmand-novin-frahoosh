@@ -34,7 +34,7 @@ assert.equal(groupAverage([{ subject: "علوم", score: 15 }], row => row.subje
 assert.match(page, /<details class="roster-disclosure" id="rosterDetails">/);
 assert.match(page, /id="rosterSummaryCount"/);
 assert.match(page, /\$\("rosterSummaryCount"\)\.textContent=fa\(students\.length\)/);
-assert.match(page, /\.roster-content\{display:block!important\}/);
+assert.match(page, /\.roster-content\{display:block!important(?:;padding:0)?\}/);
 assert.match(page, /id="roster"/);
 assert.match(page, /دارای نمره/);
 assert.match(page, /بدون نمره/);
