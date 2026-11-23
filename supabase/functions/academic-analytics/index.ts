@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
       metadata: {
         studentsCount: students.length,
         gradesCount: analysisGrades.length,
-        managerPendingGradesCount: analysisGrades.filter((row: any) => Number(row.manager_released) !== 1 && ["مستمر","پایان","نهایی","نوبت اول","نوبت دوم","ترم اول","ترم دوم"].some(value => (String(row.assessment_type ?? "") + " " + String(row.assessment_title ?? "")).includes(value))).length,
+        managerPendingGradesCount: analysisGrades.filter((row: any) => Number(row.manager_released) !== 1 && ["مستمر","پایان","نهایی"].some(value => (String(row.assessment_type ?? "") + " " + String(row.assessment_title ?? "")).includes(value))).length,
         activeAssignmentsCount: activeAssignments.length,
         gradeYearFieldAvailable: false
       }
