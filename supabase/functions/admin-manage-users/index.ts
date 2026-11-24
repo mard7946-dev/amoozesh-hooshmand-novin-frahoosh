@@ -250,10 +250,11 @@ Deno.serve(async (req: Request) => {
       const nationalCode = normalizeDigits(row.national_code);
       let account: any = nationalCode ? accountByNationalCode.get(nationalCode) : null;
       if (account === null) account = null; // Duplicate identifiers are intentionally treated as ambiguous.
-      if (!account && category === "teacher") {
+      if (!account && category === "teacher" && !nationalCode) {
         const phoneKeys = [...new Set([normalizePhone(row.phone), normalizePhone(row.mobile)].filter(Boolean))];
-        const phoneMatches = phoneKeys.map(key => accountByPhone.get(key)).filter(Boolean);
-        if (phoneMatches.length === 1) account = phoneMatches[0];
+        const matchedPhoneKeys = phoneKeys.filter(key => accountByPhone.has(key));
+        const phoneMatches = matchedPhoneKeys.map(key => accountByPhone.get(key)).filter(Boolean);
+        if (matchedPhoneKeys.length === 1 && phoneMatches.length === 1) account = phoneMatches[0];
         if (!account) {
           const fullName = normalizePersonName([clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" "));
           const lastName = normalizePersonName(row.last_name);
