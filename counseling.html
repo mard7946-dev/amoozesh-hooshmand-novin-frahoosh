@@ -205,29 +205,46 @@ function gradeScoresFromForm(){
  return out;
 }
 const tracks=[
- {key:'math',name:'ریاضی و فیزیک',subjects:['math','science'],note:'نیازمند بررسی حدنصاب ریاضی و علوم'},
- {key:'experimental',name:'علوم تجربی',subjects:['science','math'],note:'نیازمند بررسی حدنصاب علوم و ریاضی'},
- {key:'humanities',name:'علوم انسانی',subjects:['persian','arabic','social'],note:'نیازمند بررسی حدنصاب فارسی، عربی و مطالعات'},
- {key:'technical',name:'فنی‌وحرفه‌ای · صنعت',subjects:['math','science','technical'],note:'علاقه عملی و توانایی فنی نیز بررسی شود'},
- {key:'services',name:'فنی‌وحرفه‌ای · خدمات',subjects:['persian','english','social','math'],note:'توانایی‌های ارتباطی و علایق شغلی بررسی شود'},
- {key:'arts',name:'هنر',subjects:['arts','persian'],note:'نمونه‌کار و رغبت هنری نیز بررسی شود'},
- {key:'skills',name:'کاردانش',subjects:['technical','arts','math'],note:'رشته/زمینه دقیق با ظرفیت و ضوابط منطقه تطبیق داده شود'}
+ {key:'math',name:'ریاضی و فیزیک',group:'نظری',capacity:400,subjects:['math','science'],thresholds:{math:14,science:13},note:'حدنصاب میانگین وزنی ریاضی ۱۴ و علوم ۱۳'},
+ {key:'experimental',name:'علوم تجربی',group:'نظری',capacity:400,subjects:['science','math'],thresholds:{science:14,math:13},note:'حدنصاب میانگین وزنی علوم ۱۴ و ریاضی ۱۳'},
+ {key:'humanities',name:'علوم انسانی',group:'نظری',capacity:600,subjects:['persian','social','arabic'],thresholds:{persian:14,social:13,arabic:12},note:'حدنصاب فارسی ۱۴، مطالعات ۱۳ و عربی ۱۲'},
+ {key:'fanni_industry',name:'فنی‌وحرفه‌ای · صنعت',group:'هنرستان · صنعت',capacity:100,subjects:['math','science','technical'],thresholds:null,note:'نیازمند تطبیق با ضوابط رشته و ظرفیت هنرستان'},
+ {key:'fanni_services',name:'فنی‌وحرفه‌ای · خدمات',group:'هنرستان · خدمات',capacity:100,subjects:['persian','english','social','math'],thresholds:null,note:'نیازمند تطبیق با ضوابط رشته و ظرفیت هنرستان'},
+ {key:'fanni_agriculture',name:'فنی‌وحرفه‌ای · کشاورزی',group:'هنرستان · کشاورزی',capacity:100,subjects:['science','math','technical'],thresholds:null,note:'نیازمند تطبیق با ضوابط رشته و ظرفیت هنرستان'},
+ {key:'fanni_arts',name:'فنی‌وحرفه‌ای · هنر',group:'هنرستان · هنر',capacity:100,subjects:['arts','persian'],thresholds:null,note:'نیازمند تطبیق با ضوابط رشته و ظرفیت هنرستان'},
+ {key:'kardanesh_industry',name:'کاردانش · صنعت',group:'هنرستان · صنعت',capacity:100,subjects:['math','science','technical'],thresholds:null,note:'ظرفیت مشترک با فنی‌وحرفه‌ای صنعت'},
+ {key:'kardanesh_services',name:'کاردانش · خدمات',group:'هنرستان · خدمات',capacity:100,subjects:['persian','english','social','math'],thresholds:null,note:'ظرفیت مشترک با فنی‌وحرفه‌ای خدمات'},
+ {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'هنرستان · کشاورزی',capacity:100,subjects:['science','math','technical'],thresholds:null,note:'ظرفیت مشترک با فنی‌وحرفه‌ای کشاورزی'},
+ {key:'kardanesh_arts',name:'کاردانش · هنر',group:'هنرستان · هنر',capacity:100,subjects:['arts','persian'],thresholds:null,note:'ظرفیت مشترک با فنی‌وحرفه‌ای هنر'}
 ];
 function computeScores(){
- const f=$('guidanceForm'),marks=gradeScoresFromForm();
- const point=k=>Math.max(0,Number(f.elements[k].value)||0);
- const other=point('aptitude_points')+point('interest_points')+point('counselor_points')+point('teacher_points')+point('student_points')+point('parent_points');
- return tracks.map(t=>{
+ const marks=gradeScoresFromForm();
+ const weightedAverage=subject=>{
   let total=0,weight=0;
-  [['grade7_scores',1],['grade8_scores',1],['grade9_scores',3]].forEach(([g,w])=>t.subjects.forEach(s=>{const v=marks[g][s];if(Number.isFinite(v)){total+=v*w;weight+=w;}}));
-  const avg=weight?total/weight:0;const academic=weight?avg/20*35:0;const score=academic+other;
-  return {...t,average:avg,academic,score,complete:weight>0};
- }).sort((a,b)=>b.score-a.score);
+  [['grade7_scores',1],['grade8_scores',1],['grade9_scores',3]].forEach(([g,w])=>{
+   const v=marks[g][subject];if(Number.isFinite(v)){total+=v*w;weight+=w;}
+  });
+  return weight?total/weight:null;
+ };
+ const arr=tracks.map(t=>{
+  const averages=Object.fromEntries(t.subjects.map(s=>[s,weightedAverage(s)]));
+  const present=Object.values(averages).filter(v=>v!==null);
+  const average=present.length?present.reduce((a,b)=>a+b,0)/present.length:null;
+  const academic=average===null?null:average/20*35;
+  const required=t.thresholds?Object.entries(t.thresholds):[];
+  const missing=required.some(([s])=>weightedAverage(s)===null);
+  const eligible=t.thresholds?(missing?null:required.every(([s,min])=>weightedAverage(s)>=min)):null;
+  return {...t,average,academic,eligible,missing,complete:present.length>0,averages};
+ }).sort((a,b)=>(b.academic??-1)-(a.academic??-1));
+ return {arr,marks};
 }
 function calculateGuidance(show=true){
- const arr=computeScores();$('guidanceResult').classList.remove('hidden');
- $('recommendations').innerHTML=arr.map((t,i)=>'<div class="track"><span class="pill">اولویت پیشنهادی '+(i+1)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+t.score.toFixed(1)+' / 100</div><div class="muted">عملکرد تحصیلی: '+t.academic.toFixed(1)+' از ۳۵<br>میانگین دروس مرتبط: '+(t.complete?t.average.toFixed(2):'نمره وارد نشده')+' از ۲۰<br>'+esc(t.note)+'</div></div>').join('');
- if(show)notice('پیشنهادهای هدایت تحصیلی محاسبه شد؛ نتیجه نهایی باید با ضوابط رسمی و حدنصاب‌های منطقه تطبیق داده شود.','ok');
+ const {arr,marks}=computeScores();$('guidanceResult').classList.remove('hidden');
+ $('recommendations').innerHTML=arr.map(t=>{
+  const status=t.thresholds?(t.missing?'نمرات لازم کامل نیست':t.eligible?'حدنصاب درسی احراز شده':'حدنصاب درسی احراز نشده'):'ضوابط اختصاصی رشته باید بررسی شود';
+  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.academic===null?'—':guidancePrintNumber(t.academic,1)+' از ۳۵')+'</div><div class="muted">میانگین دروس مرتبط: '+(t.average===null?'نمره وارد نشده':guidancePrintNumber(t.average,2)+' از ۲۰')+'<br><strong>'+esc(status)+'</strong><br>'+esc(t.note)+'</div></div>';
+ }).join('');
+ if(show)notice('شرایط اولیه رشته‌ها بررسی شد. اولویت الف و ب پس از تکمیل نمرات همه متقاضیان پایه نهم و رتبه‌بندی در برابر ظرفیت قابل محاسبه است.','ok');
  return {arr,marks};
 }
 
@@ -240,10 +257,13 @@ function printGuidanceForm(){
  const {arr,marks}=calculateGuidance(false);
  const gradeNames=[['grade7_scores','هفتم'],['grade8_scores','هشتم'],['grade9_scores','نهم']];
  const gradeRows=subjects.map(([key,label])=>'<tr><td>'+esc(label)+'</td>'+gradeNames.map(([g])=>'<td>'+guidancePrintNumber(marks[g][key],2)+'</td>').join('')+'</tr>').join('');
- const recommendationRows=arr.map((t,i)=>'<tr><td>'+guidancePrintNumber(i+1,0)+'</td><td>'+esc(t.name)+'</td><td>'+guidancePrintNumber(t.academic)+'</td><td>'+guidancePrintNumber(t.average,2)+'</td><td><strong>'+guidancePrintNumber(t.score)+'</strong></td></tr>').join('');
+ const recommendationRows=arr.map(t=>{
+  const status=t.thresholds?(t.missing?'نمرات ناقص':t.eligible?'احراز حدنصاب':'عدم احراز حدنصاب'):'نیازمند بررسی ضوابط رشته';
+  return '<tr><td>'+esc(t.group)+'</td><td>'+esc(t.name)+'</td><td>'+guidancePrintNumber(t.capacity,0)+'</td><td>'+(t.academic===null?'—':guidancePrintNumber(t.academic,1)+' از ۳۵')+'</td><td>'+esc(status)+'</td></tr>';
+ }).join('');
  const f=$('guidanceForm');
  const points=[['آزمون توانایی',f.elements.aptitude_points.value,15],['آزمون رغبت',f.elements.interest_points.value,15],['نظر مشاور',f.elements.counselor_points.value,10],['نظر دبیران',f.elements.teacher_points.value,10],['نظر دانش‌آموز',f.elements.student_points.value,10],['نظر والدین',f.elements.parent_points.value,5]];
- $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content"><h1 class="guidance-title">هدایت تحصیلی هوشمند دبیرستان سردارشهید حاجی زاده ۲</h1><div class="guidance-year">سال تحصیلی ۱۴۰۶ - ۱۴۰۵</div><div class="guidance-intro">این فرم صرفا جهت آگاهی بخشی نسبت به شرایط انتخاب رشته شما برای در پایان سال تحصیلی خواهد بود.</div><div class="guidance-meta"><span><strong>نام و نام خانوادگی:</strong> '+esc(fullName(selected))+'</span><span><strong>کد دانش‌آموزی:</strong> '+esc(selected.student_code||selected.id)+'</span><span><strong>پایه:</strong> '+esc(selected.grade||'نهم')+'</span><span><strong>کلاس:</strong> '+esc(selected.class_name||'—')+'</span></div><div class="guidance-columns"><section><h2 class="guidance-section-title">اولویت‌های پیشنهادی رشته</h2><table><thead><tr><th>اولویت</th><th>رشته / شاخه</th><th>عملکرد تحصیلی از ۳۵</th><th>میانگین دروس مرتبط</th><th>امتیاز نهایی از ۱۰۰</th></tr></thead><tbody>'+recommendationRows+'</tbody></table><h2 class="guidance-section-title" style="margin-top:3mm">امتیازهای مشاوره‌ای ثبت‌شده</h2><table><thead><tr><th>عامل</th><th>امتیاز کسب‌شده</th><th>حداکثر امتیاز</th></tr></thead><tbody>'+points.map(p=>'<tr><td>'+p[0]+'</td><td>'+guidancePrintNumber(p[1])+'</td><td>'+guidancePrintNumber(p[2],0)+'</td></tr>').join('')+'</tbody></table></section><section><h2 class="guidance-section-title">نمرات دروس در سه پایه</h2><table><thead><tr><th>درس</th><th>هفتم</th><th>هشتم</th><th>نهم</th></tr></thead><tbody>'+gradeRows+'</tbody></table><div class="guidance-note"><strong>توضیح:</strong> این خروجی، پیشنهاد مشاوره‌ای سامانه بر اساس اطلاعات ثبت‌شده است و به‌منزله تأیید نهایی رشته یا فرم رسمی وزارت آموزش‌وپرورش نیست. حدنصاب‌های دروس، ظرفیت منطقه و ضوابط رسمی باید جداگانه بررسی شوند.</div></section></div><div class="guidance-signatures"><span>نام و امضای مشاور</span><span>نام و امضای مدیر</span><span>امضای دانش‌آموز / ولی</span></div></div></article>';
+ $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content"><h1 class="guidance-title">هدایت تحصیلی هوشمند دبیرستان سردارشهید حاجی زاده ۲</h1><div class="guidance-year">سال تحصیلی ۱۴۰۶ - ۱۴۰۵</div><div class="guidance-intro">این فرم صرفا جهت آگاهی بخشی نسبت به شرایط انتخاب رشته شما برای در پایان سال تحصیلی خواهد بود.</div><div class="guidance-meta"><span><strong>نام و نام خانوادگی:</strong> '+esc(fullName(selected))+'</span><span><strong>کد دانش‌آموزی:</strong> '+esc(selected.student_code||selected.id)+'</span><span><strong>پایه:</strong> '+esc(selected.grade||'نهم')+'</span><span><strong>کلاس:</strong> '+esc(selected.class_name||'—')+'</span></div><div class="guidance-columns"><section><h2 class="guidance-section-title">اولویت‌های پیشنهادی رشته</h2><table><thead><tr><th>شاخه</th><th>رشته / زمینه</th><th>ظرفیت مبنا</th><th>امتیاز عملکرد تحصیلی</th><th>وضعیت حدنصاب</th></tr></thead><tbody>'+recommendationRows+'</tbody></table><h2 class="guidance-section-title" style="margin-top:3mm">امتیازهای مشاوره‌ای ثبت‌شده</h2><table><thead><tr><th>عامل</th><th>امتیاز کسب‌شده</th><th>حداکثر امتیاز</th></tr></thead><tbody>'+points.map(p=>'<tr><td>'+p[0]+'</td><td>'+guidancePrintNumber(p[1])+'</td><td>'+guidancePrintNumber(p[2],0)+'</td></tr>').join('')+'</tbody></table></section><section><h2 class="guidance-section-title">نمرات دروس در سه پایه</h2><table><thead><tr><th>درس</th><th>هفتم</th><th>هشتم</th><th>نهم</th></tr></thead><tbody>'+gradeRows+'</tbody></table><div class="guidance-note"><strong>توضیح:</strong> این خروجی شبیه‌سازی مشاوره‌ای بر اساس نمرات ثبت‌شده و ظرفیت‌های مبنای مدرسه است و فرم رسمی وزارت آموزش‌وپرورش نیست. اولویت الف و ب پس از تکمیل اطلاعات همه متقاضیان پایه نهم، اعمال ضوابط رسمی و تأیید ظرفیت منطقه تعیین می‌شود.</div></section></div><div class="guidance-signatures"><span>نام و امضای مشاور</span><span>نام و امضای مدیر</span><span>امضای دانش‌آموز / ولی</span></div></div></article>';
  document.body.classList.add('printing-guidance');
  const cleanup=()=>{document.body.classList.remove('printing-guidance');window.removeEventListener('afterprint',cleanup);};
  window.addEventListener('afterprint',cleanup);
