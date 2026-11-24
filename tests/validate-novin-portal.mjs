@@ -45,6 +45,15 @@ assert.ok(usernameLogin.includes("change_parent_initial_password") && usernameLo
 assert.ok(usernameLogin.includes("school_code") && usernameLogin.includes("account.data?.national_code"), "Initial parent password change must validate school and national-code account identity");
 assert.ok(schoolLogin.includes("loginResponse.status === 428") && schoolLogin.includes("login.password_changed === true"), "School portal login must relay the auth-boundary first-login gate");
 const managerUsers = readFileSync("supabase/functions/admin-manage-users/index.ts", "utf8");
+assert.ok(usernameLogin.includes('accountRole === "teacher" && requestedRole === "teacher"'), "Teacher first-login password changes must remain role-scoped");
+assert.ok(!usernameLogin.includes("کد ملی حساب دبیر معتبر نیست"), "Teacher first-login password change must not fail solely because an older teacher account lacks a national code");
+assert.ok(usernameLogin.includes('newPassword === clean(account.data?.username)'), "Teacher first-login password change must still reject reusing the account username");
+assert.ok(usernameLogin.includes('.eq("role", "teacher").eq("is_active", true)'), "Teacher first-login password change must still require an active teacher membership");
+assert.ok(managerUsers.includes("const accountByNationalCode = uniqueIndex(accounts, (a: any) => normalizeDigits(a.national_code))"), "Profile mapping must index only non-empty normalized national codes");
+assert.ok(managerUsers.includes('if (!account && category === "teacher" && !nationalCode)'), "Teacher profile fallback matching must run only when the national code is missing");
+assert.ok(managerUsers.includes("matchedPhoneKeys.length === 1 && phoneMatches.length === 1"), "Teacher profile phone fallback must require a unique account match");
+assert.ok(managerUsers.includes("nameMatches.length === 1 && matchingTeacherCount === 1"), "Teacher profile name fallback must reject ambiguous surname matches");
+assert.ok(!managerUsers.includes("new Map((accountsResult.data ?? []).map((a: any) => [clean(a.national_code), a]))"), "Blank national codes must never collide in the profile account map");
 assert.ok(html.includes("data.profile?.school_id") && html.includes("savedSchoolId"), "Portal must persist and restore the selected school ID");
 assert.ok(managerUsers.includes("clean(body.school_id)") && managerUsers.includes('.eq("school_id", schoolId)') && managerUsers.includes('.eq("is_active", true)'), "Manager data APIs must validate the selected school against active manager membership");
 const parentAdmin = managerUsers;
