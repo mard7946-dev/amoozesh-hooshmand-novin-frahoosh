@@ -210,7 +210,34 @@ Deno.serve(async (req: Request) => {
       console.error("admin-manage-users teacher assignments failed", teacherAssignmentsResult.error.code);
       return reply({ message: "ارتباط دبیران با کلاس‌ها و درس‌ها دریافت نشد." }, 500);
     }
-    const accountByNationalCode = new Map((accountsResult.data ?? []).map((a: any) => [clean(a.national_code), a]));
+    const accounts = accountsResult.data ?? [];
+    const teacherRows = teachersResult.data ?? [];
+    const normalizeDigits = (value: unknown) => clean(value)
+      .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+      .replace(/\D/g, "");
+    const normalizePersonName = (value: unknown) => clean(value).normalize("NFKC")
+      .replace(/[\s\u200c\u200f\u202a-\u202e]/g, "")
+      .replace(/ي/g, "ی").replace(/ك/g, "ک").toLowerCase();
+    const normalizePhone = (value: unknown) => {
+      const digits = normalizeDigits(value);
+      if (digits.startsWith("0098") && digits.length === 14) return "0" + digits.slice(4);
+      if (digits.startsWith("98") && digits.length === 12) return "0" + digits.slice(2);
+      if (digits.startsWith("9") && digits.length === 10) return "0" + digits;
+      return digits;
+    };
+    const uniqueIndex = (rows: any[], keyOf: (row: any) => string) => {
+      const index = new Map<string, any | null>();
+      for (const row of rows) {
+        const key = keyOf(row);
+        if (!key) continue;
+        index.set(key, index.has(key) ? null : row);
+      }
+      return index;
+    };
+    const accountByNationalCode = uniqueIndex(accounts, (a: any) => normalizeDigits(a.national_code));
+    const teacherAccounts = accounts.filter((a: any) => clean(a.role).toLowerCase() === "teacher");
+    const accountByPhone = uniqueIndex(teacherAccounts, (a: any) => normalizePhone(a.phone));
     const assignmentsByTeacher = new Map<number, any[]>();
     for (const assignment of teacherAssignmentsResult.data ?? []) {
       const teacherId = Number(assignment.teacher_id);
@@ -220,7 +247,29 @@ Deno.serve(async (req: Request) => {
       assignmentsByTeacher.set(teacherId, current);
     }
     const profile = (row: any, category: string) => {
-      const account: any = accountByNationalCode.get(clean(row.national_code)) ?? {};
+      const nationalCode = normalizeDigits(row.national_code);
+      let account: any = nationalCode ? accountByNationalCode.get(nationalCode) : null;
+      if (account === null) account = null; // Duplicate identifiers are intentionally treated as ambiguous.
+      if (!account && category === "teacher" && !nationalCode) {
+        const phoneKeys = [...new Set([normalizePhone(row.phone), normalizePhone(row.mobile)].filter(Boolean))];
+        const matchedPhoneKeys = phoneKeys.filter(key => accountByPhone.has(key));
+        const phoneMatches = matchedPhoneKeys.map(key => accountByPhone.get(key)).filter(Boolean);
+        if (matchedPhoneKeys.length === 1 && phoneMatches.length === 1) account = phoneMatches[0];
+        if (!account) {
+          const fullName = normalizePersonName([clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" "));
+          const lastName = normalizePersonName(row.last_name);
+          const nameMatches = teacherAccounts.filter((candidate: any) => {
+            const accountName = normalizePersonName(candidate.display_name);
+            return accountName && (accountName === fullName || accountName === lastName);
+          });
+          const matchingTeacherCount = teacherRows.filter((candidate: any) => {
+            const candidateFullName = normalizePersonName([clean(candidate.first_name), clean(candidate.last_name)].filter(Boolean).join(" "));
+            return candidateFullName === fullName || (lastName && normalizePersonName(candidate.last_name) === lastName);
+          }).length;
+          if (nameMatches.length === 1 && matchingTeacherCount === 1) account = nameMatches[0];
+        }
+      }
+      account = account ?? {};
       const base = { ...row, category, display_name: [clean(row.first_name), clean(row.last_name)].filter(Boolean).join(" ") || clean(account.display_name) || clean(account.username) || "بدون نام", username: account.username ?? "", auth_user_id: account.auth_user_id ?? null, account_role: account.role ?? "" };
       return category === "teacher" ? { ...base, assigned_classes: (assignmentsByTeacher.get(Number(row.id)) ?? []).sort((a, b) => String(a.grade).localeCompare(String(b.grade), "fa") || String(a.class_name).localeCompare(String(b.class_name), "fa") || String(a.subject).localeCompare(String(b.subject), "fa")) } : base;
     };
