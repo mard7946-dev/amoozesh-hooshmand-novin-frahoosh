@@ -97,18 +97,29 @@ Deno.serve(async (req: Request) => {
             .select("id,first_name,last_name,national_code")
             .eq("tenant_school_id", school);
           if (teacherRowsError) throw teacherRowsError;
-          const matches = (teacherRows ?? []).filter((row: any) =>
-            !clean(row.national_code) &&
-            norm(`${clean(row.first_name)} ${clean(row.last_name)}`) === identityName
-          );
+          const matches = (teacherRows ?? []).filter((row: any) => {
+            if (clean(row.national_code)) return false;
+            const firstName = norm(row.first_name);
+            const lastName = norm(row.last_name);
+            const fullName = norm(`${clean(row.first_name)} ${clean(row.last_name)}`);
+            // Accept either the exact full name or an exact, unique surname alias.
+            // A surname alone is never sufficient without a matching active class assignment.
+            return identityName === fullName || (!!lastName && identityName === lastName);
+          });
           if (matches.length === 1) {
-            const candidateId = matches[0].id;
+            const candidate = matches[0];
+            const candidateId = candidate.id;
+            const candidateNames = [
+              `${clean(candidate.first_name)} ${clean(candidate.last_name)}`,
+              clean(candidate.last_name),
+              ...teacherNames,
+            ].filter(Boolean);
             const { data: linkedRows, error: linkedError } = await admin.from("teacher_classes")
               .select("id,teacher_name").eq("tenant_school_id", school)
               .eq("teacher_id", candidateId).eq("active", 1);
             if (linkedError) throw linkedError;
             const hasMatchingAssignment = (linkedRows ?? []).some((row: any) =>
-              teacherNames.some(name => norm(row.teacher_name) === norm(name))
+              candidateNames.some(name => norm(row.teacher_name) === norm(name))
             );
             if (hasMatchingAssignment) teacherRecordId = candidateId;
           }
