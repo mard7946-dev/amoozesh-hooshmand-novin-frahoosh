@@ -12,24 +12,29 @@
  body.printing-guidance #guidancePrintArea,
  body.printing-guidance #guidancePrintArea *{visibility:visible!important}
  body.printing-guidance #guidancePrintArea{display:block!important;position:absolute!important;inset:0 auto auto 0!important;width:100%!important}
- body.printing-guidance .guidance-sheet{position:relative;isolation:isolate;overflow:visible;width:100%;min-height:190mm;height:auto;max-height:none;background:#fff;color:#172033;padding:4mm 5mm;border:1px solid #cbd5e1;font-family:Tahoma,"Segoe UI",sans-serif}
- body.printing-guidance .guidance-watermark{position:absolute;z-index:0;left:28%;top:15%;width:44%;height:70%;object-fit:contain;opacity:.085;pointer-events:none}
+
+ body.printing-guidance .guidance-sheet{position:relative;overflow:hidden;width:100%;height:190mm;max-height:190mm;background:#fff;color:#111;padding:3mm 4mm;border:1px solid #bbb;font-family:Tahoma,"Segoe UI",sans-serif;direction:rtl}
+ body.printing-guidance .guidance-watermark{position:absolute;z-index:0;left:27%;top:18%;width:46%;height:64%;object-fit:contain;opacity:.12;pointer-events:none}
  body.printing-guidance .guidance-content{position:relative;z-index:1}
- body.printing-guidance .guidance-official-head{display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;text-align:center;border-bottom:1px solid #64748b;padding-bottom:2mm;margin-bottom:2mm;font-size:7pt;line-height:1.6}
- body.printing-guidance .guidance-official-head strong{font-size:10pt}
- body.printing-guidance .guidance-official-head .school{font-weight:700;color:#142b50}
- body.printing-guidance .guidance-title{text-align:center;font-size:18pt;font-weight:700;color:#142b50;margin:0 0 2mm}
- body.printing-guidance .guidance-year{text-align:center;font-size:11pt;font-weight:700;margin:0 0 3mm}
- body.printing-guidance .guidance-intro{border:1px solid #cbd5e1;background:#f8fafc;padding:2.5mm 4mm;text-align:center;font-size:9pt;line-height:1.8;margin-bottom:2mm}
- body.printing-guidance .guidance-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm 5mm;border:1px solid #cbd5e1;padding:3mm;margin-bottom:2mm;font-size:8pt}
- body.printing-guidance .guidance-columns{display:grid;grid-template-columns:1.1fr 1fr;gap:5mm}
- body.printing-guidance .guidance-section-title{font-size:10pt;font-weight:700;margin:0 0 2mm;color:#142b50}
- body.printing-guidance .guidance-sheet table{width:100%;border-collapse:collapse;min-width:0;font-size:7pt}
- body.printing-guidance .guidance-sheet th,body.printing-guidance .guidance-sheet td{border:1px solid #9aa8bb;padding:1mm 1.5mm;text-align:center;vertical-align:middle;line-height:1.25}
- body.printing-guidance .guidance-sheet th{background:#eaf0f8!important;color:#172033}
- body.printing-guidance .guidance-sheet .guidance-note{font-size:7.5pt;line-height:1.7;margin-top:1.5mm}
- body.printing-guidance .guidance-signatures{display:flex;justify-content:space-between;margin-top:3mm;font-size:8pt}
- body.printing-guidance .guidance-signatures span{min-width:35mm;border-top:1px solid #64748b;padding-top:2mm;text-align:center}
+ body.printing-guidance .ministry-header{display:grid;grid-template-columns:1fr 2fr 1fr;align-items:start;text-align:center;height:24mm;font-size:6.5pt;line-height:1.5}
+ body.printing-guidance .ministry-header .center{font-size:10pt;font-weight:700;line-height:1.9}
+ body.printing-guidance .ministry-header .side{font-weight:700}
+ body.printing-guidance .student-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:1mm 4mm;border:1px solid #aaa;padding:2mm 3mm;margin:0 0 2mm;font-size:7pt;line-height:1.7}
+ body.printing-guidance .student-meta span{white-space:nowrap}
+ body.printing-guidance .matrix-title{text-align:right;font-size:7pt;font-weight:700;margin:1mm 0}
+ body.printing-guidance .ministry-matrix{width:100%;table-layout:fixed;border-collapse:collapse;font-size:6.2pt;direction:rtl}
+ body.printing-guidance .ministry-matrix th,body.printing-guidance .ministry-matrix td{border:1px solid #aeb4bb;padding:.9mm .5mm;text-align:center;vertical-align:middle;line-height:1.25;overflow-wrap:anywhere}
+ body.printing-guidance .ministry-matrix th{background:#f4f4f4!important;color:#111;font-weight:700}
+ body.printing-guidance .ministry-matrix .criteria{width:18%;font-weight:700;text-align:right;padding-right:1.5mm}
+ body.printing-guidance .ministry-matrix .grouphead{font-size:7pt}
+ body.printing-guidance .section-caption{text-align:center;font-size:7pt;font-weight:700;border:1px solid #aaa;border-top:0;padding:1mm}
+ body.printing-guidance .holland-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:6.1pt;margin-top:1mm;direction:rtl}
+ body.printing-guidance .holland-table th,body.printing-guidance .holland-table td{border:1px solid #aaa;padding:1mm .8mm;line-height:1.25;text-align:center;vertical-align:middle}
+ body.printing-guidance .holland-table .features{text-align:right}
+ body.printing-guidance .guidance-note{font-size:6pt;line-height:1.4;margin-top:1mm}
+ body.printing-guidance .guidance-signatures{display:flex;justify-content:space-between;margin-top:2mm;font-size:7pt}
+ body.printing-guidance .guidance-signatures span{min-width:35mm;padding-top:1mm;text-align:center}
+
 }
 </style></head><body>
 <header class="top"><div><h1>فراهوش · پنل مشاور</h1><div class="muted" id="who">در حال بررسی نشست…</div></div><div class="actions no-print"><button id="familyInviteShortcut">دعوتنامه اولیا</button><button id="refresh">↻ تازه‌سازی</button><button id="print">چاپ / PDF</button><button id="back">بازگشت به پنل</button></div></header>
@@ -268,15 +273,48 @@ function guidancePrintNumber(value,digits=1){
 }
 function printGuidanceForm(){
  if(!selected){notice('ابتدا دانش‌آموز را انتخاب کن.','error');return;}
- const {arr,marks,subjective}=calculateGuidance(false);
- const gradeNames=[['grade7_scores','هفتم · خرداد'],['grade8_scores','هشتم · خرداد'],['grade9_scores','نهم · دی / برآورد خرداد']];
- const gradeRows=subjects.map(([key,label])=>'<tr><td>'+esc(label)+'</td>'+gradeNames.map(([g])=>'<td>'+guidancePrintNumber(marks[g][key],2)+'</td>').join('')+'</tr>').join('');
- const recommendationRows=arr.map(t=>{
-  const thresholds=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصابِ آزمایشی: برقرار':'حدنصابِ آزمایشی: برقرار نیست'):'اطلاعات نمره ناقص'):'حدنصاب معتبر این زمینه در سامانه موجود نیست';
-  return '<tr><td>'+esc(t.group)+'</td><td>'+esc(t.name)+'</td><td>'+guidancePrintNumber(t.academic,2)+'</td><td>'+guidancePrintNumber(t.interest,2)+'</td><td>'+guidancePrintNumber(t.aptitude,2)+'</td><td>'+guidancePrintNumber(t.total,2)+'</td><td>'+esc(t.priority)+'</td><td>'+esc(thresholds)+'</td></tr>';
- }).join('');
- const points=[['نظر دبیران · پیش‌فرض',subjective.teacher,10],['نظر مشاور · پیش‌فرض',subjective.counselor,10],['نظر دانش‌آموز · پیش‌فرض',subjective.student,10],['نظر والدین · پیش‌فرض',subjective.parent,5]];
- $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content"><div class="guidance-official-head"><div>جمهوری اسلامی ایران<br>وزارت آموزش و پرورش</div><div><strong>نمون‌برگ هدایت تحصیلی</strong><br><span class="school">دبیرستان سردار شهید حاجی‌زاده ۲</span></div><div>اداره کل آموزش و پرورش<br>نسخه آزمایشی مدرسه</div></div><div class="guidance-year">سال تحصیلی ۱۴۰۶ - ۱۴۰۵ · پیش‌بینی دی‌ماه · غیررسمی</div><div class="guidance-intro">این برگه پیش‌بینی آزمایشی وضعیت انتخاب رشته در پایان سال است؛ نمرات خرداد هفتم و هشتم و نمره فعلی نهم در محاسبه استفاده شده‌اند. نمره نهم در این نسخه برآورد خرداد بر اساس نمره دی‌ماه است.</div><div class="guidance-meta"><span><strong>نام و نام خانوادگی:</strong> '+esc(fullName(selected))+'</span><span><strong>کد دانش‌آموزی:</strong> '+esc(selected.student_code||selected.id)+'</span><span><strong>پایه:</strong> '+esc(selected.grade||'نهم')+'</span><span><strong>کلاس:</strong> '+esc(selected.class_name||'—')+'</span></div><h2 class="guidance-section-title">جدول پیش‌بینی امتیاز و اولویت رشته‌ها</h2><table><thead><tr><th>شاخه</th><th>رشته / زمینه</th><th>عملکرد /۳۵</th><th>رغبت /۱۵</th><th>توانایی /۱۵</th><th>مجموع /۱۰۰</th><th>وضعیت اولویت</th><th>بررسی حدنصاب</th></tr></thead><tbody>'+recommendationRows+'</tbody></table><h2 class="guidance-section-title" style="margin-top:3mm">نمرات تحصیلی مبنا</h2><table><thead><tr><th>درس</th><th>هفتم خرداد</th><th>هشتم خرداد</th><th>نهم دی / برآورد خرداد</th></tr></thead><tbody>'+gradeRows+'</tbody></table><h2 class="guidance-section-title" style="margin-top:3mm">بخش‌های مشاوره‌ای تکمیل‌شده با مقدار پیش‌فرض خنثی</h2><table><thead><tr><th>عامل</th><th>امتیاز پیش‌فرض</th><th>حداکثر</th></tr></thead><tbody>'+points.map(p=>'<tr><td>'+p[0]+'</td><td>'+guidancePrintNumber(p[1])+'</td><td>'+guidancePrintNumber(p[2],0)+'</td></tr>').join('')+'</tbody></table><div class="guidance-note"><strong>روش برآورد:</strong> برای هر زمینه، میانگین وزنی دروس مرتبط (هفتم ۱، هشتم ۱، نهم ۳) به ۳۵ امتیاز تبدیل شده است. رغبت و توانایی هرکدام متناسب با همان عملکرد از ۱۵ برآورد می‌شوند؛ بنابراین این دو آزمون واقعی نیستند. نظر دبیران، مشاور، دانش‌آموز و والدین به‌صورت خنثی ۵۰٪ سقف امتیاز گذاشته شده و باید با نظر واقعی جایگزین شوند. اولویت الف/ب در این شبیه‌سازی صادر نمی‌شود؛ تعیین آن به ضوابط معتبر سال جاری و ظرفیت و رتبه‌بندی منطقه وابسته است. حدنصاب‌های نمایش‌داده‌شده نیز تا تأیید بخشنامه سال جاری آزمایشی‌اند. ظرفیت‌های هنرستان صرفاً مبنای برنامه‌ریزی مدرسه‌اند، نه ظرفیت منطقه.</div><div class="guidance-signatures"><span>نام و امضای مشاور</span><span>نام و امضای مدیر</span><span>امضای دانش‌آموز / ولی</span></div></div></article>';
+ const {arr,marks}=calculateGuidance(false);
+ const byKey=Object.fromEntries(arr.map(x=>[x.key,x]));
+ // Column order is the same right-to-left order as the ministry sample.
+ const cols=[
+  ['kardanesh_industry','صنعت'],['kardanesh_services','خدمات'],['kardanesh_agriculture','کشاورزی'],['kardanesh_arts','هنر'],
+  ['fanni_industry','صنعت'],['fanni_services','خدمات'],['fanni_agriculture','کشاورزی'],['fanni_arts','هنر'],
+  ['humanities','ادبیات و علوم انسانی'],['religion','علوم و معارف اسلامی'],['experimental','علوم تجربی'],['math','ریاضی فیزیک']
+ ];
+ const v=(x)=>x===null||x===undefined||x===''?'—':guidancePrintNumber(x,1);
+ const scoreCell=(key,field)=>{const x=byKey[key];if(!x)return '—';return v(field==='consult'?x.total-x.academic:x[field]);};
+ const academicCells=cols.map(([k])=>'<td>'+scoreCell(k,'academic')+'</td>').join('');
+ const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
+ const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'بررسی نشده')+'</td>';}).join('');
+ const priority=cols.map(()=>'<td>تعیین نشده</td>').join('');
+ const groups='<tr><th class="criteria" rowspan="2">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr>'+['زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','رشته','رشته','رشته','رشته'].map(x=>'<th>'+x+'</th>').join('')+'</tr>';
+ const names=cols.map(([k,n])=>'<th>'+n+'</th>').join('');
+ const row=(label,cells)=>'<tr><th class="criteria">'+label+'</th>'+cells+'</tr>';
+ const holland=[
+  ['هنری','فعالیت‌های خلاقانه، طراحی، بیان هنری و کارهای دیداری و شنیداری'],
+  ['اجتماعی','یادگیری و همکاری با دیگران، آموزش، کمک و مشارکت در فعالیت‌های گروهی'],
+  ['جستجوگر','پرسشگری، پژوهش، تحلیل، حل مسئله و بررسی موضوعات پیچیده'],
+  ['متهور','اثرگذاری، رهبری، مذاکره، کارآفرینی و پذیرفتن مسئولیت'],
+  ['قراردادی','نظم، دقت، برنامه‌ریزی، ثبت و سامان‌دهی اطلاعات و امور اجرایی'],
+  ['واقع‌گرا','کار عملی، فنی، ساختن و تعمیر، فعالیت با ابزار و تجهیزات']
+ ];
+ const hollandRows=holland.map(([n,d],i)=>'<tr><td>'+(i+1)+'</td><td>'+n+'</td><td>آزمون ثبت نشده</td><td class="features">'+d+'</td></tr>').join('');
+ const get=(...keys)=>{for(const k of keys){const x=selected?.[k];if(x!==undefined&&x!==null&&String(x).trim()!=='')return esc(x);}return '—';};
+ const full=esc(fullName(selected));
+ const grades=subjects.map(([k,n])=>'<tr><td>'+n+'</td><td>'+v(marks.grade7_scores[k])+'</td><td>'+v(marks.grade8_scores[k])+'</td><td>'+v(marks.grade9_scores[k])+'</td></tr>').join('');
+ $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content">'+
+ '<div class="ministry-header"><div class="side">جمهوری اسلامی ایران<br>وزارت آموزش و پرورش<br>اداره کل آموزش و پرورش</div><div class="center">نمون‌برگ هدایت تحصیلی<br><span style="font-size:8pt">عادی · نسخه پیش‌بینی آزمایشی مدرسه</span></div><div class="side">اداره کل امور تربیتی، مشاوره<br>و مراقبت در برابر آسیب‌های اجتماعی</div></div>'+
+ '<div class="student-meta"><span>نام: '+get('first_name','name')+'</span><span>نام خانوادگی: '+get('last_name','family_name')+'</span><span>نام پدر: '+get('father_name')+'</span><span>کد ملی: '+get('national_code','national_id')+'</span><span>تاریخ تولد: '+get('birth_date','date_of_birth')+'</span><span>محل صدور: '+get('birth_place','place_of_issue')+'</span><span>استان: '+get('province')+'</span><span>ملیت: '+get('nationality')+'</span><span>منطقه: '+get('district','region')+'</span><span>مدرسه: دبیرستان سردار شهید حاجی‌زاده ۲</span><span>پایه: '+get('grade')+'</span><span>تاریخ تنظیم: پیش‌بینی دی‌ماه ۱۴۰۵</span></div>'+
+ '<div class="matrix-title">جدول شایستگی‌ها و ملاک‌های تعیین اولویت رشته‌ها</div><table class="ministry-matrix"><thead>'+groups+'<tr><th class="criteria">زمینه / رشته</th>'+names+'</tr></thead><tbody>'+
+ row('امتیاز بررسی‌های مشاوره‌ای (از ۶۵)',consultCells)+
+ row('امتیاز عملکرد تحصیلی متناسب با رشته (از ۳۵)',academicCells)+
+ row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
+ row('اولویت دانش‌آموز برای ثبت‌نام',priority)+
+ '</tbody></table><div class="section-caption">نتایج آزمون توانایی ـ رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:4%">کد</th><th style="width:15%">تیپ شخصیتی</th><th style="width:16%">رتبه درصدی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
+ '<div class="guidance-note">توضیح: این برگه پیش‌بینی آزمایشی مدرسه است و جایگزین نمون‌برگ رسمی سامانه هدایت تحصیلی وزارت آموزش‌وپرورش نیست. نمرات پایه نهم در این خروجی بر اساس نمره دی‌ماه برآورد شده‌اند. آزمون رغبت و توانایی واقعی در این پرونده ثبت نشده است؛ بنابراین رتبه درصدی تیپ‌های شخصیتی نمایش داده نمی‌شود. وضعیت حدنصاب فقط در مواردی درج می‌شود که داده و ملاک آن در سامانه موجود باشد؛ اولویت الف/ب بدون ضوابط رسمی و ظرفیت منطقه صادر نمی‌شود.</div>'+
+ '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
+ '<div class="section-caption" style="margin-top:1mm">نمرات مبنای پیش‌بینی (هفتم و هشتم خرداد، نهم دی‌ماه)</div><table class="holland-table"><thead><tr><th>درس</th><th>هفتم</th><th>هشتم</th><th>نهم</th></tr></thead><tbody>'+grades+'</tbody></table>'+
+ '</div></article>';
  document.body.classList.add('printing-guidance');
  const cleanup=()=>{document.body.classList.remove('printing-guidance');window.removeEventListener('afterprint',cleanup);};
  window.addEventListener('afterprint',cleanup);
