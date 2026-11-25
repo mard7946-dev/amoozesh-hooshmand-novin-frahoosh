@@ -78,12 +78,10 @@ Deno.serve(async (req: Request) => {
       console.error("classroom service flag lookup failed", classroomFlagError.message);
       return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
     }
-    if (classroomFlag?.enabled !== true) {
-      const message = ["teacher", "دبیر", "معلم"].includes(role)
-        ? "این سرویس در زمان غیرحضوری فعال خواهد شد."
-        : "این سرویس با خرید سرور بیرونی فعال خواهد شد.";
-      return reply({ ok: false, service_disabled: true, message }, 403);
-    }
+    // The online-room feature flag must not block ordinary staff timetable access.
+    // It is enforced only when a user attempts to enter an online room.
+    const onlineServiceEnabled = classroomFlag?.enabled === true;
+    const platformAdmin = ["super_admin", "platform_admin", "مدیر کل", "مدیرکل"].includes(mainRole);
 
     const name = clean(profile.display_name) || clean(profile.username);
     let className = "";
@@ -190,7 +188,7 @@ Deno.serve(async (req: Request) => {
       const endTime = clean(entry.end_time) || clean(room?.end_time);
       const weekday = canonicalWeekday(entry.weekday);
       const period = Number(entry.period);
-      const active = Boolean(room && entry.day_enabled === true && !explicitlyDisabled && isScheduleSlotActive(weekday, startTime, endTime, clock));
+      const active = Boolean(onlineServiceEnabled && room && entry.day_enabled === true && !explicitlyDisabled && isScheduleSlotActive(weekday, startTime, endTime, clock));
       return [{
         ...(room ?? {}),
         id: room?.id ?? null,
@@ -212,6 +210,9 @@ Deno.serve(async (req: Request) => {
 
     const requestedId = Number(requestBody?.room_id ?? 0);
     if (requestedId) {
+      if (!onlineServiceEnabled && !platformAdmin) {
+        return reply({ ok: false, service_disabled: true, message: "ورود به کلاس آنلاین در حال حاضر فقط برای مدیر کل فعال است؛ برنامه هفتگی و دفتر کلاسی همچنان قابل مشاهده است." }, 403);
+      }
       const room = roomById.get(requestedId);
       if (!room) return reply({ message: "این کلاس در فهرست کلاس‌های مجاز شما نیست." }, 403);
       if (role === "teacher" || role === "student") {
@@ -231,7 +232,7 @@ Deno.serve(async (req: Request) => {
     }
     return reply({ ok: true, profile: {
       username: clean(profile.username), display_name: name, role: clean(profile.role), class_name: className,
-    }, rooms: ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role) ? schedule : rooms, schedule });
+    }, online_service_enabled: onlineServiceEnabled, rooms: ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role) ? schedule : rooms, schedule });
   } catch (error) {
     console.error("classroom-authorize failed", String(error));
     return reply({ message: "بررسی نشست انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
