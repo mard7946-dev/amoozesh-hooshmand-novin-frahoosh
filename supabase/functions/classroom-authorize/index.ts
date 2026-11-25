@@ -129,7 +129,7 @@ Deno.serve(async (req: Request) => {
         const teacherId = Number(teacherRecord?.id ?? 0);
         const teacherUsername = norm(profile.username);
         const teacherName = norm(name);
-        const nameParts = teacherName.split(/\\s+/).filter(Boolean);
+        const nameParts = teacherName.trim().split(/\s+/).filter(Boolean);
         const surname = nameParts.length ? nameParts[nameParts.length - 1] : "";
         const surnameMatches = surname ? (teacherRows ?? []).filter((item: any) =>
           norm(item.last_name) === surname
