@@ -312,7 +312,6 @@ function printGuidanceForm(){
  '</tbody></table><div class="section-caption">نتایج آزمون توانایی ـ رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:4%">کد</th><th style="width:15%">تیپ شخصیتی</th><th style="width:16%">رتبه درصدی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
  '<div class="guidance-note">توضیح: این برگه پیش‌بینی آزمایشی مدرسه است و جایگزین نمون‌برگ رسمی سامانه هدایت تحصیلی وزارت آموزش‌وپرورش نیست. نمرات پایه نهم در این خروجی بر اساس نمره دی‌ماه برآورد شده‌اند. آزمون رغبت و توانایی واقعی در این پرونده ثبت نشده است؛ بنابراین رتبه درصدی تیپ‌های شخصیتی نمایش داده نمی‌شود. وضعیت حدنصاب فقط در مواردی درج می‌شود که داده و ملاک آن در سامانه موجود باشد؛ اولویت الف/ب بدون ضوابط رسمی و ظرفیت منطقه صادر نمی‌شود.</div>'+
  '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
- '
  '</div></article>';
  document.body.classList.add('printing-guidance');
  const cleanup=()=>{document.body.classList.remove('printing-guidance');window.removeEventListener('afterprint',cleanup);};
