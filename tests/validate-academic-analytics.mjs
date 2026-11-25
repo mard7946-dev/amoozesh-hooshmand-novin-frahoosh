@@ -21,7 +21,7 @@ assert.match(api, /reportCards: reportCards/);
 assert.match(api, /managerPendingGradesCount/);
 assert.match(classroom, /isManagerApprovalRequiredForGrade/);
 assert.match(classroom, /انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است/);
-assert.match(classroom, /manager_released: isManagerApprovalRequiredForGrade/);
+assert.match(classroom, /manager_released: 1/, "New daily teacher grades are immediately visible without manager publication");
 assert.match(classroom, /: true\);/);
 const groupAverageSource = script.match(/function groupAverage\(rows,key\)\{[\s\S]*?\nfunction classAssignments/);
 assert.ok(groupAverageSource, "groupAverage helper exists");

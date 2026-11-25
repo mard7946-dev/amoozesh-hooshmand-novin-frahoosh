@@ -274,6 +274,33 @@ Deno.serve(async (req: Request) => {
       return reply({ok:true,entity_type:type,record:updated,status,reviewed_by:reviewer});
     }
 
+    if (action === "check_duplicate") {
+      if (!teacher && !deputy && !manager) return reply({ message: "مجوز بررسی ثبت‌های قبلی ندارید." }, 403);
+      const kind = clean(body.kind), className = clean(body.class_name), subject = clean(body.subject);
+      const rows = boundedRows(body.rows) ?? [];
+      const ids = [...new Set(rows.map((r: any) => asInt(r.student_id)).filter(Boolean))];
+      if (!className) return reply({ message: "کلاس انتخاب نشده است." }, 400);
+      if (teacher && !await assertTeacherClass(className)) return reply({ message: "به این کلاس دسترسی ندارید." }, 403);
+      let found: any[] = [];
+      if (kind === "attendance" && ids.length) {
+        let q = admin.from("attendance").select("id,student_id").eq("tenant_school_id",school).eq("class_name",className).eq("date",clean(body.date)).in("student_id",ids);
+        if (subject) q=q.eq("subject",subject);
+        const r=await q.limit(100); if(r.error) throw r.error; found=r.data??[];
+      } else if (kind === "grades" && ids.length) {
+        let q=admin.from("student_grades").select("id,student_id").eq("tenant_school_id",school).eq("class_name",className).eq("subject",subject).eq("assessment_title",clean(body.assessment_title)||"ارزشیابی").eq("assessment_type",clean(body.assessment_type)||"کلاسی").eq("term",clean(body.month)).in("student_id",ids);
+        const r=await q.limit(100); if(r.error) throw r.error; found=r.data??[];
+      } else if (kind === "create_assignment") {
+        let q=admin.from("assignments").select("id").eq("tenant_school_id",school).eq("class_name",className).eq("title",clean(body.title)).eq("subject",subject).eq("due_date",clean(body.due_date)).eq("status","active");
+        const r=await q.limit(20); if(r.error) throw r.error; found=r.data??[];
+      } else if (kind === "discipline" && ids.length) {
+        let q=admin.from("discipline_records").select("id,student_id,title,record_type").eq("tenant_school_id",school).eq("class_name",className).eq("subject",teacher?subject:"").eq("actor_username",clean(profile.username)).eq("incident_date",clean(body.date)).is("deleted_at",null).in("student_id",ids);
+        const r=await q.limit(1000); if(r.error) throw r.error;
+        const existing=new Set((r.data??[]).map((x:any)=>[Number(x.student_id),clean(x.title),clean(x.record_type)].join("|")));
+        found=rows.filter((x:any)=>existing.has([asInt(x.student_id),clean(x.title),clean(x.record_type)==="praise"?"praise":"discipline"].join("|")));
+      }
+      return reply({ok:true,duplicate:found.length>0,duplicate_count:found.length});
+    }
+
     if (action === "attendance") {
       if (!teacher && !manager) return reply({ message: "مجوز ثبت حضور و غیاب ندارید." }, 403);
       const rows = boundedRows(body.rows);
@@ -289,7 +316,7 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id);
         const status = norm(r.status);
         if (!studentId || !allowed.has(studentId) || !["حاضر","غایب","تاخیر","تأخیر","موجه","غیرموجه","present","absent","late","excused"].includes(status)) continue;
-        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, description: clean(r.description) });
+        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, approval_status: "approved", description: clean(r.description) });
       }
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("attendance").insert(inserts).select("id");
@@ -312,7 +339,7 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id), score = Number(r.score);
         const maxScore = Number(body.max_score) > 0 ? Number(body.max_score) : 20;
         if (!studentId || !allowed.has(studentId) || !Number.isFinite(score) || score < 0 || score > maxScore) continue;
-        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: isManagerApprovalRequiredForGrade({assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment}) ? 0 : 1 });
+        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 1 });
       }
       if (!inserts.length) return reply({ message: "هیچ نمره معتبر (۰ تا ۲۰) برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("student_grades").insert(inserts).select("id");
@@ -386,7 +413,7 @@ Deno.serve(async (req: Request) => {
         return { student_id: studentId, teacher_id: teacherId, title,
           description: clean(raw.description), note: clean(raw.description),
           record_type: clean(raw.record_type) === "praise" ? "praise" : "discipline",
-          class_name: className, subject: teacher ? subject : "", status: "pending", priority: "normal",
+          class_name: className, subject: teacher ? subject : "", status: "approved", priority: "normal",
           actor_username: clean(profile.username), actor_role: actorRole,
           incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school };
       }).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
