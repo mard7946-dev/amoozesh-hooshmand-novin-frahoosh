@@ -25,11 +25,8 @@ const isManager = (role: string) => rolesManager.some(r => norm(role).includes(n
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
-// Only continuous and final grades require explicit manager publication.
-const isManagerApprovalRequiredForGrade = (row: any) => {
-  const label = `${norm(row?.assessment_type)} ${norm(row?.assessment_title)}`;
-  return ["مستمر", "پایان", "نهایی"].some(value => label.includes(value));
-};
+// Routine teacher grades are published immediately; no manager release step applies.
+const isManagerApprovalRequiredForGrade = (_row: any) => false;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -222,58 +219,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "academic_review_list") {
-      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به بررسی اطلاعات آموزشی است." }, 403);
-      const [attendanceRows, gradeRows, disciplineRows] = await Promise.all([
-        admin.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,class_name,approval_status").eq("tenant_school_id",school).eq("approval_status","pending").order("id",{ascending:false}).limit(1500),
-        manager
-          ? admin.from("student_grades").select("id,student_id,subject,assessment_type,assessment_title,score,grade_date_shamsi,term,class_name,manager_released").eq("tenant_school_id",school).or("manager_released.eq.0,manager_released.is.null").order("id",{ascending:false}).limit(1500)
-          : Promise.resolve({data:[],error:null}),
-        admin.from("discipline_records").select("id,student_id,title,description,record_type,incident_date,class_name,subject,actor_role,status").eq("tenant_school_id",school).eq("status","pending").is("deleted_at",null).order("id",{ascending:false}).limit(1500)
-      ]);
-      const failed = [attendanceRows,gradeRows,disciplineRows].find((x:any)=>x.error);
-      if (failed) throw failed.error;
-      const pendingGrades = (gradeRows.data ?? []).filter((row: any) => isManagerApprovalRequiredForGrade(row));
-      const ids = [...new Set([...(attendanceRows.data??[]),...pendingGrades,...(disciplineRows.data??[])].map((x:any)=>Number(x.student_id)).filter(Boolean))];
-      const {data:students,error:studentsError}=ids.length
-        ? await admin.from("students").select("id,first_name,last_name,class_name").eq("tenant_school_id",school).in("id",ids)
-        : {data:[],error:null};
-      if(studentsError) throw studentsError;
-      const names=new Map((students??[]).map((x:any)=>[Number(x.id),clean(x.first_name)+" "+clean(x.last_name)]));
-      const enrich=(rows:any[])=>rows.map((x:any)=>({...x,student_name:names.get(Number(x.student_id))??"دانش‌آموز"}));
-      return reply({ok:true,attendance:enrich(attendanceRows.data??[]),grades:enrich(pendingGrades),discipline:enrich(disciplineRows.data??[])});
+      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به مشاهده این بخش است." }, 403);
+      return reply({
+        ok: true, attendance: [], grades: [], discipline: [],
+        notice: "نمرات، حضور و غیاب، تکالیف و سوابق انضباطی پس از ثبت مستقیماً برای دانش‌آموز و اولیا نمایش داده می‌شوند و نیازی به تأیید مدیر یا معاون ندارند."
+      });
     }
 
     if (action === "academic_review") {
-      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به تأیید اطلاعات آموزشی است." }, 403);
-      const type=clean(body.entity_type), id=asInt(body.id), status=clean(body.status);
-      if(!id || !["approved","rejected"].includes(status) || !["attendance","grade","discipline"].includes(type))
-        return reply({message:"نوع اطلاعات، شناسه یا نتیجه بررسی معتبر نیست."},400);
-      const reviewedAt=new Date().toISOString(), reviewer=clean(profile.display_name)||clean(profile.username);
-      let updated:any=null, error:any=null;
-      if(type==="attendance"){
-        const result=await admin.from("attendance").update({approval_status:status,approved_at:reviewedAt,approved_by:reviewer})
-          .eq("tenant_school_id",school).eq("id",id).eq("approval_status","pending").select("id,approval_status").maybeSingle();
-        updated=result.data;error=result.error;
-      } else if(type==="grade"){
-        if (!manager) return reply({message:"انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است."},403);
-        const {data:gradeForReview,error:gradeLookupError}=await admin.from("student_grades")
-          .select("id,assessment_type,assessment_title").eq("tenant_school_id",school).eq("id",id).maybeSingle();
-        if(gradeLookupError) throw gradeLookupError;
-        if(!gradeForReview || !isManagerApprovalRequiredForGrade(gradeForReview))
-          return reply({message:"این نوع نمره نیاز به تأیید مدیر ندارد یا پیدا نشد."},400);
-        const result=await admin.from("student_grades").update({manager_released:status==="approved"?1:-1})
-          .eq("tenant_school_id",school).eq("id",id).or("manager_released.eq.0,manager_released.is.null").select("id,manager_released").maybeSingle();
-        updated=result.data;error=result.error;
-      } else {
-        const result=await admin.from("discipline_records").update({status,updated_at:reviewedAt})
-          .eq("tenant_school_id",school).eq("id",id).eq("status","pending").is("deleted_at",null).select("id,status").maybeSingle();
-        updated=result.data;error=result.error;
-      }
-      if(error) throw error;
-      if(!updated) return reply({message:"این مورد پیدا نشد یا قبلاً بررسی شده است."},409);
-      return reply({ok:true,entity_type:type,record:updated,status,reviewed_by:reviewer});
+      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به دسترسی به این بخش است." }, 403);
+      return reply({ message: "ثبت‌های روزمره آموزشی و تربیتی نیازمند تأیید مدیر یا معاون نیستند و مستقیماً نمایش داده می‌شوند." }, 409);
     }
-
     if (action === "attendance") {
       if (!teacher && !manager) return reply({ message: "مجوز ثبت حضور و غیاب ندارید." }, 403);
       const rows = boundedRows(body.rows);
@@ -289,9 +245,17 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id);
         const status = norm(r.status);
         if (!studentId || !allowed.has(studentId) || !["حاضر","غایب","تاخیر","تأخیر","موجه","غیرموجه","present","absent","late","excused"].includes(status)) continue;
-        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, description: clean(r.description) });
+        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, approval_status: "approved", teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, description: clean(r.description) });
       }
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
+      if (body.allow_duplicate !== true) {
+        const { data: previous, error: previousError } = await admin.from("attendance")
+          .select("id,student_id").eq("tenant_school_id", school).eq("class_name", className)
+          .eq("subject", subject).eq("date", date).in("student_id", inserts.map((row: any) => row.student_id)).limit(1000);
+        if (previousError) throw previousError;
+        if ((previous ?? []).length) return reply({ ok: false, duplicate: true, duplicate_count: previous.length,
+          message: "حضور و غیاب این کلاس و درس در تاریخ انتخاب‌شده قبلاً ثبت شده است. آیا می‌خواهید ثبت جدید انجام دهید؟" }, 409);
+      }
       const { data, error } = await admin.from("attendance").insert(inserts).select("id");
       if (error) throw error;
       return reply({ ok: true, saved: data?.length ?? inserts.length });
@@ -312,9 +276,19 @@ Deno.serve(async (req: Request) => {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id), score = Number(r.score);
         const maxScore = Number(body.max_score) > 0 ? Number(body.max_score) : 20;
         if (!studentId || !allowed.has(studentId) || !Number.isFinite(score) || score < 0 || score > maxScore) continue;
-        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: isManagerApprovalRequiredForGrade({assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment}) ? 0 : 1 });
+        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 1 });
       }
       if (!inserts.length) return reply({ message: "هیچ نمره معتبر (۰ تا ۲۰) برای ثبت وجود ندارد." }, 400);
+      if (body.allow_duplicate !== true) {
+        const { data: previous, error: previousError } = await admin.from("student_grades")
+          .select("id,student_id").eq("tenant_school_id", school).eq("class_name", className)
+          .eq("subject", subject).eq("assessment_type", clean(body.assessment_type) || "کلاسی")
+          .eq("assessment_title", assessment).eq("grade_date", new Date().toISOString().slice(0, 10))
+          .eq("term", clean(body.month)).in("student_id", inserts.map((row: any) => row.student_id)).limit(1000);
+        if (previousError) throw previousError;
+        if ((previous ?? []).length) return reply({ ok: false, duplicate: true, duplicate_count: previous.length,
+          message: "نمره‌های این ارزشیابی برای این کلاس و درس امروز قبلاً ثبت شده‌اند. آیا می‌خواهید ثبت جدید انجام دهید؟" }, 409);
+      }
       const { data, error } = await admin.from("student_grades").insert(inserts).select("id");
       if (error) throw error;
       return reply({ ok: true, saved: data?.length ?? inserts.length });
@@ -329,6 +303,16 @@ Deno.serve(async (req: Request) => {
       const { data: roster, error: rosterError } = await admin.from("students").select("id").eq("tenant_school_id", school).eq("class_name", className);
       if (rosterError) throw rosterError;
       if (!roster?.length) return reply({ message: "فهرست دانش‌آموزان این کلاس هنوز وارد سامانه نشده است." }, 400);
+      if (body.allow_duplicate !== true) {
+        let previousQuery = admin.from("assignments").select("id")
+          .eq("tenant_school_id", school).eq("class_name", className).eq("subject", subject).eq("title", title).eq("status", "active");
+        const dueDate = clean(body.due_date);
+        previousQuery = dueDate ? previousQuery.eq("due_date", dueDate) : previousQuery.is("due_date", null);
+        const { data: previous, error: previousError } = await previousQuery.limit(20);
+        if (previousError) throw previousError;
+        if ((previous ?? []).length) return reply({ ok: false, duplicate: true, duplicate_count: previous.length,
+          message: "این تکلیف برای این کلاس و درس با همین عنوان و مهلت قبلاً ثبت شده است. آیا می‌خواهید تکلیف جدیدی ثبت کنید؟" }, 409);
+      }
       const { data: assignment, error } = await admin.from("assignments").insert({
         title, description: clean(body.description), subject, class_name: className,
         due_date: clean(body.due_date), teacher_id: asInt(body.teacher_id),
@@ -386,11 +370,24 @@ Deno.serve(async (req: Request) => {
         return { student_id: studentId, teacher_id: teacherId, title,
           description: clean(raw.description), note: clean(raw.description),
           record_type: clean(raw.record_type) === "praise" ? "praise" : "discipline",
-          class_name: className, subject: teacher ? subject : "", status: "pending", priority: "normal",
+          class_name: className, subject: teacher ? subject : "", status: "approved", priority: "normal",
           actor_username: clean(profile.username), actor_role: actorRole,
           incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school };
       }).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
+      if (body.allow_duplicate !== true) {
+        const incidentDate = clean(body.date) || new Date().toISOString().slice(0,10);
+        const { data: previous, error: previousError } = await admin.from("discipline_records")
+          .select("id,student_id,title,record_type").eq("tenant_school_id", school)
+          .eq("class_name", className).eq("subject", teacher ? subject : "")
+          .eq("actor_username", clean(profile.username)).eq("incident_date", incidentDate)
+          .in("student_id", inserts.map((row: any) => row.student_id)).is("deleted_at", null).limit(1000);
+        if (previousError) throw previousError;
+        const previousKeys = new Set((previous ?? []).map((row: any) => [row.student_id, row.title, row.record_type].join("|")));
+        const duplicates = inserts.filter((row: any) => previousKeys.has([row.student_id, row.title, row.record_type].join("|")));
+        if (duplicates.length) return reply({ ok: false, duplicate: true, duplicate_count: duplicates.length,
+          message: "موارد انضباطی یا تشویقی انتخاب‌شده برای این دانش‌آموزان در این تاریخ قبلاً ثبت شده‌اند. آیا می‌خواهید ثبت جدید انجام دهید؟" }, 409);
+      }
       const { data, error } = await admin.from("discipline_records").insert(inserts).select("*");
       if (error) throw error;
       const auditRows=(data??[]).map((row:any)=>({tenant_school_id:school,record_id:row.id,action:"insert",
