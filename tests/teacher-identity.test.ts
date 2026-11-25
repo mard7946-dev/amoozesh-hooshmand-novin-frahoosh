@@ -1,4 +1,4 @@
-import { activeTeacherAccounts, resolveTeacherAccount } from "../supabase/functions/classroom-management/teacher-identity.ts";
+import { activeTeacherAccounts, normalizeTeacherNationalCode, resolveTeacherAccount } from "../supabase/functions/classroom-management/teacher-identity.ts";
 
 const accounts = [
   { username: "teacher-1", auth_user_id: "u1", display_name: "رضا فهیم‌راد", role: "teacher" },
@@ -43,4 +43,10 @@ Deno.test("ambiguous teacher aliases are rejected instead of guessed", () => {
     { username: "teacher-7", auth_user_id: "u7", display_name: "مهدی فهیم راد", role: "teacher" },
   ];
   if (resolveTeacherAccount({ teacher: "فهیم راد" }, ambiguous) !== null) throw new Error("ambiguous teacher alias must not be selected");
+});
+
+Deno.test("teacher national codes normalize Persian digits, separators, and zero padding", () => {
+  if (normalizeTeacherNationalCode("۱۲۳۴۵۶۷۸۹") !== "0123456789") throw new Error("Persian digits and padding were not normalized");
+  if (normalizeTeacherNationalCode("001-234-5678") !== "0012345678") throw new Error("separators were not normalized");
+  if (normalizeTeacherNationalCode("123") !== "") throw new Error("invalid national code must be rejected");
 });
