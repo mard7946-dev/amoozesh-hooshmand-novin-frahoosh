@@ -280,7 +280,7 @@ Deno.serve(async (req: Request) => {
       const rows = boundedRows(body.rows) ?? [];
       const ids = [...new Set(rows.map((r: any) => asInt(r.student_id)).filter(Boolean))];
       if (!className) return reply({ message: "کلاس انتخاب نشده است." }, 400);
-      if (!await assertTeacherClass(className)) return reply({ message: "به این کلاس دسترسی ندارید." }, 403);
+      if (teacher && !await assertTeacherClass(className)) return reply({ message: "به این کلاس دسترسی ندارید." }, 403);
       let found: any[] = [];
       if (kind === "attendance" && ids.length) {
         let q = admin.from("attendance").select("id,student_id").eq("tenant_school_id",school).eq("class_name",className).eq("date",clean(body.date)).in("student_id",ids);
