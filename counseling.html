@@ -69,7 +69,7 @@
 <label class="field">پیش‌فرض نظر دبیران (از ۱۰)<input name="teacher_points" type="number" min="0" max="10" step=".5" value="5" required></label>
 <label class="field">پیش‌فرض نظر دانش‌آموز (از ۱۰)<input name="student_points" type="number" min="0" max="10" step=".5" value="5" required></label>
 <label class="field">پیش‌فرض نظر والدین (از ۵)<input name="parent_points" type="number" min="0" max="5" step=".5" value="2.5" required></label>
-</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary">ذخیره پیش‌بینی هدایت تحصیلی</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted">امتیازها و اولویت‌ها پیش‌بینی آزمایشی‌اند. رغبت و توانایی از عملکرد تحصیلی برآورد می‌شوند و چهار نظر دیگر با مقدار خنثی قابل ویرایش تکمیل شده‌اند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
+</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary">ذخیره پیش‌بینی هدایت تحصیلی</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">امتیازها و اولویت‌ها پیش‌بینی آزمایشی‌اند. رغبت و توانایی از عملکرد تحصیلی برآورد می‌شوند و چهار نظر دیگر با مقدار خنثی قابل ویرایش تکمیل شده‌اند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
 </section>
 </main>
 <script>
@@ -92,7 +92,7 @@ const token=sessionStorage.getItem('frahoosh_novin_access_token')||'';
 const role=sessionStorage.getItem('frahoosh_novin_role')||'';
 const allowed=['manager','counselor','advisor','educational','executive','cultural'];
 const $=id=>document.getElementById(id);
-let students=[],selected=null,cases=[],followups=[],guidance=null,activeModule=null;
+let students=[],selected=null,cases=[],followups=[],guidance=null,activeModule=null,guidanceCohort=[],guidanceCohortLoaded=false,guidanceCohortError='';
 const subjects=[['math','ریاضی'],['science','علوم تجربی'],['persian','فارسی'],['arabic','عربی'],['religion','معارف اسلامی'],['social','مطالعات اجتماعی'],['english','زبان انگلیسی'],['technical','کار و فناوری'],['arts','هنر']];
 function notice(t,type=''){$('notice').textContent=t;$('notice').className='notice'+(type?' '+type:'');}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -134,7 +134,7 @@ function openModule(m){
  activeModule=m;document.querySelectorAll('[data-module]').forEach(b=>b.classList.toggle('active',b.dataset.module===m));
  ['casePanel','followPanel','guidancePanel','familyPanel'].forEach(id=>$(id).classList.add('hidden'));
  $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel',family:'familyPanel'})[m]).classList.remove('hidden');
- if(m==='case')drawCases();if(m==='follow'){drawFollowups();checkReminders();}if(m==='guidance'){drawGradeInputs();loadGuidanceForm();}if(m==='family')loadFamilyInvites();
+ if(m==='case')drawCases();if(m==='follow'){drawFollowups();checkReminders();}if(m==='guidance'){drawGradeInputs();loadGuidanceForm();loadGuidanceCohort().then(()=>calculateGuidance(false));}if(m==='family')loadFamilyInvites();
  $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel',family:'familyPanel'})[m]).scrollIntoView({behavior:'smooth',block:'start'});
 }
 function formObj(form){return Object.fromEntries(new FormData(form).entries());}
@@ -233,6 +233,62 @@ const tracks=[
  {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'شاخه کاردانش',capacity:150,subjects:['science','math','technical'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'kardanesh_arts',name:'کاردانش · هنر',group:'شاخه کاردانش',capacity:150,subjects:['arts','persian'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'}
 ];
+async function loadGuidanceCohort(){
+ try{
+  const rows=await api('counseling_guidance','GET',null,{tenant_school_id:'eq.5c8b8880-1346-445c-89d8-3f76275a7ae5',order:'id.desc'});
+  const grade9Ids=new Set(students.filter(s=>norm(s.grade).includes('نهم')).map(s=>String(s.id)));
+  const latest=new Map();
+  (Array.isArray(rows)?rows:[]).forEach(r=>{const id=String(r.student_id);if(grade9Ids.has(id)&&!latest.has(id))latest.set(id,r);});
+  guidanceCohort=[...latest.values()];guidanceCohortLoaded=true;guidanceCohortError='';
+ }catch(err){guidanceCohortLoaded=false;guidanceCohortError=err.message||'خطای دریافت پرونده‌های پایه نهم';}
+}
+function applyGuidancePriorities(arr){
+ const grade9=students.filter(s=>norm(s.grade).includes('نهم'));
+ const totalStudents=grade9.length;
+ const records=new Map(guidanceCohort.map(r=>[String(r.student_id),r]));
+ const selectedId=selected?String(selected.id):'';
+ const status=$('guidanceCohortStatus');
+ if(status){
+  status.textContent=guidanceCohortError?'دریافت پرونده‌های پایه نهم ناموفق بود: '+guidanceCohortError:
+   'پرونده هدایت تحصیلی ثبت‌شده: '+guidanceCohort.length+' از '+totalStudents+' دانش‌آموز پایه نهم. رتبه‌بندی فقط وقتی فعال می‌شود که اطلاعات کامل همه دانش‌آموزان برای همان زمینه ثبت شده باشد.';
+ }
+ return arr.map(track=>{
+  const entries=grade9.map(student=>{
+   const id=String(student.id),record=records.get(id),saved=record&&record.recommendation_scores&&record.recommendation_scores[track.key];
+   let item=saved?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points,thresholds:saved.thresholds}:null;
+   if(id===selectedId)item={complete:track.complete,total:track.total,academic:track.academic,thresholds:track.thresholdValues};
+   const total=Number(item&&item.total),complete=Boolean(item&&item.complete&&Number.isFinite(total));
+   const thresholds=Array.isArray(item&&item.thresholds)?item.thresholds:[];
+   const expected=track.thresholds?Object.keys(track.thresholds).length:0;
+   const thresholdComplete=expected>0&&thresholds.length===expected&&thresholds.every(x=>x.actual!==null&&x.actual!==undefined&&Number.isFinite(Number(x.actual)));
+   const thresholdPassed=thresholdComplete&&thresholds.every(x=>Number(x.actual)>=Number(x.min));
+   return {id,complete,total,academic:Number(item&&item.academic),thresholdComplete,thresholdPassed};
+  });
+  const completeCount=entries.filter(x=>x.complete).length;
+  let priority='— · اطلاعات درسی این زمینه ناقص است';
+  if(!totalStudents)priority='— · فهرست دانش‌آموزان پایه نهم در دسترس نیست';
+  else if(guidanceCohortError)priority='— · خطا در دریافت اطلاعات رتبه‌بندی';
+  else if(completeCount<totalStudents)priority='— · اطلاعات کامل '+completeCount+' از '+totalStudents+' نفر ثبت شده است';
+  else if(!track.thresholds)priority='— · ملاک ورود این زمینه هنوز تعریف نشده است';
+  else{
+   const eligible=entries.filter(x=>x.complete&&x.thresholdComplete&&x.thresholdPassed);
+   const current=entries.find(x=>x.id===selectedId);
+   if(!current||!current.complete)priority='— · نمرات دانش‌آموز برای این زمینه ناقص است';
+   else if(!current.thresholdComplete)priority='— · اطلاعات حدنصاب آزمایشی ناقص است';
+   else if(!current.thresholdPassed)priority='— · حدنصاب آزمایشی احراز نشده است';
+   else if(!eligible.length)priority='— · داوطلب واجد شرایطی ثبت نشده است';
+   else{
+    const score=Number.isFinite(current.total)?current.total:0,academic=Number.isFinite(current.academic)?current.academic:0;
+    const rank=1+eligible.filter(x=>x.total>score+0.000001||(Math.abs(x.total-score)<=0.000001&&Number.isFinite(x.academic)&&x.academic>academic+0.000001)).length;
+    const reserve=track.capacity+Math.ceil(track.capacity*.20);
+    priority=rank<=track.capacity?'الف · رتبه '+rank+' از '+eligible.length:
+     rank<=reserve?'ب · رتبه '+rank+' از '+eligible.length:
+     '— · خارج از ظرفیت و ذخیره ۲۰٪ (رتبه '+rank+' از '+eligible.length+')';
+   }
+  }
+  return {...track,priority};
+ });
+}
 function clampScore(v,max){return Math.max(0,Math.min(max,Number(v)||0));}
 function computeScores(){
  const marks=gradeScoresFromForm(),f=$('guidanceForm');
@@ -252,7 +308,7 @@ function computeScores(){
   const priority='تعیین نمی‌شود؛ نیازمند ضوابط و ظرفیت رسمی منطقه';
   return {...track,averages,average,complete:present.length===track.subjects.length,academic,interest,aptitude,...subjective,total,thresholdValues,thresholdKnown:Boolean(track.thresholds),thresholdComplete,thresholdPassed,priority};
  });
- return {arr,marks,subjective};
+ return {arr:applyGuidancePriorities(arr),marks,subjective};
 }
 function calculateGuidance(show=true){
  const computed=computeScores(),arr=computed.arr;
@@ -286,7 +342,7 @@ function printGuidanceForm(){
  const academicCells=cols.map(([k])=>'<td>'+scoreCell(k,'academic')+'</td>').join('');
  const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
  const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'بررسی نشده')+'</td>';}).join('');
- const priority=cols.map(()=>'<td>تعیین نشده</td>').join('');
+ const priority=cols.map(([k])=>'<td>'+esc(byKey[k]?.priority||'—')+'</td>').join('');
  const groups='<tr><th class="criteria" rowspan="3">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr><th colspan="4">زمینه</th><th colspan="4">زمینه</th><th colspan="4">رشته</th></tr>';
  const names=cols.map(([k,n])=>'<th>'+n+'</th>').join('');
  const row=(label,cells)=>'<tr><th class="criteria">'+label+'</th>'+cells+'</tr>';
@@ -310,7 +366,7 @@ function printGuidanceForm(){
  row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
  row('اولویت دانش‌آموز برای ثبت‌نام',priority)+
  '</tbody></table><div class="section-caption">نتایج آزمون توانایی ـ رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:4%">کد</th><th style="width:15%">تیپ شخصیتی</th><th style="width:16%">رتبه درصدی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
- '<div class="guidance-note">توضیح: این برگه پیش‌بینی آزمایشی مدرسه است و جایگزین نمون‌برگ رسمی سامانه هدایت تحصیلی وزارت آموزش‌وپرورش نیست. نمرات پایه نهم در این خروجی بر اساس نمره دی‌ماه برآورد شده‌اند. آزمون رغبت و توانایی واقعی در این پرونده ثبت نشده است؛ بنابراین رتبه درصدی تیپ‌های شخصیتی نمایش داده نمی‌شود. وضعیت حدنصاب فقط در مواردی درج می‌شود که داده و ملاک آن در سامانه موجود باشد؛ اولویت الف/ب بدون ضوابط رسمی و ظرفیت منطقه صادر نمی‌شود.</div>'+
+ '<div class="guidance-note">توضیح: این برگه پیش‌بینی آزمایشی مدرسه است و جایگزین نمون‌برگ رسمی سامانه هدایت تحصیلی وزارت آموزش‌وپرورش نیست. نمرات پایه نهم در این خروجی بر اساس نمره دی‌ماه برآورد شده‌اند. آزمون رغبت و توانایی واقعی در این پرونده ثبت نشده است؛ بنابراین رتبه درصدی تیپ‌های شخصیتی نمایش داده نمی‌شود. وضعیت حدنصاب فقط در مواردی درج می‌شود که داده و ملاک آن در سامانه موجود باشد. اولویت الف/ب پیش‌بینی مدرسه‌ای است، فقط پس از تکمیل پرونده همه دانش‌آموزان پایه نهم برای همان زمینه محاسبه می‌شود و حدنصاب‌های نظری فعلی آزمایشی‌اند؛ این خروجی جایگزین اولویت رسمی منطقه نیست.</div>'+
  '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
  '</div></article>';
  document.body.classList.add('printing-guidance');
@@ -325,8 +381,8 @@ $('calcGuidance').onclick=()=>calculateGuidance(true);
 $('guidanceForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!selected)return;const computed=calculateGuidance(false);const arr=computed.arr;const marks=computed.marks;const f=e.currentTarget;
  const descriptive=arr.map(x=>x.name+': '+(x.total===null?'نمره کافی ثبت نشده':Number(x.total.toFixed(2))+' از ۱۰۰ · وضعیت اولویت: '+x.priority)).join('\\n');
- const payload={student_id:selected.id,grade:selected.grade||'نهم',interest:'برآورد رغبت مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',aptitude:'برآورد توانایی مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',recommendation:'پیش‌بینی آزمایشی امتیاز و اولویت؛ امتیازهای رغبت و توانایی برآوردی‌اند\\n'+descriptive,grade7_scores:marks.grade7_scores,grade8_scores:marks.grade8_scores,grade9_scores:marks.grade9_scores,aptitude_points:Number(f.elements.aptitude_points.value)||0,interest_points:Number(f.elements.interest_points.value)||0,counselor_points:Number(f.elements.counselor_points.value)||0,teacher_points:Number(f.elements.teacher_points.value)||0,student_points:Number(f.elements.student_points.value)||0,parent_points:Number(f.elements.parent_points.value)||0,recommendation_scores:Object.fromEntries(arr.map(x=>[x.key,{average:x.average===null?null:Number(x.average.toFixed(2)),complete:x.complete,capacity_basis:x.capacity,academic_points:x.academic,interest_estimate:x.interest,aptitude_estimate:x.aptitude,teacher_points:x.teacher,counselor_points:x.counselor,student_points:x.student,parent_points:x.parent,total_points:x.total,predicted_priority:null,priority_status:'نیازمند ضوابط و ظرفیت رسمی منطقه',thresholds:x.thresholdValues}])),notes:f.elements.notes.value||''};
- try{if(guidance)await api('counseling_guidance','PATCH',payload,{id:'eq.'+guidance.id});else await api('counseling_guidance','POST',payload);const g=await api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'});guidance=Array.isArray(g)&&g.length?g[0]:null;notice('اطلاعات هدایت تحصیلی و پیشنهادها ذخیره شد.','ok');}catch(err){notice('ذخیره هدایت تحصیلی ناموفق بود: '+err.message,'error');}
+ const payload={student_id:selected.id,grade:selected.grade||'نهم',interest:'برآورد رغبت مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',aptitude:'برآورد توانایی مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',recommendation:'پیش‌بینی آزمایشی امتیاز و اولویت؛ امتیازهای رغبت و توانایی برآوردی‌اند\\n'+descriptive,grade7_scores:marks.grade7_scores,grade8_scores:marks.grade8_scores,grade9_scores:marks.grade9_scores,aptitude_points:Number(f.elements.aptitude_points.value)||0,interest_points:Number(f.elements.interest_points.value)||0,counselor_points:Number(f.elements.counselor_points.value)||0,teacher_points:Number(f.elements.teacher_points.value)||0,student_points:Number(f.elements.student_points.value)||0,parent_points:Number(f.elements.parent_points.value)||0,recommendation_scores:Object.fromEntries(arr.map(x=>[x.key,{average:x.average===null?null:Number(x.average.toFixed(2)),complete:x.complete,capacity_basis:x.capacity,academic_points:x.academic,interest_estimate:x.interest,aptitude_estimate:x.aptitude,teacher_points:x.teacher,counselor_points:x.counselor,student_points:x.student,parent_points:x.parent,total_points:x.total,predicted_priority:null,priority_status:'اولویت به‌صورت زنده و با تکمیل اطلاعات کل پایه نهم محاسبه می‌شود',threshold_known:x.thresholdKnown,threshold_complete:x.thresholdComplete,threshold_passed:x.thresholdPassed,thresholds:x.thresholdValues}])),notes:f.elements.notes.value||''};
+ try{if(guidance)await api('counseling_guidance','PATCH',payload,{id:'eq.'+guidance.id});else await api('counseling_guidance','POST',payload);const g=await api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'});guidance=Array.isArray(g)&&g.length?g[0]:null;await loadGuidanceCohort();calculateGuidance(false);notice('اطلاعات هدایت تحصیلی ذخیره شد؛ اولویت‌ها با داده‌های کامل پایه نهم به‌روز شدند.','ok');}catch(err){notice('ذخیره هدایت تحصیلی ناموفق بود: '+err.message,'error');}
 });
 document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>openModule(b.dataset.module));
 $('studentSearch').addEventListener('input',drawStudents);
