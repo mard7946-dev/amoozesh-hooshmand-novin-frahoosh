@@ -25,6 +25,11 @@ const isManager = (role: string) => rolesManager.some(r => norm(role).includes(n
 const isTeacher = (role: string) => ["teacher", "دبیر", "معلم"].some(r => norm(role).includes(norm(r)));
 const isDeputy = (role: string) => ["executive", "educational", "cultural", "deputy", "معاون"].some(r => norm(role).includes(norm(r)));
 const asInt = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : null;
+const makeDedupeKey = async (parts: unknown[]) => {
+  const bytes = new TextEncoder().encode(JSON.stringify(parts.map(value => typeof value === "string" ? norm(value) : value)));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, "0")).join("");
+};
 // Only continuous and final grades require explicit manager publication.
 const isManagerApprovalRequiredForGrade = (row: any) => {
   const label = `${norm(row?.assessment_type)} ${norm(row?.assessment_title)}`;
@@ -297,14 +302,15 @@ Deno.serve(async (req: Request) => {
       if (studentError) throw studentError;
       const allowed = new Map((students ?? []).map((s: any) => [Number(s.id), s]));
       const inserts = [];
+      const overrideId = body.allow_duplicate === true ? crypto.randomUUID() : "";
       for (const raw of rows) {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id);
         const status = norm(r.status);
         if (!studentId || !allowed.has(studentId) || !["حاضر","غایب","تاخیر","تأخیر","موجه","غیرموجه","present","absent","late","excused"].includes(status)) continue;
-        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, approval_status: "approved", description: clean(r.description) });
+        inserts.push({ student_id: studentId, date, attendance_date: date, status: ["حاضر","present"].includes(status) ? "حاضر" : ["غایب","absent"].includes(status) ? "غایب" : ["تاخیر","تأخیر","late"].includes(status) ? "تأخیر" : status, teacher_id: asInt(body.teacher_id), subject, class_name: className, tenant_school_id: school, approval_status: "approved", description: clean(r.description), dedupe_key: await makeDedupeKey([studentId,date,className,subject]), duplicate_override_id: overrideId });
       }
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
-      const { data, error } = await admin.from("attendance").insert(inserts).select("id");
+      const { data, error } = await admin.from("attendance").upsert(inserts, { onConflict: "tenant_school_id,dedupe_key,duplicate_override_id", ignoreDuplicates: true }).select("id");
       if (error) throw error;
       return reply({ ok: true, saved: data?.length ?? inserts.length });
     }
@@ -320,14 +326,15 @@ Deno.serve(async (req: Request) => {
       if (studentError) throw studentError;
       const allowed = new Set((students ?? []).map((s: any) => Number(s.id)));
       const inserts = [];
+      const overrideId = body.allow_duplicate === true ? crypto.randomUUID() : "";
       for (const raw of rows) {
         const r = raw as Record<string, unknown>, studentId = asInt(r.student_id), score = Number(r.score);
         const maxScore = Number(body.max_score) > 0 ? Number(body.max_score) : 20;
         if (!studentId || !allowed.has(studentId) || !Number.isFinite(score) || score < 0 || score > maxScore) continue;
-        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 1 });
+        inserts.push({ student_id: studentId, teacher_id: asInt(body.teacher_id), subject, class_name: className, assessment_type: clean(body.assessment_type) || "کلاسی", assessment_title: assessment, score: (score / (Number(body.max_score) > 0 ? Number(body.max_score) : 20)) * 20, coefficient: Number(body.coefficient) || 1, grade_date: new Date().toISOString().slice(0, 10), term: clean(body.month), description: "سقف نمره: " + (Number(body.max_score) > 0 ? Number(body.max_score) : 20) + "؛ نمره ثبت‌شده: " + score + "؛ " + clean(r.description), tenant_school_id: school, manager_released: 1, dedupe_key: await makeDedupeKey([studentId,className,subject,clean(body.assessment_type)||"کلاسی",assessment,clean(body.month)]), duplicate_override_id: overrideId });
       }
       if (!inserts.length) return reply({ message: "هیچ نمره معتبر (۰ تا ۲۰) برای ثبت وجود ندارد." }, 400);
-      const { data, error } = await admin.from("student_grades").insert(inserts).select("id");
+      const { data, error } = await admin.from("student_grades").upsert(inserts, { onConflict: "tenant_school_id,dedupe_key,duplicate_override_id", ignoreDuplicates: true }).select("id");
       if (error) throw error;
       return reply({ ok: true, saved: data?.length ?? inserts.length });
     }
@@ -341,18 +348,35 @@ Deno.serve(async (req: Request) => {
       const { data: roster, error: rosterError } = await admin.from("students").select("id").eq("tenant_school_id", school).eq("class_name", className);
       if (rosterError) throw rosterError;
       if (!roster?.length) return reply({ message: "فهرست دانش‌آموزان این کلاس هنوز وارد سامانه نشده است." }, 400);
-      const { data: assignment, error } = await admin.from("assignments").insert({
+      const overrideId = body.allow_duplicate === true ? crypto.randomUUID() : "";
+      const assignmentKey = await makeDedupeKey([className,title,subject,clean(body.due_date)]);
+      const { data: insertedAssignment, error } = await admin.from("assignments").upsert({
         title, description: clean(body.description), subject, class_name: className,
         due_date: clean(body.due_date), teacher_id: asInt(body.teacher_id),
-        status: "active", tenant_school_id: school
-      }).select("id").single();
+        status: "active", tenant_school_id: school, dedupe_key: assignmentKey, duplicate_override_id: overrideId
+      }, { onConflict: "tenant_school_id,dedupe_key,duplicate_override_id", ignoreDuplicates: true }).select("id").maybeSingle();
       if (error) throw error;
-      const submissions = roster.map((s: any) => ({
+      let assignment = insertedAssignment;
+      const wasDuplicateRetry = !assignment;
+      if (!assignment) {
+        const { data: existingAssignment, error: lookupError } = await admin.from("assignments").select("id")
+          .eq("tenant_school_id", school).eq("dedupe_key", assignmentKey).eq("duplicate_override_id", overrideId).maybeSingle();
+        if (lookupError) throw lookupError;
+        assignment = existingAssignment;
+      }
+      if (!assignment?.id) throw new Error("شناسه تکلیف ثبت‌شده بازیابی نشد.");
+      const { data: existingSubmissions, error: existingSubmissionsError } = await admin.from("assignment_submissions")
+        .select("student_id").eq("tenant_school_id", school).eq("assignment_id", assignment.id);
+      if (existingSubmissionsError) throw existingSubmissionsError;
+      const existingStudentIds = new Set((existingSubmissions ?? []).map((row: any) => Number(row.student_id)));
+      const submissions = roster.filter((s: any) => !existingStudentIds.has(Number(s.id))).map((s: any) => ({
         assignment_id: assignment.id, student_id: s.id, status: "not_done", tenant_school_id: school
       }));
-      const { error: subError } = await admin.from("assignment_submissions").insert(submissions);
-      if (subError) throw subError;
-      return reply({ ok: true, assignment_id: assignment.id, students: submissions.length });
+      if (submissions.length) {
+        const { error: subError } = await admin.from("assignment_submissions").upsert(submissions, { onConflict: "tenant_school_id,assignment_id,student_id", ignoreDuplicates: true });
+        if (subError) throw subError;
+      }
+      return reply({ ok: true, assignment_id: assignment.id, students: roster.length, duplicate_retry: wasDuplicateRetry });
     }
 
     if (action === "assignment_status") {
@@ -393,17 +417,19 @@ Deno.serve(async (req: Request) => {
         teacherId = teacherRow?.id ?? null;
       }
       const actorRole = teacher ? "teacher" : deputy ? "deputy" : "manager";
-      const inserts = rows.map((raw: any) => {
+      const overrideId = body.allow_duplicate === true ? crypto.randomUUID() : "";
+      const inserts = await Promise.all(rows.map(async (raw: any) => {
         const studentId = asInt(raw.student_id), title = clean(raw.title);
         return { student_id: studentId, teacher_id: teacherId, title,
           description: clean(raw.description), note: clean(raw.description),
           record_type: clean(raw.record_type) === "praise" ? "praise" : "discipline",
           class_name: className, subject: teacher ? subject : "", status: "approved", priority: "normal",
           actor_username: clean(profile.username), actor_role: actorRole,
-          incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school };
-      }).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
+          incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school,
+          dedupe_key: await makeDedupeKey([studentId,className,teacher?subject:"",clean(profile.username),clean(body.date)||new Date().toISOString().slice(0,10),title,clean(raw.record_type)==="praise"?"praise":"discipline"]), duplicate_override_id: overrideId };
+      })).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
-      const { data, error } = await admin.from("discipline_records").insert(inserts).select("*");
+      const { data, error } = await admin.from("discipline_records").upsert(inserts, { onConflict: "tenant_school_id,dedupe_key,duplicate_override_id", ignoreDuplicates: true }).select("*");
       if (error) throw error;
       const auditRows=(data??[]).map((row:any)=>({tenant_school_id:school,record_id:row.id,action:"insert",
         actor_username:clean(profile.username),actor_role:actorRole,
