@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildDisciplineScoreBatches, isSchoolManagerRole } from "./discipline-rules.ts";
-import { activeTeacherAccounts, resolveTeacherAccount } from "./teacher-identity.ts";
+import { activeTeacherAccounts, normalizeTeacherNationalCode as normalizeStaffNationalCode, resolveTeacherAccount } from "./teacher-identity.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -86,16 +86,22 @@ Deno.serve(async (req: Request) => {
     // Do not infer ownership from display-name text in online_classes.teacher.
     let teacherRecordId: number | null = null;
     if (teacher) {
-      const accountNationalCode = clean(profile.national_code);
+      const accountNationalCode = normalizeStaffNationalCode(profile.national_code);
       if (accountNationalCode) {
-        const { data: teacherRow, error: teacherError } = await admin.from("teachers").select("id")
-          .eq("tenant_school_id", school).eq("national_code", accountNationalCode).limit(1).maybeSingle();
+        // Compare normalized codes in memory so Persian/Arabic digits, separators,
+        // and legacy zero-padding do not break an otherwise exact identity match.
+        const { data: teacherRows, error: teacherError } = await admin.from("teachers")
+          .select("id,national_code").eq("tenant_school_id", school).limit(2000);
         if (teacherError) throw teacherError;
-        teacherRecordId = teacherRow?.id ?? null;
+        const codeMatches = (teacherRows ?? []).filter((row: any) =>
+          normalizeStaffNationalCode(row.national_code) === accountNationalCode
+        );
+        if (codeMatches.length === 1) teacherRecordId = codeMatches[0].id;
       } else {
-        // Legacy accounts may have no national code in either account_settings
-        // or teachers. Allow only a unique exact full-name match with a
-        // matching active teacher_classes assignment; never use name alone.
+        // Legacy accounts may have no national code in account_settings.
+        // Permit a unique exact-name match even when the staff file has a code,
+        // but only when an active teacher_classes row independently confirms
+        // the same staff record. Never use name alone.
         const identityName = norm(callerName);
         if (identityName) {
           const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
@@ -103,8 +109,6 @@ Deno.serve(async (req: Request) => {
             .eq("tenant_school_id", school);
           if (teacherRowsError) throw teacherRowsError;
           const matches = (teacherRows ?? []).filter((row: any) => {
-            if (clean(row.national_code)) return false;
-            const firstName = norm(row.first_name);
             const lastName = norm(row.last_name);
             const fullName = norm(`${clean(row.first_name)} ${clean(row.last_name)}`);
             // Accept either the exact full name or an exact, unique surname alias.

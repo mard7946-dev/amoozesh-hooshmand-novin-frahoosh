@@ -2,6 +2,12 @@ const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u20
 const norm = (value: unknown) => clean(value).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).toLocaleLowerCase("fa");
 const key = (value: unknown) => norm(value).replace(/\s+/g, "");
+export const normalizeTeacherNationalCode = (value: unknown) => {
+  let code = clean(value).replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[^0-9]/g, "");
+  if (code.length === 8 || code.length === 9) code = code.padStart(10, "0");
+  return code.length === 10 ? code : "";
+};
 const isTeacherRole = (role: unknown) => ["teacher", "دبیر", "معلم"].some(value => norm(role).includes(norm(value)));
 
 export function activeTeacherAccounts(accounts: any[], memberships: any[]) {
