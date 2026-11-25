@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
         rows = scheduledClasses ?? [];
       }
     } else {
-      if (!["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role)) {
+      if (!platformAdmin && !["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role)) {
         return reply({ message: "این نقش اجازهٔ ورود به کلاس آنلاین را ندارد." }, 403);
       }
       let classesQuery = admin.from("online_classes").select(classSelect).order("start_time", { ascending: true });
@@ -232,7 +232,7 @@ Deno.serve(async (req: Request) => {
     }
     return reply({ ok: true, profile: {
       username: clean(profile.username), display_name: name, role: clean(profile.role), class_name: className,
-    }, online_service_enabled: onlineServiceEnabled, rooms: ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role) ? schedule : rooms, schedule });
+    }, online_service_enabled: onlineServiceEnabled, rooms: (platformAdmin || ["manager", "educational", "executive", "cultural", "advisor", "counselor", "deputy"].includes(role)) ? schedule : rooms, schedule });
   } catch (error) {
     console.error("classroom-authorize failed", String(error));
     return reply({ message: "بررسی نشست انجام نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
