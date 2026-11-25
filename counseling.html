@@ -282,7 +282,7 @@ function printGuidanceForm(){
   ['humanities','ادبیات و علوم انسانی'],['religion','علوم و معارف اسلامی'],['experimental','علوم تجربی'],['math','ریاضی فیزیک']
  ];
  const v=(x)=>x===null||x===undefined||x===''?'—':guidancePrintNumber(x,1);
- const scoreCell=(key,field)=>{const x=byKey[key];if(!x)return '—';return v(field==='consult'?x.total-x.academic:x[field]);};
+ const scoreCell=(key,field)=>{const x=byKey[key];if(!x)return '—';if(field==='consult')return x.total===null||x.academic===null?'—':v(x.total-x.academic);return v(x[field]);};
  const academicCells=cols.map(([k])=>'<td>'+scoreCell(k,'academic')+'</td>').join('');
  const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
  const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'بررسی نشده')+'</td>';}).join('');
@@ -301,7 +301,6 @@ function printGuidanceForm(){
  const hollandRows=holland.map(([n,d],i)=>'<tr><td>'+(i+1)+'</td><td>'+n+'</td><td>آزمون ثبت نشده</td><td class="features">'+d+'</td></tr>').join('');
  const get=(...keys)=>{for(const k of keys){const x=selected?.[k];if(x!==undefined&&x!==null&&String(x).trim()!=='')return esc(x);}return '—';};
  const full=esc(fullName(selected));
- const grades=subjects.map(([k,n])=>'<tr><td>'+n+'</td><td>'+v(marks.grade7_scores[k])+'</td><td>'+v(marks.grade8_scores[k])+'</td><td>'+v(marks.grade9_scores[k])+'</td></tr>').join('');
  $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content">'+
  '<div class="ministry-header"><div class="side">جمهوری اسلامی ایران<br>وزارت آموزش و پرورش<br>اداره کل آموزش و پرورش</div><div class="center">نمون‌برگ هدایت تحصیلی<br><span style="font-size:8pt">عادی · نسخه پیش‌بینی آزمایشی مدرسه</span></div><div class="side">اداره کل امور تربیتی، مشاوره<br>و مراقبت در برابر آسیب‌های اجتماعی</div></div>'+
  '<div class="student-meta"><span>نام: '+get('first_name','name')+'</span><span>نام خانوادگی: '+get('last_name','family_name')+'</span><span>نام پدر: '+get('father_name')+'</span><span>کد ملی: '+get('national_code','national_id')+'</span><span>تاریخ تولد: '+get('birth_date','date_of_birth')+'</span><span>محل صدور: '+get('birth_place','place_of_issue')+'</span><span>استان: '+get('province')+'</span><span>ملیت: '+get('nationality')+'</span><span>منطقه: '+get('district','region')+'</span><span>مدرسه: دبیرستان سردار شهید حاجی‌زاده ۲</span><span>پایه: '+get('grade')+'</span><span>تاریخ تنظیم: پیش‌بینی دی‌ماه ۱۴۰۵</span></div>'+
@@ -313,7 +312,7 @@ function printGuidanceForm(){
  '</tbody></table><div class="section-caption">نتایج آزمون توانایی ـ رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:4%">کد</th><th style="width:15%">تیپ شخصیتی</th><th style="width:16%">رتبه درصدی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
  '<div class="guidance-note">توضیح: این برگه پیش‌بینی آزمایشی مدرسه است و جایگزین نمون‌برگ رسمی سامانه هدایت تحصیلی وزارت آموزش‌وپرورش نیست. نمرات پایه نهم در این خروجی بر اساس نمره دی‌ماه برآورد شده‌اند. آزمون رغبت و توانایی واقعی در این پرونده ثبت نشده است؛ بنابراین رتبه درصدی تیپ‌های شخصیتی نمایش داده نمی‌شود. وضعیت حدنصاب فقط در مواردی درج می‌شود که داده و ملاک آن در سامانه موجود باشد؛ اولویت الف/ب بدون ضوابط رسمی و ظرفیت منطقه صادر نمی‌شود.</div>'+
  '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
- '<div class="section-caption" style="margin-top:1mm">نمرات مبنای پیش‌بینی (هفتم و هشتم خرداد، نهم دی‌ماه)</div><table class="holland-table"><thead><tr><th>درس</th><th>هفتم</th><th>هشتم</th><th>نهم</th></tr></thead><tbody>'+grades+'</tbody></table>'+
+ '
  '</div></article>';
  document.body.classList.add('printing-guidance');
  const cleanup=()=>{document.body.classList.remove('printing-guidance');window.removeEventListener('afterprint',cleanup);};
