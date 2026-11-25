@@ -287,7 +287,7 @@ function printGuidanceForm(){
  const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
  const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'بررسی نشده')+'</td>';}).join('');
  const priority=cols.map(()=>'<td>تعیین نشده</td>').join('');
- const groups='<tr><th class="criteria" rowspan="2">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr>'+['زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','زمینه','رشته','رشته','رشته','رشته'].map(x=>'<th>'+x+'</th>').join('')+'</tr>';
+ const groups='<tr><th class="criteria" rowspan="3">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr><th colspan="4">زمینه</th><th colspan="4">زمینه</th><th colspan="4">رشته</th></tr>';
  const names=cols.map(([k,n])=>'<th>'+n+'</th>').join('');
  const row=(label,cells)=>'<tr><th class="criteria">'+label+'</th>'+cells+'</tr>';
  const holland=[
@@ -304,7 +304,7 @@ function printGuidanceForm(){
  $('guidancePrintArea').innerHTML='<article class="guidance-sheet"><img class="guidance-watermark" src="assets/school-logo.svg" alt=""><div class="guidance-content">'+
  '<div class="ministry-header"><div class="side">جمهوری اسلامی ایران<br>وزارت آموزش و پرورش<br>اداره کل آموزش و پرورش</div><div class="center">نمون‌برگ هدایت تحصیلی<br><span style="font-size:8pt">عادی · نسخه پیش‌بینی آزمایشی مدرسه</span></div><div class="side">اداره کل امور تربیتی، مشاوره<br>و مراقبت در برابر آسیب‌های اجتماعی</div></div>'+
  '<div class="student-meta"><span>نام: '+get('first_name','name')+'</span><span>نام خانوادگی: '+get('last_name','family_name')+'</span><span>نام پدر: '+get('father_name')+'</span><span>کد ملی: '+get('national_code','national_id')+'</span><span>تاریخ تولد: '+get('birth_date','date_of_birth')+'</span><span>محل صدور: '+get('birth_place','place_of_issue')+'</span><span>استان: '+get('province')+'</span><span>ملیت: '+get('nationality')+'</span><span>منطقه: '+get('district','region')+'</span><span>مدرسه: دبیرستان سردار شهید حاجی‌زاده ۲</span><span>پایه: '+get('grade')+'</span><span>تاریخ تنظیم: پیش‌بینی دی‌ماه ۱۴۰۵</span></div>'+
- '<div class="matrix-title">جدول شایستگی‌ها و ملاک‌های تعیین اولویت رشته‌ها</div><table class="ministry-matrix"><thead>'+groups+'<tr><th class="criteria">زمینه / رشته</th>'+names+'</tr></thead><tbody>'+
+ '<div class="matrix-title">جدول شایستگی‌ها و ملاک‌های تعیین اولویت رشته‌ها</div><table class="ministry-matrix"><thead>'+groups+'<tr>'+names+'</tr></thead><tbody>'+
  row('امتیاز بررسی‌های مشاوره‌ای (از ۶۵)',consultCells)+
  row('امتیاز عملکرد تحصیلی متناسب با رشته (از ۳۵)',academicCells)+
  row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
