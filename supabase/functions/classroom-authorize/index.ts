@@ -113,21 +113,37 @@ Deno.serve(async (req: Request) => {
       scheduleRows = scheduleData ?? [];
       if (role === "teacher") {
         const { data: teacherRows, error: teacherError } = await admin.from("teachers")
-          .select("id,first_name,last_name").eq("tenant_school_id", profile.tenant_school_id).limit(1000);
+          .select("id,first_name,last_name,national_code").eq("tenant_school_id", profile.tenant_school_id).limit(1000);
         if (teacherError) {
           console.error("classroom-authorize teacher identity lookup failed", teacherError.message);
           return reply({ message: "شناسه دبیر در پرونده کارکنان دریافت نشد." }, 503);
         }
-        const teacherRecord = (teacherRows ?? []).find((item: any) =>
+        const nationalCode = norm(profile.national_code);
+        const exactNameMatches = (teacherRows ?? []).filter((item: any) =>
           norm(clean(item.first_name) + " " + clean(item.last_name)) === norm(name)
         );
+        const codeMatches = nationalCode
+          ? (teacherRows ?? []).filter((item: any) => norm(item.national_code) === nationalCode)
+          : [];
+        const teacherRecord = codeMatches.length === 1 ? codeMatches[0] : exactNameMatches.length === 1 ? exactNameMatches[0] : null;
         const teacherId = Number(teacherRecord?.id ?? 0);
         const teacherUsername = norm(profile.username);
         const teacherName = norm(name);
+        const nameParts = teacherName.split(/\\s+/).filter(Boolean);
+        const surname = nameParts.length ? nameParts[nameParts.length - 1] : "";
+        const surnameMatches = surname ? (teacherRows ?? []).filter((item: any) =>
+          norm(item.last_name) === surname
+        ) : [];
+        const teacherAliases = new Set([teacherName]);
+        if (surnameMatches.length === 1) {
+          teacherAliases.add(norm(clean(surnameMatches[0].first_name) + " " + clean(surnameMatches[0].last_name)));
+          teacherAliases.add(norm(surnameMatches[0].last_name));
+        }
         scheduleRows = scheduleRows.filter((entry: any) =>
           (teacherId > 0 && Number(entry.teacher_id) === teacherId) ||
           (teacherUsername && norm(entry.teacher_username) === teacherUsername) ||
-          (teacherName && norm(entry.teacher_name) === teacherName)
+          (teacherName && norm(entry.teacher_name) === teacherName) ||
+          (norm(entry.teacher_name) && teacherAliases.has(norm(entry.teacher_name)))
         );
       }
       const classIds = [...new Set(scheduleRows.map((entry: any) => Number(entry.online_class_id)).filter((id: number) => Number.isInteger(id) && id > 0))];
