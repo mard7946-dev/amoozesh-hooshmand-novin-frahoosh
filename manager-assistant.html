@@ -21,9 +21,10 @@
 <div class="metric"><small>تأخیر امروز</small><strong id="todayLate">—</strong></div>
 </div>
 <div class="split">
-<section class="panel"><h2>نیازمند بررسی مدیر <span class="pill" id="pendingCount">۰</span></h2><div id="pendingList" class="list"></div></section>
+<section class="panel"><h2>درخواست‌های نیازمند بررسی مدیر <span class="pill" id="pendingCount">۰</span></h2><div id="pendingList" class="list"></div></section>
 <section class="panel"><h2>خلاصهٔ حضور و غیاب امروز</h2><div id="attendanceSummary" class="list"></div></section>
 </div>
+<section class="panel"><h2>آخرین ثبت‌های حضور و غیاب دبیران</h2><div id="latestAttendance" class="list"></div></section>
 <section class="panel"><h2>آخرین درخواست‌های اجرایی</h2><div id="recentRequests" class="list"></div></section>
 <section class="panel"><h2>دسترسی سریع به بخش‌های موجود</h2><div class="shortcuts">
 <a href="reports.html?role=manager">📊 گزارش‌های مدرسه<br><small>جزئیات حضور، نمرات و انضباط</small></a>
@@ -71,7 +72,6 @@ function render(data){
  $("students").textContent=fa(students.length);$("teachers").textContent=fa(teachers.length);$("classes").textContent=fa(new Set(classes.map(x=>x.class_name).filter(Boolean)).size);
  $("todayAttendance").textContent=fa(todayRows.length);$("todayAbsence").textContent=fa(count("غیبت"));$("todayLate").textContent=fa(count("تأخیر"));
  const pending=[];
- for(const x of data.attendance||[])if(isPending(x.approval_status))pending.push({title:"حضور و غیاب در انتظار بررسی",detail:[x.class_name,x.subject,x.attendance_date||x.date].filter(Boolean).join(" · ")||"ثبت حضور و غیاب"});
  for(const x of data.executiveRequests||[])if(isPending(x.status))pending.push({title:"درخواست اجرایی: "+(x.title||"بدون عنوان"),detail:[x.requester,x.request_date||x.created_at,x.description].filter(Boolean).join(" · ")});
  for(const x of data.transportRequests||[])if(isPending(x.status))pending.push({title:"درخواست سرویس دانش‌آموز",detail:[x.parent_username,x.origin,x.destination].filter(Boolean).join(" · ")});
  for(const x of data.certificateRequests||[])if(isPending(x.status))pending.push({title:"درخواست گواهی",detail:[x.student_name,x.destination,x.request_date].filter(Boolean).join(" · ")});
@@ -82,6 +82,17 @@ function render(data){
  const kinds=["حاضر","غیبت","تأخیر","موجه"];
  if(!todayRows.length){const d=document.createElement("div");d.className="empty";d.textContent="برای امروز رکورد حضور و غیاب ثبت‌شده‌ای دریافت نشد.";$("attendanceSummary").append(d)}
  else kinds.forEach(k=>addItem($("attendanceSummary"),k,fa(count(k))+" ثبت"));
+ const attendanceGroups=new Map();
+ for(const x of data.attendance||[]){
+  const date=x.attendance_date||x.date||"",key=[date,x.class_name||"",x.subject||""].join("|");
+  const item=attendanceGroups.get(key)||{date,className:x.class_name||"کلاس نامشخص",subject:x.subject||"درس نامشخص",total:0,present:0,absent:0,late:0,pending:0,latestId:0};
+  item.total++;const k=kind(x);if(k==="حاضر")item.present++;else if(k==="غیبت")item.absent++;else if(k==="تأخیر")item.late++;
+  if(isPending(x.approval_status))item.pending++;item.latestId=Math.max(item.latestId,Number(x.id)||0);attendanceGroups.set(key,item);
+ }
+ const latestAttendance=[...attendanceGroups.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.latestId-a.latestId).slice(0,12);
+ $("latestAttendance").replaceChildren();
+ if(!latestAttendance.length){const d=document.createElement("div");d.className="empty";d.textContent="هنوز ثبت حضور و غیابی دریافت نشده است.";$("latestAttendance").append(d)}
+ else latestAttendance.forEach(x=>addItem($("latestAttendance"),"حضور و غیاب ثبت‌شده",[x.className,x.subject,normalizedDate(x.date),fa(x.total)+" ثبت",fa(x.present)+" حاضر",fa(x.absent)+" غایب",fa(x.late)+" تأخیر"].join(" · "),x.pending?"دارای وضعیت قدیمیِ انتظار بررسی":"ثبت مستقیم و قابل مشاهده"));
  const requests=(data.executiveRequests||[]).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,6);
  $("recentRequests").replaceChildren();
  if(!requests.length){const d=document.createElement("div");d.className="empty";d.textContent="درخواست اجرایی ثبت‌شده‌ای در داده‌های دریافتی وجود ندارد.";$("recentRequests").append(d)}
