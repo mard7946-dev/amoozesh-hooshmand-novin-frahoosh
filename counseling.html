@@ -244,47 +244,32 @@ async function loadGuidanceCohort(){
 }
 function applyGuidancePriorities(arr){
  const grade9=students.filter(s=>norm(s.grade).includes('نهم'));
- const totalStudents=grade9.length;
  const records=new Map(guidanceCohort.map(r=>[String(r.student_id),r]));
  const selectedId=selected?String(selected.id):'';
  const status=$('guidanceCohortStatus');
  if(status){
-  status.textContent=guidanceCohortError?'دریافت پرونده‌های پایه نهم ناموفق بود: '+guidanceCohortError:
-   'پرونده هدایت تحصیلی ثبت‌شده: '+guidanceCohort.length+' از '+totalStudents+' دانش‌آموز پایه نهم. رتبه‌بندی فقط وقتی فعال می‌شود که اطلاعات کامل همه دانش‌آموزان برای همان زمینه ثبت شده باشد.';
+  status.textContent=guidanceCohortError?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError:
+   'پرونده‌های دارای نمره کامل در هر زمینه، مبنای رتبه‌بندی هستند؛ تعداد داوطلبان ثبت‌شده کنار رتبه نمایش داده می‌شود. با ثبت نمرات سایر دانش‌آموزان، رتبه‌ها به‌روز می‌شوند.';
  }
  return arr.map(track=>{
   const entries=grade9.map(student=>{
    const id=String(student.id),record=records.get(id),saved=record&&record.recommendation_scores&&record.recommendation_scores[track.key];
-   let item=saved?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points,thresholds:saved.thresholds}:null;
-   if(id===selectedId)item={complete:track.complete,total:track.total,academic:track.academic,thresholds:track.thresholdValues};
-   const total=Number(item&&item.total),complete=Boolean(item&&item.complete&&Number.isFinite(total));
-   const thresholds=Array.isArray(item&&item.thresholds)?item.thresholds:[];
-   const expected=track.thresholds?Object.keys(track.thresholds).length:0;
-   const thresholdComplete=expected>0&&thresholds.length===expected&&thresholds.every(x=>x.actual!==null&&x.actual!==undefined&&Number.isFinite(Number(x.actual)));
-   const thresholdPassed=thresholdComplete&&thresholds.every(x=>Number(x.actual)>=Number(x.min));
-   return {id,complete,total,academic:Number(item&&item.academic),thresholdComplete,thresholdPassed};
-  });
-  const completeCount=entries.filter(x=>x.complete).length;
-  let priority='— · اطلاعات درسی این زمینه ناقص است';
-  if(!totalStudents)priority='— · فهرست دانش‌آموزان پایه نهم در دسترس نیست';
-  else if(guidanceCohortError)priority='— · خطا در دریافت اطلاعات رتبه‌بندی';
-  else if(completeCount<totalStudents)priority='— · اطلاعات کامل '+completeCount+' از '+totalStudents+' نفر ثبت شده است';
-  else if(!track.thresholds)priority='— · ملاک ورود این زمینه هنوز تعریف نشده است';
+   let item=saved?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points}:null;
+   if(id===selectedId)item={complete:track.complete,total:track.total,academic:track.academic};
+   const total=Number(item&&item.total);
+   return {id,complete:Boolean(item&&item.complete&&Number.isFinite(total)),total,academic:Number(item&&item.academic)};
+  }).filter(x=>x.complete);
+  const current=entries.find(x=>x.id===selectedId);
+  let priority='— · نمرات این زمینه هنوز کامل ثبت نشده است';
+  if(guidanceCohortError)priority='— · خطا در دریافت پرونده‌های هدایت تحصیلی';
+  else if(!current)priority='— · نمرات این دانش‌آموز برای این زمینه کامل نیست';
   else{
-   const eligible=entries.filter(x=>x.complete&&x.thresholdComplete&&x.thresholdPassed);
-   const current=entries.find(x=>x.id===selectedId);
-   if(!current||!current.complete)priority='— · نمرات دانش‌آموز برای این زمینه ناقص است';
-   else if(!current.thresholdComplete)priority='— · اطلاعات حدنصاب آزمایشی ناقص است';
-   else if(!current.thresholdPassed)priority='— · حدنصاب آزمایشی احراز نشده است';
-   else if(!eligible.length)priority='— · داوطلب واجد شرایطی ثبت نشده است';
-   else{
-    const score=Number.isFinite(current.total)?current.total:0,academic=Number.isFinite(current.academic)?current.academic:0;
-    const rank=1+eligible.filter(x=>x.total>score+0.000001||(Math.abs(x.total-score)<=0.000001&&Number.isFinite(x.academic)&&x.academic>academic+0.000001)).length;
-    const reserve=track.capacity+Math.ceil(track.capacity*.20);
-    priority=rank<=track.capacity?'الف · رتبه '+rank+' از '+eligible.length:
-     rank<=reserve?'ب · رتبه '+rank+' از '+eligible.length:
-     '— · خارج از ظرفیت و ذخیره ۲۰٪ (رتبه '+rank+' از '+eligible.length+')';
-   }
+   const rank=1+entries.filter(x=>x.total>current.total+0.000001||
+    (Math.abs(x.total-current.total)<=0.000001&&Number.isFinite(x.academic)&&Number.isFinite(current.academic)&&x.academic>current.academic+0.000001)).length;
+   const reserve=track.capacity+Math.ceil(track.capacity*.20);
+   priority=rank<=track.capacity?'الف · رتبه '+rank+' از '+entries.length:
+    rank<=reserve?'ب · رتبه '+rank+' از '+entries.length:
+    '— · خارج از ظرفیت و ذخیره ۲۰٪ (رتبه '+rank+' از '+entries.length+')';
   }
   return {...track,priority};
  });
