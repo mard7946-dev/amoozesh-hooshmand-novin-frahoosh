@@ -20,7 +20,7 @@ vm.runInNewContext(
   context
 );
 
-function runPriority({ capacity = 2, currentScore = 75, currentThreshold = 15, saved = [95, 85], technical = false } = {}) {
+function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], technical = false } = {}) {
   context.students = [1, 2, 3].map(id => ({ id, grade: "نهم" }));
   context.selected = { id: 3 };
   const key = technical ? "fanni_industry" : "math";
@@ -30,27 +30,24 @@ function runPriority({ capacity = 2, currentScore = 75, currentThreshold = 15, s
       [key]: {
         complete: true,
         total_points: score,
-        academic_points: score * 0.35,
-        thresholds: technical ? [] : [{ subject: "math", min: 14, actual: 15 }]
+        academic_points: score * 0.35
       }
     }
   }));
   const track = {
     key,
     capacity,
-    thresholds: technical ? null : { math: 14 },
+    thresholds: technical ? null : { math: 99 },
     complete: true,
     total: currentScore,
-    academic: currentScore * 0.35,
-    thresholdValues: technical ? [] : [{ subject: "math", min: 14, actual: currentThreshold }]
+    academic: currentScore * 0.35
   };
   return context.applyGuidancePriorities([track])[0].priority;
 }
 
-assert.match(runPriority(), /^ب · رتبه 3 از 3$/, "The 20% reserve should produce priority B");
+assert.match(runPriority(), /^ب · رتبه 3 از 3$/, "The 20% reserve should produce priority B based on total guidance score");
 assert.match(runPriority({ capacity: 1 }), /^— · خارج از ظرفیت/, "Candidates beyond capacity plus reserve must receive a dash");
-assert.match(runPriority({ currentThreshold: 10 }), /حدنصاب آزمایشی احراز نشده/, "A candidate below the configured experimental threshold must not receive A/B");
-assert.match(runPriority({ saved: [95] }), /اطلاعات کامل 2 از 3/, "Incomplete cohort coverage must suppress ranking");
-assert.match(runPriority({ technical: true }), /ملاک ورود این زمینه هنوز تعریف نشده/, "Technical fields without entry criteria must not receive fabricated priorities");
-
+assert.match(runPriority({ technical: true }), /^ب · رتبه 3 از 3$/, "Technical fields must rank by entered guidance score without a separate threshold");
+assert.match(runPriority({ saved: [95] }), /^الف · رتبه 2 از 2$/, "Ranking should proceed among students with complete entered scores and show the comparison cohort");
+assert.match(runPriority({ saved: [] }), /^الف · رتبه 1 از 1$/, "The currently calculated student's score must be included before it is saved");
 console.log("Guidance priority ranking checks passed.");
