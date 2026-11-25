@@ -418,7 +418,7 @@ Deno.serve(async (req: Request) => {
       }
       const actorRole = teacher ? "teacher" : deputy ? "deputy" : "manager";
       const overrideId = body.allow_duplicate === true ? crypto.randomUUID() : "";
-      const inserts = await Promise.all(rows.map(async (raw: any) => {
+      const inserts = (await Promise.all(rows.map(async (raw: any) => {
         const studentId = asInt(raw.student_id), title = clean(raw.title);
         return { student_id: studentId, teacher_id: teacherId, title,
           description: clean(raw.description), note: clean(raw.description),
@@ -427,7 +427,7 @@ Deno.serve(async (req: Request) => {
           actor_username: clean(profile.username), actor_role: actorRole,
           incident_date: clean(body.date) || new Date().toISOString().slice(0,10), tenant_school_id: school,
           dedupe_key: await makeDedupeKey([studentId,className,teacher?subject:"",clean(profile.username),clean(body.date)||new Date().toISOString().slice(0,10),title,clean(raw.record_type)==="praise"?"praise":"discipline"]), duplicate_override_id: overrideId };
-      })).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
+      }))).filter((x: any) => x.student_id && allowed.has(x.student_id) && x.title);
       if (!inserts.length) return reply({ message: "هیچ ردیف معتبر برای ثبت وجود ندارد." }, 400);
       const { data, error } = await admin.from("discipline_records").upsert(inserts, { onConflict: "tenant_school_id,dedupe_key,duplicate_override_id", ignoreDuplicates: true }).select("*");
       if (error) throw error;
