@@ -222,7 +222,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "academic_review_list") {
-      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به بررسی اطلاعات آموزشی است." }, 403);
+      if (!manager && !deputy) return reply({ message: "فقط مدیر یا معاون مجاز به مشاهده این بخش هستند." }, 403);
+      // Daily teacher-entered attendance, grades, and discipline are published immediately.
+      // Manager approval remains reserved for discipline_score_proposals, handled separately.
+      return reply({ ok: true, attendance: [], grades: [], discipline: [], direct_publication: true });
       const [attendanceRows, gradeRows, disciplineRows] = await Promise.all([
         admin.from("attendance").select("id,student_id,date,attendance_date,status,description,subject,class_name,approval_status").eq("tenant_school_id",school).eq("approval_status","pending").order("id",{ascending:false}).limit(1500),
         manager
