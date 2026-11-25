@@ -292,18 +292,11 @@ Deno.serve(async (req: Request) => {
       } else if (kind === "create_assignment") {
         let q=admin.from("assignments").select("id").eq("tenant_school_id",school).eq("class_name",className).eq("title",clean(body.title)).eq("subject",subject).eq("due_date",clean(body.due_date)).eq("status","active");
         const r=await q.limit(20); if(r.error) throw r.error; found=r.data??[];
-      } else if (kind === "assignment_status" && ids.length) {
-        const assignmentId=asInt(body.assignment_id);
-        if(!assignmentId) return reply({message:"تکلیف انتخاب نشده است."},400);
-        const r=await admin.from("assignment_submissions").select("student_id,status").eq("tenant_school_id",school).eq("assignment_id",assignmentId).in("student_id",ids);
-        if(r.error) throw r.error;
-        const previous=new Map((r.data??[]).map((x:any)=>[Number(x.student_id),clean(x.status)]));
-        found=rows.filter((x:any)=>previous.get(asInt(x.student_id))===clean(x.status));
       } else if (kind === "discipline" && ids.length) {
-        let q=admin.from("discipline_records").select("id,student_id").eq("tenant_school_id",school).eq("class_name",className).eq("subject",teacher?subject:"").eq("actor_username",clean(profile.username)).eq("incident_date",clean(body.date)).is("deleted_at",null).in("student_id",ids);
-        const r=await q.limit(500); if(r.error) throw r.error;
-        const existing=new Set((r.data??[]).map((x:any)=>Number(x.student_id)));
-        found=rows.filter((x:any)=>existing.has(asInt(x.student_id)));
+        let q=admin.from("discipline_records").select("id,student_id,title,record_type").eq("tenant_school_id",school).eq("class_name",className).eq("subject",teacher?subject:"").eq("actor_username",clean(profile.username)).eq("incident_date",clean(body.date)).is("deleted_at",null).in("student_id",ids);
+        const r=await q.limit(1000); if(r.error) throw r.error;
+        const existing=new Set((r.data??[]).map((x:any)=>[Number(x.student_id),clean(x.title),clean(x.record_type)].join("|")));
+        found=rows.filter((x:any)=>existing.has([asInt(x.student_id),clean(x.title),clean(x.record_type)==="praise"?"praise":"discipline"].join("|")));
       }
       return reply({ok:true,duplicate:found.length>0,duplicate_count:found.length});
     }
