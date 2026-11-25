@@ -98,9 +98,10 @@ Deno.serve(async (req: Request) => {
         );
         if (codeMatches.length === 1) teacherRecordId = codeMatches[0].id;
       } else {
-        // Legacy accounts may have no national code in either account_settings
-        // or teachers. Allow only a unique exact full-name match with a
-        // matching active teacher_classes assignment; never use name alone.
+        // Legacy accounts may have no national code in account_settings.
+        // Permit a unique exact-name match even when the staff file has a code,
+        // but only when an active teacher_classes row independently confirms
+        // the same staff record. Never use name alone.
         const identityName = norm(callerName);
         if (identityName) {
           const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
@@ -108,7 +109,6 @@ Deno.serve(async (req: Request) => {
             .eq("tenant_school_id", school);
           if (teacherRowsError) throw teacherRowsError;
           const matches = (teacherRows ?? []).filter((row: any) => {
-            const firstName = norm(row.first_name);
             const lastName = norm(row.last_name);
             const fullName = norm(`${clean(row.first_name)} ${clean(row.last_name)}`);
             // Accept either the exact full name or an exact, unique surname alias.
