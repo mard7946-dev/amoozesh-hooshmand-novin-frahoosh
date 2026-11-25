@@ -42,7 +42,7 @@ if(modules[selected]){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const table=(heads,rows,empty)=>rows.length?'<table><thead><tr>'+heads.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'<p class="muted">'+esc(empty)+'</p>';
  const approval=x=>x==='approved'?'تأییدشده':x==='pending'?'در انتظار بررسی':x==='rejected'?'ردشده':(x||'ثبت‌شده');
- const needsManagerRelease=x=>{const label=(String(x.assessment_type||'')+' '+String(x.assessment_title||'')).replace(/ي/g,'ی').replace(/ك/g,'ک');return ['مستمر','پایان','نهایی'].some(v=>label.includes(v))};
+ const needsManagerRelease=(_x)=>false;
  (async()=>{
   if(!token||role!=='student'){box.textContent='نشست دانش‌آموز معتبر نیست؛ از پنل فراهوش دوباره وارد شوید.';return}
   box.textContent='در حال دریافت اطلاعات ثبت‌شده برای حساب شما…';
@@ -59,9 +59,9 @@ if(modules[selected]){
     out.innerHTML+='<h2>نمره مستمر بر اساس نمره‌های قابل محاسبه</h2>'+table(['درس','نوبت','میانگین پایه','تعدیل','نمره نهایی از ۲۰'],continuous.map(x=>[x.subject,x.term,x.base_score,x.adjustment,x.final_score]),'هنوز نمره‌ای برای محاسبه وجود ندارد.');
     out.innerHTML+='<h2>تعدیلات انضباطی مصوب</h2><p class="muted">جمع تعدیل امتیاز انضباط: '+esc(data.discipline_adjustment||0)+'</p>'+table(['میزان تعدیل','تاریخ اعمال'],adjustments.filter(x=>x.target_score==='discipline').map(x=>[x.delta,x.applied_at]),'تعدیل انضباطی مصوبی ثبت نشده است.');
    }else if(selected==='غیبت'){
-    out.innerHTML='<h2>سوابق حضور و غیاب</h2>'+table(['تاریخ','وضعیت','درس','توضیح','وضعیت بررسی'],(data.attendance||[]).map(x=>[x.attendance_date||x.date,x.status,x.subject,x.description,approval(x.approval_status)]),'هنوز سابقه حضور و غیابی برای شما ثبت نشده است.');
+    out.innerHTML='<h2>سوابق حضور و غیاب</h2>'+table(['تاریخ','وضعیت','درس','توضیح','وضعیت ثبت'],(data.attendance||[]).map(x=>[x.attendance_date||x.date,x.status,x.subject,x.description,'ثبت‌شده']),'هنوز سابقه حضور و غیابی برای شما ثبت نشده است.');
    }else if(selected==='انضباط'){
-    out.innerHTML='<h2>سوابق انضباطی و تشویقی</h2>'+table(['تاریخ','عنوان','نوع ثبت','درس','شرح','وضعیت'],(data.discipline||[]).map(x=>[x.incident_date,x.title,x.record_type==='praise'?'تشویق':'انضباط',x.subject,x.description,approval(x.status)]),'هنوز مورد انضباطی یا تشویقی برای شما ثبت نشده است.');
+    out.innerHTML='<h2>سوابق انضباطی و تشویقی</h2>'+table(['تاریخ','عنوان','نوع ثبت','درس','شرح','وضعیت'],(data.discipline||[]).map(x=>[x.incident_date,x.title,x.record_type==='praise'?'تشویق':'انضباط',x.subject,x.description,'ثبت‌شده']),'هنوز مورد انضباطی یا تشویقی برای شما ثبت نشده است.');
    }else if(selected==='تکلیف'){
     const submissions=data.assignment_submissions||[];
     out.innerHTML='<h2>تکالیف فعال کلاس شما</h2>'+table(['درس','عنوان تکلیف','شرح','تاریخ ثبت','مهلت','وضعیت انجام'],(data.assignments||[]).map(x=>{const sub=submissions.find(y=>Number(y.assignment_id)===Number(x.id));return [x.subject,x.title,x.description,x.created_at,x.due_date,sub?(sub.status||'ارسال‌شده'):'انجام‌نشده']}),'تکلیف فعالی برای کلاس یا حساب شما ثبت نشده است.');
