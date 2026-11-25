@@ -241,7 +241,10 @@ function computeScores(){
 }
 function calculateGuidance(show=true){
  const computed=computeScores(),arr=computed.arr;
- const meanOf=key=>{const values=arr.map(t=>t[key]).filter(v=>v!==null&&Number.isFinite(v));return values.length?values.reduce((a,v)=>a+v,0)/values.length:0;};\n $('guidanceForm').elements.interest_points.value=meanOf('interest').toFixed(2);\n $('guidanceForm').elements.aptitude_points.value=meanOf('aptitude').toFixed(2);\n $('guidanceResult').classList.remove('hidden');
+ const meanOf=key=>{const values=arr.map(t=>t[key]).filter(v=>v!==null&&Number.isFinite(v));return values.length?values.reduce((a,v)=>a+v,0)/values.length:0;};
+ $('guidanceForm').elements.interest_points.value=meanOf('interest').toFixed(2);
+ $('guidanceForm').elements.aptitude_points.value=meanOf('aptitude').toFixed(2);
+ $('guidanceResult').classList.remove('hidden');
  $('recommendations').innerHTML=arr.map(t=>{
   const threshold=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصاب آزمایشی: احراز شده':'حداقل یک حدنصاب آزمایشی احراز نشده'):'نمره بعضی درس‌ها ناقص است'):'حدنصاب این زمینه هنوز در سامانه تعریف نشده';
   return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'—':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">عملکرد '+guidancePrintNumber(t.academic,2)+'/۳۵ · رغبت برآوردی '+guidancePrintNumber(t.interest,2)+'/۱۵ · توانایی برآوردی '+guidancePrintNumber(t.aptitude,2)+'/۱۵<br>دبیران '+guidancePrintNumber(t.teacher,1)+'/۱۰ · مشاور '+guidancePrintNumber(t.counselor,1)+'/۱۰ · دانش‌آموز '+guidancePrintNumber(t.student,1)+'/۱۰ · والدین '+guidancePrintNumber(t.parent,1)+'/۵<br><strong>اولویت '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(t.note)+'</div></div>';
