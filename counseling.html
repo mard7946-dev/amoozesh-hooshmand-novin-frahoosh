@@ -344,6 +344,7 @@ function applyGuidancePriorities(arr){
  const grade9=students.filter(s=>norm(s.grade).includes('نهم'));
  const records=new Map(guidanceCohort.map(r=>[String(r.student_id),r]));
  const selectedId=selected?String(selected.id):'';
+ const selectedRecord=selected?{...(guidance||{}),...gradeScoresFromForm()}:null;
  const status=$('guidanceCohortStatus');
  if(status)status.textContent=guidanceCohortError?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError:'احراز شرایط ابتدا با حدنصاب دروس انجام می‌شود؛ رتبه‌بندی ظرفیت فقط با نمرات کامل سه پایه و امتیازهای واقعی ثبت‌شده انجام می‌شود. امتیازهای برآوردی ستاره‌دار وارد رقابت ظرفیت نمی‌شوند.';
  return arr.map(track=>{
@@ -363,7 +364,7 @@ function applyGuidancePriorities(arr){
    const entries=[];let cohortIncomplete=false;
    grade9.forEach(student=>{
     const id=String(student.id);
-    const record=records.get(id);
+    const record=id===selectedId?{...(records.get(id)||selectedRecord||{}),...gradeScoresFromForm()}:records.get(id);
     if(!record){cohortIncomplete=true;return;}
     const candidates=pool.map(candidate=>{
      const eligibility=savedThresholdStatus(record,candidate);
