@@ -379,6 +379,7 @@ function computeScores(){
   const allYearsComplete=track.subjects.every(subject=>['grade7_scores','grade8_scores','grade9_scores'].every(g=>marks[g]?.[subject]!==undefined&&Number.isFinite(Number(marks[g][subject]))));
   const total=academic===null||!allYearsComplete||!assessmentsComplete?null:academic+points.aptitude+points.interest+points.teacher+points.counselor+points.student+points.parent;
   const actualTotal=academic===null||!allYearsComplete||!actualAssessmentsComplete?null:academic+points.aptitude+points.interest+points.teacher+points.counselor+points.student+points.parent;
+  const assessmentValuesPresent=Object.values(displayPoints).every(value=>value!==null&&Number.isFinite(value));
   const estimatedTotal=academic===null||!assessmentValuesPresent||!Object.values(assessmentSources).includes('grade_based_estimate')?null:academic+displayPoints.aptitude+displayPoints.interest+displayPoints.teacher+displayPoints.counselor+displayPoints.student+displayPoints.parent;
   const thresholdValues=track.thresholds?Object.entries(track.thresholds).map(([subject,min])=>({subject,min,actual:averages[subject]})):[];
   const thresholdComplete=Boolean(track.thresholds)&&thresholdValues.every(x=>x.actual!==null);
