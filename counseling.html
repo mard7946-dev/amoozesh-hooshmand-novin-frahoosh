@@ -62,7 +62,7 @@
 <section id="followPanel" class="panel hidden"><h2>پیگیری مشاوره‌ای و یادآوری</h2><div class="muted">یادآوری‌ها هنگام باز بودن پنل و ورود مشاور بررسی می‌شوند. برای اعلان مرورگر، اجازه اعلان را فعال کن.</div><div id="reminders"></div><form id="followForm"><div class="formgrid"><label class="field">تاریخ جلسه بعدی (شمسی)<input name="followup_date" required data-jalali-date placeholder="انتخاب از تقویم شمسی"></label><label class="field">وضعیت پیگیری<select name="status"><option>باز</option><option>در حال انجام</option><option>انجام شد</option><option>ارجاع شد</option></select></label><label class="field">موضوع پیگیری<input name="subject" required placeholder="مثلاً پیگیری راهکارهای جلسه"></label><label class="field full">شرح و اقدام بعدی<textarea name="description" required></textarea></label></div><div class="actions"><button class="primary" type="submit">ثبت پیگیری</button><button type="button" id="enableNotifications">فعال‌سازی اعلان مرورگر</button></div></form><div class="tablewrap"><table><thead><tr><th>تاریخ پیگیری</th><th>موضوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="followRows"></tbody></table></div></section>
 <section id="guidancePanel" class="panel hidden"><h2>هدایت تحصیلی پایه نهم</h2><div class="notice">این بخش پیش‌بینی آموزشی مدرسه است. می‌توانید نمرات پایه هفتم و هشتم را اکنون ثبت و ذخیره کنید و نمرات پایه نهم را پس از امتحانات دی‌ماه تکمیل کنید. فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند. پرونده پس از ذخیره قابل بازگشت و ویرایش است؛ اولویت‌ها تا تکمیل داده‌ها موقت‌اند و اولویت رسمی منطقه نیستند.</div><div id="guidanceSaveStatus" class="muted" role="status">هنوز اطلاعاتی برای این دانش‌آموز ذخیره نشده است.</div>
 <form id="guidanceForm"><h3>ثبت نمرات هر پایه (از ۲۰)</h3><div class="muted">ابتدا نمرات خرداد هفتم و هشتم را وارد و ذخیره کنید. بخش نهم فعلاً خالی بماند و پس از امتحانات دی‌ماه تکمیل شود. خانه‌های خالی نمره صفر نیستند و بعداً می‌توانید همین پرونده را ویرایش کنید.</div>
-<div id="gradeInputs"></div><h3>امتیاز آزمون‌ها و نظرها به تفکیک رشته</h3><div class="muted">اگر امتیاز واقعی آزمون یا نظرها را ندارید، سامانه به‌صورت پیش‌فرض امتیاز برآوردی را متناسب با میانگین نمرات دروس مرتبط پر می‌کند. این مقادیر با علامت * مشخص می‌شوند، واقعی نیستند و قابل ویرایش‌اند؛ با ورود اطلاعات واقعی، مقدار را اصلاح کنید. امتیاز هر رشته جداگانه محاسبه می‌شود.</div><div id="trackAssessmentInputs"></div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">امتیازهای خالی با پیش‌فرض برآوردی از نمرات دروس مرتبط تکمیل می‌شوند و با علامت * مشخص‌اند؛ مقادیر واقعی قابل جایگزینی‌اند. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ظرفیت و ذخیره ۲۰٪ نیز سقف رتبه را محدود می‌کند. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
+<div id="gradeInputs"></div><h3>امتیاز آزمون‌ها و نظرها به تفکیک رشته</h3><div class="muted">اگر امتیاز واقعی آزمون یا نظرها را ندارید، سامانه به‌صورت پیش‌فرض امتیاز برآوردی را متناسب با میانگین نمرات دروس مرتبط پر می‌کند. این مقادیر با علامت * مشخص می‌شوند، واقعی نیستند و قابل ویرایش‌اند؛ با ورود اطلاعات واقعی، مقدار را اصلاح کنید. امتیاز هر رشته جداگانه محاسبه می‌شود.</div><div id="trackAssessmentInputs"></div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">امتیازهای خالی با پیش‌فرض برآوردی از نمرات دروس مرتبط تکمیل می‌شوند و با علامت * مشخص‌اند؛ این مقادیر وارد رتبه‌بندی ظرفیت نمی‌شوند. رتبه‌بندی فقط با نمرات کامل سه پایه و امتیازهای واقعی انجام می‌شود. ظرفیت‌های برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ذخیره ۲۰٪ برای هر سطح بعدی اعمال می‌شود. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
 </section>
 </main>
 <script>
@@ -270,18 +270,18 @@ function gradeScoresFromForm(){
  return out;
 }
 const tracks=[
- {key:'math',name:'ریاضی و فیزیک',group:'شاخه نظری',capacity:350,subjects:['math','science'],weights:{math:0.65,science:0.35},thresholds:{math:14,science:13},note:'حدنصاب آزمایشی: ریاضی ۱۴ و علوم ۱۳'},
- {key:'experimental',name:'علوم تجربی',group:'شاخه نظری',capacity:350,subjects:['science','math'],weights:{science:0.65,math:0.35},thresholds:{science:14,math:13},note:'حدنصاب آزمایشی: علوم ۱۴ و ریاضی ۱۳'},
- {key:'humanities',name:'علوم انسانی',group:'شاخه نظری',capacity:500,subjects:['persian','social','arabic'],weights:{persian:0.5,social:0.3,arabic:0.2},thresholds:{persian:14,social:13,arabic:12},note:'حدنصاب آزمایشی: فارسی ۱۴، مطالعات ۱۳ و عربی ۱۲'},
- {key:'religion',name:'علوم و معارف اسلامی',group:'شاخه نظری',capacity:300,subjects:['persian','religion','arabic'],weights:{persian:0.34,religion:0.33,arabic:0.33},thresholds:{persian:14,religion:14,arabic:14},note:'حدنصاب آزمایشی: فارسی، معارف و عربی هرکدام ۱۴'},
- {key:'fanni_industry',name:'فنی‌وحرفه‌ای · صنعت',group:'شاخه فنی‌وحرفه‌ای',capacity:150,subjects:['math','science','technical'],weights:{math:0.4,science:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'fanni_services',name:'فنی‌وحرفه‌ای · خدمات',group:'شاخه فنی‌وحرفه‌ای',capacity:150,subjects:['persian','english','social','math'],weights:{persian:0.3,english:0.25,social:0.25,math:0.2},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'fanni_agriculture',name:'فنی‌وحرفه‌ای · کشاورزی',group:'شاخه فنی‌وحرفه‌ای',capacity:150,subjects:['science','math','technical'],weights:{science:0.4,math:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'fanni_arts',name:'فنی‌وحرفه‌ای · هنر',group:'شاخه فنی‌وحرفه‌ای',capacity:150,subjects:['arts','persian'],weights:{arts:0.6,persian:0.4},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'kardanesh_industry',name:'کاردانش · صنعت',group:'شاخه کاردانش',capacity:150,subjects:['math','science','technical'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'kardanesh_services',name:'کاردانش · خدمات',group:'شاخه کاردانش',capacity:150,subjects:['persian','english','social','math'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'شاخه کاردانش',capacity:150,subjects:['science','math','technical'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'kardanesh_arts',name:'کاردانش · هنر',group:'شاخه کاردانش',capacity:150,subjects:['arts','persian'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'}
+ {key:'math',name:'ریاضی و فیزیک',group:'شاخه نظری',capacity:300,subjects:['math','science'],weights:{math:0.65,science:0.35},thresholds:{math:14,science:13},note:'حدنصاب آزمایشی: ریاضی ۱۴ و علوم ۱۳'},
+ {key:'experimental',name:'علوم تجربی',group:'شاخه نظری',capacity:300,subjects:['science','math'],weights:{science:0.65,math:0.35},thresholds:{science:14,math:13},note:'حدنصاب آزمایشی: علوم ۱۴ و ریاضی ۱۳'},
+ {key:'humanities',name:'علوم انسانی',group:'شاخه نظری',capacity:400,subjects:['persian','social','arabic'],weights:{persian:0.5,social:0.3,arabic:0.2},thresholds:{persian:14,social:13,arabic:12},note:'حدنصاب آزمایشی: فارسی ۱۴، مطالعات ۱۳ و عربی ۱۲'},
+ {key:'religion',name:'علوم و معارف اسلامی',group:'شاخه نظری',capacity:null,subjects:['persian','religion','arabic'],weights:{persian:0.34,religion:0.33,arabic:0.33},thresholds:{persian:14,religion:14,arabic:14},note:'حدنصاب آزمایشی: فارسی، معارف و عربی هرکدام ۱۴'},
+ {key:'fanni_industry',name:'فنی‌وحرفه‌ای · صنعت',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'industry',subjects:['math','science','technical'],weights:{math:0.4,science:0.3,technical:0.3},thresholds:{math:10,technical:12},note:'حدنصاب نمونه صنعت: ریاضی ۱۰ و کاروفناوری ۱۲؛ پیش‌بینی مدرسه و نیازمند تطبیق با ضوابط سال جاری'},
+ {key:'fanni_services',name:'فنی‌وحرفه‌ای · خدمات',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'services',subjects:['persian','english','social','math'],weights:{persian:0.3,english:0.25,social:0.25,math:0.2},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
+ {key:'fanni_agriculture',name:'فنی‌وحرفه‌ای · کشاورزی',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'agriculture',subjects:['science','math','technical'],weights:{science:0.4,math:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
+ {key:'fanni_arts',name:'فنی‌وحرفه‌ای · هنر',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'arts',subjects:['arts','persian'],weights:{arts:0.6,persian:0.4},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
+ {key:'kardanesh_industry',name:'کاردانش · صنعت',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'industry',subjects:['math','science','technical'],weights:{math:0.4,science:0.3,technical:0.3},thresholds:null,note:'حدنصاب معتبر کاردانش صنعت باید جداگانه از جدول رسمی سال جاری ثبت شود'},
+ {key:'kardanesh_services',name:'کاردانش · خدمات',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'services',subjects:['persian','english','social','math'],weights:{persian:0.3,english:0.25,social:0.25,math:0.2},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
+ {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'agriculture',subjects:['science','math','technical'],weights:{science:0.4,math:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
+ {key:'kardanesh_arts',name:'کاردانش · هنر',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'arts',subjects:['arts','persian'],weights:{arts:0.6,persian:0.4},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'}
 ];
 function estimateAssessmentPoints(track,marks=gradeScoresFromForm()){
  const averages={};
@@ -329,27 +329,71 @@ async function loadGuidanceCohort(){
   guidanceCohort=[...latest.values()];guidanceCohortLoaded=true;guidanceCohortError='';
  }catch(err){guidanceCohortLoaded=false;guidanceCohortError=err.message||'خطای دریافت پرونده‌های پایه نهم';}
 }
+function savedThresholdStatus(record,track){
+ const marks={grade7_scores:record?.grade7_scores||{},grade8_scores:record?.grade8_scores||{},grade9_scores:record?.grade9_scores||{}};
+ if(!track.thresholds)return {known:false,complete:false,passed:false};
+ const values=Object.entries(track.thresholds).map(([subject,min])=>{
+  if(['grade7_scores','grade8_scores','grade9_scores'].some(year=>marks[year][subject]===undefined||marks[year][subject]===null||!Number.isFinite(Number(marks[year][subject]))))return {subject,min,average:null};
+  const average=(Number(marks.grade7_scores[subject])+Number(marks.grade8_scores[subject])+3*Number(marks.grade9_scores[subject]))/5;
+  return {subject,min,average};
+ });
+ const complete=values.length>0&&values.every(x=>x.average!==null);
+ return {known:true,complete,passed:complete&&values.every(x=>x.average>=x.min),values};
+}
 function applyGuidancePriorities(arr){
  const grade9=students.filter(s=>norm(s.grade).includes('نهم'));
  const records=new Map(guidanceCohort.map(r=>[String(r.student_id),r]));
  const selectedId=selected?String(selected.id):'';
+ const selectedRecord=selected?{...(guidance||{}),...gradeScoresFromForm()}:null;
  const status=$('guidanceCohortStatus');
- if(status)status.textContent=guidanceCohortError?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError:'رتبه‌بندی ظرفیت فقط از امتیازهای واقعی ثبت‌شده، تکمیل نمرات سه پایه و حدنصاب‌های مرتبط محاسبه می‌شود؛ امتیازهای ستاره‌دار برآوردی‌اند و فقط برای مشاهده در کارنامه نمایش داده می‌شوند.';
+ if(status)status.textContent=guidanceCohortError?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError:'احراز شرایط ابتدا با حدنصاب دروس انجام می‌شود؛ رتبه‌بندی ظرفیت فقط با نمرات کامل سه پایه و امتیازهای واقعی ثبت‌شده انجام می‌شود. امتیازهای برآوردی ستاره‌دار وارد رقابت ظرفیت نمی‌شوند.';
  return arr.map(track=>{
-  const entries=grade9.map(student=>{
-   const id=String(student.id),record=records.get(id),saved=record&&record.recommendation_scores&&record.recommendation_scores[track.key];
-   let item=saved&&saved.score_model_version==='guidance-v3'?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points,threshold_complete:saved.threshold_complete,threshold_passed:saved.threshold_passed}:null;
-   if(id===selectedId)item={complete:track.complete,total:track.total,academic:track.academic,threshold_complete:track.thresholdComplete,threshold_passed:track.thresholdPassed};
-   const total=Number(item&&item.total);
-   return {id,complete:Boolean(item&&item.complete&&Number.isFinite(total)&&item.threshold_complete&&item.threshold_passed),total,academic:Number(item&&item.academic)};
-  }).filter(x=>x.complete);
-  const current=entries.find(x=>x.id===selectedId);let priority='—';
-  if(!guidanceCohortError&&current&&track.thresholdKnown){
-   const rank=1+entries.filter(x=>x.total>current.total+0.000001||(Math.abs(x.total-current.total)<=0.000001&&Number.isFinite(x.academic)&&Number.isFinite(current.academic)&&x.academic>current.academic+0.000001)).length;
-   const reserveB=track.capacity+Math.ceil(track.capacity*.20),reserveC=reserveB+Math.ceil(track.capacity*.20);
-   if(current.total>=85&&rank<=track.capacity)priority='الف';
-   else if(current.total>=75&&rank<=reserveB)priority='ب';
-   else if(current.total>=65&&rank<=reserveC)priority='ج';
+  let priority='—';
+  if(guidanceCohortError)priority='خطای دریافت اطلاعات رتبه‌بندی';
+  else if(!track.thresholdKnown)priority='نیازمند حدنصاب معتبر این زمینه';
+  else if(!track.thresholdComplete)priority='در انتظار تکمیل نمرات دروس ملاک';
+  else if(!track.thresholdPassed)priority='حدنصاب تحصیلی احراز نشده';
+  else if(track.capacity===null||!Number.isFinite(Number(track.capacity))||Number(track.capacity)<=0)priority='ظرفیت این رشته هنوز تعیین نشده';
+  else if(!track.allYearsComplete)priority='در انتظار تکمیل نمرات سه پایه';
+  else if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)priority='واجد شرایط تحصیلی؛ امتیازهای واقعی مشاوره‌ای ناقص است';
+  else{
+   const poolKey=track.capacityPoolKey||track.key;
+   const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey);
+   if(pool.some(candidate=>!candidate.thresholdKnown))priority='حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست';
+   else{
+   const entries=[];let cohortIncomplete=false;
+   grade9.forEach(student=>{
+    const id=String(student.id);
+    const record=id===selectedId?{...(records.get(id)||selectedRecord||{}),...gradeScoresFromForm()}:records.get(id);
+    if(!record){cohortIncomplete=true;return;}
+    const candidates=pool.map(candidate=>{
+     const eligibility=savedThresholdStatus(record,candidate);
+     if(!eligibility.complete)return {unknown:true};
+     if(!eligibility.passed)return null;
+     if(id===selectedId&&candidate.key===track.key){
+      if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)return {unknown:true};
+      return {id,academic:Number(track.academic),total:Number(track.total)};
+     }
+     const saved=record.recommendation_scores?.[candidate.key];
+     if(!saved||saved.score_model_version!=='guidance-v3'||saved.total_points===null||saved.total_points===undefined||saved.academic_points===null||saved.academic_points===undefined||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return {unknown:true};
+     return {id,academic:Number(saved.academic_points),total:Number(saved.total_points)};
+    });
+    if(candidates.some(x=>x?.unknown))cohortIncomplete=true;
+    const valid=candidates.filter(x=>x&&!x.unknown);
+    if(valid.length)entries.push(valid.sort((a,b)=>b.academic-a.academic||b.total-a.total)[0]);
+   });
+   const current=entries.find(x=>x.id===selectedId);
+   if(cohortIncomplete)priority='رتبه‌بندی موقت؛ پرونده همه دانش‌آموزان واجد شرایط کامل نیست';
+   else if(!current)priority='واجد شرایط؛ رتبه‌بندی واقعی هنوز کامل نیست';
+   else{
+    const rank=1+entries.filter(x=>x.academic>current.academic+0.000001||(Math.abs(x.academic-current.academic)<=0.000001&&x.total>current.total+0.000001)).length;
+    const capacity=Number(track.capacity),reserveB=capacity+Math.ceil(capacity*.20),reserveC=reserveB+Math.ceil(capacity*.20);
+    if(current.total>=85&&rank<=capacity)priority='الف';
+    else if(current.total>=75&&rank<=reserveB)priority='ب';
+    else if(current.total>=65&&rank<=reserveC)priority='ج';
+    else priority='خارج از ظرفیت پیش‌بینی';
+   }
+   }
   }
   return {...track,priority};
  });
@@ -393,12 +437,12 @@ function calculateGuidance(show=true){
  const computed=computeScores(),arr=computed.arr;
  $('guidanceResult').classList.remove('hidden');
  $('recommendations').innerHTML=arr.map(t=>{
-  const threshold=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصاب آزمایشی: احراز شده':'حدنصاب دروس مرتبط احراز نشده'):'نمره بعضی درس‌ها ناقص است'):'حدنصاب رسمی این زمینه در سامانه تعریف نشده؛ اولویت صادر نمی‌شود';
-  const missing=[];if(!t.allYearsComplete)missing.push('نمرات هر سه پایه کامل نیست');if(!t.assessmentsComplete)missing.push('امتیاز واقعی آزمون‌ها و نظرها ثبت نشده؛ مقادیر ستاره‌دار برآوردی‌اند');
+  const threshold=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصاب دروس ملاک: احراز شده':'حدنصاب دروس ملاک: احراز نشده'):'برای احراز شرایط، نمرات بعضی دروس ملاک ناقص است'):'حدنصاب معتبر این زمینه هنوز در سامانه ثبت نشده؛ وضعیت احراز شرایط نامشخص است';
+  const missing=[];if(!t.allYearsComplete)missing.push('نمرات هر سه پایه کامل نیست');if(!t.thresholdKnown)missing.push('برای اعلام واجد شرایط بودن، حدنصاب معتبر این زمینه لازم است');if(!t.actualAssessmentsComplete)missing.push('برای رتبه‌بندی ظرفیت، امتیاز واقعی آزمون‌ها و نظرها لازم است؛ مقادیر ستاره‌دار برآوردی‌اند');
   const subjectSummary=t.subjects.map(key=>{const label=(subjects.find(x=>x[0]===key)||[key,key])[1];return label+': '+guidancePrintNumber(t.averages[key],2)+'/۲۰';}).join(' · ');
   const shown=(field,max)=>guidancePrintNumber(t.displayPoints?.[field],1)+(t.assessmentSources?.[field]==='grade_based_estimate'?'*':'');
   const totalLabel=t.actualTotal!==null?'امتیاز نهایی واقعی: '+guidancePrintNumber(t.actualTotal,2)+' از ۱۰۰':t.estimatedTotal!==null?'امتیاز کل برآوردی: '+guidancePrintNumber(t.estimatedTotal,2)+' از ۱۰۰*':t.total!==null?'امتیاز کل آزمایشی: '+guidancePrintNumber(t.total,2)+' از ۱۰۰':'امتیاز نهایی: ناقص';
-  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+totalLabel+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+shown('interest',15)+'/۱۵ · آزمون توانایی '+shown('aptitude',15)+'/۱۵<br>دبیران '+shown('teacher',10)+'/۱۰ · مشاور '+shown('counselor',10)+'/۱۰ · دانش‌آموز '+shown('student',10)+'/۱۰ · والدین '+shown('parent',5)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
+  return '<div class="track"><span class="pill">'+esc(t.group)+' · '+(t.capacity===null?'ظرفیت تعیین نشده':(t.capacityPoolKey?'ظرفیت مشترک زمینه ':'ظرفیت برنامه‌ریزی رشته ')+guidancePrintNumber(t.capacity,0))+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+totalLabel+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+shown('interest',15)+'/۱۵ · آزمون توانایی '+shown('aptitude',15)+'/۱۵<br>دبیران '+shown('teacher',10)+'/۱۰ · مشاور '+shown('counselor',10)+'/۱۰ · دانش‌آموز '+shown('student',10)+'/۱۰ · والدین '+shown('parent',5)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
  }).join('');
  if(show)notice('محاسبه انجام شد؛ امتیازهای دارای * برآوردی و قابل ویرایش‌اند. اولویت‌ها تا تکمیل نمرات سه پایه و حدنصاب‌ها آزمایشی می‌مانند.','ok');
  return computed;
@@ -422,7 +466,7 @@ function printGuidanceForm(){
  const academicCells=cols.map(([k])=>'<td>'+scoreCell(k,'academic')+'</td>').join('');
  const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
  const factorRow=(field,label)=>row(label,cols.map(([k])=>'<td>'+scoreCell(k,field)+'</td>').join(''));
- const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'—')+'</td>';}).join('');
+ const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown?(x.thresholdComplete?(x.thresholdPassed?'احراز':'عدم احراز'):'در انتظار نمرات'):'نیازمند حدنصاب')+'</td>';}).join('');
  const priority=cols.map(([k])=>'<td>'+esc(byKey[k]?.priority||'—')+'</td>').join('');
  const groups='<tr><th class="criteria" rowspan="3">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr><th colspan="4">زمینه</th><th colspan="4">زمینه</th><th colspan="4">رشته</th></tr>';
  const names=cols.map(([k,n])=>'<th>'+n+'</th>').join('');
@@ -453,7 +497,7 @@ function printGuidanceForm(){
  row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
  row('اولویت دانش‌آموز برای ثبت‌نام',priority)+
  '</tbody></table><div class="section-caption">آشنایی با تیپ‌های رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:5%">کد</th><th style="width:18%">تیپ شخصیتی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
- '<div class="guidance-note">توضیح: این برگه پیش‌بینی مدرسه است و جایگزین نمون‌برگ رسمی وزارت آموزش‌وپرورش نیست. علامت * یعنی امتیاز پیش‌فرض و برآوردی که متناسب با میانگین نمرات دروس مرتبط محاسبه شده است؛ این مقدار نتیجه واقعی آزمون رغبت یا توانایی و نظر ثبت‌شده اشخاص نیست و با دریافت اطلاعات واقعی باید اصلاح شود. مرزبندی داخلی آزمایشی: الف از ۸۵، ب از ۷۵ و ج از ۶۵؛ ظرفیت و ذخیره ۲۰٪ نیز اعمال می‌شود. ضرایب دروس و مرزبندی این نسخه رسمی نیستند و اولویت رسمی منطقه محسوب نمی‌شوند. در صورت ناقص بودن داده‌های لازم یا تعریف نشدن حدنصاب یک زمینه، خط تیره درج می‌شود. جدول تیپ‌های رغبت شغلی صرفاً معرفی عمومی است و نتیجه آزمون شخصی دانش‌آموز محسوب نمی‌شود.</div>'+
+ '<div class="guidance-note">توضیح: این برگه پیش‌بینی مدرسه است و جایگزین نمون‌برگ رسمی وزارت آموزش‌وپرورش نیست. علامت * یعنی امتیاز پیش‌فرض و برآوردی که متناسب با میانگین نمرات دروس مرتبط محاسبه شده است؛ این مقدار نتیجه واقعی آزمون رغبت یا توانایی و نظر ثبت‌شده اشخاص نیست و وارد رتبه‌بندی ظرفیت نمی‌شود. میانگین نمره هر درس با ضرایب پایه هفتم ۱، هشتم ۱ و نهم ۳ محاسبه شده است. ظرفیت برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش است. رتبه‌بندی ظرفیت با عملکرد تحصیلی و فقط بر اساس داده‌های کامل و امتیازهای واقعی انجام می‌شود. حدنصاب نمونه زمینه صنعت (ریاضی ۱۰ و کاروفناوری ۱۲) باید با جدول رسمی سال جاری تطبیق داده شود؛ برای سایر زمینه‌های هنرستان تا ثبت حدنصاب معتبر، وضعیت احراز شرایط نامشخص می‌ماند و خط تیره به معنی رد شدن نیست. مرزبندی الف/ب/ج در این نسخه شبیه‌سازی داخلی است و اولویت رسمی منطقه محسوب نمی‌شود. جدول تیپ‌های رغبت شغلی صرفاً معرفی عمومی است و نتیجه آزمون شخصی دانش‌آموز محسوب نمی‌شود.</div>'+
  '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
  '</div></article>';
  document.body.classList.add('printing-guidance');
