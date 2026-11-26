@@ -62,7 +62,7 @@
 <section id="followPanel" class="panel hidden"><h2>پیگیری مشاوره‌ای و یادآوری</h2><div class="muted">یادآوری‌ها هنگام باز بودن پنل و ورود مشاور بررسی می‌شوند. برای اعلان مرورگر، اجازه اعلان را فعال کن.</div><div id="reminders"></div><form id="followForm"><div class="formgrid"><label class="field">تاریخ جلسه بعدی (شمسی)<input name="followup_date" required data-jalali-date placeholder="انتخاب از تقویم شمسی"></label><label class="field">وضعیت پیگیری<select name="status"><option>باز</option><option>در حال انجام</option><option>انجام شد</option><option>ارجاع شد</option></select></label><label class="field">موضوع پیگیری<input name="subject" required placeholder="مثلاً پیگیری راهکارهای جلسه"></label><label class="field full">شرح و اقدام بعدی<textarea name="description" required></textarea></label></div><div class="actions"><button class="primary" type="submit">ثبت پیگیری</button><button type="button" id="enableNotifications">فعال‌سازی اعلان مرورگر</button></div></form><div class="tablewrap"><table><thead><tr><th>تاریخ پیگیری</th><th>موضوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="followRows"></tbody></table></div></section>
 <section id="guidancePanel" class="panel hidden"><h2>هدایت تحصیلی پایه نهم</h2><div class="notice">این بخش پیش‌بینی آموزشی مدرسه است. می‌توانید نمرات پایه هفتم و هشتم را اکنون ثبت و ذخیره کنید و نمرات پایه نهم را پس از امتحانات دی‌ماه تکمیل کنید. فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند. پرونده پس از ذخیره قابل بازگشت و ویرایش است؛ اولویت‌ها تا تکمیل داده‌ها موقت‌اند و اولویت رسمی منطقه نیستند.</div><div id="guidanceSaveStatus" class="muted" role="status">هنوز اطلاعاتی برای این دانش‌آموز ذخیره نشده است.</div>
 <form id="guidanceForm"><h3>ثبت نمرات هر پایه (از ۲۰)</h3><div class="muted">ابتدا نمرات خرداد هفتم و هشتم را وارد و ذخیره کنید. بخش نهم فعلاً خالی بماند و پس از امتحانات دی‌ماه تکمیل شود. خانه‌های خالی نمره صفر نیستند و بعداً می‌توانید همین پرونده را ویرایش کنید.</div>
-<div id="gradeInputs"></div><h3>امتیاز آزمون‌ها و نظرها به تفکیک رشته</h3><div class="muted">اگر امتیاز واقعی آزمون یا نظرها را ندارید، سامانه به‌صورت پیش‌فرض امتیاز برآوردی را متناسب با میانگین نمرات دروس مرتبط پر می‌کند. این مقادیر با علامت * مشخص می‌شوند، واقعی نیستند و قابل ویرایش‌اند؛ با ورود اطلاعات واقعی، مقدار را اصلاح کنید. امتیاز هر رشته جداگانه محاسبه می‌شود.</div><div id="trackAssessmentInputs"></div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">امتیازهای خالی با پیش‌فرض برآوردی از نمرات دروس مرتبط تکمیل می‌شوند و با علامت * مشخص‌اند؛ این مقادیر وارد رتبه‌بندی ظرفیت نمی‌شوند. رتبه‌بندی فقط با نمرات کامل سه پایه و امتیازهای واقعی انجام می‌شود. ظرفیت‌های برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ذخیره ۲۰٪ برای هر سطح بعدی اعمال می‌شود. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
+<div id="gradeInputs"></div><h3>امتیاز آزمون‌ها و نظرها به تفکیک رشته</h3><div class="muted">اگر امتیاز واقعی آزمون یا نظرها را ندارید، سامانه به‌صورت پیش‌فرض امتیاز برآوردی را متناسب با میانگین نمرات دروس مرتبط پر می‌کند. این مقادیر با علامت * مشخص می‌شوند، واقعی نیستند و قابل ویرایش‌اند؛ با ورود اطلاعات واقعی، مقدار را اصلاح کنید. امتیاز هر رشته جداگانه محاسبه می‌شود.</div><div id="trackAssessmentInputs"></div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">امتیازهای خالی با پیش‌فرض برآوردی از نمرات دروس مرتبط تکمیل می‌شوند و با علامت * مشخص‌اند؛ این مقادیر وارد رتبه‌بندی ظرفیت نمی‌شوند. رتبه‌بندی فقط با نمرات کامل سه پایه و امتیازهای واقعی انجام می‌شود. ظرفیت‌های برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش. اولویت ثبت‌نام الف/ب در ضوابط اعلام‌شده بر پایه عملکرد تحصیلی (۳۵ امتیاز) و ظرفیت مصوب منطقه تعیین می‌شود؛ امتیاز بررسی‌های مشاوره‌ای (۶۵ امتیاز) به‌تنهایی مبنای اولویت ثبت‌نام نیست. ظرفیت‌های برنامه‌ریزی مدرسه جایگزین ظرفیت منطقه نیستند؛ تا دریافت ظرفیت مصوب و جدول رسمی سال جاری، سامانه عمداً الف/ب صادر نمی‌کند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
 </section>
 </main>
 <script>
@@ -341,59 +341,23 @@ function savedThresholdStatus(record,track){
  return {known:true,complete,passed:complete&&values.every(x=>x.average>=x.min),values};
 }
 function applyGuidancePriorities(arr){
- const grade9=students.filter(s=>norm(s.grade).includes('نهم'));
- const records=new Map(guidanceCohort.map(r=>[String(r.student_id),r]));
- const selectedId=selected?String(selected.id):'';
- const selectedRecord=selected?{...(guidance||{}),...gradeScoresFromForm()}:null;
  const status=$('guidanceCohortStatus');
- if(status)status.textContent=guidanceCohortError?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError:'احراز شرایط ابتدا با حدنصاب دروس انجام می‌شود؛ رتبه‌بندی ظرفیت فقط با نمرات کامل سه پایه و امتیازهای واقعی ثبت‌شده انجام می‌شود. امتیازهای برآوردی ستاره‌دار وارد رقابت ظرفیت نمی‌شوند.';
+ if(status)status.textContent=guidanceCohortError
+  ?'دریافت پرونده‌های هدایت تحصیلی ناموفق بود: '+guidanceCohortError
+  :'امتیازهای مشاوره‌ای (۶۵) برای راهنمایی و پیشنهاد رشته‌اند؛ اولویت ثبت‌نام الف/ب بر پایه عملکرد تحصیلی (۳۵) و ظرفیت مصوب منطقه تعیین می‌شود. ظرفیت‌های واردشده مدرسه به‌تنهایی جایگزین ظرفیت منطقه نیستند؛ بنابراین سامانه تا دریافت ظرفیت مصوب و ضابطه معتبر سال جاری، الف/ب صادر نمی‌کند.';
  return arr.map(track=>{
   let priority='—';
-  if(guidanceCohortError)priority='خطای دریافت اطلاعات رتبه‌بندی';
+  if(guidanceCohortError)priority='خطای دریافت اطلاعات';
   else if(!track.thresholdKnown)priority='نیازمند حدنصاب معتبر این زمینه';
   else if(!track.thresholdComplete)priority='در انتظار تکمیل نمرات دروس ملاک';
   else if(!track.thresholdPassed)priority='حدنصاب تحصیلی احراز نشده';
-  else if(track.capacity===null||!Number.isFinite(Number(track.capacity))||Number(track.capacity)<=0)priority='ظرفیت این رشته هنوز تعیین نشده';
   else if(!track.allYearsComplete)priority='در انتظار تکمیل نمرات سه پایه';
-  else if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)priority='واجد شرایط تحصیلی؛ امتیازهای واقعی مشاوره‌ای ناقص است';
+  else if(track.academic===null)priority='امتیاز عملکرد تحصیلی ناقص است';
   else{
    const poolKey=track.capacityPoolKey||track.key;
    const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey);
-   if(pool.some(candidate=>!candidate.thresholdKnown))priority='حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست';
-   else{
-   const entries=[];let cohortIncomplete=false;
-   grade9.forEach(student=>{
-    const id=String(student.id);
-    const record=id===selectedId?{...(records.get(id)||selectedRecord||{}),...gradeScoresFromForm()}:records.get(id);
-    if(!record){cohortIncomplete=true;return;}
-    const candidates=pool.map(candidate=>{
-     const eligibility=savedThresholdStatus(record,candidate);
-     if(!eligibility.complete)return {unknown:true};
-     if(!eligibility.passed)return null;
-     if(id===selectedId&&candidate.key===track.key){
-      if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)return {unknown:true};
-      return {id,academic:Number(track.academic),total:Number(track.total)};
-     }
-     const saved=record.recommendation_scores?.[candidate.key];
-     if(!saved||saved.score_model_version!=='guidance-v3'||saved.total_points===null||saved.total_points===undefined||saved.academic_points===null||saved.academic_points===undefined||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return {unknown:true};
-     return {id,academic:Number(saved.academic_points),total:Number(saved.total_points)};
-    });
-    if(candidates.some(x=>x?.unknown))cohortIncomplete=true;
-    const valid=candidates.filter(x=>x&&!x.unknown);
-    if(valid.length)entries.push(valid.sort((a,b)=>b.academic-a.academic||b.total-a.total)[0]);
-   });
-   const current=entries.find(x=>x.id===selectedId);
-   if(cohortIncomplete)priority='رتبه‌بندی موقت؛ پرونده همه دانش‌آموزان واجد شرایط کامل نیست';
-   else if(!current)priority='واجد شرایط؛ رتبه‌بندی واقعی هنوز کامل نیست';
-   else{
-    const rank=1+entries.filter(x=>x.academic>current.academic+0.000001||(Math.abs(x.academic-current.academic)<=0.000001&&x.total>current.total+0.000001)).length;
-    const capacity=Number(track.capacity),reserveB=capacity+Math.ceil(capacity*.20),reserveC=reserveB+Math.ceil(capacity*.20);
-    if(current.total>=85&&rank<=capacity)priority='الف';
-    else if(current.total>=75&&rank<=reserveB)priority='ب';
-    else if(current.total>=65&&rank<=reserveC)priority='ج';
-    else priority='خارج از ظرفیت پیش‌بینی';
-   }
-   }
+   if(pool.some(candidate=>!candidate.thresholdKnown))priority='نیازمند حدنصاب معتبر این زمینه';
+   else priority='شرایط تحصیلی احراز شده؛ اولویت الف/ب نیازمند ظرفیت مصوب منطقه است';
   }
   return {...track,priority};
  });
@@ -497,7 +461,7 @@ function printGuidanceForm(){
  row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
  row('اولویت دانش‌آموز برای ثبت‌نام',priority)+
  '</tbody></table><div class="section-caption">آشنایی با تیپ‌های رغبت شغلی</div><table class="holland-table"><thead><tr><th style="width:5%">کد</th><th style="width:18%">تیپ شخصیتی</th><th>ویژگی‌ها</th></tr></thead><tbody>'+hollandRows+'</tbody></table>'+
- '<div class="guidance-note">توضیح: این برگه پیش‌بینی مدرسه است و جایگزین نمون‌برگ رسمی وزارت آموزش‌وپرورش نیست. علامت * یعنی امتیاز پیش‌فرض و برآوردی که متناسب با میانگین نمرات دروس مرتبط محاسبه شده است؛ این مقدار نتیجه واقعی آزمون رغبت یا توانایی و نظر ثبت‌شده اشخاص نیست و وارد رتبه‌بندی ظرفیت نمی‌شود. میانگین نمره هر درس با ضرایب پایه هفتم ۱، هشتم ۱ و نهم ۳ محاسبه شده است. ظرفیت برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش است. رتبه‌بندی ظرفیت با عملکرد تحصیلی و فقط بر اساس داده‌های کامل و امتیازهای واقعی انجام می‌شود. حدنصاب نمونه زمینه صنعت (ریاضی ۱۰ و کاروفناوری ۱۲) باید با جدول رسمی سال جاری تطبیق داده شود؛ برای سایر زمینه‌های هنرستان تا ثبت حدنصاب معتبر، وضعیت احراز شرایط نامشخص می‌ماند و خط تیره به معنی رد شدن نیست. مرزبندی الف/ب/ج در این نسخه شبیه‌سازی داخلی است و اولویت رسمی منطقه محسوب نمی‌شود. جدول تیپ‌های رغبت شغلی صرفاً معرفی عمومی است و نتیجه آزمون شخصی دانش‌آموز محسوب نمی‌شود.</div>'+
+ '<div class="guidance-note">توضیح: این برگه پیش‌بینی مدرسه است و جایگزین نمون‌برگ رسمی وزارت آموزش‌وپرورش نیست. علامت * یعنی امتیاز پیش‌فرض و برآوردی که متناسب با میانگین نمرات دروس مرتبط محاسبه شده است؛ این مقدار نتیجه واقعی آزمون رغبت یا توانایی و نظر ثبت‌شده اشخاص نیست و وارد رتبه‌بندی ظرفیت نمی‌شود. میانگین نمره هر درس با ضرایب پایه هفتم ۱، هشتم ۱ و نهم ۳ محاسبه شده است. ظرفیت برنامه‌ریزی مدرسه: ریاضی ۳۰۰، تجربی ۳۰۰، انسانی ۴۰۰ و هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش است. رتبه‌بندی ظرفیت با عملکرد تحصیلی و فقط بر اساس داده‌های کامل و امتیازهای واقعی انجام می‌شود. حدنصاب نمونه زمینه صنعت (ریاضی ۱۰ و کاروفناوری ۱۲) باید با جدول رسمی سال جاری تطبیق داده شود؛ برای سایر زمینه‌های هنرستان تا ثبت حدنصاب معتبر، وضعیت احراز شرایط نامشخص می‌ماند و خط تیره به معنی رد شدن نیست. اولویت ثبت‌نام الف/ب باید بر اساس عملکرد تحصیلی و ظرفیت مصوب منطقه تعیین شود؛ در این نسخه تا دریافت ظرفیت و ضابطه رسمی سال جاری، الف/ب صادر نمی‌شود. جدول تیپ‌های رغبت شغلی صرفاً معرفی عمومی است و نتیجه آزمون شخصی دانش‌آموز محسوب نمی‌شود.</div>'+
  '<div class="guidance-signatures"><span>نام و مهر مدیر</span><span>نام و امضای مشاور</span></div>'+
  '</div></article>';
  document.body.classList.add('printing-guidance');
