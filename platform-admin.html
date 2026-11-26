@@ -31,7 +31,7 @@
 <div class="grid" id="metrics"></div>
 <section class="card">
 <h2>کنترل سراسری کلاس آنلاین</h2>
-<p class="muted">این کلید فقط در اختیار مدیر کل پروژه است و وضعیت کلاس آنلاین را برای تمام مدارس یکسان تغییر می‌دهد.</p>
+<p class="muted">این کلید، کلید اصلی و اضطراری سرویس است. خاموش‌کردن آن کلاس آنلاین را در همه مدارس می‌بندد؛ روشن‌بودن آن به‌تنهایی کلاس آنلاین هیچ مدرسه‌ای را فعال نمی‌کند. فعال‌سازی هر مدرسه جداگانه در کارت همان مدرسه انجام می‌شود.</p>
 <div class="row"><span id="classroomServiceStatus" class="pill suspended">در حال بررسی وضعیت…</span><button id="classroomServiceToggle" class="primary" type="button" disabled>در حال دریافت وضعیت…</button></div>
 <p id="classroomServiceHelp" class="muted">با غیرفعال‌سازی، ورود به همه کلاس‌ها و جلسه‌های آنلاین از سمت سرور مسدود می‌شود.</p>
 </section>
@@ -165,7 +165,14 @@ function renderSchools(){
   const tools=node("div","school-tools");
   const statusWrap=node("div");const statusLabel=node("label","","وضعیت مدرسه");const statusSelect=node("select");for(const [value,label] of [["active","فعال"],["suspended","تعلیق"],["archived","بایگانی"]]){const op=node("option","",label);op.value=value;statusSelect.append(op);}statusSelect.value=school.status;const statusButton=node("button","","ذخیره وضعیت");statusButton.onclick=async()=>{statusButton.disabled=true;try{await api({action:"set_school_status",school_id:school.id,status:statusSelect.value});show("وضعیت مدرسه به‌روزرسانی شد.","success");await load();}catch(e){show(e.message,"error");}finally{statusButton.disabled=false;}};statusWrap.append(statusLabel,statusSelect,statusButton);
   const planWrap=node("div");const planLabel=node("label","","اشتراک تجاری (فعلاً غیرفعال)");const planSelect=node("select");planSelect.dataset.planSelect="1";planSelect.disabled=true;const planButton=node("button","","ثبت اشتراک جدید");planButton.disabled=true;planButton.onclick=async()=>{planButton.disabled=true;try{await api({action:"set_subscription",school_id:school.id,plan_id:planSelect.value,status:"active",grace_days:7});show("اشتراک جدید برای مدرسه ثبت شد.","success");await load();}catch(e){show(e.message,"error");}finally{planButton.disabled=false;}};planWrap.append(planLabel,planSelect,planButton);
-  tools.append(statusWrap,planWrap);card.append(tools);
+  const classroomWrap=node("div");const classroomLabel=node("label","","کلاس آنلاین این مدرسه");
+  const classroomSelect=node("select");
+  for(const [value,label] of [["false","غیرفعال (پیش‌فرض مدارس جدید)"],["true","فعال"]]){const option=node("option","",label);option.value=value;classroomSelect.append(option);}
+  classroomSelect.value=school.online_class_enabled===true?"true":"false";
+  const classroomButton=node("button","","ذخیره وضعیت کلاس آنلاین");
+  classroomButton.onclick=async()=>{classroomButton.disabled=true;try{await api({action:"set_school_classroom",school_id:school.id,enabled:classroomSelect.value==="true"});show("وضعیت کلاس آنلاین این مدرسه ذخیره شد.","success");await load();}catch(error){show(error.message||"تغییر وضعیت کلاس آنلاین مدرسه انجام نشد.","error");}finally{classroomButton.disabled=false;}};
+  classroomWrap.append(classroomLabel,classroomSelect,classroomButton);
+  tools.append(statusWrap,planWrap,classroomWrap);card.append(tools);
   card.append(node("p","muted",school.owner_auth_user_id?"مدیر اصلی مدرسه معرفی و به عضویت مدیریتی متصل شده است.":"مدیر اصلی مدرسه هنوز معرفی نشده است."));
   root.append(card);
  }
@@ -178,8 +185,8 @@ function renderClassroomService(){
  button.disabled=false;
  button.textContent=enabled?"غیرفعال‌کردن همه کلاس‌ها":"فعال‌سازی کلاس آنلاین";
  $("classroomServiceHelp").textContent=enabled
-  ?"کلاس آنلاین در همه مدارس در دسترس است. با غیرفعال‌سازی، ورود و دریافت توکن جلسه از سمت سرور مسدود می‌شود."
-  :"کلاس آنلاین برای همه مدارس بسته است؛ مدیر مدرسه پیام نیاز به سرور بیرونی و دبیر پیام فعال‌شدن در زمان غیرحضوری را می‌بیند.";
+  ?"کلید اصلی روشن است؛ دسترسی نهایی هر مدرسه از تنظیم مستقل همان مدرسه پیروی می‌کند. با خاموش‌کردن این کلید، ورود همه مدارس فوراً مسدود می‌شود."
+   :"کلید اصلی سرویس خاموش است؛ ورود به کلاس آنلاین در تمام مدارس مسدود است، اما برنامه هفتگی و دفتر کلاسی برقرار می‌ماند.";
 }
 function renderDrafts(){
  const root=$("schoolDrafts");root.replaceChildren();
@@ -211,7 +218,7 @@ function renderDrafts(){
 }
 function renderAudit(rows){
  const root=$("audit");root.replaceChildren();if(!rows.length){root.append(node("div","empty","هنوز گزارشی ثبت نشده است."));return;}
- for(const row of rows){const item=node("div","audit");const label=({ "school.created":"ایجاد مدرسه","school.status_changed":"تغییر وضعیت مدرسه","subscription.created":"ایجاد اشتراک"})[row.action]||row.action;item.append(node("strong","",label),node("div","muted",date(row.created_at)+" · مدرسه: "+(state.schools.find(s=>s.id===row.school_id)?.name||row.school_id||"—")));root.append(item);}
+ for(const row of rows){const item=node("div","audit");const label=({ "school.created":"ایجاد مدرسه","school.status_changed":"تغییر وضعیت مدرسه","subscription.created":"ایجاد اشتراک","classroom.school_toggled":"تغییر وضعیت کلاس آنلاین مدرسه"})[row.action]||row.action;item.append(node("strong","",label),node("div","muted",date(row.created_at)+" · مدرسه: "+(state.schools.find(s=>s.id===row.school_id)?.name||row.school_id||"—")));root.append(item);}
 }
 async function load(){
  if(!token){$("app").hidden=true;$("platformLogin").hidden=false;show("برای ورود، اطلاعات حساب مدیر کل را وارد کنید.");return;}
