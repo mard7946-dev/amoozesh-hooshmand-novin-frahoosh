@@ -360,25 +360,30 @@ function applyGuidancePriorities(arr){
    const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey);
    if(pool.some(candidate=>!candidate.thresholdKnown))priority='حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست';
    else{
-   const entries=[];
+   const entries=[];let cohortIncomplete=false;
    grade9.forEach(student=>{
     const id=String(student.id);
-    if(id===selectedId){
-     if(track.thresholdPassed&&track.actualAssessmentsComplete&&track.academic!==null&&track.total!==null)entries.push({id,academic:Number(track.academic),total:Number(track.total)});
-     return;
-    }
-    const record=records.get(id);if(!record)return;
+    const record=records.get(id);
+    if(!record){cohortIncomplete=true;return;}
     const candidates=pool.map(candidate=>{
-     const saved=record.recommendation_scores?.[candidate.key];
-     if(!saved||saved.score_model_version!=='guidance-v3'||saved.total_points===null||saved.total_points===undefined||saved.academic_points===null||saved.academic_points===undefined||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return null;
      const eligibility=savedThresholdStatus(record,candidate);
-     if(!eligibility.complete||!eligibility.passed)return null;
+     if(!eligibility.complete)return {unknown:true};
+     if(!eligibility.passed)return null;
+     if(id===selectedId&&candidate.key===track.key){
+      if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)return {unknown:true};
+      return {id,academic:Number(track.academic),total:Number(track.total)};
+     }
+     const saved=record.recommendation_scores?.[candidate.key];
+     if(!saved||saved.score_model_version!=='guidance-v3'||saved.total_points===null||saved.total_points===undefined||saved.academic_points===null||saved.academic_points===undefined||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return {unknown:true};
      return {id,academic:Number(saved.academic_points),total:Number(saved.total_points)};
-    }).filter(Boolean);
-    if(candidates.length)entries.push(candidates.sort((a,b)=>b.academic-a.academic||b.total-a.total)[0]);
+    });
+    if(candidates.some(x=>x?.unknown))cohortIncomplete=true;
+    const valid=candidates.filter(x=>x&&!x.unknown);
+    if(valid.length)entries.push(valid.sort((a,b)=>b.academic-a.academic||b.total-a.total)[0]);
    });
    const current=entries.find(x=>x.id===selectedId);
-   if(!current)priority='واجد شرایط؛ رتبه‌بندی واقعی هنوز کامل نیست';
+   if(cohortIncomplete)priority='رتبه‌بندی موقت؛ پرونده همه دانش‌آموزان واجد شرایط کامل نیست';
+   else if(!current)priority='واجد شرایط؛ رتبه‌بندی واقعی هنوز کامل نیست';
    else{
     const rank=1+entries.filter(x=>x.academic>current.academic+0.000001||(Math.abs(x.academic-current.academic)<=0.000001&&x.total>current.total+0.000001)).length;
     const capacity=Number(track.capacity),reserveB=capacity+Math.ceil(capacity*.20),reserveC=reserveB+Math.ceil(capacity*.20);
