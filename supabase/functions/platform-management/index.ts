@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const action = clean(body?.action, 40);
 
     if (action === "overview") {
-      const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult] = await Promise.all([
+      let [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult] = await Promise.all([
         admin.from("schools")
           .select("id,name,slug,school_code,status,online_class_enabled,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500),
@@ -81,6 +81,18 @@ Deno.serve(async (req: Request) => {
         admin.from("platform_feature_flags")
           .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle(),
       ]);
+      // GitHub Pages may publish before the separately authorized Supabase migration.
+      // Keep the platform dashboard readable during that deployment window.
+      if (schoolsResult.error && /online_class_enabled|42703|PGRST204/i.test(
+        [schoolsResult.error.message, schoolsResult.error.code, schoolsResult.error.details].filter(Boolean).join(" ")
+      )) {
+        const legacySchoolsResult = await admin.from("schools")
+          .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
+          .order("created_at", { ascending: false }).limit(500);
+        if (legacySchoolsResult.error) return reply({ message: "دریافت فهرست مدارس ناموفق بود." }, 500);
+        schoolsResult = { ...legacySchoolsResult, data: legacySchoolsResult.data ?? [], error: null };
+      }
+
       const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult].find(x => x.error);
       if (failed) return reply({ message: "دریافت اطلاعات مدیریت کل ناموفق بود." }, 500);
 
@@ -107,12 +119,19 @@ Deno.serve(async (req: Request) => {
           schools_suspended: schools.filter(x => x.status === "suspended").length,
           active_memberships: memberships.length,
         },
-        schools: schools.map(school => ({
-          ...school,
-          active_members: schoolStats.get(school.id)?.active_members ?? 0,
-          roles: schoolStats.get(school.id)?.roles ?? {},
-          subscription: latestSubscriptions.get(school.id) ?? null,
-        })),
+        schools: schools.map(school => {
+          const subscription = latestSubscriptions.get(school.id) ?? null;
+          const schoolClassroomEnabled = typeof school.online_class_enabled === "boolean"
+            ? school.online_class_enabled
+            : (subscription && subscription.plan_id == null ? false : classroomFlagResult.data?.enabled === true);
+          return {
+            ...school,
+            online_class_enabled: schoolClassroomEnabled,
+            active_members: schoolStats.get(school.id)?.active_members ?? 0,
+            roles: schoolStats.get(school.id)?.roles ?? {},
+            subscription,
+          };
+        }),
         plans,
         audit: auditResult.data ?? [],
         classroom_service_enabled: classroomFlagResult.data?.enabled === true,
