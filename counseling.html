@@ -394,7 +394,7 @@ function calculateGuidance(show=true){
   const shown=(field,max)=>guidancePrintNumber(t[field],1)+(t.assessmentSources?.[field]==='grade_based_estimate'?'*':'');
   return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'امتیاز نهایی: ناقص':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+shown('interest',15)+'/۱۵ · آزمون توانایی '+shown('aptitude',15)+'/۱۵<br>دبیران '+shown('teacher',10)+'/۱۰ · مشاور '+shown('counselor',10)+'/۱۰ · دانش‌آموز '+shown('student',10)+'/۱۰ · والدین '+shown('parent',5)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
  }).join('');
- if(show)notice('محاسبه انجام شد؛ خانه‌های خالی امتیاز صفر نیستند و تا تکمیل نمرات سه پایه و امتیازهای واقعی همان رشته، اولویت صادر نمی‌شود.','ok');
+ if(show)notice('محاسبه انجام شد؛ امتیازهای دارای * برآوردی و قابل ویرایش‌اند. اولویت‌ها تا تکمیل نمرات سه پایه و حدنصاب‌ها آزمایشی می‌مانند.','ok');
  return computed;
 }
 function guidancePrintNumber(value,digits=1){
