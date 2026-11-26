@@ -353,7 +353,12 @@ function applyGuidancePriorities(arr){
   else if(!track.thresholdPassed)priority='حدنصاب تحصیلی احراز نشده';
   else if(!track.allYearsComplete)priority='در انتظار تکمیل نمرات سه پایه';
   else if(track.academic===null)priority='امتیاز عملکرد تحصیلی ناقص است';
-  else priority='شرایط تحصیلی احراز شده؛ اولویت الف/ب نیازمند ظرفیت مصوب منطقه است';
+  else{
+   const poolKey=track.capacityPoolKey||track.key;
+   const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey);
+   if(pool.some(candidate=>!candidate.thresholdKnown))priority='نیازمند حدنصاب معتبر این زمینه';
+   else priority='شرایط تحصیلی احراز شده؛ اولویت الف/ب نیازمند ظرفیت مصوب منطقه است';
+  }
   return {...track,priority};
  });
 }
