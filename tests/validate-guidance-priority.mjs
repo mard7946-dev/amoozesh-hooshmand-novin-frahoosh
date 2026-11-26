@@ -73,20 +73,17 @@ function runPriority({
   return context.applyGuidancePriorities([track])[0].priority;
 }
 
-assert.equal(runPriority(), "ب", "Middle-band candidate inside the B reserve should receive B");
-assert.equal(runPriority({ capacity: 1 }), "ج", "Candidate beyond the B reserve but inside the C reserve should receive C");
-assert.equal(runPriority({ currentScore: 90, currentAcademic: 35, saved: [{ total: 95, academic: 34 }], capacity: 2 }), "الف", "High-scoring candidate within capacity should receive A");
-assert.equal(runPriority({ currentScore: 72, currentAcademic: 30, capacity: 1 }), "ج", "Third-band score inside C reserve should receive C");
-assert.equal(runPriority({ currentScore: 62, currentAcademic: 30, capacity: 1 }), "خارج از ظرفیت پیش‌بینی", "Scores below the local C band must not receive a fabricated priority");
+const needsRegionalCapacity = "شرایط تحصیلی احراز شده؛ اولویت الف/ب نیازمند ظرفیت مصوب منطقه است";
+assert.equal(runPriority(), needsRegionalCapacity, "Eligible candidate must not receive a fabricated B without the official regional capacity and current-year rule");
+assert.equal(runPriority({ capacity: 1 }), needsRegionalCapacity, "School planning capacity must not be used as a substitute for official regional capacity");
+assert.equal(runPriority({ currentScore: 90, currentAcademic: 35 }), needsRegionalCapacity, "Even a high score must not fabricate A without the official registration-priority inputs");
+assert.equal(runPriority({ currentScore: 72, currentAcademic: 30 }), needsRegionalCapacity, "A middle-band score must not fabricate C");
+assert.equal(runPriority({ currentScore: 62, currentAcademic: 30 }), needsRegionalCapacity, "A low score must not be converted into a locally invented C cutoff");
 assert.equal(runPriority({ thresholdPassed: false }), "حدنصاب تحصیلی احراز نشده", "Counseling points cannot compensate for a failed academic threshold");
 assert.equal(runPriority({ thresholdKnown: false, threshold: null, key: "fanni_services" }), "نیازمند حدنصاب معتبر این زمینه", "Unknown vocational thresholds must be reported as unknown, not as rejection or a fabricated priority");
-assert.equal(runPriority({ saved: [], currentScore: 90, currentAcademic: 35 }), "الف", "The selected candidate must be included before saving");
-assert.equal(runPriority({ saved: [{ total: null, academic: null }], currentScore: 75 }), "رتبه‌بندی موقت؛ پرونده همه دانش‌آموزان واجد شرایط کامل نیست", "An eligible student with missing actual scores must block a misleading capacity rank");
-assert.equal(
-  runPriority({ currentScore: 90, currentAcademic: 30, saved: [{ total: 80, academic: 35 }], capacity: 1 }),
-  "ب",
-  "Capacity rank must use academic performance, not total consultation points"
-);
+assert.equal(runPriority({ saved: [], currentScore: 90, currentAcademic: 35 }), needsRegionalCapacity, "The selected candidate must be included without inventing a capacity rank");
+assert.equal(runPriority({ saved: [{ total: null, academic: null }], currentScore: 75 }), needsRegionalCapacity, "Missing comparison records must never create a fabricated registration priority");
+assert.equal(runPriority({ currentScore: 90, currentAcademic: 30, saved: [{ total: 80, academic: 35 }], capacity: 1 }), needsRegionalCapacity, "Consultation total and school capacity must not be used to fabricate registration priority");
 
 const industryThreshold = context.savedThresholdStatus(
   { ...marksFor(["math", "technical"]), recommendation_scores: {} },
@@ -100,46 +97,14 @@ const industryFail = context.savedThresholdStatus(
 );
 assert.equal(industryFail.passed, false, "Industry candidate below math 10 must not qualify");
 
-function runSharedArtisanPool() {
-  context.students = [{ id: 1, grade: "نهم" }, { id: 2, grade: "نهم" }];
-  context.selected = { id: 2 };
-  const grades = marksFor(["math", "technical"]);
-  const savedScore = { score_model_version: "guidance-v3", total_points: 90, academic_points: 35 };
-  context.guidanceCohort = [{
-    student_id: 1,
-    ...grades,
-    recommendation_scores: { fanni_industry: savedScore, kardanesh_industry: savedScore }
-  }];
-  context.guidance = { ...grades, recommendation_scores: { kardanesh_industry: { ...savedScore, academic_points: 30 } } };
-  const common = {
-    capacity: 1,
-    capacityPoolKey: "industry",
-    thresholds: { math: 10, technical: 12 },
-    thresholdKnown: true,
-    thresholdComplete: true,
-    thresholdPassed: true,
-    allYearsComplete: true,
-    actualAssessmentsComplete: true
-  };
-  const arr = [
-    { ...common, key: "fanni_industry", total: 90, academic: 30 },
-    { ...common, key: "kardanesh_industry", total: 90, academic: 30 }
-  ];
-  return context.applyGuidancePriorities(arr)[0].priority;
-}
-assert.equal(runSharedArtisanPool(), "ب", "Technical-vocational and Kardanesh of the same field must share one capacity pool and a student must count only once");
-
-function runIncompleteSharedPool() {
-  context.students = [{ id: 1, grade: "نهم" }];
-  context.selected = { id: 1 };
-  context.guidanceCohort = [];
-  return context.applyGuidancePriorities([
+assert.equal(
+  context.applyGuidancePriorities([
     { key: "fanni_industry", capacity: 90, capacityPoolKey: "industry", thresholdKnown: true, thresholdComplete: true, thresholdPassed: true, allYearsComplete: true, actualAssessmentsComplete: true, total: 90, academic: 30 },
     { key: "kardanesh_industry", capacity: 90, capacityPoolKey: "industry", thresholdKnown: false, thresholdComplete: false, thresholdPassed: false, allYearsComplete: true, actualAssessmentsComplete: true, total: 90, academic: 30 }
-  ])[0].priority;
-}
-assert.equal(runIncompleteSharedPool(), "حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست", "A shared capacity pool must not publish a misleading rank while the other branch eligibility rule is unknown");
-
+  ])[0].priority,
+  "نیازمند حدنصاب معتبر این زمینه",
+  "Unknown eligibility in a shared vocational field must remain explicitly unknown"
+);
 
 console.log("Guidance eligibility, shared-capacity ranking, and incomplete-data checks passed.");
 
@@ -158,7 +123,8 @@ assert.ok(html.includes("const assessmentValuesPresent=Object.values(displayPoin
 assert.ok(html.includes("if(field==='academic')return v(x.academic)") && html.includes("x.estimatedTotal-x.academic"), "Printed academic and estimated consultation rows must display correctly");
 assert.ok(html.includes("علامت * یعنی امتیاز پیش‌فرض و برآوردی"), "The printed report must disclose estimated values");
 assert.ok(html.includes("نتیجه آزمون واقعی نیستند"), "Saved estimates must be disclosed as non-real test results");
-assert.ok(html.includes("اولویت آزمایشی:") && html.includes("الف از ۸۵، ب از ۷۵ و ج از ۶۵"), "The interface must disclose experimental A/B/C score bands");
+assert.ok(html.includes("اولویت ثبت‌نام الف/ب") && html.includes("ظرفیت مصوب منطقه"), "The interface must disclose that registration priorities require official regional capacity");
+assert.ok(!html.includes("الف از ۸۵، ب از ۷۵ و ج از ۶۵"), "Unsupported local A/B/C cutoffs must be removed");
 assert.ok(html.includes("فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند"), "Blank grades must not be treated as zero");
 assert.ok(html.includes("پس از امتحانات دی‌ماه تکمیل شود"), "Grade 9 entry must be deferrable until after December exams");
 assert.ok(html.includes("if(guidance)await api('counseling_guidance','PATCH',payload") && html.includes("else await api('counseling_guidance','POST',payload)"), "Saving again must update the existing guidance record rather than create a duplicate");
