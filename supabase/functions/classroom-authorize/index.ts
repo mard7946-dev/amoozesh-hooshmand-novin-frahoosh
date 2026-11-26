@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getTehranClock, isScheduleSlotActive } from "../_shared/classroom-schedule.ts";
+import { canEnterOnlineClass } from "../_shared/classroom-feature.ts";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -72,15 +73,19 @@ Deno.serve(async (req: Request) => {
       if (!isDeputyAccount) return reply({ message: "سمت معاونت این حساب تأیید نشد." }, 403);
       role = mainRole;
     }
-    const { data: classroomFlag, error: classroomFlagError } = await admin.from("platform_feature_flags")
-      .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
-    if (classroomFlagError) {
-      console.error("classroom service flag lookup failed", classroomFlagError.message);
-      return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
+    const [classroomFlagResult, schoolClassroomResult] = await Promise.all([
+      admin.from("platform_feature_flags").select("enabled")
+        .eq("flag_key", "classroom_online_enabled").maybeSingle(),
+      admin.from("schools").select("online_class_enabled")
+        .eq("id", profile.tenant_school_id).maybeSingle(),
+    ]);
+    if (classroomFlagResult.error || schoolClassroomResult.error || !schoolClassroomResult.data) {
+      console.error("classroom feature lookup failed", classroomFlagResult.error?.message, schoolClassroomResult.error?.message);
+      return reply({ message: "وضعیت کلاس آنلاین این مدرسه بررسی نشد؛ کمی بعد دوباره تلاش کنید." }, 503);
     }
-    // The online-room feature flag must not block ordinary staff timetable access.
-    // It is enforced only when a user attempts to enter an online room.
-    const onlineServiceEnabled = classroomFlag?.enabled === true;
+    // Timetable and staff-register access remains available while online rooms are disabled.
+    const onlineServiceEnabled = classroomFlagResult.data?.enabled === true &&
+      schoolClassroomResult.data.online_class_enabled === true;
     const platformAdmin = ["super_admin", "platform_admin", "مدیر کل", "مدیرکل"].includes(mainRole);
 
     const name = clean(profile.display_name) || clean(profile.username);
@@ -226,7 +231,7 @@ Deno.serve(async (req: Request) => {
 
     const requestedId = Number(requestBody?.room_id ?? 0);
     if (requestedId) {
-      if (!onlineServiceEnabled && !platformAdmin) {
+      if (!canEnterOnlineClass(classroomFlagResult.data?.enabled === true, schoolClassroomResult.data.online_class_enabled === true, platformAdmin)) {
         return reply({ ok: false, service_disabled: true, message: "ورود به کلاس آنلاین در حال حاضر فقط برای مدیر کل فعال است؛ برنامه هفتگی و دفتر کلاسی همچنان قابل مشاهده است." }, 403);
       }
       const room = roomById.get(requestedId);
