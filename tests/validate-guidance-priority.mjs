@@ -74,6 +74,7 @@ assert.ok(html.includes("drawTrackAssessmentInputs()"), "The form must render th
 assert.ok(html.includes("function estimateAssessmentPoints(track") && html.includes("const scale=max=>Math.round(ratio*max*10)/10"), "Default assessment values must be proportionally estimated from relevant subject grades");
 assert.ok(html.includes("assessment_sources:x.assessmentSources") && html.includes("assessment_estimates:") && html.includes("grade_based_estimate"), "Estimated values must be stored separately from actual scores and source-labelled");
 assert.ok(html.includes("estimated_total_points:x.estimatedTotal") && html.includes("points[key]=displayPoints[key]===null||assessmentSources[key]==='grade_based_estimate'?null:displayPoints[key]"), "Estimated totals must remain display-only and must not enter actual capacity ranking");
+assert.ok(html.includes("const assessmentValuesPresent=Object.values(displayPoints).every(value=>value!==null&&Number.isFinite(value))"), "Guidance output must guard estimated totals against missing assessment values before printing");
 assert.ok(html.includes("if(field==='academic')return v(x.academic)") && html.includes("x.estimatedTotal-x.academic"), "Printed academic and estimated consultation rows must display correctly");
 assert.ok(html.includes("علامت * یعنی امتیاز پیش‌فرض و برآوردی"), "The printed report must disclose estimated values");
 assert.ok(html.includes("نتیجه آزمون واقعی نیستند"), "The saved interest and aptitude fields must disclose that estimates are not actual test results");
