@@ -235,7 +235,8 @@ async function saveGuidanceGrade(stage){
   guidance=Array.isArray(rows)&&rows.length?rows[0]:null;
   if(!guidance)throw new Error('ذخیره ارسال شد اما پرونده پس از آن بازیابی نشد.');
   drawGradeInputs();
-  if(status)status.textContent='ذخیره شد · آماده ویرایش';
+  const refreshedStatus=$('gradeInputs').querySelector('[data-grade-status="'+stage+'"]');
+  if(refreshedStatus)refreshedStatus.textContent='ذخیره شد · آماده ویرایش';
   $('guidanceSaveStatus').textContent='نمرات پایه‌ها به‌صورت مرحله‌ای ذخیره شده‌اند؛ هر پایه را جداگانه می‌توانید ویرایش کنید.';
   notice('نمرات '+(stage==='grade7_scores'?'پایه هفتم':stage==='grade8_scores'?'پایه هشتم':'پایه نهم')+' ذخیره شد؛ برای اصلاح، نمرات را تغییر دهید و همین دکمه را دوباره بزنید.','ok');
  }catch(err){
