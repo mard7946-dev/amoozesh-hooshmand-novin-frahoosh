@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
     if (schoolError || !school || school.status !== "active") {
       return reply({ message: "مدرسه انتخاب‌شده فعال نیست یا کد مدرسه معتبر نیست." }, 403);
     }
-    if (expectedRole !== "manager" && profile.tenant_school_id !== school.id) {
+    if (profile.tenant_school_id !== school.id) {
       return reply({ message: "کد مدرسه با حساب کاربری واردشده مطابقت ندارد." }, 403);
     }
     const { data: memberships, error: membershipError } = await admin.from("school_memberships")
