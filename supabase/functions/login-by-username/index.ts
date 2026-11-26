@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
     // Resolve account usernames on the server; never expose account emails to the client.
     const byUsername = managerSchoolId
       ? await admin.from("account_settings").select("email").in("username", variants)
-        .eq("role", "manager").limit(10)
+        .eq("role", "manager").eq("tenant_school_id", managerSchoolId).limit(10)
       : await admin.from("account_settings").select("email").in("username", variants).limit(10);
     if (byUsername.error) throw byUsername.error;
     addEmails(byUsername.data);
@@ -170,14 +170,15 @@ Deno.serve(async (req: Request) => {
     let accountRowsQuery = admin.from("account_settings")
       .select("role, tenant_school_id, national_code, username")
       .eq("email", email).eq("auth_user_id", data.user.id);
-    if (managerSchoolId && requestedRole !== "manager") accountRowsQuery = accountRowsQuery.eq("tenant_school_id", managerSchoolId);
+    if (managerSchoolId) accountRowsQuery = accountRowsQuery.eq("tenant_school_id", managerSchoolId);
     const { data: accountRows, error: accountError } = await accountRowsQuery.limit(10);
     if (accountError) {
       console.error("login-by-username role lookup failed", JSON.stringify({ code: accountError.code ?? null }));
       return respond({ message: "بررسی سطح دسترسی انجام نشد؛ دوباره تلاش کنید." }, 503);
     }
     const eligible = (accountRows ?? []).filter((account: { role?: string | null; tenant_school_id?: string | null }) =>
-      expected.includes(clean(account.role)) && (Boolean(account.tenant_school_id) || Boolean(managerSchoolId)));
+      expected.includes(clean(account.role)) && Boolean(account.tenant_school_id) &&
+      (!managerSchoolId || account.tenant_school_id === managerSchoolId));
     if (!eligible.length) return respond({ message: "این حساب اجازه ورود به پنل انتخاب‌شده را ندارد." }, 403);
     const schoolIds = managerSchoolId
       ? [managerSchoolId]
@@ -199,7 +200,7 @@ Deno.serve(async (req: Request) => {
   let initialAccountQuery = admin.from("account_settings")
     .select("role, tenant_school_id, national_code, username")
     .eq("email", email).eq("auth_user_id", data.user.id);
-  if (managerSchoolId && requestedRole !== "manager") initialAccountQuery = initialAccountQuery.eq("tenant_school_id", managerSchoolId);
+  if (managerSchoolId) initialAccountQuery = initialAccountQuery.eq("tenant_school_id", managerSchoolId);
   const account = await initialAccountQuery.maybeSingle();
   if (account.error) {
     console.error("login-by-username initial-password lookup failed", account.error.code);
