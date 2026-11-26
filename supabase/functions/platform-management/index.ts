@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
     if (action === "overview") {
       const [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult] = await Promise.all([
         admin.from("schools")
-          .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
+          .select("id,name,slug,school_code,status,online_class_enabled,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500),
         admin.from("school_subscriptions")
           .select("id,school_id,plan_id,status,starts_at,ends_at,grace_days,student_min,student_limit,notes,created_at")
@@ -163,6 +163,19 @@ Deno.serve(async (req: Request) => {
           ? "سرویس غیرفعال شد، اما قطع اتصال تعدادی از اتاق‌های قبلی تأیید نشد."
           : null,
       });
+    }
+
+    if (action === "set_school_classroom") {
+      const schoolId = clean(body?.school_id, 80);
+      if (!schoolId || typeof body?.enabled !== "boolean") {
+        return reply({ message: "مدرسه یا وضعیت کلاس آنلاین معتبر نیست." }, 400);
+      }
+      const { data, error } = await userClient.rpc("frahoosh_platform_set_school_classroom_enabled", {
+        p_school_id: schoolId,
+        p_enabled: body.enabled,
+      });
+      if (error) return reply({ message: error.message || "تغییر وضعیت کلاس آنلاین مدرسه انجام نشد." }, 400);
+      return reply({ success: true, school_classroom_enabled: data?.enabled === true, school_id: schoolId });
     }
 
     if (action === "create_demo_school") {
