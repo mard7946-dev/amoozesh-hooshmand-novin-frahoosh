@@ -127,6 +127,7 @@ document.querySelectorAll('[data-module]').forEach(b=>b.classList.remove('active
  ['casePanel','followPanel','guidancePanel','familyPanel'].forEach(id=>$(id).classList.add('hidden'));activeModule=null;
  drawStudents();
  await loadStudentData();
+ if(new URLSearchParams(location.search).get('tab')==='guidance')openModule('guidance');
  $('workspace').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function openModule(m){
