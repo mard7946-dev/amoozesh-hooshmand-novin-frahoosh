@@ -87,37 +87,32 @@ Deno.serve(async (req: Request) => {
     let teacherRecordId: number | null = null;
     if (teacher) {
       const accountNationalCode = normalizeStaffNationalCode(profile.national_code);
-      if (accountNationalCode) {
-        // Compare normalized codes in memory so Persian/Arabic digits, separators,
-        // and legacy zero-padding do not break an otherwise exact identity match.
-        const { data: teacherRows, error: teacherError } = await admin.from("teachers")
-          .select("id,national_code").eq("tenant_school_id", school).limit(2000);
-        if (teacherError) throw teacherError;
-        const codeMatches = (teacherRows ?? []).filter((row: any) =>
-          normalizeStaffNationalCode(row.national_code) === accountNationalCode
-        );
-        if (codeMatches.length === 1) teacherRecordId = codeMatches[0].id;
-      } else {
-        // Legacy accounts may have no national code in account_settings.
-        // Permit a unique exact-name match even when the staff file has a code,
-        // but only when an active teacher_classes row independently confirms
-        // the same staff record. Never use name alone.
+      // Load names as well as codes: a populated account code that has no matching
+      // staff-file code must not prevent the safe legacy-name fallback.
+      const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
+        .select("id,first_name,last_name,national_code")
+        .eq("tenant_school_id", school).limit(2000);
+      if (teacherRowsError) throw teacherRowsError;
+
+      const codeMatches = accountNationalCode
+        ? (teacherRows ?? []).filter((row: any) =>
+            normalizeStaffNationalCode(row.national_code) === accountNationalCode)
+        : [];
+      if (codeMatches.length === 1) {
+        teacherRecordId = codeMatches[0].id;
+      } else if (codeMatches.length === 0) {
+        // Safe fallback for legacy or mismatched account metadata: require one
+        // exact full-name/surname match AND a matching active class assignment.
+        // Never link by name alone; reject ambiguous candidates.
         const identityName = norm(callerName);
         if (identityName) {
-          const { data: teacherRows, error: teacherRowsError } = await admin.from("teachers")
-            .select("id,first_name,last_name,national_code")
-            .eq("tenant_school_id", school);
-          if (teacherRowsError) throw teacherRowsError;
           const matches = (teacherRows ?? []).filter((row: any) => {
             const lastName = norm(row.last_name);
             const fullName = norm(`${clean(row.first_name)} ${clean(row.last_name)}`);
-            // Accept either the exact full name or an exact, unique surname alias.
-            // A surname alone is never sufficient without a matching active class assignment.
             return identityName === fullName || (!!lastName && identityName === lastName);
           });
           if (matches.length === 1) {
             const candidate = matches[0];
-            const candidateId = candidate.id;
             const candidateNames = [
               `${clean(candidate.first_name)} ${clean(candidate.last_name)}`,
               clean(candidate.last_name),
@@ -125,12 +120,11 @@ Deno.serve(async (req: Request) => {
             ].filter(Boolean);
             const { data: linkedRows, error: linkedError } = await admin.from("teacher_classes")
               .select("id,teacher_name").eq("tenant_school_id", school)
-              .eq("teacher_id", candidateId).eq("active", 1);
+              .eq("teacher_id", candidate.id).eq("active", 1);
             if (linkedError) throw linkedError;
-            const hasMatchingAssignment = (linkedRows ?? []).some((row: any) =>
+            if ((linkedRows ?? []).some((row: any) =>
               candidateNames.some(name => norm(row.teacher_name) === norm(name))
-            );
-            if (hasMatchingAssignment) teacherRecordId = candidateId;
+            )) teacherRecordId = candidate.id;
           }
         }
       }
