@@ -110,7 +110,7 @@ function runSharedArtisanPool() {
     ...grades,
     recommendation_scores: { fanni_industry: savedScore, kardanesh_industry: savedScore }
   }];
-  context.guidance = { ...grades, recommendation_scores: { kardanesh_industry: savedScore } };
+  context.guidance = { ...grades, recommendation_scores: { kardanesh_industry: { ...savedScore, academic_points: 30 } } };
   const common = {
     capacity: 1,
     capacityPoolKey: "industry",
