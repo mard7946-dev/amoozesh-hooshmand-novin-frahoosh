@@ -368,7 +368,7 @@ function applyGuidancePriorities(arr){
     const record=records.get(id);if(!record)return;
     const candidates=pool.map(candidate=>{
      const saved=record.recommendation_scores?.[candidate.key];
-     if(!saved||saved.score_model_version!=='guidance-v3'||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return null;
+     if(!saved||saved.score_model_version!=='guidance-v3'||saved.total_points===null||saved.total_points===undefined||saved.academic_points===null||saved.academic_points===undefined||!Number.isFinite(Number(saved.total_points))||!Number.isFinite(Number(saved.academic_points)))return null;
      const eligibility=savedThresholdStatus(record,candidate);
      if(!eligibility.complete||!eligibility.passed)return null;
      return {id,academic:Number(saved.academic_points),total:Number(saved.total_points)};
@@ -433,7 +433,7 @@ function calculateGuidance(show=true){
   const subjectSummary=t.subjects.map(key=>{const label=(subjects.find(x=>x[0]===key)||[key,key])[1];return label+': '+guidancePrintNumber(t.averages[key],2)+'/۲۰';}).join(' · ');
   const shown=(field,max)=>guidancePrintNumber(t.displayPoints?.[field],1)+(t.assessmentSources?.[field]==='grade_based_estimate'?'*':'');
   const totalLabel=t.actualTotal!==null?'امتیاز نهایی واقعی: '+guidancePrintNumber(t.actualTotal,2)+' از ۱۰۰':t.estimatedTotal!==null?'امتیاز کل برآوردی: '+guidancePrintNumber(t.estimatedTotal,2)+' از ۱۰۰*':t.total!==null?'امتیاز کل آزمایشی: '+guidancePrintNumber(t.total,2)+' از ۱۰۰':'امتیاز نهایی: ناقص';
-  return '<div class="track"><span class="pill">'+esc(t.group)+' · '+(t.capacity===null?'ظرفیت تعیین نشده':'ظرفیت مشترک زمینه '+guidancePrintNumber(t.capacity,0))+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+totalLabel+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+shown('interest',15)+'/۱۵ · آزمون توانایی '+shown('aptitude',15)+'/۱۵<br>دبیران '+shown('teacher',10)+'/۱۰ · مشاور '+shown('counselor',10)+'/۱۰ · دانش‌آموز '+shown('student',10)+'/۱۰ · والدین '+shown('parent',5)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
+  return '<div class="track"><span class="pill">'+esc(t.group)+' · '+(t.capacity===null?'ظرفیت تعیین نشده':(t.capacityPoolKey?'ظرفیت مشترک زمینه ':'ظرفیت برنامه‌ریزی رشته ')+guidancePrintNumber(t.capacity,0))+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+totalLabel+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+shown('interest',15)+'/۱۵ · آزمون توانایی '+shown('aptitude',15)+'/۱۵<br>دبیران '+shown('teacher',10)+'/۱۰ · مشاور '+shown('counselor',10)+'/۱۰ · دانش‌آموز '+shown('student',10)+'/۱۰ · والدین '+shown('parent',5)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
  }).join('');
  if(show)notice('محاسبه انجام شد؛ امتیازهای دارای * برآوردی و قابل ویرایش‌اند. اولویت‌ها تا تکمیل نمرات سه پایه و حدنصاب‌ها آزمایشی می‌مانند.','ok');
  return computed;
