@@ -164,15 +164,21 @@ function checkReminders(){
  }
 }
 async function loadStudentData(){
- try{
-  const [c,f,g]=await Promise.all([
-   api('counseling_records','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
-   api('counseling_followups','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
-   api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'})
-  ]);
-  cases=Array.isArray(c)?c:[];followups=Array.isArray(f)?f:[];guidance=Array.isArray(g)&&g.length?g[0]:null;
-  drawCases();drawFollowups();checkReminders();notice('پرونده‌های '+fullName(selected)+' بارگذاری شد.','ok');
- }catch(e){notice('اطلاعات این دانش‌آموز کامل بارگذاری نشد: '+e.message,'error');}
+ const requests=await Promise.allSettled([
+  api('counseling_records','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
+  api('counseling_followups','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'}),
+  api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'})
+ ]);
+ const errors=[];
+ if(requests[0].status==='fulfilled')cases=Array.isArray(requests[0].value)?requests[0].value:[];
+ else{cases=[];errors.push('پرونده مشاوره‌ای: '+(requests[0].reason?.message||'خطای دریافت'));}
+ if(requests[1].status==='fulfilled')followups=Array.isArray(requests[1].value)?requests[1].value:[];
+ else{followups=[];errors.push('پیگیری‌ها: '+(requests[1].reason?.message||'خطای دریافت'));}
+ if(requests[2].status==='fulfilled')guidance=Array.isArray(requests[2].value)&&requests[2].value.length?requests[2].value[0]:null;
+ else{guidance=null;errors.push('هدایت تحصیلی: '+(requests[2].reason?.message||'خطای دریافت'));}
+ drawCases();drawFollowups();checkReminders();
+ if(errors.length)notice('بخشی از اطلاعات '+fullName(selected)+' بارگذاری نشد؛ '+errors.join(' · '),'error');
+ else notice('پرونده‌های '+fullName(selected)+' بارگذاری شد.','ok');
 }
 function drawCases(){
  $('caseRows').innerHTML=cases.length?cases.map(c=>'<tr><td>'+esc(c.first_visit_date||c.session_date)+'</td><td>'+esc(c.next_visit)+'</td><td>'+esc(c.visit_reason)+'</td><td>'+esc(c.recommendations||c.actions_taken)+'</td><td>'+esc(c.status)+'</td><td><button data-edit-case="'+c.id+'">ویرایش</button> <button class="danger" data-delete-case="'+c.id+'">حذف</button></td></tr>').join(''):'<tr><td colspan="6">برای این دانش‌آموز هنوز پرونده‌ای ثبت نشده است.</td></tr>';
@@ -252,7 +258,7 @@ function loadGuidanceForm(){
  const status=$('guidanceSaveStatus'),saveButton=$('saveGuidanceProgress');
  if(status)status.textContent=guidance?'اطلاعات قبلی ذخیره شده است؛ می‌توانید نمرات هفتم و هشتم را اصلاح کنید و بعداً نمرات نهم را اضافه کنید.':'هنوز اطلاعاتی برای این دانش‌آموز ذخیره نشده است؛ پس از ورود نمرات، ذخیره موقت را بزنید.';
  if(saveButton)saveButton.textContent=guidance?'ذخیره تغییرات / ادامه ویرایش':'ذخیره موقت نمرات';
- if(!guidance)return;
+ if(!guidance){$('guidanceForm').elements.notes.value='';return;}
  $('guidanceForm').elements.notes.value=guidance.notes||'';
  if(guidance.recommendation_scores&&Object.values(guidance.recommendation_scores).some(x=>x&&x.score_model_version!=='guidance-v3'))notice('امتیازهای تخمینی و پیش‌فرض نسخه قبلی قابل استفاده نیستند؛ امتیازها را به تفکیک هر رشته و فقط بر اساس داده واقعی دوباره ثبت کنید.','error');
 }
