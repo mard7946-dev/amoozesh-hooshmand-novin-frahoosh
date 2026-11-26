@@ -44,6 +44,7 @@ function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], techni
     complete: true,
     total: currentScore,
     academic: currentScore * 0.35,
+    thresholdKnown: !technical,
     thresholdComplete: true,
     thresholdPassed
   };
