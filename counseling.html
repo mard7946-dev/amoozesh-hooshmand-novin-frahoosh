@@ -301,7 +301,8 @@ function calculateGuidance(show=true){
  $('recommendations').innerHTML=arr.map(t=>{
   const threshold=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصاب آزمایشی: احراز شده':'حدنصاب دروس مرتبط احراز نشده'):'نمره بعضی درس‌ها ناقص است'):'حدنصاب رسمی این زمینه در سامانه تعریف نشده؛ اولویت صادر نمی‌شود';
   const missing=[];if(!t.allYearsComplete)missing.push('نمرات هر سه پایه کامل نیست');if(!t.assessmentsComplete)missing.push('آزمون‌ها و نظرهای واقعی این رشته کامل نشده');
-  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'امتیاز نهایی: ناقص':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+guidancePrintNumber(t.interest,1)+'/۱۵ · آزمون توانایی '+guidancePrintNumber(t.aptitude,1)+'/۱۵<br>دبیران '+guidancePrintNumber(t.teacher,1)+'/۱۰ · مشاور '+guidancePrintNumber(t.counselor,1)+'/۱۰ · دانش‌آموز '+guidancePrintNumber(t.student,1)+'/۱۰ · والدین '+guidancePrintNumber(t.parent,1)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
+  const subjectSummary=t.subjects.map(key=>{const label=(subjects.find(x=>x[0]===key)||[key,key])[1];return label+': '+guidancePrintNumber(t.averages[key],2)+'/۲۰';}).join(' · ');
+  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'امتیاز نهایی: ناقص':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">میانگین درس‌های مرتبط: '+esc(subjectSummary)+'<br>عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+guidancePrintNumber(t.interest,1)+'/۱۵ · آزمون توانایی '+guidancePrintNumber(t.aptitude,1)+'/۱۵<br>دبیران '+guidancePrintNumber(t.teacher,1)+'/۱۰ · مشاور '+guidancePrintNumber(t.counselor,1)+'/۱۰ · دانش‌آموز '+guidancePrintNumber(t.student,1)+'/۱۰ · والدین '+guidancePrintNumber(t.parent,1)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
  }).join('');
  if(show)notice('محاسبه انجام شد؛ خانه‌های خالی امتیاز صفر نیستند و تا تکمیل نمرات سه پایه و امتیازهای واقعی همان رشته، اولویت صادر نمی‌شود.','ok');
  return computed;
@@ -324,6 +325,7 @@ function printGuidanceForm(){
  const scoreCell=(key,field)=>{const x=byKey[key];if(!x)return '—';if(field==='consult')return x.total===null||x.academic===null?'—':v(x.total-x.academic);return v(x[field]);};
  const academicCells=cols.map(([k])=>'<td>'+scoreCell(k,'academic')+'</td>').join('');
  const consultCells=cols.map(([k])=>'<td>'+scoreCell(k,'consult')+'</td>').join('');
+ const factorRow=(field,label)=>row(label,cols.map(([k])=>'<td>'+scoreCell(k,field)+'</td>').join(''));
  const eligibility=cols.map(([k])=>{const x=byKey[k];return '<td>'+(x&&x.thresholdKnown&&x.thresholdComplete?(x.thresholdPassed?'بله':'خیر'):'—')+'</td>';}).join('');
  const priority=cols.map(([k])=>'<td>'+esc(byKey[k]?.priority||'—')+'</td>').join('');
  const groups='<tr><th class="criteria" rowspan="3">شاخه‌ها و ملاک‌های تعیین اولویت</th><th class="grouphead" colspan="4">شاخه کاردانش</th><th class="grouphead" colspan="4">شاخه فنی‌وحرفه‌ای</th><th class="grouphead" colspan="4">شاخه نظری</th></tr><tr><th colspan="4">زمینه</th><th colspan="4">زمینه</th><th colspan="4">رشته</th></tr>';
@@ -345,6 +347,12 @@ function printGuidanceForm(){
  '<div class="student-meta"><span>نام: '+get('first_name','name')+'</span><span>نام خانوادگی: '+get('last_name','family_name')+'</span><span>نام پدر: '+get('father_name')+'</span><span>کد ملی: '+get('national_code','national_id')+'</span><span>تاریخ تولد: '+get('birth_date','date_of_birth')+'</span><span>محل صدور: '+get('birth_place','place_of_issue')+'</span><span>استان: '+get('province')+'</span><span>ملیت: '+get('nationality')+'</span><span>منطقه: '+get('district','region')+'</span><span>مدرسه: دبیرستان سردار شهید حاجی‌زاده ۲</span><span>پایه: '+get('grade')+'</span><span>تاریخ تنظیم: پیش‌بینی دی‌ماه ۱۴۰۵</span></div>'+
  '<div class="matrix-title">جدول شایستگی‌ها و ملاک‌های تعیین اولویت رشته‌ها</div><table class="ministry-matrix"><thead>'+groups+'<tr>'+names+'</tr></thead><tbody>'+
  row('امتیاز بررسی‌های مشاوره‌ای (از ۶۵)',consultCells)+
+ row('آزمون توانایی (از ۱۵)',cols.map(([k])=>'<td>'+scoreCell(k,'aptitude')+'</td>').join(''))+
+ row('آزمون رغبت (از ۱۵)',cols.map(([k])=>'<td>'+scoreCell(k,'interest')+'</td>').join(''))+
+ row('نظر دبیران (از ۱۰)',cols.map(([k])=>'<td>'+scoreCell(k,'teacher')+'</td>').join(''))+
+ row('نظر مشاور (از ۱۰)',cols.map(([k])=>'<td>'+scoreCell(k,'counselor')+'</td>').join(''))+
+ row('نظر دانش‌آموز (از ۱۰)',cols.map(([k])=>'<td>'+scoreCell(k,'student')+'</td>').join(''))+
+ row('نظر والدین (از ۵)',cols.map(([k])=>'<td>'+scoreCell(k,'parent')+'</td>').join(''))+
  row('امتیاز عملکرد تحصیلی متناسب با رشته (از ۳۵)',academicCells)+
  row('شرایط ورود به رشته‌های تحصیلی',eligibility)+
  row('اولویت دانش‌آموز برای ثبت‌نام',priority)+
