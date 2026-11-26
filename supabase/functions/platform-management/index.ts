@@ -83,6 +83,8 @@ Deno.serve(async (req: Request) => {
       ]);
       // GitHub Pages may publish before the separately authorized Supabase migration.
       // Keep the platform dashboard readable during that deployment window.
+      let schools: any[] = (schoolsResult.data ?? []) as any[];
+      let schoolsReadError: any = schoolsResult.error;
       if (schoolsResult.error && /online_class_enabled|42703|PGRST204/i.test(
         [schoolsResult.error.message, schoolsResult.error.code, schoolsResult.error.details].filter(Boolean).join(" ")
       )) {
@@ -90,13 +92,13 @@ Deno.serve(async (req: Request) => {
           .select("id,name,slug,school_code,status,owner_auth_user_id,created_at,updated_at")
           .order("created_at", { ascending: false }).limit(500);
         if (legacySchoolsResult.error) return reply({ message: "دریافت فهرست مدارس ناموفق بود." }, 500);
-        schoolsResult = { ...legacySchoolsResult, data: legacySchoolsResult.data ?? [], error: null };
+        schools = (legacySchoolsResult.data ?? []) as any[];
+        schoolsReadError = null;
       }
 
-      const failed = [schoolsResult, subscriptionsResult, plansResult, membershipsResult, auditResult, classroomFlagResult].find(x => x.error);
+      const failed = [schoolsReadError, subscriptionsResult.error, plansResult.error, membershipsResult.error, auditResult.error, classroomFlagResult.error].find(Boolean);
       if (failed) return reply({ message: "دریافت اطلاعات مدیریت کل ناموفق بود." }, 500);
 
-      const schools = schoolsResult.data ?? [];
       const plans = plansResult.data ?? [];
       const subscriptions = subscriptionsResult.data ?? [];
       const memberships = membershipsResult.data ?? [];
