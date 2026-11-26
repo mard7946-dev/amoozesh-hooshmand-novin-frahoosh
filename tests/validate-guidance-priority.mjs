@@ -12,6 +12,12 @@ const context = {
   guidanceCohort: [],
   guidanceCohortError: "",
   selected: null,
+  guidance: null,
+  gradeScoresFromForm: () => ({
+    grade7_scores: { math: 15, technical: 13 },
+    grade8_scores: { math: 15, technical: 13 },
+    grade9_scores: { math: 15, technical: 13 }
+  }),
   norm: value => String(value ?? "").trim(),
   $: () => ({ textContent: "" })
 };
@@ -75,7 +81,7 @@ assert.equal(runPriority({ currentScore: 62, currentAcademic: 30, capacity: 1 })
 assert.equal(runPriority({ thresholdPassed: false }), "حدنصاب تحصیلی احراز نشده", "Counseling points cannot compensate for a failed academic threshold");
 assert.equal(runPriority({ thresholdKnown: false, threshold: null, key: "fanni_services" }), "نیازمند حدنصاب معتبر این زمینه", "Unknown vocational thresholds must be reported as unknown, not as rejection or a fabricated priority");
 assert.equal(runPriority({ saved: [], currentScore: 90, currentAcademic: 35 }), "الف", "The selected candidate must be included before saving");
-assert.equal(runPriority({ saved: [{ total: null, academic: null }], currentScore: 75 }), "ب", "Invalid legacy rows must not displace the selected candidate");
+assert.equal(runPriority({ saved: [{ total: null, academic: null }], currentScore: 75 }), "رتبه‌بندی موقت؛ پرونده همه دانش‌آموزان واجد شرایط کامل نیست", "An eligible student with missing actual scores must block a misleading capacity rank");
 assert.equal(
   runPriority({ currentScore: 90, currentAcademic: 30, saved: [{ total: 80, academic: 35 }], capacity: 1 }),
   "ب",
@@ -104,6 +110,7 @@ function runSharedArtisanPool() {
     ...grades,
     recommendation_scores: { fanni_industry: savedScore, kardanesh_industry: savedScore }
   }];
+  context.guidance = { ...grades, recommendation_scores: { kardanesh_industry: savedScore } };
   const common = {
     capacity: 1,
     capacityPoolKey: "industry",
