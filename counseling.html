@@ -69,7 +69,7 @@
 <label class="field">نظر دبیران (از ۱۰)<input name="teacher_points" type="number" min="0" max="10" step=".5" placeholder="پس از دریافت نظر دبیران"></label>
 <label class="field">نظر دانش‌آموز (از ۱۰)<input name="student_points" type="number" min="0" max="10" step=".5" placeholder="پس از گفت‌وگو با دانش‌آموز"></label>
 <label class="field">نظر والدین (از ۵)<input name="parent_points" type="number" min="0" max="5" step=".5" placeholder="پس از دریافت نظر والدین"></label>
-</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">رغبت، توانایی و نظرها فقط از مقادیر واقعی ثبت‌شده محاسبه می‌شوند. اولویت‌های الف، ب و ج برآورد داخلی مدرسه‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
+</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">رغبت، توانایی و نظرها فقط از مقادیر واقعی ثبت‌شده محاسبه می‌شوند. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ظرفیت و ذخیره ۲۰٪ نیز سقف رتبه را محدود می‌کند. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
 </section>
 </main>
 <script>
@@ -209,7 +209,8 @@ function loadGuidanceForm(){
  if(saveButton)saveButton.textContent=guidance?'ذخیره تغییرات / ادامه ویرایش':'ذخیره موقت نمرات';
  if(!guidance)return;const f=$('guidanceForm');
  for(const k of ['aptitude_points','interest_points','counselor_points','teacher_points','student_points','parent_points','notes'])if(f.elements[k])f.elements[k].value=guidance[k]??'';
- if(guidance.recommendation_scores&&Object.values(guidance.recommendation_scores).some(x=>x&&x.score_model_version!=='guidance-v2'))notice('پرونده دارای امتیازهای تخمینی نسخه قبلی است؛ این امتیازها در اولویت‌بندی جدید پذیرفته نمی‌شوند. لطفاً آزمون‌ها و نظرهای واقعی را دوباره ثبت کنید.','error');
+ const hasLegacyScores=guidance.recommendation_scores&&Object.values(guidance.recommendation_scores).some(x=>x&&x.score_model_version!=='guidance-v2');
+ if(hasLegacyScores){for(const k of ['aptitude_points','interest_points','counselor_points','teacher_points','student_points','parent_points'])f.elements[k].value='';notice('امتیازهای تخمینی و پیش‌فرض نسخه قبلی پاک‌سازی شدند؛ لطفاً فقط نتایج واقعی آزمون‌ها و نظرها را دوباره وارد کنید.','error');}
  calculateGuidance(false);
 }
 function gradeScoresFromForm(){
