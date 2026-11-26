@@ -278,7 +278,7 @@ const tracks=[
  {key:'fanni_services',name:'فنی‌وحرفه‌ای · خدمات',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'services',subjects:['persian','english','social','math'],weights:{persian:0.3,english:0.25,social:0.25,math:0.2},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'fanni_agriculture',name:'فنی‌وحرفه‌ای · کشاورزی',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'agriculture',subjects:['science','math','technical'],weights:{science:0.4,math:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'fanni_arts',name:'فنی‌وحرفه‌ای · هنر',group:'شاخه فنی‌وحرفه‌ای',capacity:90,capacityPoolKey:'arts',subjects:['arts','persian'],weights:{arts:0.6,persian:0.4},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
- {key:'kardanesh_industry',name:'کاردانش · صنعت',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'industry',subjects:['math','science','technical'],weights:{math:0.4,science:0.3,technical:0.3},thresholds:{math:10,technical:12},note:'حدنصاب نمونه صنعت: ریاضی ۱۰ و کاروفناوری ۱۲؛ پیش‌بینی مدرسه و نیازمند تطبیق با ضوابط سال جاری'},
+ {key:'kardanesh_industry',name:'کاردانش · صنعت',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'industry',subjects:['math','science','technical'],weights:{math:0.4,science:0.3,technical:0.3},thresholds:null,note:'حدنصاب معتبر کاردانش صنعت باید جداگانه از جدول رسمی سال جاری ثبت شود'},
  {key:'kardanesh_services',name:'کاردانش · خدمات',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'services',subjects:['persian','english','social','math'],weights:{persian:0.3,english:0.25,social:0.25,math:0.2},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'agriculture',subjects:['science','math','technical'],weights:{science:0.4,math:0.3,technical:0.3},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'kardanesh_arts',name:'کاردانش · هنر',group:'شاخه کاردانش',capacity:90,capacityPoolKey:'arts',subjects:['arts','persian'],weights:{arts:0.6,persian:0.4},thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'}
@@ -357,7 +357,9 @@ function applyGuidancePriorities(arr){
   else if(!track.actualAssessmentsComplete||track.total===null||track.academic===null)priority='واجد شرایط تحصیلی؛ امتیازهای واقعی مشاوره‌ای ناقص است';
   else{
    const poolKey=track.capacityPoolKey||track.key;
-   const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey&&candidate.thresholdKnown);
+   const pool=arr.filter(candidate=>(candidate.capacityPoolKey||candidate.key)===poolKey);
+   if(pool.some(candidate=>!candidate.thresholdKnown))priority='حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست';
+   else{
    const entries=[];
    grade9.forEach(student=>{
     const id=String(student.id);
@@ -384,6 +386,7 @@ function applyGuidancePriorities(arr){
     else if(current.total>=75&&rank<=reserveB)priority='ب';
     else if(current.total>=65&&rank<=reserveC)priority='ج';
     else priority='خارج از ظرفیت پیش‌بینی';
+   }
    }
   }
   return {...track,priority};
