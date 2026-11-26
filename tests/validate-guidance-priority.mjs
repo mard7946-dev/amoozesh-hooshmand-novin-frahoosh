@@ -57,8 +57,8 @@ assert.equal(runPriority({ currentScore: 72, saved: [95, 85], capacity: 2 }), '�
 assert.equal(runPriority({ currentScore: 62, saved: [95, 85], capacity: 2 }), '—', "A score below the minimum local band should receive a dash");
 assert.equal(runPriority({ thresholdPassed: false }), '—', "A student who has not met the subject threshold must not receive a priority");
 assert.equal(runPriority({ technical: true }), '—', "A field without a configured subject threshold must not receive a fabricated priority");
-assert.equal(runPriority({ saved: [] }), 'الف', "The currently calculated student's score must be included before it is saved");
-assert.equal(runPriority({ saved: [{bad:true}] }), 'الف', "Only saved complete v2 scores are considered");
+assert.equal(runPriority({ saved: [], currentScore: 90 }), 'الف', "The currently calculated student's score must be included before it is saved");
+assert.equal(runPriority({ saved: [{bad:true}], currentScore: 75 }), 'ب', "Invalid legacy rows must not displace the selected student's valid band");
 console.log("Guidance priority ranking checks passed.");
 
 assert.ok(!html.includes("بررسی نشده"), "Guidance source must never show an unreviewed status");
