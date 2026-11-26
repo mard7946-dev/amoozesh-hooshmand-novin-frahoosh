@@ -73,7 +73,7 @@ assert.ok(html.includes("assessment_points:{aptitude:x.aptitude,interest:x.inter
 assert.ok(html.includes("drawTrackAssessmentInputs()"), "The form must render the track-specific assessment controls");
 assert.ok(!html.includes("ratio*15"), "Aptitude and interest must not be inferred from academic marks");
 assert.ok(!html.includes("interest:'برآورد رغبت مبتنی بر عملکرد درسی"), "Legacy inferred interest must not be saved");
-assert.ok(html.includes("اولویت آزمایشی:") && html.includes("اولویت‌های الف، ب و ج"), "The interface must disclose the experimental A/B/C school model");
+assert.ok(html.includes("اولویت آزمایشی:") && html.includes("الف از ۸۵، ب از ۷۵ و ج از ۶۵"), "The interface must disclose the experimental A/B/C score bands");
 assert.ok(html.includes("فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند"), "Partial grade entry must be explicitly supported without treating blanks as zero");
 assert.ok(html.includes("پس از امتحانات دی‌ماه تکمیل شود"), "Grade 9 entry must be clearly deferrable until after the December exams");
 assert.ok(html.includes("if(guidance)await api('counseling_guidance','PATCH',payload") && html.includes("else await api('counseling_guidance','POST',payload)"), "Saving again must update the existing guidance record rather than create a duplicate");
