@@ -192,9 +192,59 @@ function drawFollowups(){
 $('followForm').addEventListener('submit',async e=>{e.preventDefault();if(!selected)return;const o=formObj(e.currentTarget);try{await api('counseling_followups','POST',{student_id:selected.id,subject:o.subject,description:o.description,followup_date:o.followup_date,status:o.status,followup_items:o.description});e.currentTarget.reset();await loadStudentData();notice('پیگیری و موعد آن ذخیره شد.','ok');}catch(err){notice('ثبت پیگیری ناموفق بود: '+err.message,'error');}});
 $('enableNotifications').onclick=async()=>{if(!('Notification'in window)){notice('این مرورگر از اعلان پشتیبانی نمی‌کند.','error');return;}const p=await Notification.requestPermission();notice(p==='granted'?'اعلان مرورگر فعال شد.':'اجازه اعلان داده نشد.',p==='granted'?'ok':'error');checkReminders();};
 function drawGradeInputs(){
- const grades=[['grade7_scores','پایه هفتم · خرداد'],['grade8_scores','پایه هشتم · خرداد'],['grade9_scores','پایه نهم · پس از امتحانات دی‌ماه تکمیل شود']];
- $('gradeInputs').innerHTML=grades.map(([key,title])=>'<h4>'+title+'</h4><div class="scoregrid">'+subjects.map(([s,label])=>'<label class="field">'+label+' (از ۲۰)<input type="number" min="0" max="20" step=".25" name="'+key+'.'+s+'" data-grade="'+key+'" data-subject="'+s+'"></label>').join('')+'</div>').join('');
- if(guidance){for(const el of $('gradeInputs').querySelectorAll('input')){const obj=guidance[el.dataset.grade]||{};if(obj[el.dataset.subject]!==undefined)el.value=obj[el.dataset.subject];}}
+ const grades=[['grade7_scores','پایه هفتم · نمرات خرداد','ذخیره نمرات هفتم / ویرایش'],['grade8_scores','پایه هشتم · نمرات خرداد','ذخیره نمرات هشتم / ویرایش'],['grade9_scores','پایه نهم · پس از امتحانات دی‌ماه','ذخیره نمرات نهم / ویرایش']];
+ $('gradeInputs').innerHTML=grades.map(([key,title,button])=>'<section class="grade-stage" style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0"><h4>'+title+'</h4><div class="scoregrid">'+subjects.map(([s,label])=>'<label class="field">'+label+' (از ۲۰)<input type="number" min="0" max="20" step=".25" name="'+key+'.'+s+'" data-grade="'+key+'" data-subject="'+s+'"></label>').join('')+'</div><div class="actions"><button type="button" class="primary" data-save-grade="'+key+'">'+button+'</button><span class="muted" data-grade-status="'+key+'"></span></div></section>').join('');
+ if(guidance){for(const el of $('gradeInputs').querySelectorAll('input')){const obj=guidance[el.dataset.grade]||{};if(obj[el.dataset.subject]!==undefined)el.value=obj[el.dataset.subject];}
+  grades.forEach(([key])=>{const status=$('gradeInputs').querySelector('[data-grade-status="'+key+'"]');if(status&&Object.keys(guidance[key]||{}).length)status.textContent='اطلاعات ذخیره‌شده · قابل ویرایش';});
+ }
+ $('gradeInputs').querySelectorAll('[data-save-grade]').forEach(btn=>btn.onclick=()=>saveGuidanceGrade(btn.dataset.saveGrade));
+}
+async function saveGuidanceGrade(stage){
+ if(!selected)return;
+ const allowedStages=['grade7_scores','grade8_scores','grade9_scores'];
+ if(!allowedStages.includes(stage))return;
+ const btn=$('gradeInputs').querySelector('[data-save-grade="'+stage+'"]');
+ const status=$('gradeInputs').querySelector('[data-grade-status="'+stage+'"]');
+ const values={};
+ $('gradeInputs').querySelectorAll('input[data-grade="'+stage+'"]').forEach(el=>{
+  const raw=el.value.trim();
+  if(raw!=='')values[el.dataset.subject]=Math.max(0,Math.min(20,Number(raw)));
+ });
+ if(!Object.keys(values).length){notice('برای ذخیره این پایه، دست‌کم یک نمره وارد کنید.','error');return;}
+ if(btn)btn.disabled=true;
+ if(status)status.textContent='در حال ذخیره…';
+ try{
+  const merged={
+   grade7_scores:{...(guidance?.grade7_scores||{})},
+   grade8_scores:{...(guidance?.grade8_scores||{})},
+   grade9_scores:{...(guidance?.grade9_scores||{})}
+  };
+  merged[stage]=values;
+  const payload={
+   student_id:selected.id,grade:selected.grade||'نهم',
+   interest:guidance?.interest||'',
+   aptitude:guidance?.aptitude||'',
+   recommendation:guidance?.recommendation||'ثبت مرحله‌ای نمرات پایه‌ها',
+   grade7_scores:merged.grade7_scores,
+   grade8_scores:merged.grade8_scores,
+   grade9_scores:merged.grade9_scores,
+   recommendation_scores:guidance?.recommendation_scores||{},
+   notes:$('guidanceForm').elements.notes.value||guidance?.notes||''
+  };
+  if(guidance)await api('counseling_guidance','PATCH',payload,{id:'eq.'+guidance.id});
+  else await api('counseling_guidance','POST',payload);
+  const rows=await api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'});
+  guidance=Array.isArray(rows)&&rows.length?rows[0]:null;
+  if(!guidance)throw new Error('ذخیره ارسال شد اما پرونده پس از آن بازیابی نشد.');
+  drawGradeInputs();
+  const refreshedStatus=$('gradeInputs').querySelector('[data-grade-status="'+stage+'"]');
+  if(refreshedStatus)refreshedStatus.textContent='ذخیره شد · آماده ویرایش';
+  $('guidanceSaveStatus').textContent='نمرات پایه‌ها به‌صورت مرحله‌ای ذخیره شده‌اند؛ هر پایه را جداگانه می‌توانید ویرایش کنید.';
+  notice('نمرات '+(stage==='grade7_scores'?'پایه هفتم':stage==='grade8_scores'?'پایه هشتم':'پایه نهم')+' ذخیره شد؛ برای اصلاح، نمرات را تغییر دهید و همین دکمه را دوباره بزنید.','ok');
+ }catch(err){
+  if(status)status.textContent='ذخیره ناموفق بود';
+  notice('ذخیره نمرات این پایه ناموفق بود: '+err.message,'error');
+ }finally{if(btn)btn.disabled=false;}
 }
 function loadGuidanceForm(){
  const status=$('guidanceSaveStatus'),saveButton=$('saveGuidanceProgress');
