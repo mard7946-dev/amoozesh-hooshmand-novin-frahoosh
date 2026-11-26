@@ -28,7 +28,7 @@ function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], techni
     student_id: index + 1,
     recommendation_scores: {
       [key]: {
-        score_model_version: "guidance-v2",
+        score_model_version: "guidance-v3",
         complete: true,
         total_points: score,
         academic_points: score * 0.35,
@@ -66,9 +66,12 @@ assert.ok(!html.includes("رتبه درصدی"), "Holland table must not include
 assert.ok(!html.includes("آزمون ثبت نشده"), "Holland table must not show an unregistered-test placeholder");
 
 assert.ok(html.includes("ذخیره موقت نمرات / ذخیره ویرایش"), "Guidance form must expose a clear save-and-edit action");
-assert.ok(html.includes("score_model_version:'guidance-v2'"), "Only versioned actual score records may enter the new cohort ranking");
-assert.ok(html.includes("آزمون توانایی (از ۱۵)") && html.includes("آزمون رغبت (از ۱۵)"), "Actual aptitude and interest inputs must be present");
+assert.ok(html.includes("score_model_version:'guidance-v3'"), "Only versioned actual score records may enter the new cohort ranking");
+assert.ok(html.includes("آزمون توانایی") && html.includes("آزمون رغبت") && html.includes("data-track="), "Actual aptitude and interest inputs must be captured per track");
+assert.ok(html.includes("assessment_points:{aptitude:x.aptitude,interest:x.interest"), "Per-track assessment scores must be saved separately");
+assert.ok(html.includes("drawTrackAssessmentInputs()"), "The form must render the track-specific assessment controls");
 assert.ok(!html.includes("ratio*15"), "Aptitude and interest must not be inferred from academic marks");
+assert.ok(!html.includes("interest:'برآورد رغبت مبتنی بر عملکرد درسی"), "Legacy inferred interest must not be saved");
 assert.ok(html.includes("اولویت آزمایشی:") && html.includes("اولویت‌های الف، ب و ج"), "The interface must disclose the experimental A/B/C school model");
 assert.ok(html.includes("فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند"), "Partial grade entry must be explicitly supported without treating blanks as zero");
 assert.ok(html.includes("پس از امتحانات دی‌ماه تکمیل شود"), "Grade 9 entry must be clearly deferrable until after the December exams");
