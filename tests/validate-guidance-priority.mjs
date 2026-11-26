@@ -4,7 +4,7 @@ import vm from "node:vm";
 
 const html = fs.readFileSync(new URL("../counseling.html", import.meta.url), "utf8");
 const start = html.indexOf("function savedThresholdStatus(record,track){");
-const end = html.indexOf("\\nfunction clampScore", start);
+const end = html.indexOf("\nfunction clampScore", start);
 assert.ok(start >= 0 && end > start, "Guidance eligibility and priority engine must exist");
 
 const context = {
@@ -16,7 +16,7 @@ const context = {
   $: () => ({ textContent: "" })
 };
 vm.runInNewContext(
-  html.slice(start, end) + "\\nglobalThis.applyGuidancePriorities = applyGuidancePriorities; globalThis.savedThresholdStatus = savedThresholdStatus;",
+  html.slice(start, end) + "\nglobalThis.applyGuidancePriorities = applyGuidancePriorities; globalThis.savedThresholdStatus = savedThresholdStatus;",
   context
 );
 
