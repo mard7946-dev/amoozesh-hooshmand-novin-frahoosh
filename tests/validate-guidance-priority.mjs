@@ -59,7 +59,7 @@ assert.equal(runPriority({ currentScore: 62, saved: [95, 85], capacity: 2 }), '�
 assert.equal(runPriority({ thresholdPassed: false }), '—', "A student who has not met the subject threshold must not receive a priority");
 assert.equal(runPriority({ technical: true }), '—', "A field without a configured subject threshold must not receive a fabricated priority");
 assert.equal(runPriority({ saved: [], currentScore: 90 }), 'الف', "The currently calculated student's score must be included before it is saved");
-assert.equal(runPriority({ saved: [{bad:true}], currentScore: 75 }), 'ب', "Invalid legacy rows must not displace the selected student's valid band");
+ assert.equal(runPriority({ saved: [{bad:true}], currentScore: 75 }), 'ب', "Invalid legacy rows must not displace the selected student's valid band");
 console.log("Guidance priority ranking checks passed.");
 
 assert.ok(!html.includes("بررسی نشده"), "Guidance source must never show an unreviewed status");
@@ -67,12 +67,16 @@ assert.ok(!html.includes("رتبه درصدی"), "Holland table must not include
 assert.ok(!html.includes("آزمون ثبت نشده"), "Holland table must not show an unregistered-test placeholder");
 
 assert.ok(html.includes("ذخیره موقت نمرات / ذخیره ویرایش"), "Guidance form must expose a clear save-and-edit action");
-assert.ok(html.includes("score_model_version:'guidance-v3'"), "Only versioned actual score records may enter the new cohort ranking");
+assert.ok(html.includes("score_model_version:'guidance-v3'"), "Only actual, versioned assessment records may enter capacity ranking");
 assert.ok(html.includes("آزمون توانایی") && html.includes("آزمون رغبت") && html.includes("data-track="), "Actual aptitude and interest inputs must be captured per track");
 assert.ok(html.includes("assessment_points:{aptitude:x.aptitude,interest:x.interest"), "Per-track assessment scores must be saved separately");
 assert.ok(html.includes("drawTrackAssessmentInputs()"), "The form must render the track-specific assessment controls");
-assert.ok(!html.includes("ratio*15"), "Aptitude and interest must not be inferred from academic marks");
-assert.ok(!html.includes("interest:'برآورد رغبت مبتنی بر عملکرد درسی"), "Legacy inferred interest must not be saved");
+assert.ok(html.includes("function estimateAssessmentPoints(track") && html.includes("const scale=max=>Math.round(ratio*max*10)/10"), "Default assessment values must be proportionally estimated from relevant subject grades");
+assert.ok(html.includes("assessment_sources:x.assessmentSources") && html.includes("assessment_estimates:") && html.includes("grade_based_estimate"), "Estimated values must be stored separately from actual scores and source-labelled");
+assert.ok(html.includes("estimated_total_points:x.estimatedTotal") && html.includes("points[key]=displayPoints[key]===null||assessmentSources[key]==='grade_based_estimate'?null:displayPoints[key]"), "Estimated totals must remain display-only and must not enter actual capacity ranking");
+assert.ok(html.includes("if(field==='academic')return v(x.academic)") && html.includes("x.estimatedTotal-x.academic"), "Printed academic and estimated consultation rows must display correctly");
+assert.ok(html.includes("علامت * یعنی امتیاز پیش‌فرض و برآوردی"), "The printed report must disclose estimated values");
+assert.ok(html.includes("نتیجه آزمون واقعی نیستند"), "The saved interest and aptitude fields must disclose that estimates are not actual test results");
 assert.ok(html.includes("اولویت آزمایشی:") && html.includes("الف از ۸۵، ب از ۷۵ و ج از ۶۵"), "The interface must disclose the experimental A/B/C score bands");
 assert.ok(html.includes("فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند"), "Partial grade entry must be explicitly supported without treating blanks as zero");
 assert.ok(html.includes("پس از امتحانات دی‌ماه تکمیل شود"), "Grade 9 entry must be clearly deferrable until after the December exams");
