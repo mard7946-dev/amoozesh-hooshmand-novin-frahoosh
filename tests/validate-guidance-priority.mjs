@@ -122,6 +122,18 @@ function runSharedArtisanPool() {
 }
 assert.equal(runSharedArtisanPool(), "ب", "Technical-vocational and Kardanesh of the same field must share one capacity pool and a student must count only once");
 
+function runIncompleteSharedPool() {
+  context.students = [{ id: 1, grade: "نهم" }];
+  context.selected = { id: 1 };
+  context.guidanceCohort = [];
+  return context.applyGuidancePriorities([
+    { key: "fanni_industry", capacity: 90, capacityPoolKey: "industry", thresholdKnown: true, thresholdComplete: true, thresholdPassed: true, allYearsComplete: true, actualAssessmentsComplete: true, total: 90, academic: 30 },
+    { key: "kardanesh_industry", capacity: 90, capacityPoolKey: "industry", thresholdKnown: false, thresholdComplete: false, thresholdPassed: false, allYearsComplete: true, actualAssessmentsComplete: true, total: 90, academic: 30 }
+  ])[0].priority;
+}
+assert.equal(runIncompleteSharedPool(), "حدنصاب یکی از شاخه‌های هم‌ظرفیت مشخص نیست؛ رتبه مشترک قابل اعلام نیست", "A shared capacity pool must not publish a misleading rank while the other branch eligibility rule is unknown");
+
+
 console.log("Guidance eligibility, shared-capacity ranking, and incomplete-data checks passed.");
 
 assert.ok(!html.includes("بررسی نشده"), "Guidance source must never show an unreviewed status");
@@ -148,6 +160,8 @@ for (const expected of ["capacity:300", "capacity:400", "capacity:90", "capacity
   assert.ok(html.includes(expected), "Missing guidance configuration: " + expected);
 }
 assert.ok(!html.includes("capacity:350") && !html.includes("capacity:500") && !html.includes("capacity:150"), "Old guidance capacities must be removed");
+assert.ok(html.includes("{key:'kardanesh_industry'") && html.includes("حدنصاب معتبر کاردانش صنعت باید جداگانه از جدول رسمی سال جاری ثبت شود"), "Kardanesh industry must not inherit an unverified Fanni threshold");
+assert.ok(html.includes("{key:'fanni_industry'") && html.includes("thresholds:{math:10,technical:12}"), "The sample Fanni industry threshold must be configured");
 assert.ok(html.includes("هر زمینه هنرستان ۹۰ نفر به‌صورت مشترک بین فنی‌وحرفه‌ای و کاردانش"), "The printed report must disclose shared artisan capacities");
 assert.ok(html.includes("نیازمند حدنصاب") && html.includes("وضعیت احراز شرایط نامشخص است"), "Unknown thresholds must not be displayed as a rejection");
 assert.ok(html.includes("میانگین نمره هر درس با ضرایب پایه هفتم ۱، هشتم ۱ و نهم ۳"), "The printed report must disclose grade weighting");
