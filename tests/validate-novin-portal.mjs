@@ -254,6 +254,8 @@ for (const source of invitationReviewScripts) assert.doesNotThrow(() => new Func
 
 const counselorPage = readFileSync("counseling.html", "utf8");
 assert.ok(html.includes("location.href='counseling.html?tab='"), "Counselor page must open on the portal origin so sessionStorage is shared");
+assert.ok(html.includes("'هدایت تحصیلی'") && html.includes("'هدایت تحصیلی':'guidance'"), "Counselor portal must expose and route the guidance counseling module");
+assert.ok(counselorPage.includes("get('tab')==='guidance'") && counselorPage.includes("openModule('guidance')"), "Guidance route must open the guidance module after the counselor selects a student");
 assert.ok(!html.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html"), "Counselor route must not cross origins and lose the session token");
 assert.ok(counselorPage.includes('name="event_weekday"') && counselorPage.includes('name="event_date_shamsi"') && counselorPage.includes('name="title"'), "Counselor invitation form must collect weekday, date, and subject");
 assert.ok(counselorPage.includes("approval_status") && counselorPage.includes("در انتظار تأیید مدیر"), "Counselor must see that invitations await manager approval");
@@ -371,7 +373,7 @@ assert.ok(academicReviewPage.includes("academic_review_list") && academicReviewP
 assert.ok(academicReviewPage.includes("attendance") && academicReviewPage.includes("grade") && academicReviewPage.includes("discipline"), "Academic review page must expose all three review queues");
 assert.ok(classroomManagementFunction.includes('action === "academic_review_list"') && classroomManagementFunction.includes('action === "academic_review"'), "Classroom API must implement authenticated academic review list and decision actions");
 assert.ok(classroomManagementFunction.includes('eq("approval_status","pending")') && classroomManagementFunction.includes('or("manager_released.eq.0,manager_released.is.null")') && classroomManagementFunction.includes('eq("status","pending")'), "Review queues must include pending attendance, unreleased grades, and pending discipline");
-assert.ok(/manager\s*\?\s*admin\.from\("student_grades"\)/.test(classroomManagementFunction) && classroomManagementFunction.includes("filter((row: any) => isManagerApprovalRequiredForGrade(row))"), "Only the manager review queue may contain pending continuous/final grades");
+assert.ok(classroomManagementFunction.includes("attendance: [], grades: [], discipline: [], direct_publication: true") && classroomManagementFunction.includes("isManagerApprovalRequiredForGrade"), "Teacher-entered daily records are published directly while continuous/final grade publication remains manager-controlled");
 assert.ok(classroomManagementFunction.includes("if (!manager) return reply({message:\"انتشار نمرات مستمر و پایانی فقط با مجوز مدیر امکان‌پذیر است.\"},403)") && classroomManagementFunction.includes("!isManagerApprovalRequiredForGrade(gradeForReview)"), "Server must restrict publication decisions to managers and continuous/final grades");
 const parentAttendanceQuery = parentManagementFunction.split("\n").find(line => line.includes('from("attendance")'));
 const parentGradeQuery = parentManagementFunction.split("\n").find(line => line.includes('from("student_grades")'));
