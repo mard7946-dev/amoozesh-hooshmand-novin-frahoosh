@@ -254,6 +254,8 @@ for (const source of invitationReviewScripts) assert.doesNotThrow(() => new Func
 
 const counselorPage = readFileSync("counseling.html", "utf8");
 assert.ok(html.includes("location.href='counseling.html?tab='"), "Counselor page must open on the portal origin so sessionStorage is shared");
+assert.ok(html.includes("'هدایت تحصیلی'") && html.includes("'هدایت تحصیلی':'guidance'"), "Counselor portal must expose and route the guidance counseling module");
+assert.ok(counselorPage.includes("get('tab')==='guidance'") && counselorPage.includes("openModule('guidance')"), "Guidance route must open the guidance module after the counselor selects a student");
 assert.ok(!html.includes("raw.githack.com/mard7946-dev/amoozesh-hooshmand-novin-frahoosh/main/counseling.html"), "Counselor route must not cross origins and lose the session token");
 assert.ok(counselorPage.includes('name="event_weekday"') && counselorPage.includes('name="event_date_shamsi"') && counselorPage.includes('name="title"'), "Counselor invitation form must collect weekday, date, and subject");
 assert.ok(counselorPage.includes("approval_status") && counselorPage.includes("در انتظار تأیید مدیر"), "Counselor must see that invitations await manager approval");
