@@ -194,7 +194,9 @@ $('enableNotifications').onclick=async()=>{if(!('Notification'in window)){notice
 function drawGradeInputs(){
  const grades=[['grade7_scores','پایه هفتم · نمرات خرداد','ذخیره نمرات هفتم / ویرایش'],['grade8_scores','پایه هشتم · نمرات خرداد','ذخیره نمرات هشتم / ویرایش'],['grade9_scores','پایه نهم · پس از امتحانات دی‌ماه','ذخیره نمرات نهم / ویرایش']];
  $('gradeInputs').innerHTML=grades.map(([key,title,button])=>'<section class="grade-stage" style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0"><h4>'+title+'</h4><div class="scoregrid">'+subjects.map(([s,label])=>'<label class="field">'+label+' (از ۲۰)<input type="number" min="0" max="20" step=".25" name="'+key+'.'+s+'" data-grade="'+key+'" data-subject="'+s+'"></label>').join('')+'</div><div class="actions"><button type="button" class="primary" data-save-grade="'+key+'">'+button+'</button><span class="muted" data-grade-status="'+key+'"></span></div></section>').join('');
- if(guidance){for(const el of $('gradeInputs').querySelectorAll('input')){const obj=guidance[el.dataset.grade]||{};if(obj[el.dataset.subject]!==undefined)el.value=obj[el.dataset.subject];}}
+ if(guidance){for(const el of $('gradeInputs').querySelectorAll('input')){const obj=guidance[el.dataset.grade]||{};if(obj[el.dataset.subject]!==undefined)el.value=obj[el.dataset.subject];}
+  grades.forEach(([key])=>{const status=$('gradeInputs').querySelector('[data-grade-status="'+key+'"]');if(status&&Object.keys(guidance[key]||{}).length)status.textContent='اطلاعات ذخیره‌شده · قابل ویرایش';});
+ }
  $('gradeInputs').querySelectorAll('[data-save-grade]').forEach(btn=>btn.onclick=()=>saveGuidanceGrade(btn.dataset.saveGrade));
 }
 async function saveGuidanceGrade(stage){
