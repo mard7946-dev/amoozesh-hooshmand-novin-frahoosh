@@ -20,7 +20,7 @@ vm.runInNewContext(
   context
 );
 
-function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], technical = false } = {}) {
+function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], technical = false, thresholdPassed = true } = {}) {
   context.students = [1, 2, 3].map(id => ({ id, grade: "نهم" }));
   context.selected = { id: 3 };
   const key = technical ? "fanni_industry" : "math";
@@ -28,28 +28,37 @@ function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], techni
     student_id: index + 1,
     recommendation_scores: {
       [key]: {
+        score_model_version: "guidance-v2",
         complete: true,
         total_points: score,
-        academic_points: score * 0.35
+        academic_points: score * 0.35,
+        threshold_complete: true,
+        threshold_passed: true
       }
     }
   }));
   const track = {
     key,
     capacity,
-    thresholds: technical ? null : { math: 99 },
+    thresholds: technical ? null : { math: 14 },
     complete: true,
     total: currentScore,
-    academic: currentScore * 0.35
+    academic: currentScore * 0.35,
+    thresholdComplete: true,
+    thresholdPassed
   };
   return context.applyGuidancePriorities([track])[0].priority;
 }
 
-assert.equal(runPriority(), 'ب', "The 20% reserve should produce priority B based on total guidance score");
-assert.equal(runPriority({ capacity: 1 }), '—', "Candidates beyond capacity plus reserve must receive a dash");
-assert.equal(runPriority({ technical: true }), 'ب', "Technical fields must rank by entered guidance score without a separate threshold");
-assert.equal(runPriority({ saved: [95] }), 'الف', "Ranking should proceed among students with complete entered scores and show the comparison cohort");
+assert.equal(runPriority(), 'ب', "A score in the middle band should receive B");
+assert.equal(runPriority({ capacity: 1 }), 'ج', "A candidate beyond the B reserve but within the C reserve should receive C");
+assert.equal(runPriority({ currentScore: 90, saved: [95], capacity: 2 }), 'الف', "A high score within capacity should receive A");
+assert.equal(runPriority({ currentScore: 72, saved: [95, 85], capacity: 2 }), 'ج', "A score in the third band should receive C");
+assert.equal(runPriority({ currentScore: 62, saved: [95, 85], capacity: 2 }), '—', "A score below the minimum local band should receive a dash");
+assert.equal(runPriority({ thresholdPassed: false }), '—', "A student who has not met the subject threshold must not receive a priority");
+assert.equal(runPriority({ technical: true }), '—', "A field without a configured subject threshold must not receive a fabricated priority");
 assert.equal(runPriority({ saved: [] }), 'الف', "The currently calculated student's score must be included before it is saved");
+assert.equal(runPriority({ saved: [{bad:true}] }), 'الف', "Only saved complete v2 scores are considered");
 console.log("Guidance priority ranking checks passed.");
 
 assert.ok(!html.includes("بررسی نشده"), "Guidance source must never show an unreviewed status");
@@ -57,6 +66,10 @@ assert.ok(!html.includes("رتبه درصدی"), "Holland table must not include
 assert.ok(!html.includes("آزمون ثبت نشده"), "Holland table must not show an unregistered-test placeholder");
 
 assert.ok(html.includes("ذخیره موقت نمرات / ذخیره ویرایش"), "Guidance form must expose a clear save-and-edit action");
+assert.ok(html.includes("score_model_version:'guidance-v2'"), "Only versioned actual score records may enter the new cohort ranking");
+assert.ok(html.includes("آزمون توانایی (از ۱۵)") && html.includes("آزمون رغبت (از ۱۵)"), "Actual aptitude and interest inputs must be present");
+assert.ok(!html.includes("ratio*15"), "Aptitude and interest must not be inferred from academic marks");
+assert.ok(html.includes("اولویت آزمایشی:") && html.includes("اولویت‌های الف، ب و ج"), "The interface must disclose the experimental A/B/C school model");
 assert.ok(html.includes("فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند"), "Partial grade entry must be explicitly supported without treating blanks as zero");
 assert.ok(html.includes("پس از امتحانات دی‌ماه تکمیل شود"), "Grade 9 entry must be clearly deferrable until after the December exams");
 assert.ok(html.includes("if(guidance)await api('counseling_guidance','PATCH',payload") && html.includes("else await api('counseling_guidance','POST',payload)"), "Saving again must update the existing guidance record rather than create a duplicate");
