@@ -62,14 +62,7 @@
 <section id="followPanel" class="panel hidden"><h2>پیگیری مشاوره‌ای و یادآوری</h2><div class="muted">یادآوری‌ها هنگام باز بودن پنل و ورود مشاور بررسی می‌شوند. برای اعلان مرورگر، اجازه اعلان را فعال کن.</div><div id="reminders"></div><form id="followForm"><div class="formgrid"><label class="field">تاریخ جلسه بعدی (شمسی)<input name="followup_date" required data-jalali-date placeholder="انتخاب از تقویم شمسی"></label><label class="field">وضعیت پیگیری<select name="status"><option>باز</option><option>در حال انجام</option><option>انجام شد</option><option>ارجاع شد</option></select></label><label class="field">موضوع پیگیری<input name="subject" required placeholder="مثلاً پیگیری راهکارهای جلسه"></label><label class="field full">شرح و اقدام بعدی<textarea name="description" required></textarea></label></div><div class="actions"><button class="primary" type="submit">ثبت پیگیری</button><button type="button" id="enableNotifications">فعال‌سازی اعلان مرورگر</button></div></form><div class="tablewrap"><table><thead><tr><th>تاریخ پیگیری</th><th>موضوع</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="followRows"></tbody></table></div></section>
 <section id="guidancePanel" class="panel hidden"><h2>هدایت تحصیلی پایه نهم</h2><div class="notice">این بخش پیش‌بینی آموزشی مدرسه است. می‌توانید نمرات پایه هفتم و هشتم را اکنون ثبت و ذخیره کنید و نمرات پایه نهم را پس از امتحانات دی‌ماه تکمیل کنید. فیلدهای خالی ذخیره می‌شوند و صفر محسوب نمی‌شوند. پرونده پس از ذخیره قابل بازگشت و ویرایش است؛ اولویت‌ها تا تکمیل داده‌ها موقت‌اند و اولویت رسمی منطقه نیستند.</div><div id="guidanceSaveStatus" class="muted" role="status">هنوز اطلاعاتی برای این دانش‌آموز ذخیره نشده است.</div>
 <form id="guidanceForm"><h3>ثبت نمرات هر پایه (از ۲۰)</h3><div class="muted">ابتدا نمرات خرداد هفتم و هشتم را وارد و ذخیره کنید. بخش نهم فعلاً خالی بماند و پس از امتحانات دی‌ماه تکمیل شود. خانه‌های خالی نمره صفر نیستند و بعداً می‌توانید همین پرونده را ویرایش کنید.</div>
-<div id="gradeInputs"></div><h3>ثبت امتیازهای واقعی هدایت تحصیلی</h3><div class="muted">هیچ امتیازی از روی نمرات درسی حدس زده نمی‌شود. فقط نتیجه واقعی آزمون‌ها و نظر ثبت‌شده افراد را وارد کنید؛ خانه خالی امتیاز صفر نیست و تا تکمیل اطلاعات، اولویت صادر نمی‌شود.</div><div class="scoregrid">
-<label class="field">آزمون توانایی (از ۱۵)<input name="aptitude_points" type="number" min="0" max="15" step=".5" placeholder="امتیاز واقعی آزمون"></label>
-<label class="field">آزمون رغبت (از ۱۵)<input name="interest_points" type="number" min="0" max="15" step=".5" placeholder="امتیاز واقعی آزمون"></label>
-<label class="field">نظر مشاور (از ۱۰)<input name="counselor_points" type="number" min="0" max="10" step=".5" placeholder="پس از بررسی"></label>
-<label class="field">نظر دبیران (از ۱۰)<input name="teacher_points" type="number" min="0" max="10" step=".5" placeholder="پس از دریافت نظر دبیران"></label>
-<label class="field">نظر دانش‌آموز (از ۱۰)<input name="student_points" type="number" min="0" max="10" step=".5" placeholder="پس از گفت‌وگو با دانش‌آموز"></label>
-<label class="field">نظر والدین (از ۵)<input name="parent_points" type="number" min="0" max="5" step=".5" placeholder="پس از دریافت نظر والدین"></label>
-</div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">رغبت، توانایی و نظرها فقط از مقادیر واقعی ثبت‌شده محاسبه می‌شوند. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ظرفیت و ذخیره ۲۰٪ نیز سقف رتبه را محدود می‌کند. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
+<div id="gradeInputs"></div><h3>ثبت امتیازهای واقعی به تفکیک رشته</h3><div class="muted">برای هر رشته، فقط امتیاز واقعی آزمون توانایی، رغبت و نظرهای مرتبط را وارد کنید. امتیاز یک رشته به رشته دیگر تعمیم داده نمی‌شود. خانه خالی صفر نیست و اولویت آن رشته تا تکمیل اطلاعات صادر نمی‌شود.</div><div id="trackAssessmentInputs"></div><label class="field" style="margin-top:12px">یادداشت مشاور<textarea name="notes"></textarea></label><div class="actions"><button type="button" id="calcGuidance">محاسبه پیشنهادها</button><button type="submit" class="primary" id="saveGuidanceProgress">ذخیره موقت نمرات / ذخیره ویرایش</button><button type="button" id="printGuidance" class="primary">دریافت خروجی افقی / چاپ PDF</button></div></form><div id="guidanceResult" class="hidden"><h3>پیشنهادهای محاسبه‌شده</h3><div class="muted" id="guidanceCohortStatus">در حال بررسی کامل بودن اطلاعات پایه نهم…</div><div class="muted">رغبت، توانایی و نظرها فقط از مقادیر واقعی ثبت‌شده محاسبه می‌شوند. مدل آزمایشی مدرسه: الف از ۸۵، ب از ۷۵ و ج از ۶۵ امتیاز؛ ظرفیت و ذخیره ۲۰٪ نیز سقف رتبه را محدود می‌کند. این مرزبندی و ضرایب زمینه‌ها داخلی و غیررسمی‌اند و جایگزین اولویت رسمی منطقه نیستند.</div><div id="recommendations" class="recommendations"></div></div><div id="guidancePrintArea" aria-hidden="true"></div></section>
 </section>
 </main>
 <script>
@@ -135,7 +128,7 @@ function openModule(m){
  activeModule=m;document.querySelectorAll('[data-module]').forEach(b=>b.classList.toggle('active',b.dataset.module===m));
  ['casePanel','followPanel','guidancePanel','familyPanel'].forEach(id=>$(id).classList.add('hidden'));
  $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel',family:'familyPanel'})[m]).classList.remove('hidden');
- if(m==='case')drawCases();if(m==='follow'){drawFollowups();checkReminders();}if(m==='guidance'){drawGradeInputs();loadGuidanceForm();loadGuidanceCohort().then(()=>calculateGuidance(false));}if(m==='family')loadFamilyInvites();
+ if(m==='case')drawCases();if(m==='follow'){drawFollowups();checkReminders();}if(m==='guidance'){drawGradeInputs();drawTrackAssessmentInputs();loadGuidanceForm();loadGuidanceCohort().then(()=>calculateGuidance(false));}if(m==='family')loadFamilyInvites();
  $(({case:'casePanel',follow:'followPanel',guidance:'guidancePanel',family:'familyPanel'})[m]).scrollIntoView({behavior:'smooth',block:'start'});
 }
 function formObj(form){return Object.fromEntries(new FormData(form).entries());}
@@ -207,11 +200,9 @@ function loadGuidanceForm(){
  const status=$('guidanceSaveStatus'),saveButton=$('saveGuidanceProgress');
  if(status)status.textContent=guidance?'اطلاعات قبلی ذخیره شده است؛ می‌توانید نمرات هفتم و هشتم را اصلاح کنید و بعداً نمرات نهم را اضافه کنید.':'هنوز اطلاعاتی برای این دانش‌آموز ذخیره نشده است؛ پس از ورود نمرات، ذخیره موقت را بزنید.';
  if(saveButton)saveButton.textContent=guidance?'ذخیره تغییرات / ادامه ویرایش':'ذخیره موقت نمرات';
- if(!guidance)return;const f=$('guidanceForm');
- for(const k of ['aptitude_points','interest_points','counselor_points','teacher_points','student_points','parent_points','notes'])if(f.elements[k])f.elements[k].value=guidance[k]??'';
- const hasLegacyScores=guidance.recommendation_scores&&Object.values(guidance.recommendation_scores).some(x=>x&&x.score_model_version!=='guidance-v2');
- if(hasLegacyScores){for(const k of ['aptitude_points','interest_points','counselor_points','teacher_points','student_points','parent_points'])f.elements[k].value='';notice('امتیازهای تخمینی و پیش‌فرض نسخه قبلی پاک‌سازی شدند؛ لطفاً فقط نتایج واقعی آزمون‌ها و نظرها را دوباره وارد کنید.','error');}
- calculateGuidance(false);
+ if(!guidance)return;
+ $('guidanceForm').elements.notes.value=guidance.notes||'';
+ if(guidance.recommendation_scores&&Object.values(guidance.recommendation_scores).some(x=>x&&x.score_model_version!=='guidance-v3'))notice('امتیازهای تخمینی و پیش‌فرض نسخه قبلی قابل استفاده نیستند؛ امتیازها را به تفکیک هر رشته و فقط بر اساس داده واقعی دوباره ثبت کنید.','error');
 }
 function gradeScoresFromForm(){
  const out={grade7_scores:{},grade8_scores:{},grade9_scores:{}};
@@ -232,6 +223,15 @@ const tracks=[
  {key:'kardanesh_agriculture',name:'کاردانش · کشاورزی',group:'شاخه کاردانش',capacity:150,subjects:['science','math','technical'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'},
  {key:'kardanesh_arts',name:'کاردانش · هنر',group:'شاخه کاردانش',capacity:150,subjects:['arts','persian'],thresholds:null,note:'حدنصاب رشته‌های جزئی باید با جدول سال جاری تطبیق داده شود'}
 ];
+function drawTrackAssessmentInputs(){
+ const factors=[['aptitude','آزمون توانایی',15],['interest','آزمون رغبت',15],['teacher','نظر دبیران',10],['counselor','نظر مشاور',10],['student','نظر دانش‌آموز',10],['parent','نظر والدین',5]];
+ $('trackAssessmentInputs').innerHTML=tracks.map(track=>{
+  const saved=guidance?.recommendation_scores?.[track.key];
+  const values=saved&&saved.score_model_version==='guidance-v3'?(saved.assessment_points||{}):{};
+  return '<details class="track-assessment" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;background:#0b192e"><summary style="cursor:pointer;color:var(--mint);font-weight:700">'+esc(track.name)+'</summary><div class="scoregrid" style="margin-top:10px">'+factors.map(([key,label,max])=>'<label class="field">'+label+' (از '+max+')<input type="number" min="0" max="'+max+'" step=".5" data-track="'+track.key+'" data-factor="'+key+'" value="'+(values[key]===null||values[key]===undefined?'':esc(values[key]))+'" placeholder="امتیاز واقعی"></label>').join('')+'</div></details>';
+ }).join('');
+}
+
 async function loadGuidanceCohort(){
  try{
   const rows=await api('counseling_guidance','GET',null,{tenant_school_id:'eq.5c8b8880-1346-445c-89d8-3f76275a7ae5',order:'id.desc'});
@@ -250,7 +250,7 @@ function applyGuidancePriorities(arr){
  return arr.map(track=>{
   const entries=grade9.map(student=>{
    const id=String(student.id),record=records.get(id),saved=record&&record.recommendation_scores&&record.recommendation_scores[track.key];
-   let item=saved&&saved.score_model_version==='guidance-v2'?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points,threshold_complete:saved.threshold_complete,threshold_passed:saved.threshold_passed}:null;
+   let item=saved&&saved.score_model_version==='guidance-v3'?{complete:saved.complete===true,total:saved.total_points,academic:saved.academic_points,threshold_complete:saved.threshold_complete,threshold_passed:saved.threshold_passed}:null;
    if(id===selectedId)item={complete:track.complete,total:track.total,academic:track.academic,threshold_complete:track.thresholdComplete,threshold_passed:track.thresholdPassed};
    const total=Number(item&&item.total);
    return {id,complete:Boolean(item&&item.complete&&Number.isFinite(total)&&item.threshold_complete&&item.threshold_passed),total,academic:Number(item&&item.academic)};
@@ -268,12 +268,15 @@ function applyGuidancePriorities(arr){
 }
 function clampScore(v,max){return Math.max(0,Math.min(max,Number(v)||0));}
 function computeScores(){
- const marks=gradeScoresFromForm(),f=$('guidanceForm'),points={};
- [['aptitude',15],['interest',15],['teacher',10],['counselor',10],['student',10],['parent',5]].forEach(([key,max])=>{
-  const raw=f.elements[key+'_points'].value.trim();points[key]=raw===''?null:clampScore(raw,max);
- });
- const assessmentsComplete=Object.values(points).every(v=>v!==null);
+ const marks=gradeScoresFromForm(),assessmentFields=[['aptitude',15],['interest',15],['teacher',10],['counselor',10],['student',10],['parent',5]];
  const arr=tracks.map(track=>{
+  const wrapper=$('trackAssessmentInputs').querySelector('[data-track="'+track.key+'"]')?.closest('details');
+  const points={};
+  assessmentFields.forEach(([key,max])=>{
+   const input=wrapper?.querySelector('input[data-factor="'+key+'"]'),raw=input?input.value.trim():'';
+   points[key]=raw===''?null:clampScore(raw,max);
+  });
+  const assessmentsComplete=Object.values(points).every(v=>v!==null);
   const averages=Object.fromEntries(track.subjects.map(subject=>{
    let total=0,weight=0;
    [['grade7_scores',1],['grade8_scores',1],['grade9_scores',3]].forEach(([g,w])=>{const v=marks[g]?.[subject];if(v!==undefined&&Number.isFinite(Number(v))){total+=Number(v)*w;weight+=w;}});
@@ -288,21 +291,19 @@ function computeScores(){
   const thresholdComplete=Boolean(track.thresholds)&&thresholdValues.every(x=>x.actual!==null);
   const thresholdPassed=thresholdComplete&&thresholdValues.every(x=>x.actual>=x.min);
   const complete=allYearsComplete&&assessmentsComplete&&thresholdComplete&&thresholdPassed&&total!==null;
-  return {...track,averages,average,complete,academic,interest:points.interest,aptitude:points.aptitude,...points,total,thresholdValues,thresholdKnown:Boolean(track.thresholds),thresholdComplete,thresholdPassed,allYearsComplete,assessmentsComplete,priority:'—'};
+  return {...track,averages,average,complete,academic,...points,total,thresholdValues,thresholdKnown:Boolean(track.thresholds),thresholdComplete,thresholdPassed,allYearsComplete,assessmentsComplete,priority:'—'};
  });
- return {arr:applyGuidancePriorities(arr),marks,subjective:points};
+ return {arr:applyGuidancePriorities(arr),marks};
 }
 function calculateGuidance(show=true){
- const computed=computeScores(),arr=computed.arr,f=$('guidanceForm');
- f.elements.interest_points.value=computed.subjective.interest??'';
- f.elements.aptitude_points.value=computed.subjective.aptitude??'';
+ const computed=computeScores(),arr=computed.arr;
  $('guidanceResult').classList.remove('hidden');
  $('recommendations').innerHTML=arr.map(t=>{
   const threshold=t.thresholdKnown?(t.thresholdComplete?(t.thresholdPassed?'حدنصاب آزمایشی: احراز شده':'حدنصاب دروس مرتبط احراز نشده'):'نمره بعضی درس‌ها ناقص است'):'حدنصاب رسمی این زمینه در سامانه تعریف نشده؛ اولویت صادر نمی‌شود';
-  const missing=[];if(!t.allYearsComplete)missing.push('نمرات هر سه پایه کامل نیست');if(!t.assessmentsComplete)missing.push('آزمون‌ها و نظرهای واقعی کامل نشده');
-  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'امتیاز نهایی: ناقص':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+guidancePrintNumber(t.interest,2)+'/۱۵ · آزمون توانایی '+guidancePrintNumber(t.aptitude,2)+'/۱۵<br>دبیران '+guidancePrintNumber(t.teacher,1)+'/۱۰ · مشاور '+guidancePrintNumber(t.counselor,1)+'/۱۰ · دانش‌آموز '+guidancePrintNumber(t.student,1)+'/۱۰ · والدین '+guidancePrintNumber(t.parent,1)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
+  const missing=[];if(!t.allYearsComplete)missing.push('نمرات هر سه پایه کامل نیست');if(!t.assessmentsComplete)missing.push('آزمون‌ها و نظرهای واقعی این رشته کامل نشده');
+  return '<div class="track"><span class="pill">'+esc(t.group)+' · ظرفیت برنامه‌ریزی مدرسه '+guidancePrintNumber(t.capacity,0)+'</span><strong>'+esc(t.name)+'</strong><div class="score">'+(t.total===null?'امتیاز نهایی: ناقص':guidancePrintNumber(t.total,2)+' از ۱۰۰')+'</div><div class="muted">عملکرد تحصیلی متناسب با رشته '+guidancePrintNumber(t.academic,2)+'/۳۵ · آزمون رغبت '+guidancePrintNumber(t.interest,1)+'/۱۵ · آزمون توانایی '+guidancePrintNumber(t.aptitude,1)+'/۱۵<br>دبیران '+guidancePrintNumber(t.teacher,1)+'/۱۰ · مشاور '+guidancePrintNumber(t.counselor,1)+'/۱۰ · دانش‌آموز '+guidancePrintNumber(t.student,1)+'/۱۰ · والدین '+guidancePrintNumber(t.parent,1)+'/۵<br><strong>اولویت آزمایشی: '+esc(t.priority)+'</strong><br>'+esc(threshold)+'<br>'+esc(missing.join('؛ ')||'اطلاعات این زمینه کامل است')+'<br>'+esc(t.note)+'</div></div>';
  }).join('');
- if(show)notice('محاسبه انجام شد؛ خانه‌های خالی امتیاز صفر نیستند و تا تکمیل نمرات سه پایه، آزمون‌ها، نظرها و حدنصاب، اولویت صادر نمی‌شود.','ok');
+ if(show)notice('محاسبه انجام شد؛ خانه‌های خالی امتیاز صفر نیستند و تا تکمیل نمرات سه پایه و امتیازهای واقعی همان رشته، اولویت صادر نمی‌شود.','ok');
  return computed;
 }
 function guidancePrintNumber(value,digits=1){
@@ -363,7 +364,7 @@ $('calcGuidance').onclick=()=>calculateGuidance(true);
 $('guidanceForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!selected)return;const computed=calculateGuidance(false);const arr=computed.arr;const marks=computed.marks;const f=e.currentTarget;
  const descriptive=arr.map(x=>x.name+': '+(x.total===null?'اطلاعات یا حدنصاب کامل نیست':Number(x.total.toFixed(2))+' از ۱۰۰ · وضعیت اولویت: '+x.priority)).join('\\n');
- const payload={student_id:selected.id,grade:selected.grade||'نهم',interest:'برآورد رغبت مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',aptitude:'برآورد توانایی مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',recommendation:'پیش‌بینی آزمایشی امتیاز و اولویت؛ امتیازهای رغبت و توانایی برآوردی‌اند\\n'+descriptive,grade7_scores:marks.grade7_scores,grade8_scores:marks.grade8_scores,grade9_scores:marks.grade9_scores,aptitude_points:Number(f.elements.aptitude_points.value)||0,interest_points:Number(f.elements.interest_points.value)||0,counselor_points:Number(f.elements.counselor_points.value)||0,teacher_points:Number(f.elements.teacher_points.value)||0,student_points:Number(f.elements.student_points.value)||0,parent_points:Number(f.elements.parent_points.value)||0,recommendation_scores:Object.fromEntries(arr.map(x=>[x.key,{score_model_version:'guidance-v2',average:x.average===null?null:Number(x.average.toFixed(2)),complete:x.complete,capacity_basis:x.capacity,academic_points:x.academic,interest_points:x.interest,aptitude_points:x.aptitude,teacher_points:x.teacher,counselor_points:x.counselor,student_points:x.student,parent_points:x.parent,total_points:x.total,predicted_priority:x.priority,priority_status:'فقط با داده واقعی و تکمیل حدنصاب محاسبه می‌شود',threshold_known:x.thresholdKnown,threshold_complete:x.thresholdComplete,threshold_passed:x.thresholdPassed,thresholds:x.thresholdValues}])),notes:f.elements.notes.value||''};
+ const payload={student_id:selected.id,grade:selected.grade||'نهم',interest:'برآورد رغبت مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',aptitude:'برآورد توانایی مبتنی بر عملکرد درسی؛ آزمون واقعی نیست',recommendation:'پیش‌بینی آزمایشی امتیاز و اولویت؛ امتیازهای رغبت و توانایی برآوردی‌اند\\n'+descriptive,grade7_scores:marks.grade7_scores,grade8_scores:marks.grade8_scores,grade9_scores:marks.grade9_scores,aptitude_points:null,interest_points:null,counselor_points:null,teacher_points:null,student_points:null,parent_points:null,recommendation_scores:Object.fromEntries(arr.map(x=>[x.key,{score_model_version:'guidance-v3',average:x.average===null?null:Number(x.average.toFixed(2)),complete:x.complete,capacity_basis:x.capacity,academic_points:x.academic,assessment_points:{aptitude:x.aptitude,interest:x.interest,teacher:x.teacher,counselor:x.counselor,student:x.student,parent:x.parent},interest_points:x.interest,aptitude_points:x.aptitude,teacher_points:x.teacher,counselor_points:x.counselor,student_points:x.student,parent_points:x.parent,total_points:x.total,predicted_priority:x.priority,priority_status:'فقط با داده واقعی و تکمیل حدنصاب محاسبه می‌شود',threshold_known:x.thresholdKnown,threshold_complete:x.thresholdComplete,threshold_passed:x.thresholdPassed,thresholds:x.thresholdValues}])),notes:f.elements.notes.value||''};
  try{if(guidance)await api('counseling_guidance','PATCH',payload,{id:'eq.'+guidance.id});else await api('counseling_guidance','POST',payload);const g=await api('counseling_guidance','GET',null,{student_id:'eq.'+selected.id,order:'id.desc'});guidance=Array.isArray(g)&&g.length?g[0]:null;await loadGuidanceCohort();calculateGuidance(false);loadGuidanceForm();$('guidanceSaveStatus').textContent='ذخیره شد؛ این پرونده برای ویرایش و تکمیل نمرات نهم در مراجعات بعدی آماده است.';notice('نمرات و اطلاعات فعلی ذخیره شد؛ هر زمان می‌توانید برای تکمیل یا ویرایش برگردید.','ok');}catch(err){notice('ذخیره هدایت تحصیلی ناموفق بود: '+err.message,'error');}
 });
 document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>openModule(b.dataset.module));
