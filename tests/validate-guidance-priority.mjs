@@ -45,9 +45,13 @@ function runPriority({ capacity = 2, currentScore = 75, saved = [95, 85], techni
   return context.applyGuidancePriorities([track])[0].priority;
 }
 
-assert.match(runPriority(), /^ب · رتبه 3 از 3$/, "The 20% reserve should produce priority B based on total guidance score");
-assert.match(runPriority({ capacity: 1 }), /^— · خارج از ظرفیت/, "Candidates beyond capacity plus reserve must receive a dash");
-assert.match(runPriority({ technical: true }), /^ب · رتبه 3 از 3$/, "Technical fields must rank by entered guidance score without a separate threshold");
-assert.match(runPriority({ saved: [95] }), /^الف · رتبه 2 از 2$/, "Ranking should proceed among students with complete entered scores and show the comparison cohort");
-assert.match(runPriority({ saved: [] }), /^الف · رتبه 1 از 1$/, "The currently calculated student's score must be included before it is saved");
+assert.equal(runPriority(), 'ب', "The 20% reserve should produce priority B based on total guidance score");
+assert.equal(runPriority({ capacity: 1 }), '—', "Candidates beyond capacity plus reserve must receive a dash");
+assert.equal(runPriority({ technical: true }), 'ب', "Technical fields must rank by entered guidance score without a separate threshold");
+assert.equal(runPriority({ saved: [95] }), 'الف', "Ranking should proceed among students with complete entered scores and show the comparison cohort");
+assert.equal(runPriority({ saved: [] }), 'الف', "The currently calculated student's score must be included before it is saved");
 console.log("Guidance priority ranking checks passed.");
+
+assert.ok(!html.includes("بررسی نشده"), "Guidance source must never show an unreviewed status");
+assert.ok(!html.includes("رتبه درصدی"), "Holland table must not include a percentile-rank column");
+assert.ok(!html.includes("آزمون ثبت نشده"), "Holland table must not show an unregistered-test placeholder");
