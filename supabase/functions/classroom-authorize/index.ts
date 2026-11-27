@@ -86,6 +86,13 @@ Deno.serve(async (req: Request) => {
     // Timetable and staff-register access remains available while online rooms are disabled.
     const onlineServiceEnabled = classroomFlagResult.data?.enabled === true &&
       schoolClassroomResult.data.online_class_enabled === true;
+    if (!onlineServiceEnabled) {
+      return reply({
+        ok: false,
+        service_disabled: true,
+        message: "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.",
+      }, 403);
+    }
     const platformAdmin = ["super_admin", "platform_admin", "مدیر کل", "مدیرکل"].includes(mainRole);
 
     const name = clean(profile.display_name) || clean(profile.username);

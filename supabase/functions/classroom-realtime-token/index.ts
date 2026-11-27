@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
       const { data: classroomFlag, error: flagError } = await admin.from("platform_feature_flags")
         .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
       if (flagError) return reply({ message: "وضعیت سرویس کلاس آنلاین بررسی نشد." }, 503);
-      if (classroomFlag?.enabled !== true) return reply({ message: "سرویس کلاس آنلاین در حال حاضر فعال نیست." }, 403);
+      if (classroomFlag?.enabled !== true) return reply({ message: "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.", service_disabled: true }, 403);
       const guestName = clean(body?.guest_name).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").slice(0, 80);
       if (guestName.length < 3 || guestName.split(" ").filter(Boolean).length < 2) {
         return reply({ message: "نام و نام خانوادگی مهمان را کامل وارد کنید." }, 400);
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       const { data: guestSchool, error: guestSchoolError } = await admin.from("schools")
         .select("online_class_enabled").eq("id", invite.tenant_school_id).maybeSingle();
       if (guestSchoolError || !guestSchool) return reply({ message: "وضعیت کلاس آنلاین مدرسه بررسی نشد." }, 503);
-      if (guestSchool.online_class_enabled !== true) return reply({ message: "کلاس آنلاین این مدرسه غیرفعال است." }, 403);
+      if (guestSchool.online_class_enabled !== true) return reply({ message: "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.", service_disabled: true }, 403);
       if (!meeting || meeting.status !== "active") {
         return reply({ message: "جلسه آزمایشی پایان یافته است." }, 410);
       }
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
       const message = role === "teacher" || role === "دبیر" || role === "معلم"
         ? "این سرویس در زمان غیرحضوری فعال خواهد شد."
         : "این سرویس با خرید سرور بیرونی فعال خواهد شد.";
-      return reply({ message, service_disabled: true }, 403);
+      return reply({ message: "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.", service_disabled: true }, 403);
     }
 
     const adHocMeetingId = clean(body?.meeting_id);
@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
       const { data: adHocSchool, error: adHocSchoolError } = await admin.from("schools")
         .select("online_class_enabled").eq("id", adHocProfile.tenant_school_id).maybeSingle();
       if (adHocSchoolError || !adHocSchool) return reply({ message: "وضعیت کلاس آنلاین مدرسه بررسی نشد." }, 503);
-      if (adHocSchool.online_class_enabled !== true) return reply({ message: "کلاس آنلاین این مدرسه غیرفعال است.", service_disabled: true }, 403);
+      if (adHocSchool.online_class_enabled !== true) return reply({ message: "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.", service_disabled: true }, 403);
       const { data: adHocMeeting, error: adHocMeetingError } = await admin.from("classroom_ad_hoc_meetings")
         .select("id,title,description,created_by,tenant_school_id,audience_type,audience_roles,join_code,cloudflare_meeting_id,status,expires_at")
         .eq("id", adHocMeetingId).eq("join_code", joinCode)
@@ -235,7 +235,12 @@ Deno.serve(async (req: Request) => {
     });
     const authorization = await authResponse.json().catch(() => ({}));
     if (!authResponse.ok || !authorization?.ok || !authorization?.room) {
-      return reply({ message: authorization?.message || "مجوز ورود به این زنگ تأیید نشد." }, authResponse.status || 403);
+      return reply({
+        message: authorization?.service_disabled
+          ? "این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید."
+          : authorization?.message || "مجوز ورود به این زنگ تأیید نشد.",
+        service_disabled: authorization?.service_disabled === true,
+      }, authResponse.status || 403);
     }
 
     const { data: profile, error: profileError } = await admin.from("account_settings")
