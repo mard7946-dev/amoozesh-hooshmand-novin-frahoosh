@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 const migration = readFileSync("supabase/migrations/20261126210000_per_school_online_class_control.sql", "utf8");
 assert.match(migration, /online_class_enabled boolean not null default false/i);
-assert.match(migration, /ss\.plan_id is null[\s\S]*then false/i);
+assert.match(migration, /ss\.notes[\s\S]*like 'دموی رایگان یک‌ماهه%'[\s\S]*then false/i);
 assert.match(migration, /frahoosh_platform_set_school_classroom_enabled/);
 assert.match(migration, /private\.frahoosh_is_platform_admin\(\)/);
 assert.match(migration, /classroom\.school_toggled/);
