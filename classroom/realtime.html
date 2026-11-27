@@ -228,10 +228,16 @@ $("boardUndo").addEventListener("click",()=>{if(!boardCanEdit||!boardItems.lengt
 $("boardClear").addEventListener("click",()=>{if(!boardCanEdit||!confirm("تمام نوشته‌ها و نقاشی‌های تخته پاک شود؟"))return;boardItems=[];renderBoard();sendBoardMessage({type:"clear"});});
 window.addEventListener("resize",resizeBoard);resizeBoard();
 function say(text){$("status").textContent=text;$("notice").textContent=text;}
+function showServiceUnavailable(){
+ for(const id of ["entryChooser","guestEntry","hostLogin","selector","meetingPanel"])$(id).classList.add("hidden");
+ $("status").textContent="این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.";
+ $("notice").textContent="این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.";
+}
 async function postFunction(name,body){
  const response=await fetch(SUPABASE_URL+"/functions/v1/"+name,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+accessToken},body:JSON.stringify(body)});
  const data=await response.json().catch(()=>({}));
  if(!response.ok||!data.ok){
+  if(data.service_disabled===true){const error=new Error("این سرویس از دسترس خارج است. با پشتیبان تماس بگیرید.");error.serviceDisabled=true;throw error;}
   if(response.status===401&&accessToken){accessToken="";sessionStorage.removeItem("frahoosh_novin_access_token");sessionStorage.removeItem("frahoosh_novin_role");$("selector").classList.add("hidden");$("hostLogin").classList.remove("hidden");}
   throw new Error(data.message||"درخواست به سرور انجام نشد.");
  }
@@ -338,6 +344,7 @@ async function enterRoom(room,scheduleEntryId,adHoc=null){
   $("screenToggle").disabled=!credentials.can_share_screen;
   $("screenToggle").title=credentials.can_share_screen?"اشتراک‌گذاری صفحه":"اشتراک صفحه فقط برای دبیر یا مدیر مجاز است";
  }catch(error){
+  if(error.serviceDisabled){showServiceUnavailable();return;}
   say(error.message||"اتصال به کلاس انجام نشد.");
   buttons.forEach(button=>button.disabled=false);
   if(liveRoom){try{await liveRoom.disconnect();}catch(_){}liveRoom=null;}
@@ -459,7 +466,7 @@ async function boot(){
    button.addEventListener("click",()=>enterRoom(room,item.scheduleEntryId));$("roomList").append(button);
   }
   say(rooms.length.toLocaleString("fa-IR")+" کلاس مجاز برای ورود نمایش داده شد.");
- }catch(error){say(error.message||"بررسی نشست و مجوز کلاس انجام نشد.");}
+ }catch(error){if(error.serviceDisabled){showServiceUnavailable();return;}say(error.message||"بررسی نشست و مجوز کلاس انجام نشد.");}
 }
 window.addEventListener("beforeunload",()=>{try{liveRoom?.disconnect?.();}catch(_){}});
 boot();
