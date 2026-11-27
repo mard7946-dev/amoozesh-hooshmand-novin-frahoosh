@@ -1,6 +1,6 @@
 -- Per-school online classroom access.
--- Existing non-trial schools retain the current global setting; demo/trial schools
--- and all schools created after this migration start with online classrooms disabled.
+-- Existing non-trial schools retain the current global setting; explicitly marked
+-- one-month demo subscriptions are disabled, as are all schools created afterward.
 
 alter table public.schools
   add column if not exists online_class_enabled boolean not null default false;
@@ -9,7 +9,8 @@ update public.schools s
    set online_class_enabled = case
      when exists (
        select 1 from public.school_subscriptions ss
-        where ss.school_id = s.id and ss.plan_id is null
+        where ss.school_id = s.id
+          and coalesce(ss.notes, '') like 'دموی رایگان یک‌ماهه%'
      ) then false
      else coalesce((
        select f.enabled from public.platform_feature_flags f
