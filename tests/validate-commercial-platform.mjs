@@ -133,7 +133,7 @@ for (const source of [classroomAuthorize, classroomRealtime, classroomMeetings])
   assert.ok(source.includes('from("platform_feature_flags")'), "Every online classroom entry path must check the global platform switch");
   assert.ok(source.includes("classroom_online_enabled"), "Global classroom switch key is missing");
 }
-assert.ok(classroomAuthorize.includes("const onlineServiceEnabled = classroomFlag?.enabled === true;") && classroomAuthorize.includes("if (!onlineServiceEnabled && !platformAdmin)") && classroomAuthorize.includes("online_service_enabled: onlineServiceEnabled"), "The global classroom switch must block online-room entry without blocking timetable reads");
+assert.ok(classroomAuthorize.includes("classroomFlagResult.data?.enabled === true") && classroomAuthorize.includes("schoolClassroomResult.data.online_class_enabled === true") && classroomAuthorize.includes("canEnterOnlineClass(") && classroomAuthorize.includes("online_service_enabled: onlineServiceEnabled"), "Global and per-school switches must block online-room entry without blocking timetable reads");
 assert.ok(classroomAuthorize.includes("ورود به کلاس آنلاین در حال حاضر فقط برای مدیر کل فعال است") && classroomAuthorize.includes("return reply({ ok: false, service_disabled: true"), "Disabled online-room entry must be denied with a clear message while staff timetable access remains available");
 assert.ok(pricingTrialMigration.includes("interval '1 month'") && pricingTrialMigration.includes("2147483647"), "Demo schools must receive an isolated one-month trial without a student cap");
 assert.ok(!pricingTrialMigration.includes("price_irr") && !pricingTrialMigration.includes("قیمت طرح اشتراک معتبر نیست"), "Subscription provisioning must not depend on or expose pricing");

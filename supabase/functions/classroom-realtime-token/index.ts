@@ -66,6 +66,10 @@ Deno.serve(async (req: Request) => {
         .select("id,title,cloudflare_meeting_id,status,expires_at,tenant_school_id")
         .eq("id", invite.meeting_id).eq("tenant_school_id", invite.tenant_school_id).maybeSingle();
       if (meetingError) throw meetingError;
+      const { data: guestSchool, error: guestSchoolError } = await admin.from("schools")
+        .select("online_class_enabled").eq("id", invite.tenant_school_id).maybeSingle();
+      if (guestSchoolError || !guestSchool) return reply({ message: "وضعیت کلاس آنلاین مدرسه بررسی نشد." }, 503);
+      if (guestSchool.online_class_enabled !== true) return reply({ message: "کلاس آنلاین این مدرسه غیرفعال است." }, 403);
       if (!meeting || meeting.status !== "active") {
         return reply({ message: "جلسه آزمایشی پایان یافته است." }, 410);
       }
@@ -137,6 +141,10 @@ Deno.serve(async (req: Request) => {
         .select("display_name,username,role,tenant_school_id")
         .eq("auth_user_id", authData.user.id).maybeSingle();
       if (adHocProfileError || !adHocProfile?.tenant_school_id) return reply({ message: "حساب کاربری به مدرسه متصل نیست." }, 403);
+      const { data: adHocSchool, error: adHocSchoolError } = await admin.from("schools")
+        .select("online_class_enabled").eq("id", adHocProfile.tenant_school_id).maybeSingle();
+      if (adHocSchoolError || !adHocSchool) return reply({ message: "وضعیت کلاس آنلاین مدرسه بررسی نشد." }, 503);
+      if (adHocSchool.online_class_enabled !== true) return reply({ message: "کلاس آنلاین این مدرسه غیرفعال است.", service_disabled: true }, 403);
       const { data: adHocMeeting, error: adHocMeetingError } = await admin.from("classroom_ad_hoc_meetings")
         .select("id,title,description,created_by,tenant_school_id,audience_type,audience_roles,join_code,cloudflare_meeting_id,status,expires_at")
         .eq("id", adHocMeetingId).eq("join_code", joinCode)

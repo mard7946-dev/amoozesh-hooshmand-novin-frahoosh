@@ -48,11 +48,17 @@ Deno.serve(async (req: Request) => {
       .select("username,display_name,role,auth_user_id,tenant_school_id")
       .eq("auth_user_id", authData.user.id).maybeSingle();
     if (profileError || !profile?.tenant_school_id) return reply({ message: "حساب کاربری به مدرسه متصل نیست." }, 403);
-    const { data: classroomFlag, error: classroomFlagError } = await admin.from("platform_feature_flags")
-      .select("enabled").eq("flag_key", "classroom_online_enabled").maybeSingle();
-    if (classroomFlagError) return reply({ message: "وضعیت سراسری کلاس آنلاین بررسی نشد." }, 503);
-    if (classroomFlag?.enabled !== true) {
-      return reply({ message: "این سرویس با خرید سرور بیرونی فعال خواهد شد.", service_disabled: true }, 403);
+    const [classroomFlagResult, schoolFeatureResult] = await Promise.all([
+      admin.from("platform_feature_flags").select("enabled")
+        .eq("flag_key", "classroom_online_enabled").maybeSingle(),
+      admin.from("schools").select("online_class_enabled")
+        .eq("id", profile.tenant_school_id).maybeSingle(),
+    ]);
+    if (classroomFlagResult.error || schoolFeatureResult.error || !schoolFeatureResult.data) {
+      return reply({ message: "وضعیت کلاس آنلاین این مدرسه بررسی نشد." }, 503);
+    }
+    if (classroomFlagResult.data?.enabled !== true || schoolFeatureResult.data.online_class_enabled !== true) {
+      return reply({ message: "کلاس آنلاین این مدرسه توسط مدیر کل غیرفعال است؛ برنامه هفتگی همچنان قابل استفاده است.", service_disabled: true }, 403);
     }
     if (!isManager(profile.role)) return reply({ message: "فقط مدیر مدرسه اجازه ساخت و مدیریت جلسه اختصاصی را دارد." }, 403);
     const { data: managerMemberships, error: managerMembershipError } = await admin.from("school_memberships")
