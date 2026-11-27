@@ -435,6 +435,7 @@ async function boot(){
   const requestedScheduleEntryId=Number(query.get("schedule_entry_id")||0);
   const data=await postFunction("classroom-authorize",requestedRoomId?{room_id:requestedRoomId,schedule_entry_id:requestedScheduleEntryId,active_role:activeRole}:{active_role:activeRole});
   profile=data.profile||{};
+  if(data.online_service_enabled!==true){showGate('کلاس آنلاین این مدرسه غیرفعال است','طبق تنظیم مدیر کل، ورود به کلاس آنلاین برای این مدرسه مجاز نیست. برای مشاهده برنامه هفتگی و دفتر دبیران از بخش مدیریت کلاس و دفتر دبیر استفاده کنید.');$("roomInfo").textContent='کلاس آنلاین غیرفعال است';return;}
   if(requestedRoomId){
    if(!data.room)throw new Error("سرور مجوز این کلاس را تأیید نکرد؛ زنگ یا برنامه ممکن است غیرفعال شده باشد.");
    offerEntry(data.room,requestedScheduleEntryId);return;
