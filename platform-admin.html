@@ -294,8 +294,9 @@ $("resetManagerPassword").onsubmit=async event=>{
  const password=$("managerResetPassword").value;
  if(password.length<10||password.length>128){show("رمز موقت باید بین ۱۰ تا ۱۲۸ نویسه باشد.","error");return;}
  const schoolId=$("managerResetSchool").value;
- const allowPhoneBootstrap=schoolId==="1b0a7f30-ae07-4c0e-8833-721b8d4cdf18"&&/^09\d{9}$/.test(username)&&password===username;
- if(password===username&&!allowPhoneBootstrap){show("رمز موقت نباید با نام کاربری یکسان باشد؛ این استثنا فقط برای مدیر تقی‌زاده ۲ و شماره همراه ثبت‌شده با صفر اول مجاز است.","error");return;}
+ const phoneBootstrapSchools=new Set(["1b0a7f30-ae07-4c0e-8833-721b8d4cdf18","af729acc-d94b-4359-b072-06e91c4780a5"]);
+ const allowPhoneBootstrap=phoneBootstrapSchools.has(schoolId)&&/^09\d{9}$/.test(username)&&password===username;
+ if(password===username&&!allowPhoneBootstrap){show("رمز موقت نباید با نام کاربری یکسان باشد؛ این استثنا فقط برای مدارس مجاز و شماره همراه ثبت‌شده با صفر اول فعال است.","error");return;}
  if(!window.confirm("رمز مدیر اصلی این مدرسه بازنشانی و ورود بعدی او به تغییر رمز اجباری می‌شود. ادامه می‌دهید؟"))return;
  button.disabled=true;
  try{
