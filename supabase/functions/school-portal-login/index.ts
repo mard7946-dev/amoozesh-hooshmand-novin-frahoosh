@@ -13,7 +13,7 @@ const normalizeSchoolCode = (value: unknown) => String(value ?? "").normalize("N
   .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
   .replace(/[‐‑‒–—−]/g, "-")
-  .replace(/[\\s\\u200b-\\u200f\\u202a-\\u202e\\u2060\\ufeff]/g, "")
+  .replace(/[\s\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "")
   .toUpperCase();
 const normalize = (value: unknown) => clean(value)
   .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
