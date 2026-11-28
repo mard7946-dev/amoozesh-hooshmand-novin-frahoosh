@@ -21,7 +21,7 @@ assert.ok(platformManagement.includes("owner_auth_user_id") && platformManagemen
 assert.ok(platformManagement.includes("must_change_password: true") && platformManagement.includes("updateUserById(managerUserId"), "Reset must set a temporary password and enforce a new password at next login");
 
 assert.ok(html.includes('id="schoolCodeRow"') && html.includes('id="schoolCode"'), "Portal must collect a school code for every role");
-assert.ok(html.includes("school_code:document.getElementById('schoolCode').value.trim()"), "Portal must submit the selected school code");
+assert.ok(html.includes("school_code:normalizedSchoolCode") && html.includes("normalizeSchoolCode(schoolCodeInput.value)"), "Portal must normalize and submit the selected school code");
 const schoolLogin = readFileSync("supabase/functions/school-portal-login/index.ts", "utf8");
 assert.ok(schoolLogin.includes("body?.school_code") && schoolLogin.includes("profile.tenant_school_id"), "School login must resolve the authenticated account's school");
 assert.ok(schoolLogin.includes('.eq("school_code", schoolCode)') && schoolLogin.includes('school.status !== "active"'), "School login must resolve the submitted school code and reject missing or inactive schools");
