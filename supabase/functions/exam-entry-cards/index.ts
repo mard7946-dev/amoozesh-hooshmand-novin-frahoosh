@@ -52,27 +52,36 @@ Deno.serve(async (req: Request) => {
         .eq("tenant_school_id", schoolId)
         .order("grade", { ascending: true }).order("class_name", { ascending: true }).order("last_name", { ascending: true });
       if (studentsError) throw studentsError;
-      const { data: cards, error: cardsError } = await admin.from("exam_entry_cards")
-        .select("id,student_id,exam_period,first_name,last_name,father_name,grade,class_name,seat_number,photo_data,updated_at")
-        .eq("school_id", schoolId).eq("exam_period", period);
-      if (cardsError) throw cardsError;
       const { data: plans, error: plansError } = await admin.from("school_exam_plans")
         .select("id,title,schedule,published_at").eq("school_id", schoolId).eq("status", "published")
         .order("published_at", { ascending: false }).limit(30);
       if (plansError) throw plansError;
       const selectedPlan = (plans ?? []).find((p: any) => clean(p.title, 160) === period) ?? (plans ?? [])[0] ?? null;
+      const cardPeriod = clean(selectedPlan?.title || period, 50);
+      const { data: cards, error: cardsError } = await admin.from("exam_entry_cards")
+        .select("id,student_id,exam_period,first_name,last_name,father_name,grade,class_name,seat_number,photo_data,updated_at")
+        .eq("school_id", schoolId).eq("exam_period", cardPeriod);
+      if (cardsError) throw cardsError;
       const schedule = selectedPlan && Array.isArray(selectedPlan.schedule) ? selectedPlan.schedule : [];
-      const { data: seats, error: seatsError } = await admin.from("exam_seats")
-        .select("student_id,exam_name,seat_no").eq("tenant_school_id", schoolId);
-      if (seatsError) throw seatsError;
-      const seatAssignments = (seats ?? []).map((s: any) => [String(s.student_id) + "|" + String(s.exam_name), String(s.seat_no ?? "")]);
+      const allSeats: any[] = [];
+      if (selectedPlan) {
+        for (let from = 0; ; from += 1000) {
+          const { data: batch, error: seatsError } = await admin.from("exam_seats")
+            .select("student_id,exam_name,seat_no").eq("tenant_school_id", schoolId)
+            .like("exam_name", String(selectedPlan.id) + "|%").range(from, from + 999);
+          if (seatsError) throw seatsError;
+          allSeats.push(...(batch ?? []));
+          if ((batch ?? []).length < 1000) break;
+        }
+      }
+      const seatAssignments = allSeats.map((s: any) => [String(s.student_id) + "|" + String(s.exam_name), String(s.seat_no ?? "")]);
       const schedules = schedule.map((item: any) => ({
         ...item,
         exam_key: String(selectedPlan.id) + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10),
         plan_title: selectedPlan.title,
       }));
       return reply({ ok: true, students: students ?? [], cards: cards ?? [], schedules, seat_assignments: seatAssignments,
-        plan_title: selectedPlan?.title ?? "", exam_period: period });
+        plan_title: selectedPlan?.title ?? "", exam_period: cardPeriod });
     }
 
     if (action === "save") {
