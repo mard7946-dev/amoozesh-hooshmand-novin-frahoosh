@@ -21,7 +21,7 @@ assert.ok(plannerApi.includes("duration_minutes") && plannerApi.includes("clean(
 assert.ok(publish.includes("'exam-entry-cards.html'") && publish.includes("'exam-planner.html'"), "GitHub Pages must publish both updated pages");
 
 for (const [name, html] of [["exam-entry-cards", cards], ["exam-planner", planner]]) {
-  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\\/script>/g)].map(match => match[1]);
+  const scripts = html.split("<script>").slice(1).map(source => source.split("</script>")[0]).filter(source => source.trim());
   assert.ok(scripts.length, name + " must contain its application script");
   for (const script of scripts) new Function(script);
 }
