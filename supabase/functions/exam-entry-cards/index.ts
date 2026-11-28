@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const action = clean(body?.action, 30);
   const schoolId = profile.tenant_school_id;
-  const period = clean(body?.exam_period || "نوبت اول", 50) || "نوبت اول";
+  const period = clean(body?.exam_period || "نوبت اول", 160) || "نوبت اول";
 
   try {
     if (action === "bootstrap") {
@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
         for (let from = 0; ; from += 1000) {
           const { data: batch, error: seatsError } = await admin.from("exam_seats")
             .select("student_id,exam_name,seat_no").eq("tenant_school_id", schoolId)
-            .like("exam_name", String(selectedPlan.id) + "|%").range(from, from + 999);
+            .like("exam_name", String(selectedPlan.id) + "|%").order("id", { ascending: true }).range(from, from + 999);
           if (seatsError) throw seatsError;
           allSeats.push(...(batch ?? []));
           if ((batch ?? []).length < 1000) break;
@@ -142,8 +142,6 @@ Deno.serve(async (req: Request) => {
       if (rows.some((r: any) => r.photo_data && (r.photo_data.length > 500000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.photo_data)))) {
         return reply({ message: "یکی از عکس‌ها معتبر نیست یا از حد مجاز بزرگ‌تر است." }, 400);
       }
-      const seats = rows.map((r: any) => r.seat_number);
-      if (new Set(seats).size !== seats.length) return reply({ message: "شماره صندلی تکراری در همین فهرست وجود دارد." }, 409);
       const { error: saveError } = await admin.from("exam_entry_cards")
         .upsert(rows, { onConflict: "school_id,student_id,exam_period" });
       if (saveError) {
