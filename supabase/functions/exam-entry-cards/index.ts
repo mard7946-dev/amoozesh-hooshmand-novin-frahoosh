@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const action = clean(body?.action, 30);
   const schoolId = profile.tenant_school_id;
-  const period = clean(body?.exam_period || "نوبت اول", 50) || "نوبت اول";
+  const period = clean(body?.exam_period || "نوبت اول", 160) || "نوبت اول";
 
   try {
     if (action === "bootstrap") {
@@ -52,11 +52,36 @@ Deno.serve(async (req: Request) => {
         .eq("tenant_school_id", schoolId)
         .order("grade", { ascending: true }).order("class_name", { ascending: true }).order("last_name", { ascending: true });
       if (studentsError) throw studentsError;
+      const { data: plans, error: plansError } = await admin.from("school_exam_plans")
+        .select("id,title,schedule,published_at").eq("school_id", schoolId).eq("status", "published")
+        .order("published_at", { ascending: false }).limit(30);
+      if (plansError) throw plansError;
+      const selectedPlan = (plans ?? []).find((p: any) => clean(p.title, 160) === period) ?? (plans ?? [])[0] ?? null;
+      const cardPeriod = clean(selectedPlan?.title || period, 50);
       const { data: cards, error: cardsError } = await admin.from("exam_entry_cards")
         .select("id,student_id,exam_period,first_name,last_name,father_name,grade,class_name,seat_number,photo_data,updated_at")
-        .eq("school_id", schoolId).eq("exam_period", period);
+        .eq("school_id", schoolId).eq("exam_period", cardPeriod);
       if (cardsError) throw cardsError;
-      return reply({ ok: true, students: students ?? [], cards: cards ?? [], exam_period: period });
+      const schedule = selectedPlan && Array.isArray(selectedPlan.schedule) ? selectedPlan.schedule : [];
+      const allSeats: any[] = [];
+      if (selectedPlan) {
+        for (let from = 0; ; from += 1000) {
+          const { data: batch, error: seatsError } = await admin.from("exam_seats")
+            .select("student_id,exam_name,seat_no").eq("tenant_school_id", schoolId)
+            .like("exam_name", String(selectedPlan.id) + "|%").order("id", { ascending: true }).range(from, from + 999);
+          if (seatsError) throw seatsError;
+          allSeats.push(...(batch ?? []));
+          if ((batch ?? []).length < 1000) break;
+        }
+      }
+      const seatAssignments = allSeats.map((s: any) => [String(s.student_id) + "|" + String(s.exam_name), String(s.seat_no ?? "")]);
+      const schedules = schedule.map((item: any) => ({
+        ...item,
+        exam_key: String(selectedPlan.id) + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10),
+        plan_title: selectedPlan.title,
+      }));
+      return reply({ ok: true, students: students ?? [], cards: cards ?? [], schedules, seat_assignments: seatAssignments,
+        plan_title: selectedPlan?.title ?? "", exam_period: cardPeriod });
     }
 
     if (action === "save") {
@@ -71,8 +96,8 @@ Deno.serve(async (req: Request) => {
       const fatherName = clean(c.father_name, 100), grade = clean(c.grade, 40);
       const className = clean(c.class_name, 60), seatNumber = clean(c.seat_number, 20);
       const photoData = typeof c.photo_data === "string" ? c.photo_data : null;
-      if (!firstName || !lastName || !fatherName || !grade || !className || !seatNumber) {
-        return reply({ message: "نام، نام خانوادگی، نام پدر، پایه، کلاس و شماره صندلی الزامی است." }, 400);
+      if (!firstName || !lastName || !grade || !className) {
+        return reply({ message: "نام، نام خانوادگی، پایه و کلاس الزامی است." }, 400);
       }
       if (photoData && (photoData.length > 500000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(photoData))) {
         return reply({ message: "عکس باید JPG، PNG یا WebP و حداکثر ۳۵۰ کیلوبایت باشد." }, 400);
@@ -111,14 +136,12 @@ Deno.serve(async (req: Request) => {
         photo_data: typeof c.photo_data === "string" ? c.photo_data : null,
         created_by: userId, updated_at: new Date().toISOString(),
       }));
-      if (rows.some((r: any) => !r.first_name || !r.last_name || !r.father_name || !r.grade || !r.class_name || !r.seat_number)) {
-        return reply({ message: "برای همه دانش‌آموزان نام، نام خانوادگی، نام پدر، پایه، کلاس و شماره صندلی را کامل کنید." }, 400);
+      if (rows.some((r: any) => !r.first_name || !r.last_name || !r.grade || !r.class_name)) {
+        return reply({ message: "برای همه دانش‌آموزان نام، نام خانوادگی، پایه و کلاس را کامل کنید." }, 400);
       }
       if (rows.some((r: any) => r.photo_data && (r.photo_data.length > 500000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.photo_data)))) {
         return reply({ message: "یکی از عکس‌ها معتبر نیست یا از حد مجاز بزرگ‌تر است." }, 400);
       }
-      const seats = rows.map((r: any) => r.seat_number);
-      if (new Set(seats).size !== seats.length) return reply({ message: "شماره صندلی تکراری در همین فهرست وجود دارد." }, 409);
       const { error: saveError } = await admin.from("exam_entry_cards")
         .upsert(rows, { onConflict: "school_id,student_id,exam_period" });
       if (saveError) {
