@@ -8,6 +8,11 @@ const cors = {
 const respond = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const clean = (value: unknown) => String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
+const normalizeSchoolCode = (value: unknown) => String(value ?? "")
+  .normalize("NFKC").replace(/[\p{Cf}\s]/gu, "")
+  .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+  .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+  .toUpperCase();
 function normalizeDigits(value: string) {
   return value
     .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
@@ -70,7 +75,7 @@ Deno.serve(async (req: Request) => {
   const requestedRole = clean(body?.role);
   const action = clean(body?.action);
   const newPassword = String(body?.new_password ?? "");
-  const schoolCode = clean(body?.school_code).toUpperCase();
+  const schoolCode = normalizeSchoolCode(body?.school_code);
   let managerSchoolId: string | null = null;
 
   // Manager credentials are tenant-scoped before password authentication.
@@ -240,7 +245,7 @@ Deno.serve(async (req: Request) => {
       if (newPassword.length < 10 || newPassword.length > 128 || digits(newPassword).trim() === nationalCode) {
         return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با کد ملی یکسان نباشد." }, 400);
       }
-      const schoolCode = clean(body?.school_code).toUpperCase();
+      const schoolCode = normalizeSchoolCode(body?.school_code);
       if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
       const school = await admin.from("schools").select("school_code,status")
         .eq("id", account.data?.tenant_school_id).maybeSingle();
@@ -262,7 +267,7 @@ Deno.serve(async (req: Request) => {
       if (action !== "change_teacher_initial_password") {
         return respond({ message: "برای نخستین ورود دبیر، ابتدا باید رمز اولیه تغییر کند.", must_change_password: true }, 428);
       }
-      const schoolCode = clean(body?.school_code).toUpperCase();
+      const schoolCode = normalizeSchoolCode(body?.school_code);
       if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
       const school = await admin.from("schools").select("id,school_code,status")
         .eq("id", account.data?.tenant_school_id).maybeSingle();
@@ -294,7 +299,7 @@ Deno.serve(async (req: Request) => {
       if (newPassword.length < 10 || newPassword.length > 128 || newPassword === clean(account.data?.username)) {
         return respond({ message: "رمز جدید باید حداقل ۱۰ نویسه داشته باشد و با نام کاربری یکسان نباشد." }, 400);
       }
-      const schoolCode = clean(body?.school_code).toUpperCase();
+      const schoolCode = normalizeSchoolCode(body?.school_code);
       if (!/^[A-Z0-9-]{3,40}$/.test(schoolCode)) return respond({ message: "کد مدرسه معتبر نیست." }, 400);
       const school = await admin.from("schools").select("id,school_code,status").eq("id", account.data?.tenant_school_id).maybeSingle();
       if (school.error || !school.data || school.data.status !== "active" || clean(school.data.school_code).toUpperCase() !== schoolCode) {
