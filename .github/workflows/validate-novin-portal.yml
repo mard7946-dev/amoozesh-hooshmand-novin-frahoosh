@@ -71,9 +71,15 @@ on:
       - 'counseling.html'
       - 'exam-center.html'
       - 'exam-planner.html'
+      - 'exam-entry-cards.html'
+      - 'supabase/functions/exam-entry-cards/index.ts'
+      - 'tests/validate-exam-cards.mjs'
       - 'supabase/functions/exam-planner/index.ts'
       - 'supabase/migrations/20261118100000_school_exam_planner.sql'
       - 'tests/validate-exam-planner.mjs'
+      - 'exam-entry-cards.html'
+      - 'supabase/functions/exam-entry-cards/index.ts'
+      - 'tests/validate-exam-cards.mjs'
       - 'directory.html'
       - 'tests/validate-student-dossier.mjs'
       - 'supabase/functions/assessment-center/index.ts'
@@ -171,6 +177,9 @@ jobs:
       - name: Validate smart exam planner routing, security, and page syntax
         if: always()
         run: node tests/validate-exam-planner.mjs
+      - name: Validate integrated exam cards, per-exam seats, duration, and curriculum scope
+        if: always()
+        run: node tests/validate-exam-cards.mjs
       - name: Validate unified family communication center
         run: node tests/validate-family-communication.mjs
       - name: Validate comprehensive student dossier and school isolation
@@ -199,6 +208,9 @@ jobs:
       - name: Type-check smart exam planner Edge Function
         if: always()
         run: deno check supabase/functions/exam-planner/index.ts
+      - name: Type-check exam entry cards Edge Function
+        if: always()
+        run: deno check supabase/functions/exam-entry-cards/index.ts
       - name: Type-check manager password recovery Edge Function
         run: deno check supabase/functions/request-manager-password-recovery/index.ts
       - name: Type-check username login Edge Function
