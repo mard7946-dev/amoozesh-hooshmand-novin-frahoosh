@@ -58,7 +58,9 @@ function validatePlan(body: any) {
         throw new Error("نام درس‌ها باید کامل و یکتا باشند.");
       }
       const gapDays = subject.gap_days === undefined ? 1 : Number(subject.gap_days);
+      const duration = subject.duration_minutes === undefined ? 90 : Number(subject.duration_minutes);
       if (!Number.isInteger(gapDays) || gapDays < 0 || gapDays > 30) throw new Error("فاصلهٔ روز هر درس باید عددی صحیح بین صفر تا ۳۰ باشد.");
+      if (!Number.isInteger(duration) || duration < 1 || duration > 360 || String(subject.budget ?? "").length > 240) throw new Error("مدت یا بودجه‌بندی یکی از درس‌ها معتبر نیست.");
       subjects.add(label);
     }
   }
@@ -70,7 +72,9 @@ function validatePlan(body: any) {
     const declared = settings?.subjects?.find((s: any) => clean(s.subject, 100) === subject);
     if (!grades.has(grade) || !validDate(date) || date < start || date > end ||
         seen.has(key) || gradeDays.has(dayKey) || !declared ||
-        Number(item.gap_days ?? declared.gap_days ?? 1) !== Number(declared.gap_days ?? 1)) {
+        Number(item.gap_days ?? declared.gap_days ?? 1) !== Number(declared.gap_days ?? 1) ||
+        Number(item.duration_minutes ?? declared.duration_minutes ?? 90) !== Number(declared.duration_minutes ?? 90) ||
+        clean(item.budget, 240) !== clean(declared.budget, 240)) {
       throw new Error("یکی از ردیف‌های برنامهٔ امتحانی نامعتبر، تکراری یا ناسازگار با فهرست درس‌ها است.");
     }
     seen.add(key);
