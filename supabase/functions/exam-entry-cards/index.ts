@@ -56,7 +56,23 @@ Deno.serve(async (req: Request) => {
         .select("id,student_id,exam_period,first_name,last_name,father_name,grade,class_name,seat_number,photo_data,updated_at")
         .eq("school_id", schoolId).eq("exam_period", period);
       if (cardsError) throw cardsError;
-      return reply({ ok: true, students: students ?? [], cards: cards ?? [], exam_period: period });
+      const { data: plans, error: plansError } = await admin.from("school_exam_plans")
+        .select("id,title,schedule,published_at").eq("school_id", schoolId).eq("status", "published")
+        .order("published_at", { ascending: false }).limit(30);
+      if (plansError) throw plansError;
+      const selectedPlan = (plans ?? []).find((p: any) => clean(p.title, 160) === period) ?? (plans ?? [])[0] ?? null;
+      const schedule = selectedPlan && Array.isArray(selectedPlan.schedule) ? selectedPlan.schedule : [];
+      const { data: seats, error: seatsError } = await admin.from("exam_seats")
+        .select("student_id,exam_name,seat_no").eq("tenant_school_id", schoolId);
+      if (seatsError) throw seatsError;
+      const seatAssignments = (seats ?? []).map((s: any) => [String(s.student_id) + "|" + String(s.exam_name), String(s.seat_no ?? "")]);
+      const schedules = schedule.map((item: any) => ({
+        ...item,
+        exam_key: String(selectedPlan.id) + "|" + clean(item.grade, 40) + "|" + clean(item.subject, 100) + "|" + clean(item.exam_date, 10),
+        plan_title: selectedPlan.title,
+      }));
+      return reply({ ok: true, students: students ?? [], cards: cards ?? [], schedules, seat_assignments: seatAssignments,
+        plan_title: selectedPlan?.title ?? "", exam_period: period });
     }
 
     if (action === "save") {
@@ -71,8 +87,8 @@ Deno.serve(async (req: Request) => {
       const fatherName = clean(c.father_name, 100), grade = clean(c.grade, 40);
       const className = clean(c.class_name, 60), seatNumber = clean(c.seat_number, 20);
       const photoData = typeof c.photo_data === "string" ? c.photo_data : null;
-      if (!firstName || !lastName || !fatherName || !grade || !className || !seatNumber) {
-        return reply({ message: "نام، نام خانوادگی، نام پدر، پایه، کلاس و شماره صندلی الزامی است." }, 400);
+      if (!firstName || !lastName || !grade || !className) {
+        return reply({ message: "نام، نام خانوادگی، پایه و کلاس الزامی است." }, 400);
       }
       if (photoData && (photoData.length > 500000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(photoData))) {
         return reply({ message: "عکس باید JPG، PNG یا WebP و حداکثر ۳۵۰ کیلوبایت باشد." }, 400);
@@ -111,8 +127,8 @@ Deno.serve(async (req: Request) => {
         photo_data: typeof c.photo_data === "string" ? c.photo_data : null,
         created_by: userId, updated_at: new Date().toISOString(),
       }));
-      if (rows.some((r: any) => !r.first_name || !r.last_name || !r.father_name || !r.grade || !r.class_name || !r.seat_number)) {
-        return reply({ message: "برای همه دانش‌آموزان نام، نام خانوادگی، نام پدر، پایه، کلاس و شماره صندلی را کامل کنید." }, 400);
+      if (rows.some((r: any) => !r.first_name || !r.last_name || !r.grade || !r.class_name)) {
+        return reply({ message: "برای همه دانش‌آموزان نام، نام خانوادگی، پایه و کلاس را کامل کنید." }, 400);
       }
       if (rows.some((r: any) => r.photo_data && (r.photo_data.length > 500000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.photo_data)))) {
         return reply({ message: "یکی از عکس‌ها معتبر نیست یا از حد مجاز بزرگ‌تر است." }, 400);
