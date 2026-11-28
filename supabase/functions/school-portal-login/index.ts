@@ -9,6 +9,12 @@ const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const clean = (value: unknown) =>
   String(value ?? "").replace(/[\u200c\u200f\u202a-\u202e]/g, "").trim();
+const normalizeSchoolCode = (value: unknown) => String(value ?? "").normalize("NFKC")
+  .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+  .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+  .replace(/[‐‑‒–—−]/g, "-")
+  .replace(/[\s\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "")
+  .toUpperCase();
 const normalize = (value: unknown) => clean(value)
   .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
   .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
@@ -57,7 +63,7 @@ Deno.serve(async (req: Request) => {
   const username = clean(body?.username);
   const password = String(body?.password ?? "");
   const expectedRole = clean(body?.role);
-  const schoolCode = clean(body?.school_code).toUpperCase();
+  const schoolCode = normalizeSchoolCode(body?.school_code);
   const action = clean(body?.action);
 
   if (!username || !password || !schoolCode ||
