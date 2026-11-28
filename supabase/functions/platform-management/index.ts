@@ -276,7 +276,8 @@ Deno.serve(async (req: Request) => {
       const schoolId = clean(body?.school_id, 80);
       const username = clean(body?.username, 40);
       const temporaryPassword = String(body?.temporary_password ?? "");
-      const allowPhoneBootstrap = schoolId === "1b0a7f30-ae07-4c0e-8833-721b8d4cdf18" && /^09\d{9}$/.test(username) && temporaryPassword === username;
+      const phoneBootstrapSchools = new Set(["1b0a7f30-ae07-4c0e-8833-721b8d4cdf18", "af729acc-d94b-4359-b072-06e91c4780a5"]);
+      const allowPhoneBootstrap = phoneBootstrapSchools.has(schoolId) && /^09\d{9}$/.test(username) && temporaryPassword === username;
       if (!schoolId || !/^[A-Za-z0-9._-]{4,40}$/.test(username) ||
           temporaryPassword.length < 10 || temporaryPassword.length > 128 ||
           (temporaryPassword === username && !allowPhoneBootstrap)) {
